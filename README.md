@@ -102,6 +102,6 @@ mvn test
 
 | Name | GitHub |
 | --- | --- |
-| | |
-| | |
-| | |
+|Nisa Atım |220205014 |
+|Aslınur İlay Tekin | |
+|Şevval Sıla Çelik | |
