@@ -6,9 +6,11 @@ Three LLMs generate the same application from the same prompts. The study is onl
 
 | Model | Tool (agent mode) | Generation workspace | Folder in the repo | Branch | Tag prefix | Operator |
 | --- | --- | --- | --- | --- | --- | --- |
-| Claude | Claude Code | `C:\gen\claude` (or `~/gen/claude`) | `codebases/claude/` | `generation/claude` | `claude-` | _to be filled_ |
-| GPT | Codex CLI | `C:\gen\gpt` (or `~/gen/gpt`) | `codebases/gpt/` | `generation/gpt` | `gpt-` | _to be filled_ |
-| Gemini | Gemini CLI | `C:\gen\gemini` (or `~/gen/gemini`) | `codebases/gemini/` | `generation/gemini` | `gemini-` | _to be filled_ |
+| Claude | Claude Code | `C:\gen\claude` (or `~/gen/claude`) | `codebases/claude/` | `generation/claude` | `claude-` | Işıl Gültekin |
+| GPT | Codex (CLI or desktop app, local mode) | `C:\gen\gpt` (or `~/gen/gpt`) | `codebases/gpt/` | `generation/gpt` | `gpt-` | Nisa Atım |
+| Gemini | Gemini CLI | `C:\gen\gemini` (or `~/gen/gemini`) | `codebases/gemini/` | `generation/gemini` | `gemini-` | Aslınur İlay Tekin |
+
+**Codex note:** the Codex CLI and the Codex desktop app both work, as long as the task runs **locally** on the folder `C:\gen\gpt`. Do not use Codex cloud tasks (chatgpt.com/codex): they run against a GitHub repository, so the agent would see this repository.
 
 **Why a separate workspace:** coding agents can read files above the folder they run in. If the code were generated inside this repository, the agent could read the full contract, later change requests and our refactoring documents, which would influence the code it writes. The agent therefore only ever runs in an empty folder **outside** the repository; after each round the files are copied into `codebases/<model>/` and committed.
 
