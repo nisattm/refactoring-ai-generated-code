@@ -64,8 +64,10 @@ Full specification: [`docs/requirements.md`](docs/requirements.md)
 .
 ├── .github/              Issue templates, PR template, CI workflows
 ├── docs/
-│   ├── requirements.md   Requirements given to the LLM
-│   ├── generation-log/   Prompts, LLM responses and revision rounds
+│   ├── requirements.md   Overview of the generated application
+│   ├── api-contract.md   Binding API specification
+│   ├── prompts/          Prompts P1–P4, DT1, DT2 and the generation protocol
+│   ├── generation-log/   LLM conversations per model and step
 │   ├── smell-catalog.md  Catalog of LLM-specific code smells
 │   ├── decisions/        Architecture and refactoring decision records
 │   └── literature/       Notes on academic and technical sources
@@ -74,9 +76,10 @@ Full specification: [`docs/requirements.md`](docs/requirements.md)
 │   ├── sprints/          End-of-sprint measurements
 │   └── final/            Final measurements and comparison
 ├── scripts/              Scripts that run the metric tools
-└── src/                  Added after generation (Maven standard layout)
-    ├── main/java/        Application source code
-    └── test/java/        Tests
+└── codebases/            Added during generation, one Maven project per model
+    ├── claude/
+    ├── gpt/
+    └── gemini/
 ```
 
 ## Methodology
