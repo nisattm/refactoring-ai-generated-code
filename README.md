@@ -124,8 +124,10 @@ mvn test
 
 ## Team
 
-| Name | GitHub |
-| --- | --- |
-| Nisa Atım | [@nisattm](https://github.com/nisattm) |
-| Aslınur İlay Tekin | [@aslnurilay](https://github.com/aslnurilay) |
-| Şevval Sıla Çelik | [@sevvalsilacelik](https://github.com/sevvalsilacelik) |
+| Name | GitHub | Role |
+| --- | --- | --- |
+| Nisa Atım | [@nisattm](https://github.com/nisattm) | Project management, reviews, GPT codebase (Codex CLI) |
+| Aslınur İlay Tekin | [@aslnurilay](https://github.com/aslnurilay) | Gemini codebase (Gemini CLI) |
+| Işıl Gültekin | [@gltknisil](https://github.com/gltknisil) | Claude codebase (Claude Code) |
+| Şevval Sıla Çelik | [@sevvalsilacelik](https://github.com/sevvalsilacelik) | API contract and shared test suite |
+| Fatima Zehra Öktem | [@fatimazhroktem](https://github.com/fatimazhroktem) | Literature review and TÜBİTAK proposal |
