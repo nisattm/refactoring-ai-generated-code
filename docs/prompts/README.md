@@ -45,7 +45,7 @@ All three operators must use the **same mode**. Mixing modes makes the compariso
 
 ## 4. Before you start (once)
 
-1. Install JDK 17 or later and Apache Maven 3.9, and check that `java -version` and `mvn -v` work in a new terminal. All three machines must have both **before** P1, so that every agent can build and run the project the same way.
+1. Install JDK 17 or later and Apache Maven 3.10.0 (all three machines use the same Maven version), and check that `java -version` and `mvn -v` work in a new terminal. All three machines must have both **before** P1, so that every agent can build and run the project the same way.
 2. Install the agent and sign in with your own subscription.
 3. Write the following into `docs/generation-log/<model>/README.md`: tool name and version, the exact model name the tool shows, your plan, and the date. Use the tool's default settings; do not change model, temperature or reasoning settings during the study.
 4. Create your branch from the latest `main` in your clone of this repository:
