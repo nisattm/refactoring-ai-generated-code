@@ -45,9 +45,10 @@ All three operators must use the **same mode**. Mixing modes makes the compariso
 
 ## 4. Before you start (once)
 
-1. Install the agent and sign in with your own subscription.
-2. Write the following into `docs/generation-log/<model>/README.md`: tool name and version, the exact model name the tool shows, your plan, and the date. Use the tool's default settings; do not change model, temperature or reasoning settings during the study.
-3. Create your branch from the latest `main` in your clone of this repository:
+1. Install JDK 17 or later and Apache Maven 3.9, and check that `java -version` and `mvn -v` work in a new terminal. All three machines must have both **before** P1, so that every agent can build and run the project the same way.
+2. Install the agent and sign in with your own subscription.
+3. Write the following into `docs/generation-log/<model>/README.md`: tool name and version, the exact model name the tool shows, your plan, and the date. Use the tool's default settings; do not change model, temperature or reasoning settings during the study.
+4. Create your branch from the latest `main` in your clone of this repository:
 
 ```
 git checkout main
@@ -55,13 +56,13 @@ git pull
 git checkout -b generation/<model>
 ```
 
-4. Create the generation workspace: an **empty** folder outside the repository clone, for example `C:\gen\gpt`. Never put anything in it yourself: no README, no `.gitignore`, no instruction files such as `CLAUDE.md`, `AGENTS.md` or `GEMINI.md`. If the tool offers to create such a file (for example an "init" command), decline. If the tool requires a Git repository in the folder, run `git init` there; that is allowed.
+5. Create the generation workspace: an **empty** folder outside the repository clone, for example `C:\gen\gpt`. Never put anything in it yourself: no README, no `.gitignore`, no instruction files such as `CLAUDE.md`, `AGENTS.md` or `GEMINI.md`. If the tool offers to create such a file (for example an "init" command), decline. If the tool requires a Git repository in the folder, run `git init` there; that is allowed.
 
 ## 5. Running one step
 
 1. Open a **new** session of the agent **inside the generation workspace** (for example `cd C:\gen\gpt` and then start the tool).
 2. Open the prompt file, copy **only the text between the two horizontal lines**, paste it as one message and send it.
-3. Let the agent work. When it asks for permission to create or edit files, or to run `mvn` commands inside the folder, approve. Refuse anything outside the folder.
+3. Let the agent work. When it asks for permission to create or edit files, or to run `mvn` commands inside the folder, approve. Refuse anything outside the folder, and refuse any request to download or install tools (JDK, Maven, etc.). If the agent asks this as a multiple-choice question, choose the option that does not download or install anything.
 4. When it stops, run the acceptance check (section 7).
 5. If the check fails, use the standard follow-up messages (section 6).
 6. Record and commit (section 8).
