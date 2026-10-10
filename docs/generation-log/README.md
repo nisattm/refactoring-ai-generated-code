@@ -1,39 +1,69 @@
 # Generation Log
 
-Every interaction with the LLM that produced the codebase is recorded here, so that the origin of the code is documented and the process can be reproduced.
+Every interaction with the LLMs that produced the codebases is recorded here, so that the origin of the code is documented and the process can be reproduced.
 
-## Generation protocol
+The full procedure (prompt order, allowed follow-up messages, acceptance check, copying, tags) is in [`../prompts/README.md`](../prompts/README.md). Follow it exactly.
 
-1. Fix the tool and model; record their names and the date.
-2. Use the requirements in [`../requirements.md`](../requirements.md).
-3. Generate one feature per session.
-4. Keep prompts neutral; never ask for messy or deliberately poor code.
-5. Do not clean up code by hand. When something does not work, only the error message is given back to the LLM.
-6. Record every revision round, and note SLOC and duplication rate after each round.
-7. Tag the final generated version as `v0-ai-baseline`.
+## Folder layout
 
-## Generation metadata
+One folder per model, one subfolder per step:
+
+```
+generation-log/
+  claude/
+    README.md        generation metadata and summary table
+    P1/
+      01-prompt.md
+      01-response.md
+      02-followup.md
+      02-response.md
+      notes.md
+    P2/ P3/ P4/ DT1/ DT2/
+  gpt/
+  gemini/
+```
+
+## `<model>/README.md` template
+
+```markdown
+# Generation Log – <Model>
 
 | Field | Value |
 | --- | --- |
-| Tool | |
-| Model | |
-| Date | |
+| Operator | |
+| Tool and version | |
+| Model name shown by the tool | |
+| Plan | |
+| Mode | agent / chat |
+| Start date | |
+| End date | |
 
-## File naming
+## Summary
 
+| Step | Rounds | Follow-ups used (F1–F4) | Acceptance check | Tag | Observed issues |
+| --- | --- | --- | --- | --- | --- |
+| P1 | | | | `<model>-P1` | |
+| P2 | | | | `<model>-P2` | |
+| P3 | | | | `<model>-P3` | |
+| P4 | | | | `<model>-P4` | |
+| DT1 | | | | `<model>-DT1` | |
+| DT2 | | | | `<model>-DT2` | |
 ```
-feature-1-management/
-  01-prompt.md
-  01-response.md
-  02-error.md
-  02-response.md
-feature-2-absence/
-  ...
+
+## `notes.md` template
+
+```markdown
+# <Model> – <Step>
+
+- Date:
+- Time spent (minutes):
+- Follow-ups used: (e.g. F1 ×2, F4 ×1)
+- Acceptance check: `mvn -q package` pass/fail · `spring-boot:run` pass/fail · Swagger lists all endpoints yes/no
+- Files created or changed by the agent:
+
+## Observed issues
+
+Business logic errors or missing validation noticed during the check. Do not report these back to the LLM.
 ```
 
-## Revision growth
-
-| Feature | Round | SLOC | Duplication (%) | Notes |
-| --- | --- | --- | --- | --- |
-| | | | | |
+Size and duplication are measured later from the tags by the measurement owner, so they are not recorded here.
