@@ -13,9 +13,8 @@ The first plan generated a Java/Spring Boot course tracking API with LLM agents 
 - Language: Python. Model: Claude, the same version throughout.
 - Approach rules as in [`../approaches.md`](../approaches.md) (to be finalized in the metrics meeting).
 - Metrics extended after the instructor's feedback of 26 October 2026 ([`../metrics.md`](../metrics.md)).
-- Java/Spring Boot material moved to [`../../archive/java-spring-plan/`](../../archive/java-spring-plan/).
+- Java/Spring Boot material (API contract, prompts, generation logs, generated P1 code) removed from the repository.
 
 ## Consequences
 
-- The Java API contract, prompts and the generated P1 code are no longer used.
 - Tools change from the Java ecosystem (DesigniteJava, PMD, JUnit, JMH) to the Python ecosystem (PyExamine, DPy, Radon, Ruff, pytest, pyperf).

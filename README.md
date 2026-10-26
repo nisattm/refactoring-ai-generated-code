@@ -4,8 +4,6 @@ Comparing three ways of letting an LLM refactor its own code: **Single LLM**, **
 
 **Course:** Engineering Design II – Project 02: Refactoring AI-Generated Code (Sustainable Software Engineering)
 
-> The project was redesigned after the instructor's 8-week plan (October 2026). The earlier Java/Spring Boot plan is kept for reference in [`archive/java-spring-plan/`](archive/java-spring-plan/).
-
 ## Research questions
 
 | | Question | Metrics |
@@ -64,8 +62,7 @@ Details: [`docs/plan.md`](docs/plan.md)
 │   ├── decisions/        Decision records
 │   └── literature/       Paper cards and survey notes
 ├── metrics/              Measurement results (CSV)
-├── scripts/              Code Quality Analyzer and experiment scripts
-└── archive/              Earlier Java/Spring Boot plan
+└── scripts/              Code Quality Analyzer and experiment scripts
 ```
 
 ## Workflow
