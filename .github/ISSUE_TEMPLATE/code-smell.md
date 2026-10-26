@@ -6,13 +6,13 @@ labels: code-smell
 ---
 
 ## Smell type
-<!-- e.g. Long Method, God Class, Duplicate Code, Complex Conditional, Feature Envy, Dead Code, Magic Number -->
+<!-- ID and name from docs/smell-catalog.md, e.g. S02 God Class -->
 
 ## Location
-<!-- Class and method, e.g. GradeService#calculateAverage -->
+<!-- Task, file and function/class, e.g. dataset/complex/library/loans.py: LoanService.borrow -->
 
 ## Detected by
-<!-- DesigniteJava / SonarQube / PMD / CK / Test / Manual review -->
+<!-- PyExamine / DPy / Radon / complexipy / Ruff / Pylint / Vulture / jscpd / Test / Rubric review -->
 
 ## Evidence
 <!-- Metric values or tool output, e.g. CC = 18, 120 lines, duplicated in 3 places -->
