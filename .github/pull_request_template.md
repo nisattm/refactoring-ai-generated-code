@@ -22,6 +22,6 @@ Fixes #
 | | | |
 
 ## Checklist
-- [ ] All tests pass locally (`mvn test`)
+- [ ] All tests pass locally (`pytest`)
 - [ ] Behavior is unchanged (characterization tests pass)
 - [ ] Commit message follows Conventional Commits
