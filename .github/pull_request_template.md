@@ -1,27 +1,24 @@
 ## Summary
-<!-- What does this PR change? Keep one refactoring per PR. -->
+<!-- What does this PR change and why? -->
 
 Fixes #
 
 ## Type
-- [ ] Refactoring
-- [ ] Tests
-- [ ] Bug fix
-- [ ] Metrics / scripts
 - [ ] Documentation
+- [ ] Requirements / dataset
+- [ ] Tests
+- [ ] Generation (prompts, generation log, generated code)
+- [ ] Experiment run (approach results)
+- [ ] Metrics / scripts
 - [ ] Setup / CI
 
-## Refactoring details (if applicable)
-- **Technique:** <!-- e.g. Extract Method -->
-- **Target smell:** <!-- e.g. Long Method in GradeService#calculate -->
-- **Applied with IDE support:** yes / no
-
-## Metric impact (if applicable)
-| Metric | Before | After |
-| --- | --- | --- |
-| | | |
+## Experiment details (if applicable)
+- **Approach:** Single / Iterative / Multi-Agent
+- **Run:** <!-- repetition number, date, Claude Code version, model, effort level -->
+- **Held-out tests:** <!-- passed / total -->
+- **Tokens and time:** <!-- from the run's JSON result -->
 
 ## Checklist
 - [ ] All tests pass locally (`pytest`)
-- [ ] Behavior is unchanged (characterization tests pass)
+- [ ] Generated code was not edited by hand
 - [ ] Commit message follows Conventional Commits

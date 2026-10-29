@@ -1,21 +1,3 @@
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-# https://maven.apache.org/tools/wrapper/#Usage_with_or_without_Binary_JAR
-.mvn/wrapper/maven-wrapper.jar
-
-# Eclipse m2e generated files
-# Eclipse Core
-.project
-# JDT-specific (Eclipse Java Development Tools)
-.classpath
-
 # Python
 __pycache__/
 *.py[cod]
@@ -23,9 +5,25 @@ __pycache__/
 venv/
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .mypy_cache/
 .ruff_cache/
 mutants/
+.hypothesis/
 *.bin
 .env
+
+# SQLite databases created by the LMS (default: lms.db)
+*.db
+*.db-journal
+
+# Profiler and benchmark output
+memray-*.bin
+*.prof
+.benchmarks/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store

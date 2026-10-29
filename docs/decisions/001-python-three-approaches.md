@@ -1,7 +1,7 @@
 # 001 – Switch to Python and a three-approach comparison
 
 **Date:** 2026-10-26
-**Status:** Accepted
+**Status:** Accepted; dataset and access method superseded by [002](002-single-lms-claude-code.md)
 
 ## Context
 

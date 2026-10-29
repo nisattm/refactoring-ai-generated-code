@@ -9,7 +9,7 @@ labels: code-smell
 <!-- ID and name from docs/smell-catalog.md, e.g. S02 God Class -->
 
 ## Location
-<!-- Task, file and function/class, e.g. dataset/complex/library/loans.py: LoanService.borrow -->
+<!-- Module, file and function/class, e.g. module 5, dataset/lms/generated/loans/service.py: LoanService.borrow -->
 
 ## Detected by
 <!-- PyExamine / DPy / Radon / complexipy / Ruff / Pylint / Vulture / jscpd / Test / Rubric review -->
