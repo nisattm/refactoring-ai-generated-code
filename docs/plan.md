@@ -22,6 +22,17 @@ Plan provided by the instructor (October 2026). Status is updated as the project
 | Create test cases | Test strategy, feedback vs. held-out tests, coverage and mutation targets ([`testing.md`](testing.md)) |
 | Review the GitHub `code-smell` topic | Survey of the topic and a Python smell catalog ([`smell-catalog.md`](smell-catalog.md)) |
 
+Completed on 29 October 2026: thresholds, success definition, aggregation levels, statistics, architecture and change-size metrics, performance workloads, cost without API billing ([`metrics.md`](metrics.md)); per-repository topic survey and AI-specific smells S22–S23 ([`smell-catalog.md`](smell-catalog.md)); API-level tests, test protection, rubric sampling and mutation sampling ([`testing.md`](testing.md)).
+
+**Instructor feedback (later, oral)** and our response:
+
+| Feedback | Response |
+| --- | --- |
+| The code should be large and complex so that all metrics can be tested | One Library Management System of about 30,000–40,000 lines ([`../dataset/README.md`](../dataset/README.md)) |
+| Refactoring module by module makes no sense because the modules depend on each other; do one refactoring | Each approach refactors the whole project in one run ([`approaches.md`](approaches.md)); results are also broken down by module and level ([`metrics.md`](metrics.md#4-aggregation-and-reporting-levels)) |
+
+Decisions of 29 October 2026: [`decisions/002`](decisions/002-single-lms-claude-code.md).
+
 ## Week 3 – Dataset and complex project
 
 - Prepare software tasks that fit the metrics from Weeks 1–2
@@ -41,6 +52,8 @@ Plan provided by the instructor (October 2026). Status is updated as the project
 - Save analysis results to CSV
 
 ## Week 5 – Single LLM and Iterative LLM
+
+> Weeks 5–8 below are the instructor's plan as given. We use Claude Code Pro instead of the API, so "API cost" is reported as tokens, time and equivalent cost ([`metrics.md`](metrics.md#8-cost-of-the-refactoring-llm-side)).
 
 - Single LLM: analyze and refactor the code in one call
 - Iterative LLM: analyze, improve and re-evaluate the code in several steps

@@ -6,6 +6,6 @@ Measurement results written by the Code Quality Analyzer ([`../scripts/`](../scr
 | --- | --- |
 | `baseline/` | Metrics of the generated code before refactoring (Week 4) |
 | `pilot/` | Pilot runs of the three approaches (Weeks 5–6) |
-| `experiments/` | Main experiment results, one row per task × approach × repetition (Week 7) |
+| `experiments/` | Main experiment results, one row per approach × repetition × module (plus project totals) (Week 7) |
 
 Before and after values are always measured with the same tool and version, in the same environment.
