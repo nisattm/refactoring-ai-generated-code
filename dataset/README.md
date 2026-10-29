@@ -10,7 +10,15 @@ The instructor asked for large, complex code in which all metrics can be measure
 
 ## Modules and complexity levels
 
-Levels below were assigned on 29 October 2026 by judgment. In Week 3 they are checked against measurable criteria (*proposal*: number of business rules, number of modules depended on, whether the module has state transitions), and the result is recorded here. After generation, CC, fan-out and SLOC are reported per level to show whether the labels match the measured code.
+Levels below were assigned on 29 October 2026 by judgment. In Week 3 they are recalculated from the requirements document with this score (approved 29 October 2026) and the result is recorded here:
+
+| Criterion | 0 points | 1 point | 2 points |
+| --- | --- | --- | --- |
+| Business rules (requirement IDs of the module) | 0–5 | 6–12 | 13+ |
+| Modules it depends on ([requirements, section 21](lms/requirements.md#21-cross-module-dependencies)) | 0–1 | 2–3 | 4+ |
+| State transitions | None | Simple (2 states) | Several states |
+
+Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain at least 2 modules. After generation, CC, fan-out and SLOC are reported per level to show whether the labels match the measured code.
 
 | # | Module | Content | Level | Est. lines | Expected smells / metrics (not guaranteed) |
 | --- | --- | --- | --- | --- | --- |
@@ -19,7 +27,7 @@ Levels below were assigned on 29 October 2026 by judgment. In Week 3 they are ch
 | 3 | Members | Registration, membership types, renewal, active/passive | Medium | 3,000 | Long Parameter List, Data Clumps |
 | 4 | Catalog | Books, authors, publishers, copies (with price), ISBN, classification | Medium | 4,000 | Large Class, Long Method |
 | 5 | Loans and returns | Loan period and limit, renewal, lost and damaged books | Complex | 4,000 | God Class, Feature Envy, Deep Nesting, high CC |
-| 6 | Reservations | Queue, priority, expiry, link to returns | Complex | 3,000 | Cognitive complexity, logic errors |
+| 6 | Reservations | First-come, first-served queue, hold expiry, link to returns and transfers | Complex | 3,000 | Cognitive complexity, logic errors |
 | 7 | Fines and payments | Late fees, holidays, cap, exemptions, borrowing block | Complex | 3,000 | Complex Conditional, Magic Number, boundary errors |
 | 8 | Notifications | Event-based notifications; records only | Medium | 2,000 | Shotgun Surgery, coupling |
 | 9 | Search | Search, filters, sorting, pagination | Medium | 2,000 | Time and RAM on large data |
@@ -36,6 +44,8 @@ Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in pr
 
 ## Business rules (approved 29 October 2026)
 
+Summary only. The binding specification, including all further rules, endpoints and error codes, is [`lms/requirements.md`](lms/requirements.md).
+
 | Membership type | Loan period | Limit | Renewals | Late fee |
 | --- | --- | --- | --- | --- |
 | Student | 14 days | 5 | 1 | 2 TL/day |
@@ -43,11 +53,11 @@ Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in pr
 | Staff (university administrative staff) | 21 days | 7 | 2 | 1 TL/day |
 | Guest | 7 days | 2 | 0 | 5 TL/day |
 
-- **Working day:** not Saturday, Sunday or an official holiday (fixed list in the requirements; dates to be verified).
+- **Working day:** not Saturday, Sunday or an official holiday (2026–2027 list in the requirements, cross-checked in two published lists; not yet checked against the Official Gazette). Half-day eves (arife) are working days.
 - **Due date:** loan period in calendar days; if the due date is not a working day, it moves to the next working day.
 - **Late fee:** starts the day after the due date; working days only; capped at 100 TL per book; amounts use `Decimal`.
 - **Block:** a member with total debt of 50 TL or more cannot borrow.
-- **Renewal:** new period starts on the renewal day; overdue books cannot be renewed; books with a waiting reservation cannot be renewed.
+- **Renewal:** new period starts on the renewal day; overdue books cannot be renewed; books with an active reservation cannot be renewed.
 - **Reservations:** at most 3 active per member; a ready book not collected within 3 working days passes to the next member.
 - **Lost book:** late fee accrued until the loss is reported + book price + 25 TL handling fee.
 - **Fee cap:** 100 TL per book, independent of the book's price.

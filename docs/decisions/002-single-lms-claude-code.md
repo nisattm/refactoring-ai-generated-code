@@ -26,7 +26,7 @@ After the Weeks 1–2 feedback, the instructor asked for large, complex code in 
 | Multi-Agent | Claude Code subagents (Analyzer, Refactoring, Reviewer) under an orchestrating `claude -p` session, as named in the instructor's notes; accepted trade-off: only each subagent's final message returns to the orchestrator ([`../approaches.md`](../approaches.md#multi-agent-with-claude-code-subagents)) |
 | Run isolation | Fresh container and fresh project copy per run; tools limited per approach; runs with any model other than Sonnet 5.5 are invalid |
 | Usage limits | Considered sufficient by the team (5-hour window resets); usage per run is still recorded in the pilot |
-| Business rules | As listed in [`../../dataset/README.md`](../../dataset/README.md#business-rules-approved-29-october-2026) |
+| Business rules | Summary in [`../../dataset/README.md`](../../dataset/README.md#business-rules-approved-29-october-2026); full specification in [`../../dataset/lms/requirements.md`](../../dataset/lms/requirements.md) |
 
 ## Consequences
 

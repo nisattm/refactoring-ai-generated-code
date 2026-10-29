@@ -51,14 +51,14 @@ Starting code that fails requirement tests is recorded as faulty. Refactoring mu
 
 ## Test case template
 
-The LMS test folder contains `tests/cases.md` with this table. IDs follow `LIB-<module>-NN` from the requirements document.
+The LMS test folder contains `tests/cases.md` with this table. Each test case has its own ID `T-<requirement ID>-<letter>` and names the requirement it checks (`LIB-<AREA>-NN` in [`../dataset/lms/requirements.md`](../dataset/lms/requirements.md)).
 
 | ID | Requirement | Type | Input | Expected | Set |
 | --- | --- | --- | --- | --- | --- |
-| LIB-L-01 | A book on the shelf can be lent to a member with no debt | Normal | Book on shelf, student with 0 TL debt | Loan is created, book is "on loan", due date = today + 14 days (moved to the next working day if needed) | Feedback |
-| LIB-L-02 | A member with debt of 50 TL or more cannot borrow | Boundary | Debt 50.00 TL | Request is rejected | Held-out |
-| LIB-L-03 | A student can borrow at most 5 books | Boundary | Student has 5 books, requests a 6th | Request is rejected | Feedback |
-| LIB-F-01 | Late fee counts working days after the due date | Normal | Student returns 3 working days late | Fine = 3 × 2 TL = 6.00 TL | Held-out |
-| LIB-P-01 | The total number of copies is preserved | Property | Random sequence of loans and returns | on shelf + on loan + in transfer = total | Feedback |
-
-Rules and numbers come from the requirements document ([`../dataset/README.md`](../dataset/README.md)).
+| T-LOAN-03-a | LIB-LOAN-03 | Normal | Student, lent 2026-11-02 | `due_date` 2026-11-16 | Feedback |
+| T-LOAN-03-b | LIB-LOAN-03 | Boundary | Academic, lent 2026-12-02 (due date falls on 2027-01-01, a holiday) | `due_date` 2027-01-04 | Held-out |
+| T-LOAN-06-a | LIB-LOAN-06 | Boundary | Total debt 50.00 TL | `409 MEMBER_BLOCKED_BY_DEBT` | Held-out |
+| T-LOAN-06-b | LIB-LOAN-06 | Boundary | Total debt 49.99 TL | Loan created | Feedback |
+| T-LOAN-05-a | LIB-LOAN-05 | Boundary | Student has 5 open loans, requests a 6th | `409 LOAN_LIMIT_REACHED` | Feedback |
+| T-FEE-02-a | LIB-FEE-02 | Boundary | Guest loan returned 25 working days late | Late fee `"100.00"` (cap) | Held-out |
+| T-P-01 | LIB-CAT-12, LIB-LOAN-01, LIB-LOAN-09 | Property | Random sequence of loans and returns | Copies per status always sum to the number of copies | Feedback |

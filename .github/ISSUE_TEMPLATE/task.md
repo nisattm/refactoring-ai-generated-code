@@ -12,5 +12,5 @@ labels: ""
 - [ ]
 - [ ]
 
-## Work package
-<!-- Preparation / WP1: Generation & Analysis / WP2: Metrics & Testing / WP3: Refactoring / WP4: Validation & Reporting -->
+## Week
+<!-- Week of the 8-week plan (docs/plan.md), e.g. Week 3 – Dataset and complex project -->
