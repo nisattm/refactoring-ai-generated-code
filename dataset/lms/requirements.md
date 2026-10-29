@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
-**Status:** Parts 1–2 of 4 (sections 1–13). Parts 3–4 add modules 8–14, cross-module dependencies, end-to-end scenarios and the import/export format.
-**Version:** 0.2 · 2026-10-29
+**Status:** Complete draft (sections 1–23), for team review.
+**Version:** 0.3 · 2026-10-29
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -17,22 +17,22 @@ The LMS manages a university library: members and their memberships, the catalog
 
 The system consists of 14 modules:
 
-| # | Module | Package | Specified in |
+| # | Module | Package | Section |
 | --- | --- | --- | --- |
-| 1 | Core | `lms.core` | Part 1 |
-| 2 | Identity and access | `lms.auth` | Part 1 |
-| 3 | Members | `lms.members` | Part 2 |
-| 4 | Catalog | `lms.catalog` | Part 2 |
-| 5 | Loans and returns | `lms.loans` | Part 2 |
-| 6 | Reservations | `lms.reservations` | Part 2 |
-| 7 | Fines and payments | `lms.fines` | Part 2 |
-| 8 | Notifications | `lms.notifications` | Part 3 |
-| 9 | Search | `lms.search` | Part 3 |
-| 10 | Reports | `lms.reports` | Part 3 |
-| 11 | Branches | `lms.branches` | Part 3 |
-| 12 | Purchasing | `lms.purchasing` | Part 3 |
-| 13 | Audit log and import/export | `lms.audit` | Part 3 |
-| 14 | API layer | `lms.api` | All parts (endpoints are listed with each module) |
+| 1 | Core | `lms.core` | 5 |
+| 2 | Identity and access | `lms.auth` | 6 |
+| 3 | Members | `lms.members` | 7 |
+| 4 | Catalog | `lms.catalog` | 8 |
+| 5 | Loans and returns | `lms.loans` | 9 |
+| 6 | Reservations | `lms.reservations` | 10 |
+| 7 | Fines and payments | `lms.fines` | 11 |
+| 8 | Notifications | `lms.notifications` | 14 |
+| 9 | Search | `lms.search` | 15 |
+| 10 | Reports | `lms.reports` | 16 |
+| 11 | Branches | `lms.branches` | 17 |
+| 12 | Purchasing | `lms.purchasing` | 18 |
+| 13 | Audit log and import/export | `lms.audit` | 19 |
+| 14 | API layer | `lms.api` | 20 (endpoints are listed with each module) |
 
 ### 1.2 Out of scope
 
@@ -235,7 +235,7 @@ Common error codes (modules add their own codes in their sections):
 
 ## 4. Fixed service interface
 
-The package `lms` MUST export exactly the names below from `lms/__init__.py`. Tests and measurement scripts use them directly. Their names, parameters, defaults and behavior MUST NOT change. Further names exported by `lms` are added in Part 3 (import/export).
+The package `lms` MUST export exactly the names below from `lms/__init__.py`. Tests and measurement scripts use them directly. Their names, parameters, defaults and behavior MUST NOT change. Two further functions, `import_dataset` and `export_dataset`, are specified in section 19.4.
 
 ### 4.1 `create_app`
 
@@ -356,7 +356,7 @@ This module manages user accounts, login, sessions and permissions.
 | `is_active` | boolean | Default `true` |
 | `failed_login_count` | integer | Consecutive failed logins, default 0 |
 | `locked_until` | date-time or null | See LIB-AUTH-09 |
-| `member_id` | integer or null | Set only for role `member`; links to the member record (module 3, Part 2) |
+| `member_id` | integer or null | Set only for role `member`; links to the member record (module 3, section 7) |
 | `created_at` | date-time | Set from the clock at creation |
 | `last_login_at` | date-time or null | Set at each successful login |
 
@@ -380,7 +380,7 @@ API representation of a user (`UserOut`): `{"id", "email", "full_name", "role", 
 | LIB-AUTH-01 | **Bootstrap administrator.** When the application is created and no user with role `admin` exists, the system MUST create one active `admin` user with `Settings.bootstrap_admin_email`, full name `"Administrator"` and `Settings.bootstrap_admin_password`. |
 | LIB-AUTH-02 | **Password policy.** A password MUST be 8–128 characters long and contain at least one letter and at least one digit. A password that breaks the policy MUST be rejected with `422 VALIDATION_ERROR` (field `password` or `new_password`). |
 | LIB-AUTH-03 | **Password storage.** Passwords MUST be stored as `scrypt$<salt hex>$<hash hex>`, where the hash is `hashlib.scrypt(password_utf8, salt=salt, n=16384, r=8, p=1, dklen=64)` and the salt is 16 bytes from `secrets.token_bytes`. Password checks MUST use `hmac.compare_digest`. |
-| LIB-AUTH-04 | Users with role `member` are created only by member registration (module 3, Part 2). `POST /api/v1/users` MUST reject `role: "member"` with `422 VALIDATION_ERROR`. |
+| LIB-AUTH-04 | Users with role `member` are created only by member registration (module 3, section 7). `POST /api/v1/users` MUST reject `role: "member"` with `422 VALIDATION_ERROR`. |
 | LIB-AUTH-05 | The e-mail address of a user MUST be unique among all users. A duplicate MUST be rejected with `409 CONFLICT`. |
 
 ### 6.3 Login, sessions and tokens
@@ -430,7 +430,7 @@ The common codes `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `INVALID_CREDENTIALS`, `ACC
 
 ### 6.6 Permission matrix
 
-Permissions are checked in this module and applied by every endpoint. "Own" means the resource belongs to the authenticated member (through `User.member_id`). Endpoint details are specified with each module; Parts 2–3 MUST follow this matrix.
+Permissions are checked in this module and applied by every endpoint. "Own" means the resource belongs to the authenticated member (through `User.member_id`). Endpoint details are specified with each module; the module sections MUST follow this matrix.
 
 | Area | Anonymous | `member` | `librarian` | `admin` |
 | --- | --- | --- | --- | --- |
@@ -443,10 +443,10 @@ Permissions are checked in this module and applied by every endpoint. "Own" mean
 | Loans and returns (module 5) | – | Read own, renew own | Full | Full |
 | Reservations (module 6) | – | Create, read, cancel own | Full | Full |
 | Fines and payments (module 7) | – | Read own | Record payments, read all | Full, including waivers |
-| Notifications (module 8) | – | Read own, mark own as read | Read all | Read all |
+| Notifications (module 8) | – | Read own, mark own as read | Read all, run reminders | Read all, run reminders |
 | Search (module 9) | – | Yes | Yes | Yes |
 | Reports (module 10) | – | – | Read | Read |
-| Branches and transfers (module 11) | – | Read branches | Full | Full |
+| Branches and transfers (module 11) | – | Read branches | Read branches; full transfers | Full |
 | Purchasing (module 12) | – | – | Full | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
@@ -458,7 +458,7 @@ Permissions are checked in this module and applied by every endpoint. "Own" mean
 
 ### 6.7 Events for other modules
 
-The module MUST report these events to the audit log (module 13, Part 3) with the acting user, the time from the clock and the affected user id:
+The module MUST report these events to the audit log (module 13, section 19) with the acting user, the time from the clock and the affected user id:
 
 `login_succeeded`, `login_failed`, `account_locked`, `logout`, `password_changed`, `password_reset`, `user_created`, `user_updated`, `user_deactivated`, `user_activated`.
 
@@ -467,7 +467,7 @@ The module MUST report these events to the audit log (module 13, Part 3) with th
 
 ## 7. Module 3: Members
 
-This module registers library members and manages their membership type, validity and status. Branches (`branch_id`) are managed by module 11 (Part 3); here a `branch_id` refers to an existing branch.
+This module registers library members and manages their membership type, validity and status. Branches (`branch_id`) are managed by module 11 (section 17); here a `branch_id` refers to an existing branch.
 
 ### 7.1 Membership types
 
@@ -815,7 +815,7 @@ All codes below use HTTP status `409`.
 
 ## 13. Events of modules 3–7
 
-Modules 3–7 MUST report these events to notifications (module 8) and the audit log (module 13), with the acting user (if any), the time from the clock, and the ids of the affected entities. Which events create a notification for the member is specified in Part 3.
+Modules 3–7 MUST report these events to notifications (module 8) and the audit log (module 13), with the acting user (if any), the time from the clock, and the ids of the affected entities. Which events create a notification for the member is specified in LIB-NOT-01.
 
 | Module | Events |
 | --- | --- |
@@ -827,13 +827,373 @@ Modules 3–7 MUST report these events to notifications (module 8) and the audit
 
 ---
 
-## Appendix A: Requirement index (Parts 1–2)
+
+## 14. Module 8: Notifications
+
+Notifications are stored messages for members. Nothing is sent outside the system (1.2).
+
+### 14.1 Data
+
+**Notification**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `member_id` | integer | Recipient |
+| `type` | text | One of the types in LIB-NOT-01 |
+| `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
+| `loan_id`, `reservation_id`, `fee_id` | integer or null | Related entity, where applicable |
+| `created_at` | date-time | From the clock |
+| `read_at` | date-time or null | Set when the member marks it read |
+
+### 14.2 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `GET /api/v1/members/{member_id}/notifications` | librarian, admin; member (own) | Notifications of a member |
+| `GET /api/v1/members/{member_id}/notifications/unread-count` | librarian, admin; member (own) | Number of unread notifications |
+| `POST /api/v1/notifications/{notification_id}/read` | member (own) | Mark one as read |
+| `POST /api/v1/members/{member_id}/notifications/read-all` | member (own) | Mark all as read |
+| `GET /api/v1/notifications` | librarian, admin | All notifications |
+| `POST /api/v1/notifications/run-reminders` | librarian, admin | Create due and overdue reminders for today |
+
+### 14.3 Requirements
+
+| ID | Requirement |
+| --- | --- |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05. No other event creates a notification. |
+| LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
+| LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null), `type`; `GET /api/v1/notifications` also `member_id`. |
+| LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
+| LIB-NOT-05 | **Reminders.** `POST /api/v1/notifications/run-reminders` creates, for today: a `due_reminder` for every open loan whose `due_date` is the next working day after today (LIB-COM-09 with n = 1); and an `overdue_notice` for every open overdue loan. It returns `200` with `{"due_reminders": <count>, "overdue_notices": <count>}`. Example: run on Friday 2026-11-13 → loans due Monday 2026-11-16 get a `due_reminder`. |
+| LIB-NOT-06 | **No duplicate reminders.** Running reminders more than once on the same day MUST NOT create a second notification of the same type for the same loan on that day. |
+| LIB-NOT-07 | **Unread count.** `unread-count` returns `200` with `{"unread": <count>}`. |
+
+---
+
+## 15. Module 9: Search
+
+### 15.1 Endpoint
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `GET /api/v1/search/books` | all authenticated users | Search the catalog |
+
+Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (text), `language`, `year_from`, `year_to`, `classification_prefix`, `branch_id`, `available_only` (`true`/`false`, default `false`), `sort` (`relevance` (default), `title`, `year_desc`, `year_asc`, `popularity`), `page`, `page_size`.
+
+### 15.2 Requirements
+
+| ID | Requirement |
+| --- | --- |
+| LIB-SRCH-01 | **Normalization.** Text is compared after normalization: the characters `İ`, `I` and `ı` are replaced by `i`, then `str.casefold()` is applied. Examples: `"ISTANBUL"`, `"İstanbul"` and `"istanbul"` are equal after normalization; `"Işık"` matches `"isik"` only for the dotless/dotted i, not for `ş` (no other folding). |
+| LIB-SRCH-02 | **Tokens.** `q` is split on white space into tokens; empty tokens are ignored. A book matches `q` when **every** token is a substring of at least one of: title, subtitle, any author name, publisher name, ISBN. An empty or missing `q` matches all books. |
+| LIB-SRCH-03 | **Filters.** `author` and `publisher` match by normalized substring of any author name or the publisher name. `language` is exact. `year_from`/`year_to` are inclusive bounds on `publication_year` (`year_from` > `year_to` → `422 VALIDATION_ERROR`). `classification_prefix` matches the start of `classification`. All given filters must hold (AND). |
+| LIB-SRCH-04 | **Availability filter.** With `available_only=true`, only books with at least one `available` copy are returned; with `branch_id` as well, the copy must be at that branch (current branch). `branch_id` alone (without `available_only`) restricts results to books that have at least one non-lost, non-withdrawn copy at that branch. |
+| LIB-SRCH-05 | **Relevance score.** For each token, a book scores the highest applicable value: 10 if the token equals the ISBN; 3 if it is in the title; 2 if it is in an author name; 1 if it is in the subtitle or publisher name. The book's score is the sum over tokens. With no `q`, every score is 0. |
+| LIB-SRCH-06 | **Sorting.** `relevance`: score descending, then normalized title ascending, then `id`. `title`: normalized title ascending, then `id`. `year_desc` / `year_asc`: `publication_year`, then normalized title, then `id`. `popularity`: number of loans of the book's copies (all time, any status) descending, then normalized title, then `id`. |
+| LIB-SRCH-07 | **Response.** Paginated (LIB-COM-19). Each item: `{"book": BookOut, "score": <int>, "loan_count": <int>}`. |
+| LIB-SRCH-08 | **Scale.** Search MUST return correct results on a catalog of 100,000 books and 200,000 copies. No response-time target is set; time and memory are measured (workload W1). |
+
+---
+
+## 16. Module 10: Reports
+
+All report endpoints are for `librarian` and `admin`. Dates are inclusive.
+
+### 16.1 Endpoints and requirements
+
+| ID | Requirement |
+| --- | --- |
+| LIB-REP-01 | **Most borrowed.** `GET /api/v1/reports/most-borrowed?from=YYYY-MM-DD&to=YYYY-MM-DD&branch_id=&limit=` returns `200` with `{"from", "to", "branch_id", "items": [{"rank", "book_id", "title", "isbn", "loan_count"}]}`. `loan_count` counts loans with `loan_date` in [`from`, `to`] (and `branch_id` = loan branch, if given). Items with `loan_count` 0 are omitted. Order: `loan_count` descending, then normalized title, then `book_id`. `rank` is 1, 2, 3, … in that order (no shared ranks). `limit` is 1–100, default 10. `from` > `to` or a range over 366 days → `422 VALIDATION_ERROR`. |
+| LIB-REP-02 | **Overdue.** `GET /api/v1/reports/overdue?branch_id=` returns a paginated list of open overdue loans (today), each `{"loan_id", "member_id", "member_no", "member_name", "book_id", "title", "copy_barcode", "due_date", "late_days", "accrued_late_fee"}`, ordered by `due_date`, then `loan_id`. `branch_id` filters by loan branch. The response also has `"total_accrued": "<amount>"` for all matching loans (all pages). |
+| LIB-REP-03 | **Monthly summary.** `GET /api/v1/reports/monthly-summary?year=&month=&branch_id=` returns `200` with counts for that calendar month: `new_members` (by `membership_start`; `branch_id` = home branch), `loans_created` (by `loan_date`), `loans_returned` (by `returned_on`), `loans_lost` (closed as lost, by report date), `reservations_created`, `reservations_fulfilled`, `reservations_expired` (by the date of `created_at` / `closed_at`; `branch_id` = pickup branch), and amounts `fees_created` (sum of `amount` by `created_on`), `payments_received` (sum by date of `paid_at`), `fees_waived` (sum of waived outstanding amounts by date of `waived_at`). With `branch_id`, loan counts use the loan branch (`loans_returned`: the return branch); fee and payment amounts use the branch of the related loan, and fees without a loan are excluded. A month after the current month returns `422 VALIDATION_ERROR`. |
+| LIB-REP-04 | **Inventory.** `GET /api/v1/reports/inventory?branch_id=` returns `200` with `{"items": [{"branch_id", "status", "copies"}]}`: the number of copies per current branch and status (copies in transfer and lost copies under `branch_id` null), ordered by `branch_id` (null last), then status in the order of section 8.2. Rows with 0 copies are omitted. |
+| LIB-REP-05 | **CSV format.** `most-borrowed` and `overdue` accept `format=csv` (default `json`). The response is `text/csv; charset=utf-8` in the format of 23.3, with the item fields as columns in the order listed above; `overdue` with `format=csv` contains all matching rows (no pagination). |
+
+---
+
+## 17. Module 11: Branches and transfers
+
+### 17.1 Data
+
+**Branch:** `id`, `code` (2–10 characters `[A-Z0-9]`, unique), `name` (LIB-COM-16), `address` (0–300 characters), `is_active` (default `true`), `created_at`.
+
+**Transfer**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `copy_id` | integer | |
+| `from_branch_id`, `to_branch_id` | integer | Different branches |
+| `reason` | `return_home` \| `reservation` \| `relocation` | |
+| `reservation_id` | integer or null | Set for `reservation` |
+| `started_on` | date | Today at start |
+| `expected_on` | date | `started_on` + 2 working days (LIB-COM-09) |
+| `status` | `in_transit` \| `received` | |
+| `received_on` | date or null | |
+
+### 17.2 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/branches` | admin | Create a branch |
+| `GET /api/v1/branches`, `GET /api/v1/branches/{branch_id}` | all authenticated users | Read branches |
+| `PATCH /api/v1/branches/{branch_id}` | admin | Change name, address, active state |
+| `POST /api/v1/transfers` | librarian, admin | Relocate a copy to another branch |
+| `GET /api/v1/transfers`, `GET /api/v1/transfers/{transfer_id}` | librarian, admin | Read transfers |
+| `POST /api/v1/transfers/process-arrivals` | librarian, admin | Receive transfers that have arrived |
+
+### 17.3 Requirements
+
+| ID | Requirement |
+| --- | --- |
+| LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
+| LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. |
+| LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. |
+| LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
+| LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy (otherwise `409 INVALID_COPY_STATUS`). `to_branch_id` equal to the copy's current branch returns `422 VALIDATION_ERROR`. Returns `201` with the transfer. |
+| LIB-BR-07 | **Arrival.** `POST /api/v1/transfers/process-arrivals` receives every `in_transit` transfer with `expected_on` ≤ today, in order of `expected_on`, then `id`, and returns `200` with `{"received": <count>}`. Receiving sets `status` `received`, `received_on` = today and the copy's `current_branch_id` = `to_branch_id`. Then: for `relocation`, the copy's `home_branch_id` also becomes `to_branch_id` and the copy is released (LIB-RES-08); for `reservation`, if the reservation is still `in_transit` it becomes `ready` (LIB-RES-09) at the pickup branch, otherwise the copy is released; for `return_home`, the copy is released. |
+| LIB-BR-08 | **Boundary.** A transfer with `expected_on` 2026-11-10 is not received by `process-arrivals` on 2026-11-09 and is received on 2026-11-10. |
+| LIB-BR-09 | **List transfers.** `GET /api/v1/transfers` is paginated, ordered by `id` descending, with filters `status`, `copy_id`, `from_branch_id`, `to_branch_id`, `reason`. |
+
+---
+
+## 18. Module 12: Purchasing
+
+### 18.1 Data
+
+**Supplier:** `id`, `name` (LIB-COM-16, unique case-insensitively), `email` (optional, LIB-COM-17), `phone` (optional, as member phone), `is_active` (default `true`).
+
+**Purchase order**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `supplier_id` | integer | Active supplier |
+| `branch_id` | integer | Receiving branch; becomes the copies' home branch |
+| `status` | `draft` \| `ordered` \| `partially_received` \| `received` \| `cancelled` | Initially `draft` |
+| `lines` | list | 1–50 lines when submitted |
+| `created_by`, `created_at`, `ordered_on` | | `ordered_on` set at submit |
+| `total` | amount | Sum of `quantity` × `unit_price` over lines (computed) |
+
+**Order line:** `id`, `book_id` (existing book), `quantity` (1–100), `unit_price` (amount 0.01–100000.00), `received_quantity` (0 ≤ value ≤ `quantity`). One book at most once per order.
+
+### 18.2 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST`, `GET /api/v1/suppliers`; `GET`, `PATCH /api/v1/suppliers/{supplier_id}` | librarian, admin | Suppliers |
+| `POST /api/v1/purchase-orders` | librarian, admin | Create a draft order |
+| `GET /api/v1/purchase-orders`, `GET /api/v1/purchase-orders/{order_id}` | librarian, admin | Read orders |
+| `PATCH /api/v1/purchase-orders/{order_id}` | librarian, admin | Replace supplier, branch or lines of a draft |
+| `POST /api/v1/purchase-orders/{order_id}/submit` | librarian, admin | Draft → ordered |
+| `POST /api/v1/purchase-orders/{order_id}/cancel` | librarian, admin | Cancel |
+| `POST /api/v1/purchase-orders/{order_id}/receive` | librarian, admin | Receive delivered copies |
+
+### 18.3 Requirements
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PUR-01 | **Suppliers.** `POST /api/v1/suppliers` with `{"name", "email", "phone"}` returns `201`; a duplicate name returns `409 CONFLICT`. Lists are paginated, ordered by `name`, then `id`, with filters `q` and `is_active`. `PATCH` changes any of `name`, `email`, `phone`, `is_active`. |
+| LIB-PUR-02 | **Create order.** `POST /api/v1/purchase-orders` with `{"supplier_id", "branch_id", "lines": [{"book_id", "quantity", "unit_price"}]}` (0–50 lines) returns `201` with the order (`status` `draft`, `total`). An inactive supplier returns `409 SUPPLIER_INACTIVE`. A book repeated in `lines` returns `422 VALIDATION_ERROR`. |
+| LIB-PUR-03 | **Edit draft.** `PATCH` accepts any subset of `{"supplier_id", "branch_id", "lines"}`; `lines` replaces all lines. Only a `draft` can be edited: otherwise `409 INVALID_ORDER_STATUS`. |
+| LIB-PUR-04 | **Submit.** `submit` changes `draft` to `ordered` and sets `ordered_on` = today. An order without lines returns `409 ORDER_EMPTY`; a non-draft returns `409 INVALID_ORDER_STATUS`. |
+| LIB-PUR-05 | **Cancel.** `cancel` is allowed for `draft`, and for `ordered` when nothing has been received; then `status` becomes `cancelled`. Otherwise `409 INVALID_ORDER_STATUS`. |
+| LIB-PUR-06 | **Receive.** `receive` with `{"lines": [{"line_id", "barcodes": ["...", ...]}]}` is allowed for `ordered` and `partially_received`. For each barcode a copy is created (LIB-CAT-07) with `home_branch_id` = order branch, `price` = line `unit_price`, `acquired_on` = today; each new copy is released (LIB-RES-08). `received_quantity` increases by the number of barcodes. |
+| LIB-PUR-07 | **Receive limits.** If any line would exceed its `quantity`, the whole request is rejected with `409 RECEIVE_EXCEEDS_ORDERED` and nothing is created. A duplicate or existing barcode rejects the whole request with `409 CONFLICT`. |
+| LIB-PUR-08 | **Order status after receiving.** When every line has `received_quantity` = `quantity`, the status becomes `received`; otherwise, after at least one copy is received, `partially_received`. |
+| LIB-PUR-09 | **List orders.** Paginated, ordered by `id` descending, with filters `status`, `supplier_id`, `branch_id`. |
+
+---
+
+## 19. Module 13: Audit log, import and export
+
+### 19.1 Audit log
+
+**Audit entry:** `id`, `at` (date-time from the clock), `actor_user_id` (null for unauthenticated requests such as failed logins), `event` (event name), `entity_type` (e.g. `"user"`, `"member"`, `"loan"`), `entity_id` (integer or null), `details` (JSON object).
+
+| ID | Requirement |
+| --- | --- |
+| LIB-AUD-01 | Every event listed in 6.7, 13 and 20.2 MUST create one audit entry in the same transaction as the change it records. If the change is rolled back, the entry is rolled back too. A failed login (`login_failed`) is recorded even though the request returns an error. |
+| LIB-AUD-02 | `details` contains the changed fields with old and new values for update events (`{"field": {"old": ..., "new": ...}}`) and the main input values for other events. Passwords, password hashes and tokens MUST NOT appear in `details`. |
+| LIB-AUD-03 | `GET /api/v1/audit-log` (admin only) is paginated, ordered by `id` descending, with filters `event`, `actor_user_id`, `entity_type`, `entity_id`, `from`, `to` (dates, inclusive, on the local date of `at`). |
+| LIB-AUD-04 | Audit entries cannot be changed or deleted through the API. |
+
+### 19.2 Import
+
+| ID | Requirement |
+| --- | --- |
+| LIB-IO-01 | `POST /api/v1/import` (admin only) with a JSON body in the format of 23.1 imports the data and returns `200` with `{"imported": {"branches": n, "authors": n, "publishers": n, "books": n, "copies": n, "members": n, "loans": n}}`. |
+| LIB-IO-02 | Import is allowed only when the database has no branches, books and members (the bootstrap administrator and other staff users may exist). Otherwise `409 DATABASE_NOT_EMPTY`. |
+| LIB-IO-03 | Import is all or nothing. If any record is invalid, nothing is imported and the response is `422 VALIDATION_ERROR` with `details.fields` listing up to 100 problems, each with `field` as a path such as `"members[17].email"`. |
+| LIB-IO-04 | The `id` values in the file are kept. References between records use these ids. Every record follows the rules of its module (field formats, uniqueness, ISBN normalization, membership fields). |
+| LIB-IO-05 | Imported members get a user account (role `member`) without a usable password: login for them returns `401 INVALID_CREDENTIALS` until an admin resets the password (LIB-AUTH-23). |
+| LIB-IO-06 | Imported loans are historical or current: a loan with `returned_on` is `returned`, without it `open`. Copy statuses MUST be consistent: a copy with an open imported loan MUST have status `on_loan`, otherwise `422`. Import creates no fees, notifications or transfers. One audit entry `data_imported` with the counts is created. |
+
+### 19.3 Export
+
+| ID | Requirement |
+| --- | --- |
+| LIB-IO-07 | `GET /api/v1/export` (admin only) returns `200` with all data in the format of 23.1. Importing an export into an empty database and exporting again MUST give the same document, provided no copy is `on_hold` or `in_transfer` at export time (LIB-IO-11). |
+| LIB-IO-08 | `GET /api/v1/export/{entity}.csv` (admin only), `entity` one of `branches`, `books`, `copies`, `members`, `loans`, returns `text/csv; charset=utf-8` in the format of 23.3 with the columns of 23.2, rows ordered by `id`. An unknown entity returns `404 NOT_FOUND`. |
+| LIB-IO-09 | Each export creates one audit entry `data_exported` with the entity (or `"all"`). |
+
+### 19.4 Additions to the fixed service interface
+
+`lms` MUST also export these functions (section 4). Measurement scripts use them to load large inputs without HTTP.
+
+```python
+def import_dataset(settings: Settings, data: dict) -> dict[str, int]: ...
+def export_dataset(settings: Settings) -> dict: ...
+```
+
+| ID | Requirement |
+| --- | --- |
+| LIB-IF-11 | `import_dataset` behaves as `POST /api/v1/import` without authentication: same checks, same result counts. On a validation failure it raises `ValueError` whose message lists the problems; on a non-empty database it raises `RuntimeError`. The schema is created first if needed. |
+| LIB-IF-12 | `export_dataset` returns the same document as `GET /api/v1/export`. |
+
+---
+
+## 20. Module 14: API layer
+
+### 20.1 Requirements
+
+| ID | Requirement |
+| --- | --- |
+| LIB-API-01 | Every endpoint listed in this document MUST exist with the given method and path. Path parameters named `*_id` are positive integers; any other value returns `422 VALIDATION_ERROR`. |
+| LIB-API-02 | A request to an unknown path returns `404 NOT_FOUND`, and an unsupported method on a known path returns `405` with code `METHOD_NOT_ALLOWED`, both in the error format of LIB-COM-25. |
+| LIB-API-03 | Every response with a body uses the representations defined in this document (`UserOut`, `MemberOut`, `BookOut`, `LoanOut`, `ReservationOut`, `FeeOut`, `BalanceOut` and the objects given in each requirement). Fields that are null are included with value `null`. |
+| LIB-API-04 | The OpenAPI document is served at `GET /openapi.json` and MUST list every endpoint of this document. |
+| LIB-API-05 | Requests with a body MUST use `Content-Type: application/json`; another content type returns `422 VALIDATION_ERROR`. |
+
+### 20.2 Events of modules 8–13
+
+| Module | Events |
+| --- | --- |
+| 8 | `reminders_run` (with the two counts) |
+| 11 | `branch_created`, `branch_updated`, `transfer_started`, `transfer_received` |
+| 12 | `supplier_created`, `supplier_updated`, `purchase_order_created`, `purchase_order_updated`, `purchase_order_submitted`, `purchase_order_cancelled`, `purchase_order_received` |
+| 13 | `data_imported`, `data_exported` |
+
+### 20.3 Error codes of modules 8–14
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 405 | `METHOD_NOT_ALLOWED` | LIB-API-02 |
+| 409 | `BRANCH_IN_USE` | LIB-BR-03 |
+| 409 | `BRANCH_INACTIVE` | LIB-BR-04 |
+| 409 | `SUPPLIER_INACTIVE` | LIB-PUR-02 |
+| 409 | `INVALID_ORDER_STATUS` | LIB-PUR-03–06 |
+| 409 | `ORDER_EMPTY` | LIB-PUR-04 |
+| 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
+| 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
+
+---
+
+## 21. Cross-module dependencies
+
+The table lists which module uses which other module, as required by the rules above. "Uses" means the module needs data or an action of the other module.
+
+| Module | Uses |
+| --- | --- |
+| 1 Core | – |
+| 2 Identity and access | 1, 13 |
+| 3 Members | 1, 2, 5 (open loans), 6 (cancel reservations), 7 (balance), 8, 11, 13 |
+| 4 Catalog | 1, 6 (release procedure), 8, 11, 13 |
+| 5 Loans and returns | 1, 3, 4, 6, 7, 8, 11, 13 |
+| 6 Reservations | 1, 3, 4, 5 (open loans), 8, 11 (transfers), 13 |
+| 7 Fines and payments | 1, 3, 4 (copy price), 5, 8, 13 |
+| 8 Notifications | 1, 3, 5 (reminders) |
+| 9 Search | 1, 4, 5 (loan counts) |
+| 10 Reports | 1, 3, 4, 5, 6, 7 |
+| 11 Branches and transfers | 1, 4, 6 (ready on arrival), 13 |
+| 12 Purchasing | 1, 4, 6 (release procedure), 11, 13 |
+| 13 Audit, import, export | 1, 2, 3, 4, 5, 11 |
+| 14 API layer | All modules |
+
+Several rules span modules and are named here so that tests can cover them as a whole: the release procedure (LIB-RES-08) is triggered by modules 4, 5, 6, 11 and 12; total debt (LIB-FEE-09) is used by modules 3 and 5; working-day calculations (3.2) are used by modules 5, 6, 7, 8 and 11.
+
+---
+
+## 22. End-to-end scenarios
+
+Each scenario starts from an empty database with a `FixedClock`, the default holidays, one branch `A` (and `B` where named), and the bootstrap admin, who creates one librarian. Dates are "today" from the clock. Every step lists the expected result.
+
+| ID | Scenario |
+| --- | --- |
+| LIB-E2E-01 | **Late return and borrowing block.** 2026-11-02: register student S (home A); add book K with copy C1 at A; lend C1 to S → due 2026-11-16. 2026-12-14: lending another copy to S → `409 MEMBER_HAS_OVERDUE`. 2026-12-21: return C1 at A → 25 late days, late fee 50.00; balance `total_debt` `"50.00"`, `blocked` true; lending → `409 MEMBER_BLOCKED_BY_DEBT`. Pay 0.01 → `total_debt` `"49.99"`; lending succeeds. |
+| LIB-E2E-02 | **Reservation at another branch.** Branches A and B. Book K has one copy C1 (home A), lent to student S1 on 2026-11-02. Student S2 reserves K with pickup B → `waiting`, queue position 1. 2026-11-10: S1 tries to renew → `409 BOOK_RESERVED`. 2026-11-20: C1 returned at A → transfer to B (`reservation`), reservation `in_transit`, notification `reservation_in_transit`. 2026-11-23: `process-arrivals` → nothing received. 2026-11-24: `process-arrivals` → received; reservation `ready`, `hold_until` 2026-11-27; notification `reservation_ready`. 2026-11-27: lend C1 to S2 at B → reservation `fulfilled`. |
+| LIB-E2E-03 | **Hold expires and passes on.** Copy C1 at A is `on_hold` for S1 with `hold_until` 2026-11-03; S2 is next in the queue (pickup A). 2026-11-04: `process-expired` → S1's reservation `expired` (notification `reservation_expired`), S2's reservation `ready` with `hold_until` 2026-11-09 (notification `reservation_ready`). Lending C1 to S1 → `409 COPY_ON_HOLD`. |
+| LIB-E2E-04 | **Lost book.** Student S borrows copy C1 (price 180.00) on 2026-11-02, due 2026-11-16. 2026-11-18: report lost → fees 4.00 (late), 180.00 (lost book), 25.00 (processing); C1 `lost`; `total_debt` `"209.00"`. Payment 209.01 → `409 PAYMENT_EXCEEDS_BALANCE`. Payment 209.00 → all three fees `paid`, allocated in creation order. Admin withdraws C1 → `withdrawn`. |
+| LIB-E2E-05 | **Renewal limits by type.** Guest G borrows on 2026-11-02 → due 2026-11-09; renew → `409 RENEWAL_LIMIT_REACHED`. Academic A1 borrows on 2026-11-02 → due 2026-12-02; renews on 2026-11-20 → due 2026-12-21 (2026-12-20 is a Sunday); renews again on 2026-12-01 → due 2026-12-31; a third renewal → `409 RENEWAL_LIMIT_REACHED`. |
+| LIB-E2E-06 | **Type change keeps open loan terms.** Student S borrows on 2026-11-02 (due 2026-11-16, 2.00 TL/day). S is changed to `academic`. The open loan keeps due 2026-11-16 and 2.00 TL/day; a new loan on 2026-11-03 gets 30 days and 1.00 TL/day. |
+| LIB-E2E-07 | **Damaged return and repair.** Copy C1 (price 120.00) returned damaged with `damage_fee` 130.00 → `422 VALIDATION_ERROR`; with 40.00 → damage fee created, C1 `damaged`. C1 was lent and returned at A; a waiting reservation for the book with pickup A stays `waiting`. `repair` C1 → the reservation becomes `ready`. |
+| LIB-E2E-08 | **Waiver by admin only.** A librarian waives a fee → `403 FORBIDDEN`. Admin waives it with a reason → `waived`; the member's `outstanding_fees` decreases by the outstanding amount. |
+| LIB-E2E-09 | **Purchasing to shelf.** Draft order (supplier P, branch A, book K × 3 at 95.50); `total` `"286.50"`; submit; receive 2 barcodes → `partially_received`, 2 copies `available` at A with price 95.50; receive 2 more on the same line → `409 RECEIVE_EXCEEDS_ORDERED`, nothing created; receive 1 → `received`. |
+| LIB-E2E-10 | **Login lockout.** Five wrong passwords for a librarian → the fifth returns `401 INVALID_CREDENTIALS` and sets the lock; the sixth attempt with the correct password returns `403 ACCOUNT_LOCKED`; after advancing the clock 15 minutes, login succeeds. |
+| LIB-E2E-11 | **Import, export, search.** Import a dataset with 2 branches, 3 books, 5 copies, 2 members and 1 open loan; `GET /api/v1/export` returns the same records; search `q=istanbul` finds a book titled "İstanbul Hatırası"; imported member login → `401 INVALID_CREDENTIALS`. |
+
+---
+
+## 23. Data exchange formats
+
+### 23.1 JSON dataset (import and export)
+
+```json
+{
+  "format_version": 1,
+  "branches":   [{"id": 1, "code": "MERKEZ", "name": "Central Library", "address": "", "is_active": true}],
+  "authors":    [{"id": 1, "name": "Orhan Pamuk"}],
+  "publishers": [{"id": 1, "name": "Example Publishing"}],
+  "books":      [{"id": 1, "isbn": "9780306406157", "title": "Example Title", "subtitle": null,
+                  "author_ids": [1], "publisher_id": 1, "publication_year": 2020,
+                  "language": "tr", "classification": "813.54"}],
+  "copies":     [{"id": 1, "book_id": 1, "barcode": "C000001", "home_branch_id": 1,
+                  "current_branch_id": 1, "price": "180.00", "status": "available",
+                  "acquired_on": "2025-09-01", "shelf_location": "A-12"}],
+  "members":    [{"id": 1, "full_name": "Ayşe Yılmaz", "email": "ayse@example.edu.tr",
+                  "phone": null, "membership_type": "student", "university_id": "20231234",
+                  "home_branch_id": 1, "status": "active",
+                  "membership_start": "2026-09-15", "valid_until": "2027-09-14"}],
+  "loans":      [{"id": 1, "copy_id": 1, "member_id": 1, "branch_id": 1,
+                  "loan_date": "2026-10-01", "due_date": "2026-10-15", "renewal_count": 0,
+                  "returned_on": "2026-10-14", "return_branch_id": 1}]
+}
+```
+
+| ID | Requirement |
+| --- | --- |
+| LIB-IO-10 | `format_version` MUST be `1`. All seven lists MUST be present (they may be empty). Unknown fields are rejected (LIB-COM-23). |
+| LIB-IO-11 | Imported copies may have status `available`, `on_loan`, `damaged`, `lost` or `withdrawn` (not `on_hold` or `in_transfer`). Imported loans take `loan_period_days`, `max_renewals` and `daily_fee` from the member's type. |
+| LIB-IO-12 | In an export, lists are ordered by `id`, amounts are strings (LIB-COM-13) and dates are `"YYYY-MM-DD"`. Exports contain only the fields shown above; users, fees, payments, reservations, notifications, transfers, purchase orders and audit entries are not exported. |
+
+### 23.2 CSV columns
+
+| Entity | Columns, in order |
+| --- | --- |
+| `branches` | `id`, `code`, `name`, `address`, `is_active` |
+| `books` | `id`, `isbn`, `title`, `subtitle`, `authors` (names joined with `"; "`), `publisher`, `publication_year`, `language`, `classification` |
+| `copies` | `id`, `book_id`, `barcode`, `home_branch_id`, `current_branch_id`, `price`, `status`, `acquired_on`, `shelf_location` |
+| `members` | `id`, `member_no`, `full_name`, `email`, `phone`, `membership_type`, `university_id`, `home_branch_id`, `status`, `membership_start`, `valid_until` |
+| `loans` | `id`, `copy_id`, `member_id`, `branch_id`, `loan_date`, `due_date`, `renewal_count`, `status`, `returned_on`, `return_branch_id`, `late_days` |
+
+### 23.3 CSV format
+
+| ID | Requirement |
+| --- | --- |
+| LIB-IO-13 | CSV files are UTF-8 without BOM, comma-separated, with one header row, `\r\n` line endings and RFC 4180 quoting (as produced by Python's `csv` module with default settings). |
+| LIB-IO-14 | Null values are empty fields. Booleans are `true`/`false`. Dates are `YYYY-MM-DD`. Amounts have two decimals without currency sign. |
+
+---
+
+## Appendix A: Requirement index
 
 | Area | IDs | Count |
 | --- | --- | --- |
 | Technical constraints | LIB-TECH-01 – LIB-TECH-12 | 12 |
 | Common rules | LIB-COM-01 – LIB-COM-29 | 29 |
-| Fixed service interface | LIB-IF-01 – LIB-IF-10 | 10 |
+| Fixed service interface | LIB-IF-01 – LIB-IF-12 | 12 |
 | Module 1: Core | LIB-CORE-01 – LIB-CORE-10 | 10 |
 | Module 2: Identity and access | LIB-AUTH-01 – LIB-AUTH-25 | 25 |
 | Module 3: Members | LIB-MEM-01 – LIB-MEM-13 | 13 |
@@ -841,4 +1201,12 @@ Modules 3–7 MUST report these events to notifications (module 8) and the audit
 | Module 5: Loans and returns | LIB-LOAN-01 – LIB-LOAN-14 | 14 |
 | Module 6: Reservations | LIB-RES-01 – LIB-RES-14 | 14 |
 | Module 7: Fines and payments | LIB-FEE-01 – LIB-FEE-11 | 11 |
-| **Total** | | **150** |
+| Module 8: Notifications | LIB-NOT-01 – LIB-NOT-07 | 7 |
+| Module 9: Search | LIB-SRCH-01 – LIB-SRCH-08 | 8 |
+| Module 10: Reports | LIB-REP-01 – LIB-REP-05 | 5 |
+| Module 11: Branches and transfers | LIB-BR-01 – LIB-BR-09 | 9 |
+| Module 12: Purchasing | LIB-PUR-01 – LIB-PUR-09 | 9 |
+| Module 13: Audit, import, export | LIB-AUD-01 – LIB-AUD-04, LIB-IO-01 – LIB-IO-14 | 18 |
+| Module 14: API layer | LIB-API-01 – LIB-API-05 | 5 |
+| End-to-end scenarios | LIB-E2E-01 – LIB-E2E-11 | 11 |
+| **Total** | | **224** |
