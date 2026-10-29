@@ -4,10 +4,10 @@ Defined in Weeks 1–2 (area B), updated on 29 October 2026 for Claude Code ([`d
 
 ## Common rules
 
-- **Tool and model:** Claude Code with a Claude Pro subscription, no API. The same model in every run: Claude Sonnet 5.5, selected by its full model ID; the Claude Code version and the effort level are fixed and recorded. Output is not deterministic, so every experiment is repeated (Xu et al. 2025, Section 5; Ouyang et al. 2025).
+- **Tool and model:** Claude Code with a Claude Pro subscription, no API. The same model in every run: Claude Sonnet 5.5, selected by its full model ID; the Claude Code version, thinking setting and effort level are fixed and recorded. Output is not deterministic, so every experiment is repeated (Xu et al. 2025, Section 5; Ouyang et al. 2025).
 - **Scope:** the **whole LMS project is refactored in one run**, not module by module, because the modules depend on each other (instructor's feedback).
 - **Same input:** the same starting code (`v0-ai-baseline`) and the same tests for every run.
-- **Tests are run by our runner**, not chosen by the model. Test files are protected ([`testing.md`](testing.md#test-protection)).
+- **Tests are fixed by us:** the model can run at most the one fixed feedback test command where its approach allows it (see "Tools allowed per approach"); held-out tests are run only by our runner. Test files are protected ([`testing.md`](testing.md#test-protection)).
 - **The same behavior instruction** in every approach: *"Do not change the externally visible behavior of the code (REST API and the fixed service interface); only improve its structure. Do not modify tests."* No other quality hints are given.
 - **Same fix budget:** at most 3 code-changing rounds for Iterative and Multi-Agent; 1 for Single.
 - **Acceptance rule** (Blyth et al. 2025, Algorithm 1): a round's output is accepted only if all feedback tests pass and the primary metrics are not worse ([`metrics.md`](metrics.md#3-success-definition)); otherwise the previous best version is kept.
@@ -18,7 +18,7 @@ Defined in Weeks 1–2 (area B), updated on 29 October 2026 for Claude Code ([`d
 
 | | Single LLM | Iterative LLM | Multi-Agent |
 | --- | --- | --- | --- |
-| Claude Code mechanism *(pilot)* | One non-interactive run (`claude -p`) with one prompt; tools for running tests disabled | One session; after each round our runner runs the feedback tests and sends the result as the next message | Claude Code subagents: Analyzer, Refactoring, Reviewer, each with its own context; our runner passes test results |
+| Claude Code mechanism *(pilot)* | One non-interactive run (`claude -p`) with one prompt; no test command allowed | One session; after each round our runner runs the feedback tests and resumes the session (`--resume`) with the result | One `claude -p` session whose main conversation acts only as orchestrator and calls three Claude Code **subagents** (Analyzer, Refactoring, Reviewer); the orchestrator runs the feedback tests with the one allowed test command |
 | Roles | — | — | Analyzer (does not change code), Refactoring, Reviewer (approve or reject with reasons) |
 | Steps | One message: "find and fix the problems" | Find → fix → check → fix again if needed | Analyzer → Refactoring → Reviewer → (if rejected) Refactoring → Reviewer … |
 | Max rounds | 1 | 3 fix rounds | 1 refactoring + at most 2 Reviewer returns = 3 fixes |
@@ -42,19 +42,52 @@ The instructor's Week 6 plan gives test feedback to Multi-Agent. If Iterative di
 - The format is identical in both approaches: failing test name and error message, at most N lines (N set in the pilot).
 - To avoid overfitting to the feedback tests, the suite is split into a **feedback set** and a **held-out evaluation set** ([`testing.md`](testing.md)).
 
-## Fairness in Claude Code
+## Multi-Agent with Claude Code subagents
 
-- **Same effort level** in all approaches: Sonnet 5.5 always uses extended thinking, and thinking tokens count toward cost.
-- **Same project instructions:** no `CLAUDE.md`, skills or plugins in the working directory other than those defined for the approach; the same settings file for all runs.
-- **Fresh session per run;** Multi-Agent subagents do not share history.
-- **Usage limits:** Pro has 5-hour and weekly usage limits whose exact values are not published. The pilot measures how much of the limit one run uses; the number of repetitions is set from that.
+Decided on 29 October 2026: the instructor's notes name "subagent", so Multi-Agent uses Claude Code's subagent feature rather than three separate `claude -p` sessions.
+
+- **Definitions:** the three roles are custom subagents defined in the clean project copy, each with its own prompt, allowed tools and the model set explicitly to Claude Sonnet 5.5 (field names verified in the pilot).
+- **Roles and tools:** Analyzer reads only (no edit, no shell); Refactoring reads and edits; Reviewer reads only and returns approve/reject with reasons. Only the orchestrator may run the feedback test command.
+- **Known trade-off:** each subagent has its own context window, but only its final message returns to the orchestrator. We accept this; it matches how the roles hand over work (issue list → changed code → verdict).
+- **Round budget:** the orchestrator prompt states the limit (1 refactoring + at most 2 Reviewer returns). The stream log (`--output-format stream-json`, `parent_tool_use_id`) is checked afterwards; a run that called the Refactoring subagent more than 3 times is invalid.
+- **Cost:** tokens of the orchestrator and all subagents are summed; the per-model breakdown in the JSON result covers the whole run.
+
+## Tools allowed per approach
+
+Claude Code is an agent: even one prompt can read files, run commands and retry. Without limits, Single could see test results and the fairness rule would break.
+
+| | Read / search files | Edit files | Feedback test command | Any other shell command |
+| --- | --- | --- | --- | --- |
+| Single | Yes | Yes | **No** | No |
+| Iterative | Yes | Yes | No (our runner runs it between rounds) | No |
+| Multi-Agent | Yes (all roles) | Refactoring subagent only | Orchestrator only | No |
+
+Limits are set with `--allowedTools` and the `dontAsk` permission mode, which denies every call not explicitly allowed. The feedback test command is one fixed script that prints the same output format in Iterative and Multi-Agent (failing test name and error message, at most N lines). Held-out tests are never runnable by the model.
+
+## Clean environment per run
+
+Claude Code loads `CLAUDE.md`, hooks, skills, settings and auto memory automatically. The `--bare` mode that skips them requires an API key and does not use the Pro login, so it cannot be used.
+
+- Every run starts in a **fresh Docker container** from the same image, with a **fresh copy of the baseline project**, the same settings file and only the files defined for its approach. No `CLAUDE.md`, hooks, memory or other projects are present.
+- Only the Pro login is carried into the container. Whether this works without carrying other state is **not yet verified** (pilot).
+- Nothing written by one run is visible to another.
+
+## Model and thinking settings
+
+- **Model check:** the JSON result of every run lists usage per model. A run in which any model other than Claude Sonnet 5.5 appears is invalid and repeated.
+- **Thinking:** on Sonnet 5.5 thinking cannot be turned off completely; `disabled` is rejected and the lowest setting is `between_tools` (works only at low, medium and high effort). Thinking tokens count as output tokens. The thinking setting and the effort level are chosen in the pilot and kept the same in all three approaches.
+
+## Usage limits
+
+Pro has a 5-hour usage window and a weekly limit; exact values are not published. The team considers the limit sufficient because the window resets every 5 hours. The pilot still records how much of the window one run uses, so that runs can be scheduled.
 
 ## Open questions (pilot)
 
 | Question | Proposal |
 | --- | --- |
-| How are token counts collected per run? | OpenTelemetry export or `claude -p --output-format json`; both tried in the pilot |
-| Can test tools be fully disabled for Single? | Restrict allowed tools in the run configuration; verify in the pilot |
+| How are token counts collected per run? | `claude -p --output-format json`: it contains `total_cost_usd`, a per-model breakdown, usage and `session_id`; cost figures are client-side estimates (Claude Code documentation). OpenTelemetry as an alternative. |
+| Does the Pro login work in a fresh container without other state? | Test in the pilot |
+| Subagent definition fields (model, tools) | Verify against the Claude Code subagent documentation in the pilot |
 | Is static analysis output given to the LLM? | If yes, identically to all three |
 | Does the Reviewer see the original code? | To decide in the pilot |
 

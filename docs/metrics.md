@@ -29,7 +29,7 @@ The subject code is one Library Management System (LMS), refactored as a whole (
 
 | Layer | Metric | What it shows | Tool |
 | --- | --- | --- | --- |
-| F. Architecture | Module dependency graph; number of cycles between modules; layer violations (e.g. API layer importing the database layer directly) | Whether the project is well structured as a whole; relevant because the whole project is refactored at once | DPy / PyExamine architecture smells; dedicated import-graph tool *to be chosen, not yet verified* |
+| F. Architecture | Module dependency graph; number of cycles between modules; layer violations (e.g. API layer importing the database layer directly) | Whether the project is well structured as a whole; relevant because the whole project is refactored at once | PyExamine `--type architectural` (cyclic and hub-like dependencies; documented in the PyExamine usage guide); DPy; layer-violation count from the import graph (tool chosen at setup) |
 | G. Change size | Lines added/removed, files changed, files added/removed | How much code a refactoring touched; context for cost and risk | `git diff --stat` between baseline and result |
 
 ### Design and logic rubric
@@ -44,7 +44,7 @@ Some problems do not cause a compile error and still pass the tests, but the cod
 | Error handling | Errors swallowed or handled inconsistently | Errors handled consistently and meaningfully |
 | Readability and naming | Meaningless names; flow hard to follow | Names express intent; flow easy to follow |
 
-- **Sampling (added 29 October).** About 40,000 lines cannot be scored by hand. From each of the 14 modules, 3 units (class or function) are drawn at random with a fixed, recorded seed. The same units (or their refactored counterparts) are scored in the baseline and in every approach. If a unit was removed or split by refactoring, the code that now implements the same behavior is scored.
+- **Sampling by requirement (added 29 October).** About 40,000 lines cannot be scored by hand. Refactoring may split, merge or rename code, so units are sampled by **behavior**, not by name: from each of the 14 modules, 3 requirement IDs are drawn at random with a fixed, recorded seed. For each requirement, the scored code is the application code executed by that requirement's tests (found with coverage.py dynamic contexts), in the baseline and in every result. This gives a mapping that survives refactoring.
 - Two team members score independently and blind (they do not know which approach produced the code); agreement is reported with Cohen's kappa.
 - Optional LLM judge with the same rubric. In Wang et al. (2025), LLM-as-a-judge correlated with human scores at 68.51 (Pearson) for code generation (Abstract), so it complements but does not replace human raters. Claude judging Claude's own output may be biased; a different model should be considered.
 
@@ -95,6 +95,7 @@ Level labels of the modules are defined in [`../dataset/README.md`](../dataset/R
 - **Uncertainty:** 95% bootstrap confidence intervals of the median.
 - **Before vs. after within an approach:** Wilcoxon signed-rank test on module-level values (baseline vs. result).
 - **Quality–cost trade-off (Week 8):** primary metric change plotted against tokens and time per successful refactoring.
+- **Limitation:** with one project, the sample size per approach equals the number of runs. With few runs, tests have little power, so effect sizes and descriptive results are reported first. Module-level values are not independent observations (modules depend on each other and are refactored together); this is stated as a limitation.
 
 ## 6. Functional correctness
 
@@ -147,9 +148,10 @@ We use Claude Code with a Claude Pro subscription, not the API ([`decisions/002`
 | Plan usage (share of the 5-hour window used) | `/usage` plan usage bars; the documentation describes these figures as approximate |
 | **Equivalent cost (USD)** | The cost figure Claude Code computes locally from token counts at list price. The documentation states it is an estimate and not relevant for billing on Pro. Reported as "estimated cost if run through the API". |
 
-- **Collection:** OpenTelemetry export (documented by Claude Code for token and cost metrics) or the JSON output of non-interactive runs (`claude -p --output-format json`; fields **not yet verified**). Both are tried in the pilot.
-- **Effort level fixed:** Sonnet 5.5 always uses extended thinking, and thinking tokens count as output tokens. The effort level is therefore the same in all three approaches and recorded.
-- **Subagents counted separately:** the prompt-cache line of `/usage` covers the main conversation only, so Multi-Agent token counts are summed over all subagents.
+- **Collection:** the JSON result of each run (`claude -p --output-format json`), which contains `total_cost_usd`, a per-model cost breakdown, usage and `session_id`; Claude Code describes these cost figures as client-side estimates. With `--resume`, the figure is the conversation's running total, so per-round values are taken as differences. OpenTelemetry export is the alternative.
+- **Thinking and effort fixed:** on Sonnet 5.5 thinking cannot be turned off completely (`disabled` is rejected; the lowest setting is `between_tools`). Thinking tokens count as output tokens, so the thinking setting and the effort level are the same in all three approaches and recorded.
+- **Subagents included:** Multi-Agent token counts include the orchestrator and all subagents (the prompt-cache line of `/usage` covers the main conversation only, so the JSON result is used instead).
+- **Model check:** a run whose per-model breakdown shows any model other than Claude Sonnet 5.5 is invalid.
 - **Reported per run and per successful refactoring.**
 
 Source: Claude Code documentation, "Manage costs effectively", https://code.claude.com/docs/en/costs (accessed 29 October 2026).
@@ -160,4 +162,7 @@ Source: Claude Code documentation, "Manage costs effectively", https://code.clau
 - A. Boloori, T. Sharma. DPy: Code Smells Detection Tool for Python. MSR 2025 Data and Tool Showcase Track
 - R. Wang et al. Can LLMs Replace Human Evaluators? An Empirical Study of LLM-as-a-Judge in Software Engineering. 2025. doi:10.1145/3728963. arXiv:2502.06193
 - Anthropic. Claude Code documentation: Manage costs effectively. https://code.claude.com/docs/en/costs
+- Anthropic. Claude Code documentation: Run Claude Code programmatically. https://code.claude.com/docs/en/headless
+- Anthropic. What's new in Claude Sonnet 5.5. https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5
+- PyExamine usage guide. https://python-smell.readthedocs.io/en/latest/usage.html
 - Tool documentation: Radon, complexipy, Ruff, Pylint, Vulture, jscpd, pyperf, psutil, tracemalloc, memray, coverage.py, mutmut, CodeCarbon

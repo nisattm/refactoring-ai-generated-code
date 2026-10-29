@@ -49,8 +49,15 @@ Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in pr
 - **Block:** a member with total debt of 50 TL or more cannot borrow.
 - **Renewal:** new period starts on the renewal day; overdue books cannot be renewed; books with a waiting reservation cannot be renewed.
 - **Reservations:** at most 3 active per member; a ready book not collected within 3 working days passes to the next member.
-- **Lost book:** book price + 25 TL handling fee.
-- **Transfer between branches:** 2 working days.
+- **Lost book:** late fee accrued until the loss is reported + book price + 25 TL handling fee.
+- **Fee cap:** 100 TL per book, independent of the book's price.
+- **Reservation passes on:** when a ready book is not collected in time and passes to the next member, a notification record is created (module 8).
+- **Transfer between branches:** 2 working days. A reserved book in transfer counts as "ready" only when it arrives at the pickup branch.
+
+## Generation rules
+
+- Code is generated piece by piece with Claude Code; generated code is never edited by hand.
+- **Integration errors** (wrong imports, mismatched interfaces between pieces) are fixed only with an additional prompt. Every such prompt and its output are stored in `prompts/` and `generation-log.md`, and their tokens are added to the generation cost.
 
 ## Structure
 

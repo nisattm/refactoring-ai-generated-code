@@ -17,6 +17,7 @@ The whole project is refactored at once, so internal classes and function signat
 
 - **Behavior tests call the REST API** (FastAPI TestClient) and, where needed, a small **fixed service interface** defined in the requirements document (function names, parameters and return types).
 - The REST API and the fixed service interface are part of the "externally visible behavior" that refactoring must not change ([`approaches.md`](approaches.md)).
+- **Precise API in the requirements:** tests are written before the code, so the requirements document fixes every endpoint (method, path), request and response schema, and error status code with error body. Without this, the tests cannot attach to the generated code.
 - **"Today" is injected:** services take the current date from a replaceable clock defined in the requirements, so date rules (due dates, working days, fines) give the same result on every run.
 
 ## Feedback set and held-out set
@@ -38,7 +39,9 @@ Claude Code can write to files, so a model could make tests pass by editing them
 
 ## Quality gates
 
-- Branch coverage target: 90% (coverage.py), measured on the generated baseline.
+- Branch coverage (coverage.py), measured on the generated baseline:
+    - Requirement, property and scenario tests are written before the code as black-box tests, so 90% branch coverage of about 40,000 lines is not realistic for them alone. Their coverage is reported without a target.
+    - The 90% target applies to the full suite: requirement tests plus the characterization tests added after generation.
 - Mutation score (mutmut) is reported. Because a full run on about 40,000 lines may take very long (not yet measured), mutation testing runs on **one module per complexity level** (simple, medium, complex), chosen before generation and recorded. The target is set in the pilot.
 - Tests are written by the team before code generation, so they are not influenced by the generated code.
 
