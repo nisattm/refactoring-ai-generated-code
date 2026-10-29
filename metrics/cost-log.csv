@@ -1,0 +1,1 @@
+date,task,stage,model,input_tokens,output_tokens,usd,duration_s,note,run_id,repetition,round,role,cache_write_tokens,cache_write_1h_tokens,cache_read_tokens,thinking_tokens,total_input_tokens,usd_recomputed,api_duration_s,num_turns,subagents_spawned,models_used,valid,session_id,accepted,tool_s,wait_s,claude_code_version,price_date
