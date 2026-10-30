@@ -38,10 +38,17 @@ Line estimates come from the module table in [`../../README.md`](../../README.md
 
 ## Command
 
-Every step runs with the same command from the repository root. The prompt is read and the JSON result is written on the host, so the container sees only the working copy:
+Every step runs with the same command from the repository root, in a bash shell (Linux, macOS, or Git Bash / WSL on Windows). The prompt is read and the JSON result is written on the host, so the container sees only the working copy. Once before step 0:
 
 ```bash
-docker run --rm -v "${PWD}/dataset/lms/generated:/work" -w /work refactoring-env \
+mkdir -p dataset/lms/generated results/generation
+cp dataset/lms/requirements.md dataset/lms/generated/REQUIREMENTS.md
+```
+
+Each step (`NN` = `00` … `09`):
+
+```bash
+docker run --rm --env-file .env -v "${PWD}/dataset/lms/generated:/work" -w /work refactoring-env \
   claude -p "$(cat dataset/lms/prompts/step-NN.md)" \
   --model claude-sonnet-5-5 \
   --output-format json \
@@ -52,11 +59,14 @@ docker run --rm -v "${PWD}/dataset/lms/generated:/work" -w /work refactoring-env
 
 | Part | Why |
 | --- | --- |
+| `--env-file .env` | Pro login: the long-lived token `CLAUDE_CODE_OAUTH_TOKEN` from `.env` (never committed). Verified in a clean container with `check-claude` ([`../../../docs/environment.md`](../../../docs/environment.md#4a-claude-code-with-the-pro-subscription-once-per-person)) |
 | `-p`, `--output-format json` | Non-interactive run; the JSON result feeds `scripts/cost.py` |
 | `--permission-mode dontAsk` | Only reads and the listed tools run; anything that would ask is denied, so no call waits for a person and every step has the same permissions |
 | `--allowedTools` | Exactly the tools of the "Tools allowed" rule. `Bash(python *)` matches any command that starts with `python`; a compound command (`&&`, `;`, `\|`) must match a rule in every part |
 
-Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. **Not verified:** the flag for the effort and thinking setting; it is chosen in the pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)) and added to the command before step 0. Also not verified: how the Pro login reaches the container (mounted credentials or a token); set up in the pilot. The Claude Code version is pinned in the image.
+Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. **Not verified:** the flag for the effort and thinking setting; it is chosen in the pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)) and added to the command before step 0. The Claude Code version is pinned in the image.
+
+Windows PowerShell is not used for this command: `$(cat …)` is bash syntax, and in Windows PowerShell 5.1 the `>` redirection writes UTF-16, which `scripts/cost.py` cannot read as UTF-8.
 
 ## Reading intermediate test results
 
