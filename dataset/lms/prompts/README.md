@@ -36,6 +36,42 @@ Modules are generated in dependency order. Each step implements whole sections o
 
 Line estimates come from the module table in [`../../README.md`](../../README.md); they are not given to the model. The final size is measured, not steered: if the code ends below 30,000 lines, we report the real size; we do not ask for more code.
 
+## Command
+
+Every step runs with the same command from the repository root, in a bash shell (Linux, macOS, or Git Bash / WSL on Windows). The prompt is read and the JSON result is written on the host, so the container sees only the working copy. Once before step 0:
+
+```bash
+mkdir -p dataset/lms/generated results/generation
+cp dataset/lms/requirements.md dataset/lms/generated/REQUIREMENTS.md
+```
+
+Each step (`NN` = `00` … `09`):
+
+```bash
+docker run --rm --env-file .env -v "${PWD}/dataset/lms/generated:/work" -w /work refactoring-env \
+  claude -p "$(cat dataset/lms/prompts/step-NN.md)" \
+  --model claude-sonnet-5-5 \
+  --output-format json \
+  --permission-mode dontAsk \
+  --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(python *)" "Bash(pip install -r requirements.txt)" \
+  > results/generation/step-NN.json
+```
+
+| Part | Why |
+| --- | --- |
+| `--env-file .env` | Pro login: the long-lived token `CLAUDE_CODE_OAUTH_TOKEN` from `.env` (never committed). Verified in a clean container with `check-claude` ([`../../../docs/environment.md`](../../../docs/environment.md#4a-claude-code-with-the-pro-subscription-once-per-person)) |
+| `-p`, `--output-format json` | Non-interactive run; the JSON result feeds `scripts/cost.py` |
+| `--permission-mode dontAsk` | Only reads and the listed tools run; anything that would ask is denied, so no call waits for a person and every step has the same permissions |
+| `--allowedTools` | Exactly the tools of the "Tools allowed" rule. `Bash(python *)` matches any command that starts with `python`; a compound command (`&&`, `;`, `\|`) must match a rule in every part |
+
+Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. **Not verified:** the flag for the effort and thinking setting; it is chosen in the pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)) and added to the command before step 0. The Claude Code version is pinned in the image.
+
+Windows PowerShell is not used for this command: `$(cat …)` is bash syntax, and in Windows PowerShell 5.1 the `>` redirection writes UTF-16, which `scripts/cost.py` cannot read as UTF-8.
+
+## Reading intermediate test results
+
+Steps follow the dependency order, but some rules of an earlier step depend on a later one. After step 4 (loans, fees) some loan tests are expected to fail because reservations come in step 5: LIB-LOAN-05 step 6 (`on_hold` copies), `BOOK_RESERVED` in LIB-LOAN-07 and LIB-LOAN-12. The same holds for other cases that need a later module. Intermediate pass counts are therefore not a quality signal; only the results after step 9 count. Such expected failures are noted in the generation log.
+
 ## Prompt template
 
 Every step prompt has the same three parts; only the section list changes. Files: `step-00.md` … `step-09.md`.
