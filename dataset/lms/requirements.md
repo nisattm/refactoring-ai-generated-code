@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–22), revised after team review.
-**Version:** 0.5 · 2026-10-30
+**Version:** 0.6 · 2026-10-30
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -1035,7 +1035,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive.
 | LIB-IO-03 | Import is all or nothing. If any record is invalid, nothing is imported and the response is `422 VALIDATION_ERROR` with `details.fields` listing up to 100 problems, each with `field` as a path such as `"members[17].email"`. |
 | LIB-IO-04 | The `id` values in the file are kept. References between records use these ids. Every record follows the rules of its module (field formats, uniqueness, ISBN normalization, membership fields). |
 | LIB-IO-05 | Imported members get a user account (role `member`) without a usable password: login for them returns `401 INVALID_CREDENTIALS` until an admin resets the password (LIB-AUTH-23). |
-| LIB-IO-06 | Imported loans carry `status`: `returned` (requires `returned_on` and `return_branch_id`), `open` or `lost` (both without `returned_on`). Copy statuses MUST be consistent: a copy with an `open` imported loan MUST be `on_loan`, a copy with a `lost` loan MUST be `lost` with `current_branch_id` null (as after LIB-LOAN-13); otherwise `422`. Import creates no fees, notifications or transfers. One audit entry `data_imported` with the counts is created. |
+| LIB-IO-06 | Imported loans carry `status`: `returned` (requires `returned_on` and `return_branch_id`), `open` or `lost` (both without `returned_on`). Copy statuses MUST be consistent: a copy with an `open` imported loan MUST be `on_loan`, a copy with a `lost` loan MUST be `lost` with `current_branch_id` null (as after LIB-LOAN-13); otherwise `422`. Member status does not restrict imported loans: a `passive` member MAY have `open` loans in the file (LIB-MEM-10 applies only to the deactivate endpoint). Import creates no fees, notifications or transfers. One audit entry `data_imported` with the counts is created. |
 
 ### 19.3 Export
 

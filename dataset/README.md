@@ -10,7 +10,7 @@ The instructor asked for large, complex code in which all metrics can be measure
 
 ## Modules and complexity levels
 
-Levels are calculated from the requirements document ([`lms/requirements.md`](lms/requirements.md), v0.5) with this score:
+Levels are calculated from the requirements document ([`lms/requirements.md`](lms/requirements.md), v0.6) with this score:
 
 | Criterion | 0 points | 1 point | 2 points |
 | --- | --- | --- | --- |
