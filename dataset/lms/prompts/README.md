@@ -101,7 +101,7 @@ Follow REQUIREMENTS.md exactly, including names, paths, fields, status codes and
 | App starts / tests | Whether `create_app` starts; feedback and held-out pass counts (our runner, never shown to the model during generation) |
 | Notes | Integration errors, retries, usage-limit waits |
 
-## Open questions for the team
+## Decisions (2026-10-31)
 
-- Whether the model may write its own tests during generation (they would be excluded from the metrics, like ours).
-- Whether steps run in one Claude Code session (`--resume`) or a fresh session per step (proposal: fresh session, the code in the folder is the only memory).
+- **Fresh session per step.** Every step is a new `claude -p` call in a new container (no `--resume`); the code in the folder is the only memory.
+- **The model may write its own tests.** The prompts say nothing about tests either way. Tests the model writes stay in the generated code, are not run by our runner and are excluded from the metrics, like ours.
