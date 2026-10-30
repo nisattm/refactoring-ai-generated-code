@@ -87,6 +87,8 @@ Smell counts depend on thresholds, and tools disagree: Long Method is 30 lines i
 
 Level labels of the modules are defined in [`../dataset/README.md`](../dataset/README.md). Because the project is refactored as a whole, module and level results are a breakdown of one refactoring, not separate refactorings.
 
+Test results are additionally reported per case type (Normal, Boundary, Error, Property, Scenario), taken from the `Type` column of the case tables ([`../dataset/lms/tests/README.md`](../dataset/lms/tests/README.md)). This complements, not replaces, the module levels. Common requirements (LIB-TECH, LIB-COM, LIB-IF) belong to no module; their tests are in the Core test files and are reported as "common".
+
 ## 5. Statistical analysis
 
 - **Unit of analysis:** one run = one approach applied once to the same baseline. The number of runs per approach is set after the pilot, because Claude Code Pro usage limits are not published (see [`decisions/002`](decisions/002-single-lms-claude-code.md)).
