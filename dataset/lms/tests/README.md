@@ -87,6 +87,16 @@ Names and signatures are fixed; both test authors rely on them.
 | `error_code(response)` | `response.json()["error"]["code"]` |
 | `D(value)` | `decimal.Decimal(str(value))` |
 
+## Generated test files
+
+For `core`, `auth`, `members`, `catalog` and `reservations`, the case table and both test files are generated from one case list in `spec/<module>.py`, so that the table, the tests and the split rule cannot drift apart. Edit the spec, then run:
+
+```bash
+python scripts/gen_tests.py dataset/lms/tests/spec/<module>.py dataset/lms/tests
+```
+
+Hand-written modules follow the same ID, naming and split rules.
+
 ## Running
 
 Inside the Docker image, with the generated code on `PYTHONPATH`; the runner script (`scripts/run_tests.py`) runs `feedback/` and `heldout/` separately and checks the test-file hashes first.
