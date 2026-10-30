@@ -25,9 +25,8 @@ Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`
 | Files | Owner |
 | --- | --- |
 | `conftest.py`, `support/` | Fatima |
-| `core`, `auth`, `reservations`, `members`, `catalog`, `branches`, `e2e` | Nisa |
+| `core`, `auth`, `reservations`, `members`, `catalog`, `branches`, `e2e`, `search`, `reports`, `audit_io`, `api` | Nisa |
 | `loans`, `fees`, `notifications`, `purchasing` | Fatima |
-| `search`, `reports`, `audit_io`, `api` | Open |
 
 Only the owner edits a file. A missing helper is requested from the owner of `support/`; until it exists, a test calls the API through `client` directly.
 
@@ -89,7 +88,7 @@ Names and signatures are fixed; both test authors rely on them.
 
 ## Generated test files
 
-For `core`, `auth`, `members`, `catalog` and `reservations`, the case table and both test files are generated from one case list in `spec/<module>.py`, so that the table, the tests and the split rule cannot drift apart. Edit the spec, then run:
+For the modules owned by Nisa, the case table and both test files are generated from one case list in `spec/<module>.py`, so that the table, the tests and the split rule cannot drift apart. Edit the spec, then run:
 
 ```bash
 python scripts/gen_tests.py dataset/lms/tests/spec/<module>.py dataset/lms/tests
