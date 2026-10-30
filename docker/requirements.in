@@ -1,0 +1,33 @@
+# Packages of the project environment (docs/metrics.md, docs/testing.md, 29 October decisions).
+# Unpinned on purpose: the first build resolves them, then `pip freeze` writes
+# docker/requirements.lock, which all later builds use. See docs/environment.md.
+
+# LMS application stack (decision of 29 October: only these libraries)
+fastapi
+uvicorn
+pydantic>=2,<3
+sqlalchemy>=2,<3
+httpx                      # also needed by FastAPI's TestClient
+
+# A–C. Size, complexity, design
+radon
+complexipy
+code-quality-analyzer      # PyExamine (Shivashankar & Martini, MSR 2025); command: analyze_code_quality
+
+# E. Logic smells and linters
+ruff
+pylint
+vulture
+
+# Tests
+pytest
+hypothesis
+coverage
+mutmut
+
+# Resource consumption
+pyperf
+psutil
+memray
+pytest-memray
+codecarbon
