@@ -30,11 +30,36 @@ Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`
 
 Only the owner edits a file. A missing helper is requested from the owner of `support/`; until it exists, a test calls the API through `client` directly.
 
+## Status (31 October 2026)
+
+All requirement areas have case tables and tests. Counts are the rows of `cases/<module>.md`; static cases are checked by reading the code, not by pytest.
+
+| Area | File | Feedback | Held-out | Static | Total |
+| --- | --- | --- | --- | --- | --- |
+| Core (common rules, fixed interface) | `core` | 43 | 33 | 11 | 87 |
+| Identity and access | `auth` | 22 | 19 | 1 | 42 |
+| Members | `members` | 17 | 12 | 0 | 29 |
+| Catalog | `catalog` | 12 | 11 | 0 | 23 |
+| Loans and returns | `loans` | 49 | 41 | 0 | 90 |
+| Reservations | `reservations` | 19 | 17 | 0 | 36 |
+| Fines and payments | `fees` | 31 | 24 | 0 | 55 |
+| Notifications | `notifications` | 24 | 21 | 0 | 45 |
+| Search | `search` | 6 | 6 | 1 | 13 |
+| Reports | `reports` | 5 | 5 | 0 | 10 |
+| Branches and transfers | `branches` | 8 | 9 | 0 | 17 |
+| Purchasing | `purchasing` | 23 | 21 | 0 | 44 |
+| Audit, import, export | `audit_io` | 14 | 11 | 0 | 25 |
+| API layer | `api` | 3 | 3 | 0 | 6 |
+| End-to-end scenarios | `e2e` | 6 | 5 | 0 | 11 |
+| **Total** | | **282** | **238** | **13** | **533** |
+
+`pytest --import-mode=importlib --collect-only` collects 282 feedback and 238 held-out tests without the code; every test fails until `lms` exists.
+
 ## Test case IDs and names
 
 - Case ID: `T-<AREA>-<NN>-<letter>`, where `<AREA>-<NN>` is the requirement it checks: `LIB-LOAN-05` → `T-LOAN-05-a`, `T-LOAN-05-b`, …; scenarios: `T-E2E-01`; properties: `T-P-<NN>`.
 - Test function name: the case ID in lower case with `_`: `test_t_loan_05_a`.
-- The first line of the test's docstring is the case ID.
+- The first line of the test's docstring starts with the case ID (generated tests continue with the requirement ID and the expected result).
 - Every requirement has at least one case. Requirements that only constrain the implementation and cannot be observed through the API or the fixed interface (for example LIB-TECH-02 allowed packages) are listed in the case table with Set `static` and checked by script, not by pytest.
 
 ## Feedback / held-out split
