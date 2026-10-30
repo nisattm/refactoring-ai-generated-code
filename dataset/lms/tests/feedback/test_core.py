@@ -5,7 +5,16 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-import lms
+
+class _LazyLMS:
+    """Imports lms at first use, so the tests can be collected before the code exists."""
+
+    def __getattr__(self, name):
+        import lms as real
+        return getattr(real, name)
+
+
+lms = _LazyLMS()
 from support.api import (
     D, add_copy, create_book, create_branch, error_code, lend, login, register_member,
 )
