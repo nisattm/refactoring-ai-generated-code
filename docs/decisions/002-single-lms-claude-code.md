@@ -49,6 +49,7 @@ Approved by Nisa (project lead) in the design discussion; recorded here because 
 | 2026-10-30 | Level thresholds | Calibrated before generation: rules 0–9 / 10–13 / 14+, dependencies 0–2 / 3–5 / 6+ (the first thresholds gave only 1 simple module); common requirements (LIB-TECH, COM, IF) count for no module. Result: 2 simple, 5 medium, 7 complex |
 | 2026-10-30 | Review decisions | Cross-module dependency table moved out of the requirements; data-dependent checks return 409 with specific codes; borrowing any copy fulfils an active reservation of the same book; package versions pinned as verified in the team's Docker image |
 | 2026-10-30 | Import of passive members | A `passive` member may have `open` imported loans (LIB-IO-06, v0.6); needed so that `MEMBER_PASSIVE` on renewal (LIB-LOAN-07) can be tested |
+| 2026-10-31 | Copy branch while on loan | `current_branch_id` of an `on_loan` copy stays the branch it was lent from until return or report-lost (v0.7) |
 
 ## Consequences
 
