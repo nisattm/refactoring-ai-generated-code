@@ -13,6 +13,7 @@ Dates are the clock's local date (`FixedClock`, start 2026-11-02 09:00 +03:00, a
 | T-LOAN-01-e | LIB-LOAN-01 | Error | Unknown `barcode` `NOPE-0001` | `404 NOT_FOUND`, `details` `{"field": "barcode", "value": "NOPE-0001"}` | feedback |
 | T-LOAN-01-f | LIB-LOAN-01, LIB-COM-29 | Error | Unknown `copy_id` 999999 | `404 NOT_FOUND`, `details` `{"field": "copy_id", "id": 999999}` | held-out |
 | T-LOAN-01-g | LIB-LOAN-01, 9.2 | Error | A member calls `POST /api/v1/loans` for themselves | `403 FORBIDDEN`; copy stays `available` | feedback |
+| T-LOAN-01-h | LIB-LOAN-01, 8.1 | Normal | Copy (home A) of branch B's member lent at A; read the copy while on loan and after time passes | `status` on_loan, `current_branch_id` stays A (v0.7: unchanged while on loan) | held-out |
 | T-LOAN-02-a | LIB-LOAN-02 | Boundary | Student loan due 2026-11-16, read on 2026-11-16 | `is_overdue` false | feedback |
 | T-LOAN-02-b | LIB-LOAN-02 | Boundary | Same loan read on 2026-11-17 | `is_overdue` true | held-out |
 | T-LOAN-02-c | LIB-LOAN-02 | Normal | Loan returned late on 2026-11-20, read on 2026-11-23 | `is_overdue` false (only open loans are overdue) | feedback |
