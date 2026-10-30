@@ -40,7 +40,7 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 | Identity and access | `auth` | 22 | 19 | 1 | 42 |
 | Members | `members` | 17 | 12 | 0 | 29 |
 | Catalog | `catalog` | 12 | 11 | 0 | 23 |
-| Loans and returns | `loans` | 49 | 41 | 0 | 90 |
+| Loans and returns | `loans` | 49 | 42 | 0 | 91 |
 | Reservations | `reservations` | 19 | 17 | 0 | 36 |
 | Fines and payments | `fees` | 31 | 24 | 0 | 55 |
 | Notifications | `notifications` | 24 | 21 | 0 | 45 |
@@ -51,9 +51,9 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 | Audit, import, export | `audit_io` | 14 | 11 | 0 | 25 |
 | API layer | `api` | 3 | 3 | 0 | 6 |
 | End-to-end scenarios | `e2e` | 6 | 5 | 0 | 11 |
-| **Total** | | **282** | **238** | **13** | **533** |
+| **Total** | | **282** | **239** | **13** | **534** |
 
-`pytest --import-mode=importlib --collect-only` collects 282 feedback and 238 held-out tests without the code; every test fails until `lms` exists.
+`pytest --import-mode=importlib --collect-only` collects 282 feedback and 239 held-out tests without the code; every test fails until `lms` exists.
 
 ## Test case IDs and names
 

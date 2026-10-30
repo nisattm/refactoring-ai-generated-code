@@ -46,6 +46,21 @@ def test_t_loan_01_f(client, librarian, branch_a):
     assert r["error"]["details"] == {"field": "copy_id", "id": 999999}
 
 
+def test_t_loan_01_h(client, clock, librarian, branch_a, branch_b):
+    """T-LOAN-01-h
+
+    LIB-LOAN-01, 8.1. Copy (home A) of branch B's member lent at A; read the copy while on loan and after time passes
+    Expected: status on_loan, current_branch_id stays A (v0.7: unchanged while on loan)
+    """
+    member = api.register_member(client, librarian, home_branch_id=branch_b["id"])
+    _, copy = api.new_copy(client, librarian, branch_id=branch_a["id"])
+    api.lend(client, librarian, member["id"], copy["id"])
+    on_loan = api.get_copy(client, librarian, copy["id"])
+    assert (on_loan["status"], on_loan["current_branch_id"]) == ("on_loan", branch_a["id"])
+    api.set_today(clock, "2026-11-20")
+    assert api.get_copy(client, librarian, copy["id"])["current_branch_id"] == branch_a["id"]
+
+
 def test_t_loan_02_b(client, clock, librarian, branch_a):
     """T-LOAN-02-b
 
