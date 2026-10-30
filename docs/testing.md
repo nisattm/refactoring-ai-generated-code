@@ -27,7 +27,7 @@ Iterative and Multi-Agent receive test feedback. If a model only fixes what thos
 - **Feedback set:** the LLM sees the results of these tests during refactoring.
 - **Held-out set:** used only to evaluate the final result.
 
-Each requirement ID has tests in both sets where possible. Proposed split: 50/50, stratified by module and test type.
+Each requirement ID has tests in both sets where possible. Split rule (fixed before generation): the cases of each requirement alternate between the sets; see [`../dataset/lms/tests/README.md`](../dataset/lms/tests/README.md#feedback--held-out-split).
 
 ## Test protection
 
@@ -51,14 +51,13 @@ Starting code that fails requirement tests is recorded as faulty. Refactoring mu
 
 ## Test case template
 
-The LMS test folder contains `tests/cases.md` with this table. Each test case has its own ID `T-<requirement ID>-<letter>` and names the requirement it checks (`LIB-<AREA>-NN` in [`../dataset/lms/requirements.md`](../dataset/lms/requirements.md)).
+Folder layout, case IDs (`T-<AREA>-<NN>-<letter>`, one or more per requirement ID of [`../dataset/lms/requirements.md`](../dataset/lms/requirements.md)), the feedback/held-out split rule, the case table format (`tests/cases/<module>.md`) and the shared fixture contract are in [`../dataset/lms/tests/README.md`](../dataset/lms/tests/README.md).
+
+Example rows:
 
 | ID | Requirement | Type | Input | Expected | Set |
 | --- | --- | --- | --- | --- | --- |
-| T-LOAN-03-a | LIB-LOAN-03 | Normal | Student, lent 2026-11-02 | `due_date` 2026-11-16 | Feedback |
-| T-LOAN-03-b | LIB-LOAN-03 | Boundary | Academic, lent 2026-12-02 (due date falls on 2027-01-01, a holiday) | `due_date` 2027-01-04 | Held-out |
-| T-LOAN-06-a | LIB-LOAN-06 | Boundary | Total debt 50.00 TL | `409 MEMBER_BLOCKED_BY_DEBT` | Held-out |
-| T-LOAN-06-b | LIB-LOAN-06 | Boundary | Total debt 49.99 TL | Loan created | Feedback |
-| T-LOAN-05-a | LIB-LOAN-05 | Boundary | Student has 5 open loans, requests a 6th | `409 LOAN_LIMIT_REACHED` | Feedback |
-| T-FEE-02-a | LIB-FEE-02 | Boundary | Guest loan returned 25 working days late | Late fee `"100.00"` (cap) | Held-out |
-| T-P-01 | LIB-CAT-12, LIB-LOAN-01, LIB-LOAN-09 | Property | Random sequence of loans and returns | Copies per status always sum to the number of copies | Feedback |
+| T-LOAN-03-a | LIB-LOAN-03 | Normal | Student, lent 2026-11-02 | `due_date` 2026-11-16 | feedback |
+| T-LOAN-03-b | LIB-LOAN-03 | Boundary | Academic, lent 2026-12-02 (2027-01-01 is a holiday) | `due_date` 2027-01-04 | held-out |
+| T-LOAN-06-a | LIB-LOAN-06 | Boundary | Total debt 50.00 TL | `409 MEMBER_BLOCKED_BY_DEBT` | feedback |
+| T-LOAN-06-b | LIB-LOAN-06 | Boundary | Total debt 49.99 TL | Loan created | held-out |

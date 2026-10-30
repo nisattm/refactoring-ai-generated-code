@@ -46,6 +46,7 @@ Approved by Nisa (project lead) in the design discussion; recorded here because 
 | 2026-10-29 | Level score | Business rules (0–5 / 6–12 / 13+), dependencies (0–1 / 2–3 / 4+), state transitions (none / 2 states / several); 0–1 simple, 2–3 medium, 4–6 complex; at least 2 modules per level |
 | 2026-10-30 | Limits | Token valid 12 hours; 5 failed logins lock the account for 15 minutes; passwords 8–128 characters; page size default 20, maximum 100; purchase orders 1–50 lines, 1–100 copies per line; search correct on 100,000 books and 200,000 copies |
 | 2026-10-30 | Password rule | Passwords contain at least one letter and at least one digit (in addition to 8–128 characters), as in LIB-AUTH-02 |
+| 2026-10-30 | Level thresholds | Calibrated before generation: rules 0–9 / 10–13 / 14+, dependencies 0–2 / 3–5 / 6+ (the first thresholds gave only 1 simple module); common requirements (LIB-TECH, COM, IF) count for no module. Result: 2 simple, 5 medium, 7 complex |
 | 2026-10-30 | Review decisions | Cross-module dependency table moved out of the requirements; data-dependent checks return 409 with specific codes; borrowing any copy fulfils an active reservation of the same book; package versions pinned as verified in the team's Docker image |
 
 ## Consequences

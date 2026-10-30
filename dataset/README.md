@@ -10,37 +10,86 @@ The instructor asked for large, complex code in which all metrics can be measure
 
 ## Modules and complexity levels
 
-Levels below were assigned on 29 October 2026 by judgment. In Week 3 they are recalculated from the requirements document with this score (approved 29 October 2026) and the result is recorded here:
+Levels are calculated from the requirements document ([`lms/requirements.md`](lms/requirements.md), v0.5) with this score:
 
 | Criterion | 0 points | 1 point | 2 points |
 | --- | --- | --- | --- |
-| Business rules (requirement IDs of the module) | 0–5 | 6–12 | 13+ |
-| Modules it depends on ([table below](#cross-module-dependencies)) | 0–1 | 2–3 | 4+ |
-| State transitions | None | Simple (2 states) | Several states |
+| Business rules (requirement IDs of the module itself) | 0–9 | 10–13 | 14+ |
+| Modules it depends on ([table below](#cross-module-dependencies)) | 0–2 | 3–5 | 6+ |
+| State transitions (status fields of the module's entities) | None | Simple (2 states) | Several states |
 
-Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain at least 2 modules. After generation, CC, fan-out and SLOC are reported per level to show whether the labels match the measured code.
+Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain at least 2 modules.
+
+- **Calibration (30 October 2026, before any code exists):** the first thresholds (rules 0–5 / 6–12 / 13+, dependencies 0–1 / 2–3 / 4+) gave 1 simple, 4 medium and 9 complex modules, because 10 of 14 modules reached the dependency maximum. The thresholds above were set to meet the rule of at least 2 modules per level. Recorded in [`../docs/decisions/002`](../docs/decisions/002-single-lms-claude-code.md).
+- **Common requirements** (LIB-TECH, LIB-COM, LIB-IF, 54 IDs) belong to no module and are not counted in any score. Their tests live in the Core test files.
+- After generation, CC, fan-out and SLOC are reported per level to show whether the labels match the measured code. Test results are also reported per case type (Normal, Boundary, Error, Property, Scenario) from the `Type` column of the case tables.
+
+| # | Module | Rules | Pts | Depends on | Pts | States | Pts | Total | Level |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Core | 10 | 1 | 0 | 0 | none | 0 | 1 | Simple |
+| 2 | Identity and access | 25 | 2 | 2 | 0 | active / inactive / locked; session valid / revoked / expired | 2 | 4 | Complex |
+| 3 | Members | 13 | 1 | 8 | 2 | active / passive | 1 | 4 | Complex |
+| 4 | Catalog | 12 | 1 | 5 | 1 | 7 copy statuses | 2 | 4 | Complex |
+| 5 | Loans and returns | 14 | 2 | 8 | 2 | open / returned / lost | 2 | 6 | Complex |
+| 6 | Reservations | 14 | 2 | 7 | 2 | 6 statuses | 2 | 6 | Complex |
+| 7 | Fines and payments | 11 | 1 | 6 | 2 | open / paid / waived | 2 | 5 | Complex |
+| 8 | Notifications | 7 | 0 | 3 | 1 | unread / read | 1 | 2 | Medium |
+| 9 | Search | 8 | 0 | 3 | 1 | none | 0 | 1 | Simple |
+| 10 | Reports | 5 | 0 | 6 | 2 | none | 0 | 2 | Medium |
+| 11 | Branches and transfers | 9 | 0 | 4 | 1 | branch active / inactive; transfer in transit / received | 1 | 2 | Medium |
+| 12 | Purchasing | 9 | 0 | 5 | 1 | 5 order statuses | 2 | 3 | Medium |
+| 13 | Audit log, import, export | 18 | 2 | 6 | 2 | none | 0 | 4 | Complex |
+| 14 | API layer | 5 | 0 | 13 | 2 | none | 0 | 2 | Medium |
+
+Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 5, 6, 7, 13.
 
 | # | Module | Content | Level | Est. lines | Expected smells / metrics (not guaranteed) |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Core | Shared types, errors, date and money helpers, settings, injectable clock | Simple | 2,000 | Magic Number, Duplicate Code |
-| 2 | Identity and access | Users, roles (member, librarian, administrator), permission checks | Medium | 2,500 | Complex Conditional, repeated checks |
-| 3 | Members | Registration, membership types, renewal, active/passive | Medium | 3,000 | Long Parameter List, Data Clumps |
-| 4 | Catalog | Books, authors, publishers, copies (with price), ISBN, classification | Medium | 4,000 | Large Class, Long Method |
+| 1 | Core | Working-day calendar, money, errors, pagination, settings, injectable clock | Simple | 2,000 | Magic Number, Duplicate Code |
+| 2 | Identity and access | Users, roles (member, librarian, administrator), sessions, lockout, permission checks | Complex | 2,500 | Complex Conditional, repeated checks |
+| 3 | Members | Registration, membership types, renewal, active/passive | Complex | 3,000 | Long Parameter List, Data Clumps |
+| 4 | Catalog | Books, authors, publishers, copies (with price), ISBN, classification | Complex | 4,000 | Large Class, Long Method |
 | 5 | Loans and returns | Loan period and limit, renewal, lost and damaged books | Complex | 4,000 | God Class, Feature Envy, Deep Nesting, high CC |
 | 6 | Reservations | First-come, first-served queue, hold expiry, link to returns and transfers | Complex | 3,000 | Cognitive complexity, logic errors |
 | 7 | Fines and payments | Late fees, holidays, cap, exemptions, borrowing block | Complex | 3,000 | Complex Conditional, Magic Number, boundary errors |
 | 8 | Notifications | Event-based notifications; records only | Medium | 2,000 | Shotgun Surgery, coupling |
-| 9 | Search | Search, filters, sorting, pagination | Medium | 2,000 | Time and RAM on large data |
+| 9 | Search | Search, filters, sorting, pagination | Simple | 2,000 | Time and RAM on large data |
 | 10 | Reports | Most borrowed, overdue, monthly summary | Medium | 3,000 | Long Method, Duplicate Code, CPU and memory |
-| 11 | Branches | Multi-branch structure, transfers and loans between branches | Complex | 3,000 | Cyclic dependency, Feature Envy |
+| 11 | Branches | Multi-branch structure, transfers and loans between branches | Medium | 3,000 | Cyclic dependency, Feature Envy |
 | 12 | Purchasing | Suppliers, orders, receiving, adding to catalog | Medium | 2,500 | Data Class, Long Method |
-| 13 | Audit log and import/export | Audit log, CSV and JSON import/export | Simple | 1,500 | Duplicate Code, swallowed exceptions (S19) |
+| 13 | Audit log and import/export | Audit log, CSV and JSON import/export | Complex | 1,500 | Duplicate Code, swallowed exceptions (S19) |
 | 14 | API layer | FastAPI endpoints, schemas, error mapping | Medium | 4,000 | Leaks between layers, duplication |
 | | **Total** | | | **~39,500** | |
 
 Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in prompts; which ones actually appear is measured after generation and recorded in [`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation).
 
-**Metric coverage (Week 3):** every metric and smell in [`../docs/metrics.md`](../docs/metrics.md) and [`../docs/smell-catalog.md`](../docs/smell-catalog.md) must have at least one module whose requirements give it a chance to occur. Not yet mapped on 29 October: DIT/NOC (inheritance), LCOM, Primitive Obsession, Message Chains, Temporary Field, Speculative Generality. The coverage matrix is added here in Week 3.
+## Metric coverage matrix
+
+Every metric and smell must have at least one module whose **requirements** give it a chance to occur; otherwise refactoring could not change it. The matrix lists the requirement features that create the opportunity. Nothing here is told to the model; whether the smell actually appears is measured after generation ([`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation)).
+
+| Metric / smell | Opportunity in the requirements | Modules |
+| --- | --- | --- |
+| Size, CC, Cognitive Complexity, nesting (S01, S09, S10) | Ordered check sequences with many outcomes (LIB-LOAN-05, LIB-LOAN-07, LIB-RES-02, LIB-AUTH-11) | 2, 5, 6 |
+| Halstead, MI | All modules | 1–14 |
+| WMC, NOM, Large / God Class (S02) | Many operations on one entity (loans: lend, renew, return, lost; reservations: create, release, expire, cancel) | 4, 5, 6 |
+| CBO, fan-in / fan-out, Feature Envy (S12) | Rules that need data of other modules (debt from fees in lending, copy price in fees, release procedure) | 3, 5, 6, 7, 11 |
+| LCOM | Modules combining unrelated duties (audit log with import/export; members with summary and eligibility) | 3, 13 |
+| RFC | Release procedure triggered from five modules (LIB-RES-08) | 4, 5, 6, 11, 12 |
+| DIT, NOC (inheritance) | Families of similar variants: 4 membership types, 4 fee kinds, 3 transfer reasons, 15 notification types, 4 report types | 3, 7, 8, 10, 11 |
+| Cyclic / hub-like dependency (S18), architecture metrics | Mutual needs: loans ↔ reservations, reservations ↔ branches, members ↔ loans; API layer depends on all | 5, 6, 11, 14 |
+| Duplication (S06) | Same rules in several places: working days (5 modules), pagination (all lists), CSV formats (reports, export), error mapping | 1, 10, 13, 14 |
+| Magic Number (S11) | Many fixed numbers: periods, limits, fees, caps, lockout, hold days | 2, 3, 5, 6, 7 |
+| Long Parameter List (S03), Data Clumps (S04) | Entities with many fields created together (member registration, book, purchase order line) | 3, 4, 12 |
+| Primitive Obsession (S05) | Values with their own rules: ISBN, money, phone, barcode, branch code | 1, 3, 4, 11 |
+| Message Chains (S13) | Reports and summaries that walk loan → copy → book → publisher, member → user | 3, 10 |
+| Shotgun Surgery (S14), Divergent Change (S15) | Events reported from all modules to notifications and audit log | 8, 13 |
+| Temporary Field (S16) | Fields used only in some states (reservation `copy_id`, `ready_on`, `hold_until`; loan `returned_on`) | 5, 6 |
+| Speculative Generality (S08) | Optional filters and formats (search filters, `format=csv`) | 9, 10 |
+| Deficient Encapsulation (S17) | Status fields changed by several modules (copy status) | 4, 5, 6, 11 |
+| Logic smells, swallowed exceptions (S19), redundant returns (S21) | All-or-nothing import with error lists; many error paths | 13, all |
+| Mutable default argument (S20) | Optional list parameters (filters, author lists, order lines) | 4, 9, 12 |
+| Disallowed dependency (S22), bypassed type safety (S23) | Whole code base | 1–14 |
+| Time, CPU, RAM, allocations | Workloads W1–W3 ([`../docs/metrics.md`](../docs/metrics.md#workloads-added-29-october)) | 5, 7, 9, 10 |
 
 ## Cross-module dependencies
 
