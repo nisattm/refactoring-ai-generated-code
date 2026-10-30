@@ -38,15 +38,16 @@ Line estimates come from the module table in [`../../README.md`](../../README.md
 
 ## Command
 
-Every step runs with the same command inside its container, from `dataset/lms/generated/`:
+Every step runs with the same command from the repository root. The prompt is read and the JSON result is written on the host, so the container sees only the working copy:
 
 ```bash
-claude -p "$(cat prompts/step-NN.md)" \
+docker run --rm -v "${PWD}/dataset/lms/generated:/work" -w /work refactoring-env \
+  claude -p "$(cat dataset/lms/prompts/step-NN.md)" \
   --model claude-sonnet-5-5 \
   --output-format json \
   --permission-mode dontAsk \
   --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(python *)" "Bash(pip install -r requirements.txt)" \
-  > logs/step-NN.json
+  > results/generation/step-NN.json
 ```
 
 | Part | Why |
@@ -55,7 +56,7 @@ claude -p "$(cat prompts/step-NN.md)" \
 | `--permission-mode dontAsk` | Only reads and the listed tools run; anything that would ask is denied, so no call waits for a person and every step has the same permissions |
 | `--allowedTools` | Exactly the tools of the "Tools allowed" rule. `Bash(python *)` matches any command that starts with `python`; a compound command (`&&`, `;`, `\|`) must match a rule in every part |
 
-Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. **Not verified:** the flag for the effort and thinking setting; it is chosen in the pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)) and added to the command before step 0. The Claude Code version is pinned in the image.
+Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. **Not verified:** the flag for the effort and thinking setting; it is chosen in the pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)) and added to the command before step 0. Also not verified: how the Pro login reaches the container (mounted credentials or a token); set up in the pilot. The Claude Code version is pinned in the image.
 
 ## Reading intermediate test results
 
