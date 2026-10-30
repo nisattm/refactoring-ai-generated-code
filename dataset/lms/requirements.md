@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–22), revised after team review.
-**Version:** 0.6 · 2026-10-30
+**Version:** 0.7 · 2026-10-31
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -574,7 +574,7 @@ API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]
 | `book_id` | integer | Existing book |
 | `barcode` | text | 6–20 characters `[A-Z0-9-]`, unique; stored in upper case |
 | `home_branch_id` | integer | The branch that owns the copy |
-| `current_branch_id` | integer or null | Where the copy is now; null while in transfer |
+| `current_branch_id` | integer or null | Where the copy is now; null while in transfer; unchanged while `on_loan` (the branch the copy was lent from) |
 | `price` | amount | 0.01–100000.00 TL (LIB-COM-11–13); used for lost and damaged books |
 | `status` | see 8.2 | Initially `available` |
 | `acquired_on` | date | Not after today |
@@ -666,7 +666,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 
 | ID | Requirement |
 | --- | --- |
-| LIB-LOAN-01 | **Lend.** `POST /api/v1/loans` with `{"member_id"}` and exactly one of `{"copy_id"}` or `{"barcode"}` returns `201` with `LoanOut`. Both or neither returns `422 VALIDATION_ERROR`. The copy's status becomes `on_loan`. An unknown `barcode` returns `404 NOT_FOUND` with `details` `{"field": "barcode", "value": "<barcode>"}`. |
+| LIB-LOAN-01 | **Lend.** `POST /api/v1/loans` with `{"member_id"}` and exactly one of `{"copy_id"}` or `{"barcode"}` returns `201` with `LoanOut`. Both or neither returns `422 VALIDATION_ERROR`. The copy's status becomes `on_loan`; its `current_branch_id` does not change until the return (LIB-LOAN-11, LIB-LOAN-12) or report-lost (LIB-LOAN-13). An unknown `barcode` returns `404 NOT_FOUND` with `details` `{"field": "barcode", "value": "<barcode>"}`. |
 | LIB-LOAN-02 | **Overdue.** An open loan is overdue when today > `due_date`. |
 | LIB-LOAN-03 | **Due date.** `due_date` = the next working day on or after `loan_date` + `loan_period_days` calendar days (LIB-COM-08). Examples: student, lent 2026-11-02 → due 2026-11-16; academic, lent 2026-12-02 → 2027-01-01 is a holiday → due 2027-01-04. |
 | LIB-LOAN-04 | **Terms are fixed per loan.** `loan_period_days`, `max_renewals` and `daily_fee` are copied from the member's type (7.1) when the loan is created and are used for that loan until it closes, even if the member's type changes. |
