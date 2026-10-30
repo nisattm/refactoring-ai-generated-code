@@ -15,7 +15,7 @@ Levels below were assigned on 29 October 2026 by judgment. In Week 3 they are re
 | Criterion | 0 points | 1 point | 2 points |
 | --- | --- | --- | --- |
 | Business rules (requirement IDs of the module) | 0–5 | 6–12 | 13+ |
-| Modules it depends on ([requirements, section 21](lms/requirements.md#21-cross-module-dependencies)) | 0–1 | 2–3 | 4+ |
+| Modules it depends on ([table below](#cross-module-dependencies)) | 0–1 | 2–3 | 4+ |
 | State transitions | None | Simple (2 states) | Several states |
 
 Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain at least 2 modules. After generation, CC, fan-out and SLOC are reported per level to show whether the labels match the measured code.
@@ -41,6 +41,29 @@ Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain a
 Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in prompts; which ones actually appear is measured after generation and recorded in [`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation).
 
 **Metric coverage (Week 3):** every metric and smell in [`../docs/metrics.md`](../docs/metrics.md) and [`../docs/smell-catalog.md`](../docs/smell-catalog.md) must have at least one module whose requirements give it a chance to occur. Not yet mapped on 29 October: DIT/NOC (inheritance), LCOM, Primitive Obsession, Message Chains, Temporary Field, Speculative Generality. The coverage matrix is added here in Week 3.
+
+## Cross-module dependencies
+
+Which module needs data or an action of which other module, as implied by the rules in [`lms/requirements.md`](lms/requirements.md). Kept here, not in the requirements, so that the model is not told how to structure the code. Used for the level score above and for the architecture metrics.
+
+| Module | Uses |
+| --- | --- |
+| 1 Core | – |
+| 2 Identity and access | 1, 13 |
+| 3 Members | 1, 2, 5 (open loans), 6 (cancel reservations), 7 (balance), 8, 11, 13 |
+| 4 Catalog | 1, 6 (release procedure), 8, 11, 13 |
+| 5 Loans and returns | 1, 3, 4, 6, 7, 8, 11, 13 |
+| 6 Reservations | 1, 3, 4, 5 (open loans), 8, 11 (transfers), 13 |
+| 7 Fines and payments | 1, 3, 4 (copy price), 5, 8, 13 |
+| 8 Notifications | 1, 3, 5 (reminders) |
+| 9 Search | 1, 4, 5 (loan counts) |
+| 10 Reports | 1, 3, 4, 5, 6, 7 |
+| 11 Branches and transfers | 1, 4, 6 (ready on arrival), 13 |
+| 12 Purchasing | 1, 4, 6 (release procedure), 11, 13 |
+| 13 Audit, import, export | 1, 2, 3, 4, 5, 11 |
+| 14 API layer | All modules |
+
+Rules that span modules: the release procedure (LIB-RES-08) is triggered by modules 4, 5, 6, 11 and 12; total debt (LIB-FEE-09) is used by modules 3 and 5; working-day calculations are used by modules 5, 6, 7, 8 and 11.
 
 ## Business rules (approved 29 October 2026)
 

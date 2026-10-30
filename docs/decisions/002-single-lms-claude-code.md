@@ -28,6 +28,25 @@ After the Weeks 1–2 feedback, the instructor asked for large, complex code in 
 | Usage limits | Considered sufficient by the team (5-hour window resets); usage per run is still recorded in the pilot |
 | Business rules | Summary in [`../../dataset/README.md`](../../dataset/README.md#business-rules-approved-29-october-2026); full specification in [`../../dataset/lms/requirements.md`](../../dataset/lms/requirements.md) |
 
+## Approved details
+
+Approved by Nisa (project lead) in the design discussion; recorded here because the requirements review could not see them.
+
+| Date | Topic | Decision |
+| --- | --- | --- |
+| 2026-10-29 | Membership types | Student 14 days / 5 books / 1 renewal / 2 TL per working day; academic 30 / 10 / 2 / 1 TL; staff 21 / 7 / 2 / 1 TL; guest 7 / 2 / 0 / 5 TL |
+| 2026-10-29 | Fees and blocks | Fee cap 100 TL per book, independent of the price; borrowing blocked at total debt ≥ 50 TL; lost book = accrued late fee + price + 25 TL |
+| 2026-10-29 | Calendar | Working day = not Saturday, Sunday or official holiday (2026–2027 list); due date moves to the next working day; late days start the day after the due date; half-day eves (arife) are working days |
+| 2026-10-29 | Renewal | New period starts on the renewal day; overdue loans and books with an active reservation (waiting, in transit or ready) cannot be renewed |
+| 2026-10-29 | Reservations | At most 3 active per member; ready book held 3 working days; first-come, first-served queue without priority; reservation only if no copy is available at the pickup branch; waiting reservations do not expire |
+| 2026-10-29 | Members | Validity 365 days (guest 90), counted including the start day; university/staff number for non-guests, phone for guests, no national ID; members with open loans cannot be deactivated; type change applies to new loans only |
+| 2026-10-29 | Loans | Members with an overdue loan cannot borrow; damage fee entered by the librarian, > 0 and ≤ copy price; members may renew their own loans; return at any branch, copy returns home by transfer |
+| 2026-10-29 | Fees | Partial payments allowed, applied to the oldest fee first; only admins waive fees, with a reason |
+| 2026-10-29 | Roles and security | Roles member, librarian, admin; passwords with scrypt; random tokens stored as SHA-256 |
+| 2026-10-29 | Level score | Business rules (0–5 / 6–12 / 13+), dependencies (0–1 / 2–3 / 4+), state transitions (none / 2 states / several); 0–1 simple, 2–3 medium, 4–6 complex; at least 2 modules per level |
+| 2026-10-30 | Limits | Token valid 12 hours; 5 failed logins lock the account for 15 minutes; passwords 8–128 characters; page size default 20, maximum 100; purchase orders 1–50 lines, 1–100 copies per line; search correct on 100,000 books and 200,000 copies |
+| 2026-10-30 | Review decisions | Cross-module dependency table moved out of the requirements; data-dependent checks return 409 with specific codes; borrowing any copy fulfils an active reservation of the same book; package versions pinned as verified in the team's Docker image |
+
 ## Consequences
 
 - `README.md`, `approaches.md`, `metrics.md`, `testing.md`, `smell-catalog.md`, `dataset/README.md` and `scripts/README.md` were updated.
