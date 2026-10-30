@@ -28,6 +28,9 @@ def split_set(case, counts):
     raise ValueError(f"bad case id {cid}")
 
 
+LABELS = {"heldout": "held-out"}  # set name as written in the case tables
+
+
 def main(spec_path, tests_dir):
     spec = importlib.util.spec_from_file_location("cases_spec", spec_path)
     mod = importlib.util.module_from_spec(spec)
@@ -44,7 +47,7 @@ def main(spec_path, tests_dir):
     tests_dir = Path(tests_dir)
     rows = ["| ID | Requirement | Type | Input | Expected | Set |", "| --- | --- | --- | --- | --- | --- |"]
     for c in cases:
-        rows.append(f"| {c['id']} | {c['req']} | {c['type']} | {c['input']} | {c['expected']} | {c['set']} |")
+        rows.append(f"| {c['id']} | {c['req']} | {c['type']} | {c['input']} | {c['expected']} | {LABELS.get(c['set'], c['set'])} |")
     by_set = defaultdict(int)
     for c in cases:
         by_set[c["set"]] += 1

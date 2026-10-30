@@ -133,6 +133,6 @@ def test_t_mem_12_b(client, clock, librarian, branch_a):
 
 
 def test_t_mem_13_b(client, librarian):
-    """T-MEM-13-b (LIB-MEM-13): 404 NOT_FOUND or 403 FORBIDDEN"""
+    """T-MEM-13-b (LIB-MEM-13): 404 NOT_FOUND"""
     r = client.get("/api/v1/members/me", headers=librarian)
-    assert r.status_code in {403, 404}
+    assert r.status_code == 404 and error_code(r) == "NOT_FOUND"

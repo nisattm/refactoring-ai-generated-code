@@ -10,7 +10,7 @@ from pathlib import Path
 
 TESTS = Path(__file__).resolve().parents[2] / "dataset" / "lms" / "tests"
 CASE_RE = re.compile(r"^T-([A-Z0-9]+)-(\d{2})-([a-z])$")
-SETS = {"feedback": "feedback", "held-out": "heldout", "heldout": "heldout"}
+SETS = {"feedback": "feedback", "held-out": "heldout"}
 
 
 def _rows(md: Path) -> list[dict]:

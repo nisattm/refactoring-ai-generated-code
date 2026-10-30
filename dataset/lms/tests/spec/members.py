@@ -266,9 +266,9 @@ def TEST(client, librarian, branch_a):
     r = client.get("/api/v1/members/me", headers=member_headers(client, m))
     assert r.status_code == 200 and r.json()["id"] == m["id"]
 '''),
-    dict(id="T-MEM-13-b", req="LIB-MEM-13", type="Error", input="Librarian (no linked member) calls `/members/me`", expected="`404 NOT_FOUND` or `403 FORBIDDEN`", code='''
+    dict(id="T-MEM-13-b", req="LIB-MEM-13", type="Error", input="Librarian (no linked member) calls `/members/me`", expected="`404 NOT_FOUND`", code='''
 def TEST(client, librarian):
     r = client.get("/api/v1/members/me", headers=librarian)
-    assert r.status_code in {403, 404}
+    assert r.status_code == 404 and error_code(r) == "NOT_FOUND"
 '''),
 ]
