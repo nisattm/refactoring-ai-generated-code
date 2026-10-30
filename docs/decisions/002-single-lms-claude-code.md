@@ -50,12 +50,13 @@ Approved by Nisa (project lead) in the design discussion; recorded here because 
 | 2026-10-30 | Review decisions | Cross-module dependency table moved out of the requirements; data-dependent checks return 409 with specific codes; borrowing any copy fulfils an active reservation of the same book; package versions pinned as verified in the team's Docker image |
 | 2026-10-30 | Import of passive members | A `passive` member may have `open` imported loans (LIB-IO-06, v0.6); needed so that `MEMBER_PASSIVE` on renewal (LIB-LOAN-07) can be tested |
 | 2026-10-31 | Copy branch while on loan | `current_branch_id` of an `on_loan` copy stays the branch it was lent from until return or report-lost (v0.7) |
+| 2026-10-31 | Pilots | Week 3 generation pilot covers generation only; the refactoring pilot moves to Week 5, when the runners exist. Generation uses the default effort and thinking of the pinned Claude Code version |
 
 ## Consequences
 
 - `README.md`, `approaches.md`, `metrics.md`, `testing.md`, `smell-catalog.md`, `dataset/README.md` and `scripts/README.md` were updated.
 - Tests attach to the REST API and a fixed service interface, because internal code may change during refactoring.
-- Pro usage limits (5-hour and weekly) are not published. A pilot (about 5,000 lines generated, one refactoring) measures usage per run before the number of repetitions is fixed.
+- Pro usage limits (5-hour and weekly) are not published. Two pilots: the generation pilot (Week 3, steps 0–1, about 5,000 lines) checks the generation command, the tests and the cost log; the refactoring pilot (Week 5) measures usage per run before the number of repetitions is fixed.
 - Changes after Fatima's review (29 October): tools per approach, clean environment, model check, rubric sampling by requirement, coverage target on the full suite, integration-error rule, four additional business rules, corrected statements on thinking, `cast` and the JSON output.
 - Compatibility of the measurement tools (PyExamine, DPy, mutmut, memray) with Python 3.14 is not yet verified.
 - Classifying modules instead of separate tasks is our reading of the Week 3 plan; written confirmation from the instructor is requested.

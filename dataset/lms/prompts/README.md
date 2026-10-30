@@ -1,6 +1,6 @@
 # Generation Plan (proposal, 30 October 2026)
 
-How the LMS is generated with Claude Code from [`../requirements.md`](../requirements.md). Status: **proposal for team review**; the pilot (steps 0–1) tests it before the full generation.
+How the LMS is generated with Claude Code from [`../requirements.md`](../requirements.md). Status: **approved** (31 October 2026). The generation pilot (steps 0–1) checks the command, the tests and the cost log before step 2.
 
 ## Rules
 
@@ -24,7 +24,7 @@ Modules are generated in dependency order. Each step implements whole sections o
 | --- | --- | --- | --- |
 | 0 | 1–5 (scope, constraints, common rules, fixed interface, Core) and the calendar endpoints | 1, part of 14 | 2,500 |
 | 1 | 6 (Identity and access) with its endpoints | 2, part of 14 | 3,000 |
-| — | **Pilot ends here** (~5,000 lines): run the tests, one refactoring with each approach, measure usage | | |
+| — | **Generation pilot ends here** (~5,000 lines): run the tests, check the cost log and how much of the 5-hour window a step uses; then continue with step 2. The refactoring pilot is in Week 5 | | |
 | 2 | 17 (branches only: LIB-BR-01 – 04), 7 (Members) | 11 (part), 3 | 3,500 |
 | 3 | 8 (Catalog) | 4 | 4,000 |
 | 4 | 9 (Loans and returns), 11 (Fines and payments) | 5, 7 | 7,000 |
@@ -64,7 +64,7 @@ docker run --rm --env-file .env -v "${PWD}/dataset/lms/generated:/work" -w /work
 | `--permission-mode dontAsk` | Only reads and the listed tools run; anything that would ask is denied, so no call waits for a person and every step has the same permissions |
 | `--allowedTools` | Exactly the tools of the "Tools allowed" rule. `Bash(python *)` matches any command that starts with `python`; a compound command (`&&`, `;`, `\|`) must match a rule in every part |
 
-Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. **Not verified:** the flag for the effort and thinking setting; it is chosen in the pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)) and added to the command before step 0. The Claude Code version is pinned in the image.
+Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. Effort and thinking: generation uses the defaults of the pinned Claude Code version (no flag), the same for every step. The setting of the refactoring runs is chosen in the Week 5 pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)). The Claude Code version is pinned in the image.
 
 Windows PowerShell is not used for this command: `$(cat …)` is bash syntax, and in Windows PowerShell 5.1 the `>` redirection writes UTF-16, which `scripts/cost.py` cannot read as UTF-8.
 
