@@ -79,8 +79,8 @@ Names and signatures are fixed; both test authors rely on them.
 | `create_branch(client, headers, code, name=None, expect=201)` | New branch |
 | `register_member(client, headers, *, home_branch_id, membership_type="student", email=None, password="Member1234", expect=201, **fields)` | New member; unique e-mail and `university_id` (or `phone` for guests) generated |
 | `member_headers(client, member, password="Member1234")` | Header dict for that member |
-| `create_book(client, headers, *, title="Book", isbn=None, expect=201, **fields)` | New book; creates author and publisher if needed; unique valid ISBN-13 generated |
-| `add_copy(client, headers, book_id, *, home_branch_id, price="100.00", barcode=None, expect=201)` | New copy |
+| `create_book(client, headers, *, title="Book", isbn=None, expect=201, **fields)` | New book; creates author and publisher if needed; unique valid ISBN-13 generated; default `publication_year` 2020, `language` `"tr"`, `classification` `"813"` |
+| `add_copy(client, headers, book_id, *, home_branch_id, price="100.00", barcode=None, expect=201)` | New copy; unique barcode generated; `acquired_on` `"2025-01-01"` (tests move the clock back to October 2026, so the default must be earlier) |
 | `lend(client, headers, member_id, copy_id, expect=201)` | New loan |
 | `return_loan(client, headers, loan_id, *, branch_id, condition="good", damage_fee=None, expect=200)` | Closed loan |
 | `reserve(client, headers, *, book_id, pickup_branch_id, member_id=None, expect=201)` | New reservation |
