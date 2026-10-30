@@ -59,5 +59,5 @@ Approved by Nisa (project lead) in the design discussion; recorded here because 
 - Pro usage limits (5-hour and weekly) are not published. Two pilots: the generation pilot (Week 3, steps 0–1, about 5,000 lines) checks the generation command, the tests and the cost log; the refactoring pilot (Week 5) measures usage per run before the number of repetitions is fixed.
 - Changes after Fatima's review (29 October): tools per approach, clean environment, model check, rubric sampling by requirement, coverage target on the full suite, integration-error rule, four additional business rules, corrected statements on thinking, `cast` and the JSON output.
 - Compatibility of the measurement tools (PyExamine, DPy, mutmut, memray) with Python 3.14 is not yet verified.
-- Classifying modules instead of separate tasks is our reading of the Week 3 plan; written confirmation from the instructor is requested.
+- Classifying modules instead of separate tasks, and reporting equivalent cost instead of API cost, were confirmed by the instructor on 31 October 2026 (#11).
 - Week 3 task files prepared before 29 October (separate simple/medium tasks, API script) are void.
