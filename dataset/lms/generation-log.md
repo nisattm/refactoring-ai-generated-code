@@ -6,6 +6,7 @@ Test counts after steps 0–8 include failures of rules that need a later module
 
 | Step | Date | Claude Code / model / effort | Prompt | Session id | Input tok | Output tok | Cache read / write | Equivalent cost | Duration (API / wall) | Files / lines added | SLOC after | App starts / tests (feedback, held-out) | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 00 | 2026-10-31 17:23 (+03:00) | 2.1.308 / claude-sonnet-5-5 / high | `prompts/step-00.md` | f28220f6-f5af-4514-9182-51ddeb4a522c | 30 | 31,338 | 738,659 / 58,712 | 0.6222 USD | 199.4 s / 228 s | 36 / +1,374 | 637 | yes / feedback 19/282, held-out 15/239 | No permission denials (bare `Bash` list). The model ran its code; its own report says its tests pass and `uvicorn` answered `/health` (not verified by us). The model wrote 2 test files (`tests/conftest.py`, `tests/test_core.py`, plus `pytest.ini`), which are not in the SLOC. No hidden files. No usage-limit wait. Tests: 8 failed + 255 errors (feedback), 5 failed + 219 errors (held-out). The errors come from the fixtures: `POST /api/v1/auth/login` returns 404 until step 01 (login is in section 6). 7,485 thinking tokens. `/usage` before and after: not given |
 
 ## Pilot (superseded)
 
