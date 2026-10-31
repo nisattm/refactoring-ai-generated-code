@@ -1,0 +1,13 @@
+{
+  "tests": 282,
+  "passed": 281,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 0,
+  "failed_cases": [
+    "T-MEM-06-a"
+  ],
+  "set": "feedback",
+  "pytest_exit_code": 1,
+  "duration_s": 170.502
+}
