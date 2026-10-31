@@ -22,6 +22,7 @@ from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.loans.models import Loan
 from lms.members.models import Member
+from lms.notifications.service import notify_reservation
 from lms.reservations.models import ACTIVE_STATUSES, Reservation
 
 RESERVATION_LIMIT = 3
@@ -38,6 +39,9 @@ def get_reservation_or_404(db: Session, reservation_id: int) -> Reservation:
     return reservation
 
 
+_NOTIFIED_EVENTS = frozenset({"reservation_ready", "reservation_in_transit", "reservation_expired"})
+
+
 def _emit(
     db: Session,
     now: datetime.datetime,
@@ -46,7 +50,7 @@ def _emit(
     actor_user_id: int | None,
     **extra: Any,
 ) -> None:
-    """Report a reservation event (section 13) to the audit log."""
+    """Report a reservation event (section 13) to the audit log and, where LIB-NOT-01 says so, notify the member."""
     details: dict[str, Any] = {
         "book_id": reservation.book_id,
         "member_id": reservation.member_id,
@@ -63,6 +67,8 @@ def _emit(
         entity_id=reservation.id,
         details=details,
     )
+    if event in _NOTIFIED_EVENTS or (event == "reservation_cancelled" and extra.get("reason") != "member_request"):
+        notify_reservation(db, now, event, reservation)
 
 
 # --- queries used by other modules ----------------------------------------------

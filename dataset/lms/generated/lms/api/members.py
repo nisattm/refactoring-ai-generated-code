@@ -115,10 +115,10 @@ def update_member(
 
 
 @router.post("/{member_id}/renew-membership", response_model=MemberOut)
-def renew_membership(member_id: MemberId, request: Request, db: SessionDep, _: StaffOnly) -> MemberOut:
-    day = _today(request)
+def renew_membership(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
+    now = local_now(request.app.state.settings.clock)
     member = service.get_member_or_404(db, member_id)
-    return member_out(service.renew_membership(member, day), day)
+    return member_out(service.renew_membership(db, now, staff.user, member), now.date())
 
 
 @router.post("/{member_id}/deactivate", response_model=MemberOut)
@@ -130,9 +130,10 @@ def deactivate_member(member_id: MemberId, request: Request, db: SessionDep, sta
 
 
 @router.post("/{member_id}/activate", response_model=MemberOut)
-def activate_member(member_id: MemberId, request: Request, db: SessionDep, _: StaffOnly) -> MemberOut:
+def activate_member(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
+    now = local_now(request.app.state.settings.clock)
     member = service.get_member_or_404(db, member_id)
-    return member_out(service.activate_member(member), _today(request))
+    return member_out(service.activate_member(db, now, staff.user, member), now.date())
 
 
 @router.get("/{member_id}/summary", response_model=MemberSummaryOut)

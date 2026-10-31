@@ -16,6 +16,7 @@ from lms.core.errors import Conflict, NotFound
 from lms.core.money import ZERO, format_amount, quantize
 from lms.fines.models import Fee, Payment, PaymentAllocation
 from lms.loans.models import Loan
+from lms.notifications.service import notify_fee_created, notify_fee_waived, notify_payment_received
 
 LATE_FEE_CAP = Decimal("100.00")
 LOST_PROCESSING_FEE = Decimal("25.00")
@@ -96,6 +97,7 @@ def create_fee(
         entity_id=fee.id,
         details={"member_id": member_id, "loan_id": loan_id, "kind": kind, "amount": format_amount(amount)},
     )
+    notify_fee_created(db, now, fee)
     return fee
 
 
@@ -149,6 +151,7 @@ def record_payment(
             "allocations": [{"fee_id": f, "amount": format_amount(a)} for f, a in allocations],
         },
     )
+    notify_payment_received(db, now, member_id, amount)
     return payment, allocations
 
 
@@ -179,4 +182,5 @@ def waive_fee(db: Session, now: datetime.datetime, actor: User, fee: Fee, reason
         entity_id=fee.id,
         details={"member_id": fee.member_id, "reason": reason, "waived_amount": format_amount(waived_amount)},
     )
+    notify_fee_waived(db, now, fee, waived_amount)
     return fee

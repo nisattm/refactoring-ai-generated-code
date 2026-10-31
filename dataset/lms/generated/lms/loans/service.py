@@ -28,6 +28,7 @@ from lms.loans.models import Loan
 from lms.members import service as members
 from lms.members.models import Member
 from lms.members.types import MEMBERSHIP_TYPES
+from lms.notifications.service import notify_loan
 from lms.reservations import service as reservations
 
 
@@ -127,6 +128,7 @@ def lend(
             "due_date": loan.due_date.isoformat(),
         },
     )
+    notify_loan(db, now, "loan_created", loan)
     return loan
 
 
@@ -173,6 +175,7 @@ def renew(
             "renewal_count": loan.renewal_count,
         },
     )
+    notify_loan(db, now, "loan_renewed", loan)
     return loan
 
 
@@ -231,6 +234,7 @@ def return_loan(
             "damage_fee": format_amount(damage_fee) if damage_fee is not None else None,
         },
     )
+    notify_loan(db, now, "loan_returned", loan)
     if loan.late_days > 0:
         create_fee(
             db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="late_fee",
@@ -268,6 +272,7 @@ def report_lost(
         entity_id=loan.id,
         details={"member_id": loan.member_id, "copy_id": loan.copy_id, "late_days": loan.late_days},
     )
+    notify_loan(db, now, "loan_lost", loan)
     if loan.late_days > 0:
         create_fee(
             db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="late_fee",

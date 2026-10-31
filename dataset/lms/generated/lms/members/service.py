@@ -23,6 +23,7 @@ from lms.fines.schemas import BLOCKING_DEBT
 from lms.loans.models import Loan
 from lms.members.models import Member
 from lms.members.types import MEMBERSHIP_TYPES, initial_valid_until
+from lms.notifications.service import notify_member_deactivated, notify_membership_renewed
 from lms.reservations import service as reservations
 
 
@@ -127,6 +128,25 @@ def register_member(
         entity_id=user.id,
         details={"email": email, "full_name": full_name, "role": "member", "member_id": member.id},
     )
+    record(
+        db,
+        at=now,
+        event="member_registered",
+        actor_user_id=actor.id,
+        entity_type="member",
+        entity_id=member.id,
+        details={
+            "member_no": member.member_no,
+            "full_name": full_name,
+            "email": email,
+            "phone": phone,
+            "membership_type": membership_type,
+            "university_id": university_id,
+            "home_branch_id": home_branch_id,
+            "user_id": user.id,
+            "valid_until": member.valid_until.isoformat(),
+        },
+    )
     return member
 
 
@@ -150,6 +170,7 @@ def update_member(db: Session, now: datetime.datetime, actor: User, member: Memb
     if new["university_id"] != member.university_id:
         _check_unique_university_id(db, new["university_id"], own_member_id=member.id)
 
+    diff = changes({name: getattr(member, name) for name in new}, new)
     for name, value in new.items():
         setattr(member, name, value)
     member.university_id_key = normalize(member.university_id) if member.university_id is not None else None
@@ -162,20 +183,36 @@ def update_member(db: Session, now: datetime.datetime, actor: User, member: Memb
         record(
             db, at=now, event="user_updated", actor_user_id=actor.id, entity_type="user", entity_id=user.id, details=account
         )
+    if diff:
+        record(
+            db, at=now, event="member_updated", actor_user_id=actor.id, entity_type="member", entity_id=member.id, details=diff
+        )
     return member
 
 
 # --- membership lifecycle ---------------------------------------------------
 
 
-def renew_membership(member: Member, today: datetime.date) -> Member:
+def renew_membership(db: Session, now: datetime.datetime, actor: User, member: Member) -> Member:
     """LIB-MEM-09."""
+    today = now.date()
     if member.status == "passive":
         raise Conflict("The member is passive", code="MEMBER_PASSIVE")
+    old_valid_until = member.valid_until
     if member.valid_until >= today:
         member.valid_until += datetime.timedelta(days=MEMBERSHIP_TYPES[member.membership_type].validity_days)
     else:
         member.valid_until = initial_valid_until(member.membership_type, today)
+    record(
+        db,
+        at=now,
+        event="membership_renewed",
+        actor_user_id=actor.id,
+        entity_type="member",
+        entity_id=member.id,
+        details={"valid_until": {"old": old_valid_until.isoformat(), "new": member.valid_until.isoformat()}},
+    )
+    notify_membership_renewed(db, now, member.id, member.valid_until)
     return member
 
 
@@ -188,15 +225,34 @@ def deactivate_member(
     if db.scalar(sa.select(Loan.id).where(Loan.member_id == member.id, Loan.status == "open").limit(1)) is not None:
         raise Conflict("The member has open loans", code="MEMBER_HAS_OPEN_LOANS")
     member.status = "passive"
+    record(
+        db,
+        at=now,
+        event="member_deactivated",
+        actor_user_id=actor.id,
+        entity_type="member",
+        entity_id=member.id,
+        details={"status": {"old": "active", "new": "passive"}},
+    )
+    notify_member_deactivated(db, now, member.id)
     reservations.cancel_for_deactivation(db, now, actor, holidays, member)
     return member
 
 
-def activate_member(member: Member) -> Member:
+def activate_member(db: Session, now: datetime.datetime, actor: User, member: Member) -> Member:
     """LIB-MEM-11."""
     if member.status == "active":
         raise Conflict("The member is already active", code="MEMBER_ALREADY_ACTIVE")
     member.status = "active"
+    record(
+        db,
+        at=now,
+        event="member_activated",
+        actor_user_id=actor.id,
+        entity_type="member",
+        entity_id=member.id,
+        details={"status": {"old": "passive", "new": "active"}},
+    )
     return member
 
 
