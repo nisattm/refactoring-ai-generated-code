@@ -90,9 +90,9 @@ Names and signatures are fixed; both test authors rely on them.
 | `clock` | `lms.FixedClock(start)` |
 | `settings` | `lms.Settings(database_url="sqlite://", clock=clock)` |
 | `app` | `lms.create_app(settings)` |
-| `client` | `fastapi.testclient.TestClient(app)` |
-| `admin` | Authorization header dict of the bootstrap admin (`admin@library.local` / `ChangeMe123`) |
-| `librarian` | Header dict of a librarian created by the admin (`lib@library.local` / `Librarian123`) |
+| `client` | `fastapi.testclient.TestClient(app)` that renews `session` headers after expiry (see `session`) |
+| `admin` | Authorization header dict of the bootstrap admin (`admin@library.local` / `ChangeMe123`); renewed by `client` after expiry |
+| `librarian` | Header dict of a librarian created by the admin (`lib@library.local` / `Librarian123`); renewed by `client` after expiry |
 | `branch_a`, `branch_b` | Branches created by the admin, codes `AA` and `BB` (JSON dicts; branch codes are 2–10 characters, LIB-BR) |
 
 **`support/api.py`** — every function takes `expect` (the success status by default), asserts the status code and returns the parsed JSON (or a header dict).
@@ -102,7 +102,8 @@ Names and signatures are fixed; both test authors rely on them.
 | `login(client, email, password, expect=200)` | Header dict `{"Authorization": "Bearer …"}` |
 | `create_branch(client, headers, code, name=None, expect=201)` | New branch |
 | `register_member(client, headers, *, home_branch_id, membership_type="student", email=None, password="Member1234", expect=201, **fields)` | New member; unique e-mail and `university_id` (or `phone` for guests) generated |
-| `member_headers(client, member, password="Member1234")` | Header dict for that member |
+| `member_headers(client, member, password="Member1234")` | Header dict for that member (a `session`, renewed after expiry) |
+| `session(client, email, password)` | Like `login`, but `client` logs in again when the clock has passed the session's expiry (LIB-AUTH-12), so tests can move the clock by days. Used by `admin`, `librarian` and `member_headers`; expiry tests use `login` |
 | `create_book(client, headers, *, title="Book", isbn=None, expect=201, **fields)` | New book; creates author and publisher if needed; unique valid ISBN-13 generated; default `publication_year` 2020, `language` `"tr"`, `classification` `"813"` |
 | `add_copy(client, headers, book_id, *, home_branch_id, price="100.00", barcode=None, expect=201)` | New copy; unique barcode generated; `acquired_on` `"2025-01-01"` (tests move the clock back to October 2026, so the default must be earlier) |
 | `lend(client, headers, member_id, copy_id, expect=201)` | New loan |

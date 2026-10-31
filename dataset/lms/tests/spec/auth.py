@@ -147,8 +147,9 @@ def TEST(client):
 '''),
     dict(id="T-AUTH-12-b", req="LIB-AUTH-12", type="Error", input="Token used 12 hours after login", expected="`401 TOKEN_EXPIRED`", code='''
 def TEST(client, clock, librarian):
+    headers = login(client, *LIB)
     clock.advance(hours=12)
-    r = client.get("/api/v1/auth/me", headers=librarian)
+    r = client.get("/api/v1/auth/me", headers=headers)
     assert r.status_code == 401 and error_code(r) == "TOKEN_EXPIRED"
 '''),
     dict(id="T-AUTH-13-a", req="LIB-AUTH-13", type="Boundary", input="Login 09:00; request at 20:59:59 and at 21:00:00", expected="200, then `401 TOKEN_EXPIRED`", code='''
