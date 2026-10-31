@@ -75,7 +75,7 @@ Claude Code loads `CLAUDE.md`, hooks, skills, settings and auto memory automatic
 ## Model and thinking settings
 
 - **Model check:** the JSON result of every run lists usage per model. A run in which any model other than Claude Sonnet 5.5 appears is invalid and repeated.
-- **Thinking:** on Sonnet 5.5 thinking cannot be turned off completely; `disabled` is rejected and the lowest setting is `between_tools` (works only at low, medium and high effort). Thinking tokens count as output tokens. The thinking setting and the effort level are chosen in the pilot and kept the same in all three approaches.
+- **Thinking:** on Sonnet 5.5 thinking cannot be turned off completely; `disabled` is rejected and the lowest setting is `between_tools` (works only at low, medium and high effort). Thinking tokens count as output tokens. Effort is `high` (`--effort high`), as in the generation (decision of 31 October 2026); the thinking setting is chosen in the pilot. Both are the same in all three approaches.
 
 ## Usage limits
 

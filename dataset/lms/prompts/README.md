@@ -52,7 +52,7 @@ docker run --rm --env-file .env -v "${PWD}/dataset/lms/generated:/work" -w /work
   claude -p "$(cat dataset/lms/prompts/step-NN.md)" \
   --model claude-sonnet-5-5 \
   --output-format json \
-  --effort medium \
+  --effort high \
   --permission-mode dontAsk \
   --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(python *)" "Bash(python3 *)" "Bash(mkdir *)" "Bash(cd *)" "Bash(pip install -r requirements.txt)" "Bash(pip3 install -r requirements.txt)" \
   > results/generation/step-NN.json
@@ -63,10 +63,10 @@ docker run --rm --env-file .env -v "${PWD}/dataset/lms/generated:/work" -w /work
 | `--env-file .env` | Pro login: the long-lived token `CLAUDE_CODE_OAUTH_TOKEN` from `.env` (never committed). Verified in a clean container with `check-claude` ([`../../../docs/environment.md`](../../../docs/environment.md#4a-claude-code-with-the-pro-subscription-once-per-person)) |
 | `-p`, `--output-format json` | Non-interactive run; the JSON result feeds `scripts/cost.py` |
 | `--permission-mode dontAsk` | Only reads and the listed tools run; anything that would ask is denied, so no call waits for a person and every step has the same permissions |
-| `--effort medium` | Fixed effort level, written explicitly because the JSON result does not record it and the default can change between Claude Code versions |
+| `--effort high` | Fixed effort level, written explicitly because the JSON result does not record it and the default can change between Claude Code versions |
 | `--allowedTools` | Exactly the tools of the "Tools allowed" rule. `Bash(python3 *)` is needed because the model writes `python3`; a compound command (`&&`, `;`, `\|`, loops) must match a rule in every part. The list does not stop `python -m pip install <package>`; a package missing from the image is caught by the app-start check in a fresh container |
 
-Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. Effort: `medium` for every step (Sonnet 5.5's documented default, now fixed in the command); thinking stays at the default of the pinned version. The setting of the refactoring runs is chosen in the Week 5 pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)). The Claude Code version is pinned in the image.
+Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. Effort: `high` for every step (team decision, 31 October 2026; the same level is used in the three refactoring approaches); thinking stays at the default of the pinned version. The setting of the refactoring runs is chosen in the Week 5 pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)). The Claude Code version is pinned in the image.
 
 Windows PowerShell is not used for this command: `$(cat …)` is bash syntax, and in Windows PowerShell 5.1 the `>` redirection writes UTF-16, which `scripts/cost.py` cannot read as UTF-8.
 
