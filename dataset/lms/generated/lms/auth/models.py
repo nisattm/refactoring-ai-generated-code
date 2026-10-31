@@ -1,4 +1,4 @@
-"""User model (section 6.1). Sessions are added with the login step."""
+"""User and session models (section 6.1)."""
 
 from __future__ import annotations
 
@@ -29,3 +29,17 @@ class User(Base):
     member_id: Mapped[int | None] = mapped_column(default=None)
     created_at: Mapped[datetime.datetime] = mapped_column(TZDateTime)
     last_login_at: Mapped[datetime.datetime | None] = mapped_column(TZDateTime, default=None)
+
+
+class AuthSession(Base):
+    """A login session. Only the SHA-256 digest of the token is stored (LIB-AUTH-07)."""
+
+    __tablename__ = "sessions"
+    __table_args__ = {"sqlite_autoincrement": True}
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(sa.ForeignKey("users.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(sa.String(64), unique=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(TZDateTime)
+    expires_at: Mapped[datetime.datetime] = mapped_column(TZDateTime)
+    revoked_at: Mapped[datetime.datetime | None] = mapped_column(TZDateTime, default=None)

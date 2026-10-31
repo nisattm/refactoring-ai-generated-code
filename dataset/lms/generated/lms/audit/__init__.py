@@ -1,1 +1,1 @@
-"""Module placeholder; implemented in a later step."""
+"""Module 13: Audit log and import/export. Only audit recording exists so far."""
