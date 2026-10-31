@@ -52,6 +52,7 @@ Approved by Nisa (project lead) in the design discussion; recorded here because 
 | 2026-10-31 | Copy branch while on loan | `current_branch_id` of an `on_loan` copy stays the branch it was lent from until return or report-lost (v0.7) |
 | 2026-10-31 | Pilots | Week 3 generation pilot covers generation only; the refactoring pilot moves to Week 5, when the runners exist. Generation uses the default effort and thinking of the pinned Claude Code version |
 | 2026-10-31 | Generation restart after the pilot | The pilot (steps 00–01, tag `pilot-steps-00-01`) showed that the model could not run any code: `python3` and compound commands were denied. Allow list extended (`python3`, `mkdir`, `cd`, `pip3 install -r requirements.txt`), effort fixed explicitly as `--effort high`, steps 00–01 generated again from an empty folder. Pilot results kept under `results/generation/pilot/`, its cost rows marked `pilot` |
+| 2026-10-31 | Bash allowed in the container | The wider list failed the permission check (`mkdir -p x && cd x && python3 …` denied; the model then gave up on Bash). `--allowedTools` is now `Read Write Edit Glob Grep Bash` with `dontAsk`: argument patterns are fragile and add nothing, since `python` can already do anything. The boundary is the container (only the working copy, removed after each step). The network stays open for the API; the tests are never in the container and no prompt or `REQUIREMENTS.md` names the repository |
 
 ## Consequences
 

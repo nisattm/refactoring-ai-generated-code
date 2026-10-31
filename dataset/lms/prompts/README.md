@@ -10,7 +10,7 @@ How the LMS is generated with Claude Code from [`../requirements.md`](../require
 | Environment | Fresh container per step from the pinned image; working copy `dataset/lms/generated/` mounted; nothing else from the repository is visible (no tests, no `dataset/README.md`, no docs) |
 | Input | `requirements.md` copied into the working copy as `REQUIREMENTS.md` (not `CLAUDE.md`, which Claude Code would load automatically) and the step prompt below |
 | Prompts | Only what to build and the order. **No quality hints** (no "clean", "maintainable", "well structured", no smell names, no design advice). Identical wording pattern for every step |
-| Tools allowed | Read, write and edit files; run `python` / `python3`, `mkdir`, `cd` and `pip install -r requirements.txt` inside the container. Other shell tools (`sed`, `cat >`, `curl`, …) are denied; the model uses the file tools instead |
+| Tools allowed | Read, write and edit files; any shell command inside the container (`Bash`). Other tools (WebFetch, WebSearch, …) are denied. The boundary is the container: it sees only the working copy and is removed after every step |
 | Hands off | Generated code is never edited by hand ([`../../README.md`](../../README.md#generation-rules)) |
 | Integration errors | If a step breaks earlier behavior or the app does not start, the fix is an additional prompt (`step-NN-fix-M.md`), logged and counted in the generation cost |
 | Logging | Every call: JSON result through `scripts/cost.py`, plus a row in `../generation-log.md` |
@@ -54,7 +54,7 @@ docker run --rm --env-file .env -v "${PWD}/dataset/lms/generated:/work" -w /work
   --output-format json \
   --effort high \
   --permission-mode dontAsk \
-  --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(python *)" "Bash(python3 *)" "Bash(mkdir *)" "Bash(cd *)" "Bash(pip install -r requirements.txt)" "Bash(pip3 install -r requirements.txt)" \
+  --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash" \
   > results/generation/step-NN.json
 ```
 
@@ -64,7 +64,7 @@ docker run --rm --env-file .env -v "${PWD}/dataset/lms/generated:/work" -w /work
 | `-p`, `--output-format json` | Non-interactive run; the JSON result feeds `scripts/cost.py` |
 | `--permission-mode dontAsk` | Only reads and the listed tools run; anything that would ask is denied, so no call waits for a person and every step has the same permissions |
 | `--effort high` | Fixed effort level, written explicitly because the JSON result does not record it and the default can change between Claude Code versions |
-| `--allowedTools` | Exactly the tools of the "Tools allowed" rule. `Bash(python3 *)` is needed because the model writes `python3`; a compound command (`&&`, `;`, `\|`, loops) must match a rule in every part. The list does not stop `python -m pip install <package>`; a package missing from the image is caught by the app-start check in a fresh container |
+| `--allowedTools` | Exactly the tools of the "Tools allowed" rule. A bare `Bash` allows every shell command. A narrow list (`Bash(python *)`, `Bash(mkdir *)`, …) was tried in the pilot and in the first permission check: compound commands were denied, and after one denial the model stopped running anything and wrote the code blind. Argument patterns are fragile (Claude Code documentation, permission rules), and they add no protection because `python` can already do anything. A redirect to a file outside the working copy (e.g. `> /tmp/x`) can still be denied; such denials are reported, not fixed. A package missing from the image is caught by the app-start check in a fresh container. The network is open (the API needs it); the tests are not in the container and no prompt names the repository |
 
 Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. Effort: `high` for every step, fixed in the command (chosen after the pilot, which ran at the default); thinking stays at the default of the pinned version. The setting of the refactoring runs is chosen in the Week 5 pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)). The Claude Code version is pinned in the image.
 
@@ -72,13 +72,13 @@ Windows PowerShell is not used for this command: `$(cat …)` is bash syntax, an
 
 ## Permission check before step 00
 
-The pilot (tag `pilot-steps-00-01`) showed that the first allow list blocked every attempt of the model to run its code (`python3`, compound commands). Before step 00, the new command is checked once in an empty folder with this prompt and logged with `stage=check`:
+The pilot (tag `pilot-steps-00-01`) showed that the first allow list blocked every attempt of the model to run its code (`python3`, compound commands). A second, wider list (`python3`, `mkdir`, `cd`, `pip3`) failed the first permission check (`results/check/check-permissions.json`): `mkdir -p x && cd x && python3 -c "print('a')"` was denied, and the model then assumed that Bash was not allowed and did not try the other commands. The allow list is therefore a bare `Bash`. Before step 00, the command is checked once in an empty folder with this prompt, written to `results/check/check-permissions-bash.json` and logged with `stage=check`, `run_id=check-permissions-bash`:
 
 ```text
-Run these three shell commands one after another and report for each whether it ran: (1) mkdir -p x && cd x && python3 -c "print('a')"; (2) a python3 heredoc: python3 - <<'EOF' with the line print('b') and EOF; (3) for i in 1 2; do python3 -c "print($i)"; done
+Run these five shell commands one after another and report for each whether it ran: (1) python3 -c "print('a')"; (2) mkdir -p x && python3 -c "print('b')"; (3) mkdir -p y && cd y && python3 -c "print('c')"; (4) a python3 heredoc: python3 - <<'EOF' with the line print('d') and EOF; (5) for i in 1 2; do python3 -c "print($i)"; done
 ```
 
-Expected: all three run and `permission_denials` is empty. If one is denied, the allow list is fixed before step 00.
+Expected: all five run and `permission_denials` is empty. If one is denied, generation does not start before the command is fixed.
 
 ## Test results in the repository
 
