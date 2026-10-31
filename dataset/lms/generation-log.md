@@ -34,9 +34,9 @@ Generation of the LMS with Claude Code, steps 00–09 (31 October 2026, Claude C
 | --- | --- |
 | Size | 6,449 SLOC (radon, `dataset/lms/generated/lms`, 90 Python files; the 17 test files the model wrote are not counted). The plan estimated about 30,000 lines; the size is reported as measured and was not steered |
 | Generation cost | 10.1803 USD equivalent for the 10 calls (all valid, no fix prompt). Tokens: 452 uncached input, 368,331 output, 1,136,532 cache write, 19,500,063 cache read; 86,898 thinking tokens. Time: 2,287.6 s API, 4,373.1 s duration of the calls (about 73 minutes) |
-| Not in that cost | The two permission checks (0.0317 and 0.0379 USD, `stage=check`), the superseded pilot (`results/generation/pilot/`) and the operator session (about 2.69 USD at 20:07, not logged) |
-| Final tests | Feedback 281/282, held-out 238/239 (fixed tests #57 and #58; 62 test files unchanged in every measurement). The 13 `static` cases are checked by reading the code and were not evaluated here |
-| Process | No permission denial, no hidden file, no usage-limit wait, no integration error in the 10 calls. The tests were fixed twice during generation (#57 branch codes, #58 session renewal); steps 00–08 were re-measured on the code of their own commits |
+| Not in that cost | The two permission checks (0.0317 and 0.0379 USD, `stage=check`), the superseded pilot (`results/generation/pilot/`) and the operator session (operator session ≈ 4.08 USD at 23:15, not in the cost log) |
+| Final tests | Feedback 282/282, held-out 239/239 for the step 09 code (fixed tests #57, #58 and #59; 62 test files unchanged in every measurement). The 13 `static` cases are checked by reading the code and were not evaluated here |
+| Process | No permission denial, no hidden file, no usage-limit wait, no integration error in the 10 calls. The tests were fixed three times during and after generation (#57 branch codes, #58 session renewal, #59 the `Işık` search case); steps 00–07 were re-measured after #58 on the code of their own commits, step 09 after #59. Steps 00–08 were not re-measured with the #59 tests |
 
 | Step | SLOC after | Equivalent cost | Feedback | Held-out |
 | --- | --- | --- | --- | --- |
@@ -48,7 +48,7 @@ Generation of the LMS with Claude Code, steps 00–09 (31 October 2026, Claude C
 | 05 | 4,153 | 1.0559 USD | 202/282 | 170/239 |
 | 06 | 4,644 | 1.0690 USD | 231/282 | 195/239 |
 | 07 | 5,177 | 1.1847 USD | 242/282 | 206/239 |
-| 08 | 6,447 | 1.7995 USD | 281/282 | 238/239 |
-| 09 | 6,449 | 0.6347 USD | 281/282 | 238/239 |
+| 08 | 6,447 | 1.7995 USD | 281/282 | 238/239 (before #59) |
+| 09 | 6,449 | 0.6347 USD | 282/282 | 239/239 |
 
-Remaining failures: `T-MEM-06-a` (feedback) and `T-COM-30-b` (held-out). Both expect `q=ISIK` to find a name with `Işık`. LIB-COM-30 folds only `İ`, `I` and `ı` to `i` before `casefold()`; it does not fold `ş` to `s`, so the code may follow the requirement and the two test expectations may be wrong. Not verified by the test owners.
+The two failures seen after steps 08 and 09, `T-MEM-06-a` (feedback) and `T-COM-30-b` (held-out), were test errors: they expected `q=ISIK` to find a name with `Işık`, but LIB-SRCH-01 and LIB-COM-30 fold only `İ`, `I` and `ı` to `i` before `casefold()` and do not fold `ş` to `s`. #59 fixed the tests; the unchanged step 09 code then passed all 282 feedback and 239 held-out tests. The generated code was never edited by hand.
