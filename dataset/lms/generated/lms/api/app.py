@@ -16,7 +16,9 @@ from lms.api import (
     loans,
     members,
     notifications,
+    reports,
     reservations,
+    search,
     transfers,
     users,
 )
@@ -65,6 +67,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api.include_router(fines.router)
     api.include_router(transfers.router)
     api.include_router(notifications.router)
+    api.include_router(search.router)
+    api.include_router(reports.router)
     api.include_router(audit.router)
     app.include_router(api)
     return app

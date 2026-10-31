@@ -12,6 +12,8 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from lms.core.text import normalize
+
 
 class Base(DeclarativeBase):
     """Base of all ORM models. Models set ``__table_args__ = {"sqlite_autoincrement": True}``
@@ -31,6 +33,10 @@ def create_db_engine(database_url: str) -> sa.Engine:
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
+        # Normalization of LIB-COM-30 for columns that have no stored key (used by search, LIB-SRCH-01).
+        dbapi_connection.create_function(
+            "lms_normalize", 1, lambda text: None if text is None else normalize(text), deterministic=True
+        )
 
     return engine
 
