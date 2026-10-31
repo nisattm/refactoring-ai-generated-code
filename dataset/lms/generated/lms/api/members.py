@@ -139,7 +139,7 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
     day = _today(request)
     member = service.get_member_or_404(db, member_id)
     _own_or_staff(principal, member)
-    activity = service.member_activity(db, member, day)
+    activity = service.member_activity(db, member, day, request.app.state.settings.holidays)
     reasons = service.borrowing_blockers(member, activity, day)
     return MemberSummaryOut(
         member=member_out(member, day),

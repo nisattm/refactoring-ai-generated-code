@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+from collections.abc import Container
 from typing import Any
 
 import sqlalchemy as sa
@@ -315,6 +316,7 @@ def add_copy(
     price: Any,
     acquired_on: datetime.date,
     shelf_location: str | None,
+    holidays: Container[datetime.date],
 ) -> Copy:
     """LIB-CAT-07. Also used for received purchase-order lines (LIB-PUR-06)."""
     require_active_branch(db, "home_branch_id", home_branch_id)
@@ -348,7 +350,7 @@ def add_copy(
             "shelf_location": shelf_location,
         },
     )
-    release_copy(db, copy, now)
+    release_copy(db, copy, now, holidays, actor.id)
     return copy
 
 
@@ -392,10 +394,12 @@ def withdraw_copy(db: Session, now: datetime.datetime, actor: User, copy: Copy, 
     return copy
 
 
-def repair_copy(db: Session, now: datetime.datetime, actor: User, copy: Copy) -> Copy:
+def repair_copy(
+    db: Session, now: datetime.datetime, actor: User, copy: Copy, holidays: Container[datetime.date]
+) -> Copy:
     """LIB-CAT-11."""
     if copy.status != "damaged":
         raise invalid_status(copy, "repair")
     record(db, at=now, event="copy_repaired", actor_user_id=actor.id, entity_type="copy", entity_id=copy.id, details={})
-    release_copy(db, copy, now)
+    release_copy(db, copy, now, holidays, actor.id)
     return copy

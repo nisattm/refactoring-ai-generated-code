@@ -1,16 +1,22 @@
-"""Business logic of module 11, branches (LIB-BR-01 to LIB-BR-04)."""
+"""Business logic of module 11, branches (LIB-BR-01 to LIB-BR-05).
+
+Of the transfers only their start exists so far; relocation, arrival and listing are added later.
+"""
 
 from __future__ import annotations
 
 import datetime
+from collections.abc import Container
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from lms.audit.service import changes, record
 from lms.auth.models import User
-from lms.branches.models import Branch
+from lms.branches.models import Branch, Transfer
 from lms.catalog.models import Copy
+from lms.catalog.status import set_status
+from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.members.models import Member
 
@@ -84,3 +90,49 @@ def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Bran
             details=diff,
         )
     return branch
+
+
+def start_transfer(
+    db: Session,
+    now: datetime.datetime,
+    actor_user_id: int | None,
+    copy: Copy,
+    to_branch_id: int,
+    reason: str,
+    holidays: Container[datetime.date],
+    reservation_id: int | None = None,
+) -> Transfer:
+    """LIB-BR-05: the copy becomes ``in_transfer`` and has no current branch until it arrives."""
+    assert copy.current_branch_id is not None
+    started_on = now.date()
+    transfer = Transfer(
+        copy_id=copy.id,
+        from_branch_id=copy.current_branch_id,
+        to_branch_id=to_branch_id,
+        reason=reason,
+        reservation_id=reservation_id,
+        started_on=started_on,
+        expected_on=add_working_days(started_on, 2, holidays),
+        status="in_transit",
+    )
+    set_status(copy, "in_transfer")
+    copy.current_branch_id = None
+    db.add(transfer)
+    db.flush()
+    record(
+        db,
+        at=now,
+        event="transfer_started",
+        actor_user_id=actor_user_id,
+        entity_type="transfer",
+        entity_id=transfer.id,
+        details={
+            "copy_id": copy.id,
+            "from_branch_id": transfer.from_branch_id,
+            "to_branch_id": to_branch_id,
+            "reason": reason,
+            "reservation_id": reservation_id,
+            "expected_on": transfer.expected_on.isoformat(),
+        },
+    )
+    return transfer

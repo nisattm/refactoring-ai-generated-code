@@ -198,6 +198,7 @@ def add_copy(book_id: BookId, body: CopyCreateIn, request: Request, db: SessionD
         price=body.price,
         acquired_on=acquired_on,
         shelf_location=body.shelf_location,
+        holidays=request.app.state.settings.holidays,
     )
     return copy_out(copy)
 
@@ -246,4 +247,4 @@ def withdraw_copy(copy_id: CopyId, body: WithdrawIn, request: Request, db: Sessi
 @router.post("/copies/{copy_id}/repair", response_model=CopyOut)
 def repair_copy(copy_id: CopyId, request: Request, db: SessionDep, staff: StaffOnly) -> CopyOut:
     copy = service.get_copy_or_404(db, copy_id)
-    return copy_out(service.repair_copy(db, _now(request), staff.user, copy))
+    return copy_out(service.repair_copy(db, _now(request), staff.user, copy, request.app.state.settings.holidays))

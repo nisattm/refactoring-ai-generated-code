@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+from collections.abc import Container
 from decimal import Decimal
 from typing import Any
 
@@ -17,9 +18,12 @@ from lms.branches.service import require_active_branch
 from lms.core.errors import Conflict, NotFound, ValidationFailed
 from lms.core.money import ZERO
 from lms.core.text import normalize
+from lms.fines import service as fines
 from lms.fines.schemas import BLOCKING_DEBT
+from lms.loans.models import Loan
 from lms.members.models import Member
 from lms.members.types import MEMBERSHIP_TYPES, initial_valid_until
+from lms.reservations import service as reservations
 
 
 def get_member_or_404(db: Session, member_id: int) -> Member:
@@ -179,7 +183,7 @@ def deactivate_member(db: Session, member: Member, today: datetime.date) -> Memb
     """LIB-MEM-10. Reservations of the member are cancelled here once module 6 exists."""
     if member.status == "passive":
         raise Conflict("The member is already passive", code="MEMBER_PASSIVE")
-    if member_activity(db, member, today).open_loans > 0:
+    if db.scalar(sa.select(Loan.id).where(Loan.member_id == member.id, Loan.status == "open").limit(1)) is not None:
         raise Conflict("The member has open loans", code="MEMBER_HAS_OPEN_LOANS")
     member.status = "passive"
     return member
@@ -207,9 +211,17 @@ class MemberActivity:
     accrued_late_fees: Decimal = ZERO
 
 
-def member_activity(db: Session, member: Member, today: datetime.date) -> MemberActivity:
-    """No loans, reservations or fees exist before those modules are added."""
-    return MemberActivity()
+def member_activity(
+    db: Session, member: Member, today: datetime.date, holidays: Container[datetime.date]
+) -> MemberActivity:
+    open_loans = db.scalars(sa.select(Loan).where(Loan.member_id == member.id, Loan.status == "open")).all()
+    return MemberActivity(
+        open_loans=len(open_loans),
+        overdue_loans=sum(1 for loan in open_loans if today > loan.due_date),
+        active_reservations=reservations.count_active(db, member.id),
+        outstanding_fees=fines.outstanding_fees(db, member.id),
+        accrued_late_fees=fines.accrued_late_fees(db, member.id, today, holidays),
+    )
 
 
 def borrowing_blockers(member: Member, activity: MemberActivity, today: datetime.date) -> list[str]:
