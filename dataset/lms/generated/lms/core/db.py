@@ -39,6 +39,8 @@ def create_schema(engine: sa.Engine) -> None:
     """LIB-TECH-07: create missing tables."""
     import lms.audit.models  # noqa: F401  (register models)
     import lms.auth.models  # noqa: F401
+    import lms.branches.models  # noqa: F401
+    import lms.members.models  # noqa: F401
 
     Base.metadata.create_all(engine)
 

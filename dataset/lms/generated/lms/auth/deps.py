@@ -71,3 +71,4 @@ def require_roles(*roles: str) -> Callable[[Principal], Principal]:
 
 AnyUser = CurrentPrincipal
 AdminOnly = Annotated[Principal, Depends(require_roles("admin"))]
+StaffOnly = Annotated[Principal, Depends(require_roles("librarian", "admin"))]
