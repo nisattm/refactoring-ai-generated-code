@@ -1,8 +1,8 @@
 {
   "tests": 239,
-  "passed": 49,
-  "failed": 29,
-  "errors": 161,
+  "passed": 61,
+  "failed": 178,
+  "errors": 0,
   "skipped": 0,
   "failed_cases": [
     "T-API-01-b",
@@ -11,8 +11,6 @@
     "T-AUD-02-b",
     "T-AUD-04-a",
     "T-AUTH-24-b",
-    "T-BR-01-b",
-    "T-BR-02-a",
     "T-BR-03-b",
     "T-BR-04-b",
     "T-BR-05-b",
@@ -32,7 +30,6 @@
     "T-CAT-11-b",
     "T-CAT-12-a",
     "T-COM-13-b",
-    "T-COM-14-a",
     "T-COM-30-b",
     "T-E2E-02",
     "T-E2E-04",
@@ -114,16 +111,7 @@
     "T-LOAN-14-d",
     "T-LOAN-14-f",
     "T-LOAN-14-h",
-    "T-MEM-01-b",
-    "T-MEM-02-b",
-    "T-MEM-04-b",
-    "T-MEM-05-b",
-    "T-MEM-06-b",
-    "T-MEM-07-b",
-    "T-MEM-08-b",
-    "T-MEM-09-b",
     "T-MEM-10-b",
-    "T-MEM-11-b",
     "T-MEM-12-b",
     "T-NOT-01-b",
     "T-NOT-01-d",
@@ -198,5 +186,5 @@
   ],
   "set": "heldout",
   "pytest_exit_code": 1,
-  "duration_s": 66.06
+  "duration_s": 72.302
 }
