@@ -167,7 +167,7 @@ def test_t_com_28_b(client, librarian):
 def test_t_com_30_b(client, admin):
     """T-COM-30-b (LIB-COM-30): The user is found"""
     client.post("/api/v1/users", headers=admin, json=user_payload(full_name="Işık Yılmaz"))
-    items = client.get("/api/v1/users", headers=admin, params={"q": "ISIK"}).json()["items"]
+    items = client.get("/api/v1/users", headers=admin, params={"q": "IŞIK"}).json()["items"]
     assert [u["full_name"] for u in items] == ["Işık Yılmaz"]
 
 

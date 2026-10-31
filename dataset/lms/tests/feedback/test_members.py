@@ -84,7 +84,7 @@ def test_t_mem_06_a(client, librarian, branch_a):
     register_member(client, librarian, home_branch_id=branch_a["id"], full_name="Işık Demir")
     register_member(client, librarian, home_branch_id=branch_a["id"], full_name="Can Kaya", membership_type="guest")
     q = lambda **p: [m["full_name"] for m in client.get("/api/v1/members", headers=librarian, params=p).json()["items"]]
-    assert q(q="ISIK") == ["Işık Demir"]
+    assert q(q="IŞIK") == ["Işık Demir"]
     assert q(membership_type="guest") == ["Can Kaya"]
     assert q(q="M000002") == ["Can Kaya"]
 

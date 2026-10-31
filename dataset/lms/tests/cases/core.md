@@ -61,7 +61,7 @@ Generated from one case list; 87 cases for 64 requirements (feedback 43, held-ou
 | T-COM-28-c | LIB-COM-28 | Error | Admin: `PATCH /api/v1/users/9999` with invalid `role`; then with a valid body | 422 (validation before existence); then 404 | feedback |
 | T-COM-29-a | LIB-COM-29 | Error | Register a member with `home_branch_id` 999 | `404 NOT_FOUND`, `details` `{"field": "home_branch_id", "id": 999}` | feedback |
 | T-COM-30-a | LIB-COM-30 | Boundary | Users `isik@library.local` and `ISIK@library.local` | Second returns `409 CONFLICT` | feedback |
-| T-COM-30-b | LIB-COM-30 | Normal | User named `"Işık Yılmaz"`; filter `q=ISIK` | The user is found | held-out |
+| T-COM-30-b | LIB-COM-30 | Normal | User named `"Işık Yılmaz"`; filter `q=IŞIK` (LIB-SRCH-01: `ş` is not folded) | The user is found | held-out |
 | T-IF-01-a | LIB-IF-01 | Normal | `lms.create_app(settings)` | A FastAPI application | feedback |
 | T-IF-02-a | LIB-IF-02 | Boundary | `create_app` twice on the same database file | No error; exactly one admin | held-out |
 | T-IF-03-a | LIB-IF-03 | Normal | Two apps with different database files; branch created in one | The other app has no branch | feedback |
