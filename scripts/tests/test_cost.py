@@ -108,5 +108,5 @@ def test_cli_exit_code(tmp_path):
 
 
 def test_template_header_matches_columns():
-    header = (ROOT / "metrics" / "cost-log.csv").read_text(encoding="utf-8").strip().split(",")
+    header = (ROOT / "metrics" / "cost-log.csv").read_text(encoding="utf-8").splitlines()[0].split(",")
     assert header == cost.COLUMNS
