@@ -30,7 +30,9 @@ def err(r, status, code):
 # --- interface -------------------------------------------------------------
 
 def test_exports():
-    assert set(lms.__all__) == {"create_app", "Settings", "Clock", "SystemClock", "FixedClock", "DEFAULT_HOLIDAYS"}
+    assert set(lms.__all__) == {
+        "create_app", "Settings", "Clock", "SystemClock", "FixedClock", "DEFAULT_HOLIDAYS", "import_dataset", "export_dataset",
+    }
     assert len(lms.DEFAULT_HOLIDAYS) == 27
 
 

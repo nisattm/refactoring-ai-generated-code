@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import weakref
 from collections.abc import Iterator
 
 import sqlalchemy as sa
@@ -41,6 +42,23 @@ def create_db_engine(database_url: str) -> sa.Engine:
     return engine
 
 
+_MEMORY_ENGINES: dict[int, sa.Engine] = {}
+
+
+def get_engine(settings) -> sa.Engine:  # noqa: ANN001
+    """The engine of ``settings``. An in-memory database exists once per ``Settings`` object, so that
+    ``create_app`` and ``import_dataset`` / ``export_dataset`` called with the same settings see the same data."""
+    url = make_url(settings.database_url)
+    if url.get_backend_name() == "sqlite" and url.database in (None, "", ":memory:"):
+        key = id(settings)
+        engine = _MEMORY_ENGINES.get(key)
+        if engine is None:
+            engine = _MEMORY_ENGINES[key] = create_db_engine(settings.database_url)
+            weakref.finalize(settings, _MEMORY_ENGINES.pop, key, None)
+        return engine
+    return create_db_engine(settings.database_url)
+
+
 def create_schema(engine: sa.Engine) -> None:
     """LIB-TECH-07: create missing tables."""
     import lms.audit.models  # noqa: F401  (register models)
@@ -51,6 +69,7 @@ def create_schema(engine: sa.Engine) -> None:
     import lms.loans.models  # noqa: F401
     import lms.members.models  # noqa: F401
     import lms.notifications.models  # noqa: F401
+    import lms.purchasing.models  # noqa: F401
     import lms.reservations.models  # noqa: F401
 
     Base.metadata.create_all(engine)

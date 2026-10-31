@@ -12,10 +12,12 @@ from lms.api import (
     branches,
     calendar,
     catalog,
+    dataexchange,
     fines,
     loans,
     members,
     notifications,
+    purchasing,
     reports,
     reservations,
     search,
@@ -25,7 +27,7 @@ from lms.api import (
 from lms.api.errors import register_error_handlers
 from lms.auth.bootstrap import ensure_bootstrap_admin
 from lms.core.clock import today
-from lms.core.db import create_db_engine, create_schema
+from lms.core.db import create_schema, get_engine
 from lms.core.settings import Settings
 
 API_PREFIX = "/api/v1"
@@ -39,7 +41,7 @@ class HealthOut(BaseModel):
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings if settings is not None else Settings()
 
-    engine = create_db_engine(settings.database_url)
+    engine = get_engine(settings)
     create_schema(engine)
     session_factory = sessionmaker(engine, expire_on_commit=False)
     with session_factory.begin() as session:
@@ -69,6 +71,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api.include_router(notifications.router)
     api.include_router(search.router)
     api.include_router(reports.router)
+    api.include_router(purchasing.router)
     api.include_router(audit.router)
+    api.include_router(dataexchange.router)
     app.include_router(api)
     return app
