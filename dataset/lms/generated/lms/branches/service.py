@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch
+from lms.catalog.models import Copy
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.members.models import Member
 
@@ -54,8 +55,11 @@ def require_active_branch(db: Session, field: str, branch_id: int) -> Branch:
 
 
 def is_branch_in_use(db: Session, branch_id: int) -> bool:
-    """LIB-BR-03. Copies and active reservations are checked here as their modules are added."""
-    return db.scalar(sa.select(Member.id).where(Member.home_branch_id == branch_id).limit(1)) is not None
+    """LIB-BR-03. Active reservations are checked here once module 6 is added."""
+    if db.scalar(sa.select(Member.id).where(Member.home_branch_id == branch_id).limit(1)) is not None:
+        return True
+    in_branch = sa.or_(Copy.home_branch_id == branch_id, Copy.current_branch_id == branch_id)
+    return db.scalar(sa.select(Copy.id).where(Copy.status != "withdrawn", in_branch).limit(1)) is not None
 
 
 def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Branch, fields: dict[str, object]) -> Branch:

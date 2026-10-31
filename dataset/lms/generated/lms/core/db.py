@@ -40,6 +40,7 @@ def create_schema(engine: sa.Engine) -> None:
     import lms.audit.models  # noqa: F401  (register models)
     import lms.auth.models  # noqa: F401
     import lms.branches.models  # noqa: F401
+    import lms.catalog.models  # noqa: F401
     import lms.members.models  # noqa: F401
 
     Base.metadata.create_all(engine)

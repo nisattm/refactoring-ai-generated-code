@@ -6,7 +6,7 @@ from fastapi import APIRouter, FastAPI, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import sessionmaker
 
-from lms.api import auth, branches, calendar, members, users
+from lms.api import auth, branches, calendar, catalog, members, users
 from lms.api.errors import register_error_handlers
 from lms.auth.bootstrap import ensure_bootstrap_admin
 from lms.core.clock import today
@@ -46,5 +46,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api.include_router(users.router)
     api.include_router(branches.router)
     api.include_router(members.router)
+    api.include_router(catalog.router)
     app.include_router(api)
     return app
