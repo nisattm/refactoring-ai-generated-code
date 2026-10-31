@@ -14,7 +14,7 @@ Generated from one case list; 29 cases for 13 requirements (feedback 17, held-ou
 | T-MEM-04-b | LIB-MEM-04 | Normal | Active, unexpired member is deactivated | `membership_valid` false | held-out |
 | T-MEM-05-a | LIB-MEM-05 | Error | Second member with the same `university_id` | `409 CONFLICT`, `details.field` `university_id` | feedback |
 | T-MEM-05-b | LIB-MEM-05 | Error | Member e-mail equal to the librarian's e-mail (different case) | `409 CONFLICT`, `details.field` `email` | held-out |
-| T-MEM-06-a | LIB-MEM-06 | Normal | Members Işık (student), Can (guest); filters `q=ISIK`, `membership_type=guest`, `q=M000002` | Işık; Can; Can | feedback |
+| T-MEM-06-a | LIB-MEM-06 | Normal | Members Işık (student), Can (guest); filters `q=IŞIK`, `membership_type=guest`, `q=M000002` | Işık; Can; Can | feedback |
 | T-MEM-06-b | LIB-MEM-06 | Normal | One expired guest, one valid student; filter `membership_valid=false`; ordering | Only the guest; list ordered by `id` | held-out |
 | T-MEM-07-a | LIB-MEM-07 | Normal | PATCH `email` and `full_name` | 200; user account login works with the new e-mail and shows the new name | feedback |
 | T-MEM-07-b | LIB-MEM-07 | Error | PATCH a guest: `university_id` only (type stays guest) | `409 MEMBER_FIELDS_INVALID` | held-out |

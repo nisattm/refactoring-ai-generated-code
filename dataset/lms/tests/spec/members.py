@@ -102,12 +102,12 @@ def TEST(client, librarian, branch_a):
     r = client.post("/api/v1/members", headers=librarian, json=payload(branch_a["id"], email="LIB@library.local"))
     assert r.status_code == 409 and r.json()["error"]["details"]["field"] == "email"
 '''),
-    dict(id="T-MEM-06-a", req="LIB-MEM-06", type="Normal", input="Members Işık (student), Can (guest); filters `q=ISIK`, `membership_type=guest`, `q=M000002`", expected="Işık; Can; Can", code='''
+    dict(id="T-MEM-06-a", req="LIB-MEM-06", type="Normal", input="Members Işık (student), Can (guest); filters `q=IŞIK`, `membership_type=guest`, `q=M000002`", expected="Işık; Can; Can", code='''
 def TEST(client, librarian, branch_a):
     register_member(client, librarian, home_branch_id=branch_a["id"], full_name="Işık Demir")
     register_member(client, librarian, home_branch_id=branch_a["id"], full_name="Can Kaya", membership_type="guest")
     q = lambda **p: [m["full_name"] for m in client.get("/api/v1/members", headers=librarian, params=p).json()["items"]]
-    assert q(q="ISIK") == ["Işık Demir"]
+    assert q(q="IŞIK") == ["Işık Demir"]
     assert q(membership_type="guest") == ["Can Kaya"]
     assert q(q="M000002") == ["Can Kaya"]
 '''),

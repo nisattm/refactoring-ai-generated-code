@@ -335,10 +335,10 @@ def TEST(client, admin):
     r = client.post("/api/v1/users", headers=admin, json=user_payload(email="ISIK@library.local"))
     assert r.status_code == 409 and error_code(r) == "CONFLICT"
 '''),
-    dict(id="T-COM-30-b", req="LIB-COM-30", type="Normal", input="User named `\"Işık Yılmaz\"`; filter `q=ISIK`", expected="The user is found", code='''
+    dict(id="T-COM-30-b", req="LIB-COM-30", type="Normal", input="User named `\"Işık Yılmaz\"`; filter `q=IŞIK` (LIB-SRCH-01: `ş` is not folded)", expected="The user is found", code='''
 def TEST(client, admin):
     client.post("/api/v1/users", headers=admin, json=user_payload(full_name="Işık Yılmaz"))
-    items = client.get("/api/v1/users", headers=admin, params={"q": "ISIK"}).json()["items"]
+    items = client.get("/api/v1/users", headers=admin, params={"q": "IŞIK"}).json()["items"]
     assert [u["full_name"] for u in items] == ["Işık Yılmaz"]
 '''),
 
