@@ -101,7 +101,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeout", type=int, default=3600, help="seconds per set")
     args = parser.parse_args(argv)
 
-    tests, code = args.tests.resolve(), args.code.resolve()
+    # Absolute paths: pytest runs with the tests folder as working directory, so a relative
+    # --out would put the JUnit reports inside the tests folder.
+    tests, code, out = args.tests.resolve(), args.code.resolve(), args.out.resolve()
     if not (tests / "conftest.py").is_file():
         print(f"no conftest.py in {tests}", file=sys.stderr)
         return 2
@@ -111,7 +113,10 @@ def main(argv: list[str] | None = None) -> int:
     if tests == code or code in tests.parents:
         print("the tests must not be inside the code folder", file=sys.stderr)
         return 2
-    args.out.mkdir(parents=True, exist_ok=True)
+    if out == tests or tests in out.parents:
+        print("the output folder must not be inside the tests folder", file=sys.stderr)
+        return 2
+    out.mkdir(parents=True, exist_ok=True)
 
     before = test_hashes.compute(tests)
     problems: dict[str, list[str]] = {}
@@ -119,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
         problems = test_hashes.compare(json.loads(args.baseline.read_text(encoding="utf-8")), before)
 
     sets = SETS if args.set == "both" else (args.set,)
-    results = [run_set(s, tests, code, args.out, args.timeout) for s in sets]
+    results = [run_set(s, tests, code, out, args.timeout) for s in sets]
 
     after_diff = test_hashes.compare(before, test_hashes.compute(tests))
     for kind, paths in after_diff.items():
@@ -134,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
         "test_file_changes": problems,
         "sets": {r["set"]: {k: r[k] for k in ("tests", "passed", "failed", "errors", "skipped")} for r in results},
     }
-    (args.out / "run.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    (out / "run.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
 
     for r in results:
         print(f"{r['set']:9} {r['passed']}/{r['tests']} passed, {r['failed']} failed, "

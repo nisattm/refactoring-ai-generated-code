@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -77,3 +78,23 @@ def test_run_is_invalid_when_a_test_file_changes(tmp_path):
 def test_tests_inside_code_folder_are_rejected(tmp_path):
     tests, _code = _project(tmp_path, "def test_t_x_01_a():\n    pass\n")
     assert run_tests.main(["--code", str(tmp_path), "--tests", str(tests), "--out", str(tmp_path / "o")]) == 2
+
+
+def test_relative_out_is_written_outside_the_tests(tmp_path):
+    # Regression: pytest runs inside the tests folder; a relative --out must still mean the
+    # caller's working directory and must not add files to the tests (generation step 00).
+    tests, code = _project(tmp_path, "def test_t_x_01_a():\n    pass\n")
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        assert run_tests.main(["--code", str(code), "--tests", str(tests), "--out", "out"]) == 0
+    finally:
+        os.chdir(cwd)
+    assert (tmp_path / "out" / "feedback.junit.xml").exists()
+    assert json.loads((tmp_path / "out" / "feedback.json").read_text(encoding="utf-8"))["passed"] == 1
+    assert not list(tests.rglob("*.junit.xml"))
+
+
+def test_out_inside_tests_folder_is_rejected(tmp_path):
+    tests, code = _project(tmp_path, "def test_t_x_01_a():\n    pass\n")
+    assert run_tests.main(["--code", str(code), "--tests", str(tests), "--out", str(tests / "results")]) == 2
