@@ -9,7 +9,7 @@ Test counts after steps 0–8 include failures of rules that need a later module
 
 ## Pilot (superseded)
 
-First run of steps 00–01 with the default effort and the first allow list (tag `pilot-steps-00-01`, results in `../../results/generation/pilot/`). The model could not run any code, so the allow list was extended and effort fixed as `medium` ([`prompts/README.md`](prompts/README.md#permission-check-before-step-00)); steps 00–01 were generated again. These rows are not part of the dataset.
+First run of steps 00–01 with the default effort and the first allow list (tag `pilot-steps-00-01`, results in `../../results/generation/pilot/`). The model could not run any code, so the allow list was extended and effort fixed as `high` ([`prompts/README.md`](prompts/README.md#permission-check-before-step-00)); steps 00–01 were generated again. These rows are not part of the dataset.
 
 | Step | Date | Claude Code / model / effort | Prompt | Session id | Input tok | Output tok | Cache read / write | Equivalent cost | Duration (API / wall) | Files / lines added | SLOC after | App starts / tests (feedback, held-out) | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
