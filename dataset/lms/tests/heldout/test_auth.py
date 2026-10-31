@@ -85,8 +85,9 @@ def test_t_auth_10_a(client, admin):
 
 def test_t_auth_12_b(client, clock, librarian):
     """T-AUTH-12-b (LIB-AUTH-12): 401 TOKEN_EXPIRED"""
+    headers = login(client, *LIB)
     clock.advance(hours=12)
-    r = client.get("/api/v1/auth/me", headers=librarian)
+    r = client.get("/api/v1/auth/me", headers=headers)
     assert r.status_code == 401 and error_code(r) == "TOKEN_EXPIRED"
 
 

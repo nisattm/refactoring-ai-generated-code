@@ -57,6 +57,18 @@ def login(client, email: str, password: str, expect: int = 200) -> dict[str, str
     return {"Authorization": f"Bearer {body['access_token']}"}
 
 
+def session(client, email: str, password: str) -> dict[str, str]:
+    """Like ``login``, but the session is renewed by the test client when the clock has moved
+    past its expiry (conftest.py, ``client``). Used for the fixture users and ``member_headers``,
+    so that tests that move the clock by days do not fail on LIB-AUTH-12. Expiry itself is tested
+    with ``login``."""
+    headers = login(client, email, password)
+    track = getattr(client, "track_session", None)
+    if track is not None:
+        track(headers, email, password)
+    return headers
+
+
 # --- Branches (LIB-BR-01) ---------------------------------------------------------------
 
 def create_branch(client, headers, code: str, name: str | None = None, expect: int = 201):
@@ -88,7 +100,7 @@ def register_member(client, headers, *, home_branch_id: int, membership_type: st
 
 
 def member_headers(client, member: dict, password: str = "Member1234") -> dict[str, str]:
-    return login(client, member["email"], password)
+    return session(client, member["email"], password)
 
 
 # --- Catalog (LIB-CAT-01, LIB-CAT-02, LIB-CAT-03, LIB-CAT-07) ---------------------------
