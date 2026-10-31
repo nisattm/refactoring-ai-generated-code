@@ -10,7 +10,7 @@ How the LMS is generated with Claude Code from [`../requirements.md`](../require
 | Environment | Fresh container per step from the pinned image; working copy `dataset/lms/generated/` mounted; nothing else from the repository is visible (no tests, no `dataset/README.md`, no docs) |
 | Input | `requirements.md` copied into the working copy as `REQUIREMENTS.md` (not `CLAUDE.md`, which Claude Code would load automatically) and the step prompt below |
 | Prompts | Only what to build and the order. **No quality hints** (no "clean", "maintainable", "well structured", no smell names, no design advice). Identical wording pattern for every step |
-| Tools allowed | Read, write and edit files; run `python` and `pip install -r requirements.txt` inside the container. No network beyond the package index |
+| Tools allowed | Read, write and edit files; run `python` / `python3`, `mkdir`, `cd` and `pip install -r requirements.txt` inside the container. Other shell tools (`sed`, `cat >`, `curl`, …) are denied; the model uses the file tools instead |
 | Hands off | Generated code is never edited by hand ([`../../README.md`](../../README.md#generation-rules)) |
 | Integration errors | If a step breaks earlier behavior or the app does not start, the fix is an additional prompt (`step-NN-fix-M.md`), logged and counted in the generation cost |
 | Logging | Every call: JSON result through `scripts/cost.py`, plus a row in `../generation-log.md` |
@@ -52,8 +52,9 @@ docker run --rm --env-file .env -v "${PWD}/dataset/lms/generated:/work" -w /work
   claude -p "$(cat dataset/lms/prompts/step-NN.md)" \
   --model claude-sonnet-5-5 \
   --output-format json \
+  --effort medium \
   --permission-mode dontAsk \
-  --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(python *)" "Bash(pip install -r requirements.txt)" \
+  --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(python *)" "Bash(python3 *)" "Bash(mkdir *)" "Bash(cd *)" "Bash(pip install -r requirements.txt)" "Bash(pip3 install -r requirements.txt)" \
   > results/generation/step-NN.json
 ```
 
@@ -62,11 +63,26 @@ docker run --rm --env-file .env -v "${PWD}/dataset/lms/generated:/work" -w /work
 | `--env-file .env` | Pro login: the long-lived token `CLAUDE_CODE_OAUTH_TOKEN` from `.env` (never committed). Verified in a clean container with `check-claude` ([`../../../docs/environment.md`](../../../docs/environment.md#4a-claude-code-with-the-pro-subscription-once-per-person)) |
 | `-p`, `--output-format json` | Non-interactive run; the JSON result feeds `scripts/cost.py` |
 | `--permission-mode dontAsk` | Only reads and the listed tools run; anything that would ask is denied, so no call waits for a person and every step has the same permissions |
-| `--allowedTools` | Exactly the tools of the "Tools allowed" rule. `Bash(python *)` matches any command that starts with `python`; a compound command (`&&`, `;`, `\|`) must match a rule in every part |
+| `--effort medium` | Fixed effort level, written explicitly because the JSON result does not record it and the default can change between Claude Code versions |
+| `--allowedTools` | Exactly the tools of the "Tools allowed" rule. `Bash(python3 *)` is needed because the model writes `python3`; a compound command (`&&`, `;`, `\|`, loops) must match a rule in every part. The list does not stop `python -m pip install <package>`; a package missing from the image is caught by the app-start check in a fresh container |
 
-Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. Effort and thinking: generation uses the defaults of the pinned Claude Code version (no flag), the same for every step. The setting of the refactoring runs is chosen in the Week 5 pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)). The Claude Code version is pinned in the image.
+Checked against the Claude Code documentation (permission modes, permission rules) on 2026-10-30. Effort: `medium` for every step (Sonnet 5.5's documented default, now fixed in the command); thinking stays at the default of the pinned version. The setting of the refactoring runs is chosen in the Week 5 pilot ([`../../../docs/approaches.md`](../../../docs/approaches.md#model-and-thinking-settings)). The Claude Code version is pinned in the image.
 
 Windows PowerShell is not used for this command: `$(cat …)` is bash syntax, and in Windows PowerShell 5.1 the `>` redirection writes UTF-16, which `scripts/cost.py` cannot read as UTF-8.
+
+## Permission check before step 00
+
+The pilot (tag `pilot-steps-00-01`) showed that the first allow list blocked every attempt of the model to run its code (`python3`, compound commands). Before step 00, the new command is checked once in an empty folder with this prompt and logged with `stage=check`:
+
+```text
+Run these three shell commands one after another and report for each whether it ran: (1) mkdir -p x && cd x && python3 -c "print('a')"; (2) a python3 heredoc: python3 - <<'EOF' with the line print('b') and EOF; (3) for i in 1 2; do python3 -c "print($i)"; done
+```
+
+Expected: all three run and `permission_denials` is empty. If one is denied, the allow list is fixed before step 00.
+
+## Test results in the repository
+
+`scripts/run_tests.py` writes JUnit XML and pytest logs next to the JSON summaries. Only `feedback.json`, `heldout.json` and `run.json` are committed (failed case IDs and counts); `*.junit.xml` and `*.log` are ignored and can be recreated by running the tests on the same code.
 
 ## Reading intermediate test results
 
