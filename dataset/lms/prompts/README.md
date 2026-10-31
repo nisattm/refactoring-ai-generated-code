@@ -1,4 +1,4 @@
-# Generation Plan (proposal, 30 October 2026)
+# Generation Plan
 
 How the LMS is generated with Claude Code from [`../requirements.md`](../requirements.md). Status: **approved** (31 October 2026). The generation pilot (steps 0–1) checks the command, the tests and the cost log before step 2.
 
@@ -83,6 +83,16 @@ Expected: all five run and `permission_denials` is empty. If one is denied, gene
 ## Test results in the repository
 
 `scripts/run_tests.py` writes JUnit XML and pytest logs next to the JSON summaries. Only `feedback.json`, `heldout.json` and `run.json` are committed (failed case IDs and counts); `*.junit.xml` and `*.log` are ignored and can be recreated by running the tests on the same code.
+
+## Workflow: groups and pull requests
+
+To avoid waiting for reviews between steps, steps run without a pause and are reviewed in groups: **00–01, 02–04, 05–07, 08–09** (decision of 31 October 2026).
+
+- One working branch `generation/lms`. Each step is two commits (generated code, then logs) and one generation-log row, and is pushed right after it is logged, so the team can follow every step.
+- At the end of a group, a snapshot branch `generation/steps-NN-MM` is created at that commit and one PR is opened from it. Generation continues on `generation/lms` without waiting for the review.
+- After a group PR is squash-merged, `origin/main` is merged into `generation/lms` (no conflicts: the same changes are on both sides).
+- Steps stop only at the stop conditions: the app does not start, test files changed (`run_tests.py` exit 3), an invalid run (`cost.py` exit 2), the usage limit cut a run, an unexpected hidden file, or a review finding. Fix prompts still need Nisa's approval.
+- Generated code is never pushed directly to `main`: `main-protection` requires one approval for every change.
 
 ## Reading intermediate test results
 

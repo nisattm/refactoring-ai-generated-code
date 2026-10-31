@@ -53,6 +53,7 @@ Approved by Nisa (project lead) in the design discussion; recorded here because 
 | 2026-10-31 | Pilots | Week 3 generation pilot covers generation only; the refactoring pilot moves to Week 5, when the runners exist. Generation uses the default effort and thinking of the pinned Claude Code version |
 | 2026-10-31 | Generation restart after the pilot | The pilot (steps 00–01, tag `pilot-steps-00-01`) showed that the model could not run any code: `python3` and compound commands were denied. Allow list extended (`python3`, `mkdir`, `cd`, `pip3 install -r requirements.txt`), effort fixed explicitly as `--effort high`, steps 00–01 generated again from an empty folder. Pilot results kept under `results/generation/pilot/`, its cost rows marked `pilot` |
 | 2026-10-31 | Bash allowed in the container | The wider list failed the permission check (`mkdir -p x && cd x && python3 …` denied; the model then gave up on Bash). `--allowedTools` is now `Read Write Edit Glob Grep Bash` with `dontAsk`: argument patterns are fragile and add nothing, since `python` can already do anything. The boundary is the container (only the working copy, removed after each step). The network stays open for the API; the tests are never in the container and no prompt or `REQUIREMENTS.md` names the repository |
+| 2026-10-31 | Generation in groups | Steps run without pausing and are reviewed in groups 00–01, 02–04, 05–07, 08–09: one working branch, every step pushed after logging, one PR per group from a snapshot branch. Stop conditions unchanged |
 
 ## Consequences
 
