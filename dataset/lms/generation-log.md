@@ -25,3 +25,30 @@ First run of steps 00–01 with the default effort and the first allow list (tag
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | pilot-00 | 2026-10-31 15:29 (+03:00) | 2.1.308 / claude-sonnet-5-5 / default | `prompts/step-00.md` | 6ecd758d-f897-43c4-b141-1ed98e567887 | 10 | 19,870 | 172,028 / 45,595 | 0.3983 USD | 100.9 s / 107 s | 27 / +521 | 363 | yes / feedback 19/282, held-out 15/239 | 1 permission denial: one long compound Bash command (`mkdir`, `cd`, `for`, heredocs, `python3 -I`) did not match `Bash(python *)`; the model could not run or test anything and wrote all files with the file tools. No hidden files; the model wrote no tests. First `run_tests.py` call used a relative `--out` and was invalid (exit 3: junit files landed in the tests folder, no test file content changed); repeated with an absolute `--out` (exit 1, hashes unchanged). 1,619 thinking tokens |
 | pilot-01 | 2026-10-31 15:38 (+03:00) | 2.1.308 / claude-sonnet-5-5 / default | `prompts/step-01.md` | 84af0f35-e0b4-4b88-abd5-1e18dcba2559 | 20 | 19,942 | 362,501 / 48,424 | 0.4294 USD | 114.6 s / 120 s | 9 / +676 (−2) | 912 | yes / feedback 50/282, held-out 46/239 | 2 permission denials: a compound Bash command (`cd`, `for` loop) and a `python3` heredoc that edited `lms/core/db.py`; the model could not run or test anything and used the file tools instead. No hidden files; the model wrote no tests. No test that passed after step 00 failed after step 01 (31 newly passing in each set). Still failing in the areas of steps 0–1: feedback 15 (auth 4, com 5, core 1, if 3, tech 2), held-out 8 (auth 1, com 4, core 1, if 2); case IDs in `results/generation/pilot/step-01-tests/`. Failures of later modules (loans, fees, reservations, ...) are expected. 3,969 thinking tokens |
+
+## Summary
+
+Generation of the LMS with Claude Code, steps 00–09 (31 October 2026, Claude Code 2.1.308, `claude-sonnet-5-5`, effort `high`, bare `Bash` allow list). Status: the code is the starting point of all experiments once `v0-ai-baseline` is tagged; the tag waits for the approval of the project lead.
+
+| Result | Value |
+| --- | --- |
+| Size | 6,449 SLOC (radon, `dataset/lms/generated/lms`, 90 Python files; the 17 test files the model wrote are not counted). The plan estimated about 30,000 lines; the size is reported as measured and was not steered |
+| Generation cost | 10.1803 USD equivalent for the 10 calls (all valid, no fix prompt). Tokens: 452 uncached input, 368,331 output, 1,136,532 cache write, 19,500,063 cache read; 86,898 thinking tokens. Time: 2,287.6 s API, 4,373.1 s duration of the calls (about 73 minutes) |
+| Not in that cost | The two permission checks (0.0317 and 0.0379 USD, `stage=check`), the superseded pilot (`results/generation/pilot/`) and the operator session (operator session ≈ 4.08 USD at 23:15, not in the cost log) |
+| Final tests | Feedback 282/282, held-out 239/239 for the step 09 code (fixed tests #57, #58 and #59; 62 test files unchanged in every measurement). The 13 `static` cases are checked by reading the code and were not evaluated here |
+| Process | No permission denial, no hidden file, no usage-limit wait, no integration error in the 10 calls. The tests were fixed three times during and after generation (#57 branch codes, #58 session renewal, #59 the `Işık` search case); steps 00–07 were re-measured after #58 on the code of their own commits, step 09 after #59. Steps 00–08 were not re-measured with the #59 tests |
+
+| Step | SLOC after | Equivalent cost | Feedback | Held-out |
+| --- | --- | --- | --- | --- |
+| 00 | 637 | 0.6222 USD | 19/282 | 15/239 |
+| 01 | 1,144 | 0.6453 USD | 50/282 | 46/239 |
+| 02 | 1,780 | 0.8736 USD | 78/282 | 61/239 |
+| 03 | 2,544 | 0.8602 USD | 93/282 | 71/239 |
+| 04 | 3,487 | 1.4354 USD | 173/282 | 141/239 |
+| 05 | 4,153 | 1.0559 USD | 202/282 | 170/239 |
+| 06 | 4,644 | 1.0690 USD | 231/282 | 195/239 |
+| 07 | 5,177 | 1.1847 USD | 242/282 | 206/239 |
+| 08 | 6,447 | 1.7995 USD | 281/282 | 238/239 (before #59) |
+| 09 | 6,449 | 0.6347 USD | 282/282 | 239/239 |
+
+The two failures seen after steps 08 and 09, `T-MEM-06-a` (feedback) and `T-COM-30-b` (held-out), were test errors: they expected `q=ISIK` to find a name with `Işık`, but LIB-SRCH-01 and LIB-COM-30 fold only `İ`, `I` and `ı` to `i` before `casefold()` and do not fold `ş` to `s`. #59 fixed the tests; the unchanged step 09 code then passed all 282 feedback and 239 held-out tests. The generated code was never edited by hand.
