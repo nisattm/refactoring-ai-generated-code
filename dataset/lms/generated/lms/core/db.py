@@ -1,10 +1,12 @@
 """Database engine and per-request transaction (LIB-TECH-05 to LIB-TECH-08)."""
+import datetime
 from collections.abc import Iterator
 
 from fastapi import Request
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.types import DateTime, TypeDecorator
 
 
 class Base(DeclarativeBase):
@@ -46,3 +48,22 @@ def get_session(request: Request) -> Iterator[Session]:
         raise
     finally:
         session.close()
+
+
+class UtcDateTime(TypeDecorator):
+    """Stores aware date-times as UTC and returns them as aware UTC (LIB-COM-03)."""
+
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):  # noqa: ANN001
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            raise ValueError("naive datetime")
+        return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+
+    def process_result_value(self, value, dialect):  # noqa: ANN001
+        if value is None:
+            return None
+        return value.replace(tzinfo=datetime.timezone.utc)
