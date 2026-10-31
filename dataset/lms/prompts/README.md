@@ -84,15 +84,14 @@ Expected: all five run and `permission_denials` is empty. If one is denied, gene
 
 `scripts/run_tests.py` writes JUnit XML and pytest logs next to the JSON summaries. Only `feedback.json`, `heldout.json` and `run.json` are committed (failed case IDs and counts); `*.junit.xml` and `*.log` are ignored and can be recreated by running the tests on the same code.
 
-## Workflow: groups and pull requests
+## Workflow: direct pushes and group reviews
 
-To avoid waiting for reviews between steps, steps run without a pause and are reviewed in groups: **00–01, 02–04, 05–07, 08–09** (decision of 31 October 2026).
+To avoid waiting for reviews between steps, generation is pushed directly to `main` and reviewed in groups: **00–01, 02–04, 05–07, 08–09** (decision of 31 October 2026).
 
-- One working branch `generation/lms`. Each step is two commits (generated code, then logs) and one generation-log row, and is pushed right after it is logged, so the team can follow every step.
-- At the end of a group, a snapshot branch `generation/steps-NN-MM` is created at that commit and one PR is opened from it. Generation continues on `generation/lms` without waiting for the review.
-- After a group PR is squash-merged, `origin/main` is merged into `generation/lms` (no conflicts: the same changes are on both sides).
-- Steps stop only at the stop conditions: the app does not start, test files changed (`run_tests.py` exit 3), an invalid run (`cost.py` exit 2), the usage limit cut a run, an unexpected hidden file, or a review finding. Fix prompts still need Nisa's approval.
-- Generated code is never pushed directly to `main`: `main-protection` requires one approval for every change.
+- For the generation only, the `main-protection` ruleset is set to *Disabled* by Nisa (repository admin). It is set back to *Active* right after the `v0-ai-baseline` tag; until then nothing except the generation is pushed to `main`, and other work waits or stays on its branch.
+- Each step is two commits on `main` (generated code, then logs) and one generation-log row, pushed right after it is logged.
+- At the end of a group, a short report with the commit range (`<first>..<last>`) is posted as a comment on issue #44 (steps 00–01) or #45 (steps 02–09). Nisa reviews the range; a finding stops the next step until it is resolved.
+- Steps also stop at the stop conditions: the app does not start, test files changed (`run_tests.py` exit 3), an invalid run (`cost.py` exit 2), the usage limit cut a run, or an unexpected hidden file. Fix prompts still need Nisa's approval.
 
 ## Reading intermediate test results
 
