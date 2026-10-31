@@ -1,4 +1,4 @@
-# Generation Plan (proposal, 30 October 2026)
+# Generation Plan
 
 How the LMS is generated with Claude Code from [`../requirements.md`](../requirements.md). Status: **approved** (31 October 2026). The generation pilot (steps 0–1) checks the command, the tests and the cost log before step 2.
 
@@ -83,6 +83,15 @@ Expected: all five run and `permission_denials` is empty. If one is denied, gene
 ## Test results in the repository
 
 `scripts/run_tests.py` writes JUnit XML and pytest logs next to the JSON summaries. Only `feedback.json`, `heldout.json` and `run.json` are committed (failed case IDs and counts); `*.junit.xml` and `*.log` are ignored and can be recreated by running the tests on the same code.
+
+## Workflow: direct pushes and group reviews
+
+To avoid waiting for reviews between steps, generation is pushed directly to `main` and reviewed in groups: **00–01, 02–04, 05–07, 08–09** (decision of 31 October 2026).
+
+- For the generation only, the `main-protection` ruleset is set to *Disabled* by Nisa (repository admin). It is set back to *Active* right after the `v0-ai-baseline` tag; until then nothing except the generation is pushed to `main`, and other work waits or stays on its branch.
+- Each step is two commits on `main` (generated code, then logs) and one generation-log row, pushed right after it is logged.
+- At the end of a group, a short report with the commit range (`<first>..<last>`) is posted as a comment on issue #44 (steps 00–01) or #45 (steps 02–09). Nisa reviews the range; a finding stops the next step until it is resolved.
+- Steps also stop at the stop conditions: the app does not start, test files changed (`run_tests.py` exit 3), an invalid run (`cost.py` exit 2), the usage limit cut a run, or an unexpected hidden file. Fix prompts still need Nisa's approval.
 
 ## Reading intermediate test results
 
