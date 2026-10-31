@@ -94,10 +94,10 @@ def holidays(request: Request, year: Annotated[str | None, Query()] = None) -> H
     return HolidaysOut(year=value, holidays=[HolidayOut(date=d.isoformat(), name=holiday_name(d)) for d in days])
 
 
-@router.get("/days/{day}", response_model=DayOut)
-def day_info(request: Request, day: str) -> DayOut:
+@router.get("/days/{date}", response_model=DayOut)
+def day_info(request: Request, date: str) -> DayOut:
     p = _Params()
-    value = p.date("date", day)
+    value = p.date("date", date)
     p.check()
     assert value is not None
     reason = cal.day_reason(value, _settings(request).holidays)

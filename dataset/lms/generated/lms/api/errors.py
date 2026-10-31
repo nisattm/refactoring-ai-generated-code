@@ -42,6 +42,8 @@ def error_response(
 
 def _field_name(loc: tuple[Any, ...]) -> str:
     parts = [str(p) for p in loc if p not in ("body", "query", "path", "header", "cookie")]
+    if loc and loc[0] == "body" and all(isinstance(p, int) for p in loc[1:]):
+        return "body"  # e.g. a JSON decode error, located by character position
     if parts:
         return ".".join(parts)
     return str(loc[0]) if loc else "body"

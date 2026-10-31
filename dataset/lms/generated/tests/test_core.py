@@ -276,7 +276,7 @@ def test_openapi(client):
     r = client.get("/openapi.json")
     assert r.status_code == 200
     paths = r.json()["paths"]
-    for p in ("/health", "/api/v1/calendar/holidays", "/api/v1/calendar/days/{day}",
+    for p in ("/health", "/api/v1/calendar/holidays", "/api/v1/calendar/days/{date}",
               "/api/v1/calendar/next-working-day", "/api/v1/calendar/add-working-days",
               "/api/v1/calendar/working-days-between"):
         assert p in paths
