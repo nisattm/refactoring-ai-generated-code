@@ -27,3 +27,7 @@ memray-*.bin
 .idea/
 .vscode/
 .DS_Store
+
+# Test runner output: only the JSON summaries are kept (feedback.json, heldout.json, run.json)
+results/**/*.junit.xml
+results/**/*.log
