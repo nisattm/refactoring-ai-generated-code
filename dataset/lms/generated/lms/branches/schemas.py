@@ -5,9 +5,9 @@ from __future__ import annotations
 import re
 from typing import Annotated
 
-from pydantic import BaseModel, Field, StrictBool, field_validator
+from pydantic import BaseModel, Field, StrictBool, StrictInt, field_validator
 
-from lms.branches.models import Branch
+from lms.branches.models import Branch, Transfer
 from lms.core.schemas import RequestModel
 from lms.core.timeutil import format_datetime
 
@@ -56,4 +56,41 @@ def branch_out(branch: Branch) -> BranchOut:
         address=branch.address,
         is_active=branch.is_active,
         created_at=format_datetime(branch.created_at),
+    )
+
+
+class TransferCreateIn(RequestModel):
+    copy_id: StrictInt
+    to_branch_id: StrictInt
+
+
+class TransferOut(BaseModel):
+    id: int
+    copy_id: int
+    from_branch_id: int
+    to_branch_id: int
+    reason: str
+    reservation_id: int | None
+    started_on: str
+    expected_on: str
+    status: str
+    received_on: str | None
+
+
+class ReceivedOut(BaseModel):
+    received: int
+
+
+def transfer_out(transfer: Transfer) -> TransferOut:
+    return TransferOut(
+        id=transfer.id,
+        copy_id=transfer.copy_id,
+        from_branch_id=transfer.from_branch_id,
+        to_branch_id=transfer.to_branch_id,
+        reason=transfer.reason,
+        reservation_id=transfer.reservation_id,
+        started_on=transfer.started_on.isoformat(),
+        expected_on=transfer.expected_on.isoformat(),
+        status=transfer.status,
+        received_on=transfer.received_on.isoformat() if transfer.received_on is not None else None,
     )

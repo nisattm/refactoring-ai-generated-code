@@ -84,6 +84,7 @@ def lend(
             details["total_debt"] = format_amount(activity.outstanding_fees + activity.accrued_late_fees)
         raise Conflict(f"The member cannot borrow: {reasons[0]}", code=reasons[0], details=details)
 
+    reservations.expire_stale_hold(db, now, copy, holidays, actor.id)  # LIB-RES-11
     if copy.status == "on_hold":
         if not reservations.hold_belongs_to_member(db, now, copy, member):
             raise Conflict("The copy is held for a reservation", code="COPY_ON_HOLD", details={"status": copy.status})
@@ -108,7 +109,7 @@ def lend(
         created_by=actor.id,
     )
     db.add(loan)
-    reservations.fulfil_for_loan(db, now, member, copy)
+    reservations.fulfil_for_loan(db, now, member, copy, holidays, actor.id)
     set_status(copy, "on_loan")
     db.flush()
     record(

@@ -24,7 +24,7 @@ class Branch(Base):
 
 
 class Transfer(Base):
-    """A copy moving between branches (section 17.1). Only the start of a transfer exists so far."""
+    """A copy moving between branches (section 17.1)."""
 
     __tablename__ = "transfers"
     __table_args__ = {"sqlite_autoincrement": True}

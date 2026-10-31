@@ -44,6 +44,7 @@ def create_schema(engine: sa.Engine) -> None:
     import lms.fines.models  # noqa: F401
     import lms.loans.models  # noqa: F401
     import lms.members.models  # noqa: F401
+    import lms.reservations.models  # noqa: F401
 
     Base.metadata.create_all(engine)
 

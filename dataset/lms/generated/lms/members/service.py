@@ -179,13 +179,16 @@ def renew_membership(member: Member, today: datetime.date) -> Member:
     return member
 
 
-def deactivate_member(db: Session, member: Member, today: datetime.date) -> Member:
-    """LIB-MEM-10. Reservations of the member are cancelled here once module 6 exists."""
+def deactivate_member(
+    db: Session, now: datetime.datetime, actor: User, holidays: Container[datetime.date], member: Member
+) -> Member:
+    """LIB-MEM-10."""
     if member.status == "passive":
         raise Conflict("The member is already passive", code="MEMBER_PASSIVE")
     if db.scalar(sa.select(Loan.id).where(Loan.member_id == member.id, Loan.status == "open").limit(1)) is not None:
         raise Conflict("The member has open loans", code="MEMBER_HAS_OPEN_LOANS")
     member.status = "passive"
+    reservations.cancel_for_deactivation(db, now, actor, holidays, member)
     return member
 
 

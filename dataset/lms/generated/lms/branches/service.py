@@ -1,6 +1,6 @@
 """Business logic of module 11, branches (LIB-BR-01 to LIB-BR-05).
 
-Of the transfers only their start exists so far; relocation, arrival and listing are added later.
+Relocation and arrival of transfers are in ``lms.branches.transfers``.
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from lms.catalog.status import set_status
 from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.members.models import Member
+from lms.reservations.models import ACTIVE_STATUSES, Reservation
 
 
 def create_branch(db: Session, now: datetime.datetime, actor: User, code: str, name: str, address: str) -> Branch:
@@ -61,11 +62,16 @@ def require_active_branch(db: Session, field: str, branch_id: int) -> Branch:
 
 
 def is_branch_in_use(db: Session, branch_id: int) -> bool:
-    """LIB-BR-03. Active reservations are checked here once module 6 is added."""
+    """LIB-BR-03."""
     if db.scalar(sa.select(Member.id).where(Member.home_branch_id == branch_id).limit(1)) is not None:
         return True
     in_branch = sa.or_(Copy.home_branch_id == branch_id, Copy.current_branch_id == branch_id)
-    return db.scalar(sa.select(Copy.id).where(Copy.status != "withdrawn", in_branch).limit(1)) is not None
+    if db.scalar(sa.select(Copy.id).where(Copy.status != "withdrawn", in_branch).limit(1)) is not None:
+        return True
+    pickup = sa.select(Reservation.id).where(
+        Reservation.pickup_branch_id == branch_id, Reservation.status.in_(ACTIVE_STATUSES)
+    )
+    return db.scalar(pickup.limit(1)) is not None
 
 
 def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Branch, fields: dict[str, object]) -> Branch:

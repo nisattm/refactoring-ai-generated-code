@@ -122,10 +122,11 @@ def renew_membership(member_id: MemberId, request: Request, db: SessionDep, _: S
 
 
 @router.post("/{member_id}/deactivate", response_model=MemberOut)
-def deactivate_member(member_id: MemberId, request: Request, db: SessionDep, _: StaffOnly) -> MemberOut:
-    day = _today(request)
+def deactivate_member(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
+    settings = request.app.state.settings
+    now = local_now(settings.clock)
     member = service.get_member_or_404(db, member_id)
-    return member_out(service.deactivate_member(db, member, day), day)
+    return member_out(service.deactivate_member(db, now, staff.user, settings.holidays, member), now.date())
 
 
 @router.post("/{member_id}/activate", response_model=MemberOut)
