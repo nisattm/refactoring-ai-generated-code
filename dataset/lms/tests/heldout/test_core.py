@@ -89,13 +89,13 @@ def test_t_com_13_b(client, librarian, branch_a):
 
 def test_t_com_14_a(client, admin):
     """T-COM-14-a (LIB-COM-14): ids 1 and 2"""
-    assert create_branch(client, admin, "X")["id"] == 1
-    assert create_branch(client, admin, "Y")["id"] == 2
+    assert create_branch(client, admin, "XX")["id"] == 1
+    assert create_branch(client, admin, "YY")["id"] == 2
 
 
 def test_t_com_15_b(client, admin):
     """T-COM-15-b (LIB-COM-15): 422 VALIDATION_ERROR"""
-    create_branch(client, admin, "D", name="   ", expect=422)
+    create_branch(client, admin, "DD", name="   ", expect=422)
 
 
 def test_t_com_16_b(client, admin):
@@ -220,7 +220,7 @@ def test_t_if_11_b(tmp_path, clock):
 
 def test_t_if_12_a(client, admin, settings):
     """T-IF-12-a (LIB-IF-12): Equal documents"""
-    create_branch(client, admin, "A")
+    create_branch(client, admin, "AA")
     assert lms.export_dataset(settings) == client.get("/api/v1/export", headers=admin).json()
 
 

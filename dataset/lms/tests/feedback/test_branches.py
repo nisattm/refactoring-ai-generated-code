@@ -112,7 +112,7 @@ def test_t_br_07_c(client, clock, librarian, branch_a, branch_b):
 
 def test_t_br_09_a(client, admin, librarian, branch_a, branch_b):
     """T-BR-09-a (LIB-BR-09): Ordered by id descending; filters match"""
-    c_branch = create_branch(client, admin, "C")
+    c_branch = create_branch(client, admin, "CC")
     book = create_book(client, librarian)
     c1 = add_copy(client, librarian, book["id"], home_branch_id=branch_a["id"])
     c2 = add_copy(client, librarian, book["id"], home_branch_id=branch_a["id"])

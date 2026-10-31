@@ -310,7 +310,7 @@ def TEST(client, admin, librarian):
 def TEST(client, librarian, branch_a):
     mh = member_headers(client, register_member(client, librarian, home_branch_id=branch_a["id"]))
     assert client.get("/api/v1/users", headers=mh).status_code == 403
-    r = client.post("/api/v1/branches", headers=mh, json={"code": "Z", "name": "Z", "address": ""})
+    r = client.post("/api/v1/branches", headers=mh, json={"code": "ZZ", "name": "Z", "address": ""})
     assert r.status_code == 403 and error_code(r) == "FORBIDDEN"
 '''),
     dict(id="T-AUTH-24-b", req="LIB-AUTH-24", type="Error", input="No token: `GET /api/v1/books`", expected="`401 UNAUTHENTICATED`", code='''

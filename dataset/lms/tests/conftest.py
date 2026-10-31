@@ -87,9 +87,9 @@ def librarian(client, admin) -> dict[str, str]:
 
 @pytest.fixture
 def branch_a(client, admin) -> dict:
-    return api.create_branch(client, admin, "A")
+    return api.create_branch(client, admin, "AA")
 
 
 @pytest.fixture
 def branch_b(client, admin) -> dict:
-    return api.create_branch(client, admin, "B")
+    return api.create_branch(client, admin, "BB")

@@ -37,12 +37,12 @@ def test_t_tech_05_a(tmp_path, clock):
     settings = file_settings(tmp_path, clock)
     c1 = TestClient(lms.create_app(settings))
     adm = login(c1, "admin@library.local", "ChangeMe123")
-    create_branch(c1, adm, "A")
+    create_branch(c1, adm, "AA")
     assert (tmp_path / "lms.db").exists()
     c2 = TestClient(lms.create_app(settings))
     adm2 = login(c2, "admin@library.local", "ChangeMe123")
     codes = [b["code"] for b in c2.get("/api/v1/branches", headers=adm2).json()["items"]]
-    assert codes == ["A"]
+    assert codes == ["AA"]
 
 
 def test_t_tech_07_a(tmp_path, clock):
@@ -149,7 +149,7 @@ def test_t_com_13_c(client, librarian, branch_a):
 
 def test_t_com_15_a(client, admin):
     """T-COM-15-a (LIB-COM-15): Stored and returned as 'Central'"""
-    assert create_branch(client, admin, "C", name="  Central  ")["name"] == "Central"
+    assert create_branch(client, admin, "CC", name="  Central  ")["name"] == "Central"
 
 
 def test_t_com_16_a(client, admin):
@@ -235,14 +235,14 @@ def test_t_if_03_a(tmp_path, clock):
     """T-IF-03-a (LIB-IF-03): The other app has no branch"""
     c1 = TestClient(lms.create_app(file_settings(tmp_path, clock, name="one.db")))
     c2 = TestClient(lms.create_app(file_settings(tmp_path, clock, name="two.db")))
-    create_branch(c1, login(c1, "admin@library.local", "ChangeMe123"), "A")
+    create_branch(c1, login(c1, "admin@library.local", "ChangeMe123"), "AA")
     adm2 = login(c2, "admin@library.local", "ChangeMe123")
     assert c2.get("/api/v1/branches", headers=adm2).json()["total"] == 0
 
 
 def test_t_if_05_a(client, admin):
     """T-IF-05-a (LIB-IF-05): The branch is visible"""
-    create_branch(client, admin, "M")
+    create_branch(client, admin, "MM")
     assert client.get("/api/v1/branches", headers=admin).json()["total"] == 1
 
 

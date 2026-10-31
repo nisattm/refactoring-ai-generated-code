@@ -313,7 +313,7 @@ def test_t_loan_07_c(client, admin):
     # deactivate a member with open loans), so the state is imported (LIB-IO-01, LIB-IO-06).
     data = {
         "format_version": 1,
-        "branches": [{"id": 1, "code": "A", "name": "Branch A", "address": "", "is_active": True}],
+        "branches": [{"id": 1, "code": "AA", "name": "Branch A", "address": "", "is_active": True}],
         "authors": [{"id": 1, "name": "Author One"}],
         "publishers": [{"id": 1, "name": "Publisher One"}],
         "books": [{"id": 1, "isbn": "9780306406157", "title": "Book", "subtitle": None,
@@ -457,7 +457,7 @@ def test_t_loan_09_c(client, admin, librarian, branch_a):
     Expected: 409 BRANCH_INACTIVE (before DAMAGE_FEE_EXCEEDS_PRICE); loan stays open
     """
     loan = api.new_loan(client, librarian, branch_id=branch_a["id"], price="120.00")["loan"]
-    inactive = api.create_branch(client, admin, "C")
+    inactive = api.create_branch(client, admin, "CC")
     api.deactivate_branch(client, admin, inactive["id"])
     r = api.return_loan(client, librarian, loan["id"], branch_id=inactive["id"],
                         condition="damaged", damage_fee="130.00", expect=409)

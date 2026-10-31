@@ -95,7 +95,7 @@ def TEST(client):
 '''),
     dict(id="T-API-05-a", req="LIB-API-05", type="Error", input="`POST /api/v1/branches` with a JSON text but `Content-Type: text/plain`", expected="`422 VALIDATION_ERROR`", code='''
 def TEST(client, admin):
-    r = client.post("/api/v1/branches", headers={**admin, "Content-Type": "text/plain"}, content=b'{"code": "Z", "name": "Z", "address": ""}')
+    r = client.post("/api/v1/branches", headers={**admin, "Content-Type": "text/plain"}, content=b'{"code": "ZZ", "name": "Z", "address": ""}')
     assert r.status_code == 422 and error_code(r) == "VALIDATION_ERROR"
 '''),
 ]

@@ -32,33 +32,33 @@ def deactivate(client, admin, branch_id):
 
 def test_t_br_01_b(client, admin, librarian, branch_a):
     """T-BR-01-b (LIB-BR-01): 409 CONFLICT; 422; 403 FORBIDDEN"""
-    create_branch(client, admin, "a", expect=409)
+    create_branch(client, admin, "aa", expect=409)
     create_branch(client, admin, "X", expect=422)
     create_branch(client, admin, "ABCDEFGHIJK", expect=422)
     create_branch(client, librarian, "LIBX", expect=403)
 
 
 def test_t_br_02_a(client, admin, librarian, branch_a, branch_b):
-    """T-BR-02-a (LIB-BR-02): Ordered by code A, B, C; filter returns the inactive one; member 200"""
-    c = create_branch(client, admin, "C")
+    """T-BR-02-a (LIB-BR-02): Ordered by code AA, BB, CC; filter returns the inactive one; member 200"""
+    c = create_branch(client, admin, "CC")
     deactivate(client, admin, c["id"])
     codes = [b["code"] for b in client.get("/api/v1/branches", headers=admin).json()["items"]]
-    assert codes == ["A", "B", "C"]
+    assert codes == ["AA", "BB", "CC"]
     inactive = client.get("/api/v1/branches", headers=admin, params={"is_active": "false"}).json()["items"]
-    assert [b["code"] for b in inactive] == ["C"]
+    assert [b["code"] for b in inactive] == ["CC"]
     mh = member_headers(client, register_member(client, librarian, home_branch_id=branch_a["id"]))
     assert client.get("/api/v1/branches", headers=mh).status_code == 200
 
 
 def test_t_br_03_b(client, admin, librarian, branch_a, branch_b):
     """T-BR-03-b (LIB-BR-03): First 200 (is_active false); second 409 BRANCH_IN_USE"""
-    c = create_branch(client, admin, "C")
+    c = create_branch(client, admin, "CC")
     book = create_book(client, librarian)
     cp = add_copy(client, librarian, book["id"], home_branch_id=c["id"])
     client.post(f"/api/v1/copies/{cp['id']}/withdraw", headers=librarian, json={"reason": "Damaged beyond repair"})
     r = deactivate(client, admin, c["id"])
     assert r.status_code == 200 and r.json()["is_active"] is False
-    d = create_branch(client, admin, "D")
+    d = create_branch(client, admin, "DD")
     book2 = create_book(client, librarian)
     c2 = add_copy(client, librarian, book2["id"], home_branch_id=branch_a["id"])
     lend(client, librarian, register_member(client, librarian, home_branch_id=branch_a["id"])["id"], c2["id"])

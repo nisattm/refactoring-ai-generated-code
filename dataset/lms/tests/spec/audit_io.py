@@ -121,7 +121,7 @@ def TEST(client, admin):
 '''),
     dict(id="T-IO-02-a", req="LIB-IO-02", type="Boundary", input="Database with one branch; database with only an extra staff user", expected="`409 DATABASE_NOT_EMPTY`; import succeeds", code='''
 def TEST(client, admin, settings, tmp_path, clock):
-    create_branch(client, admin, "X")
+    create_branch(client, admin, "XX")
     r = do_import(client, admin, dataset(), expect=409)
     assert error_code(r) == "DATABASE_NOT_EMPTY"
     other = TestClient(lms.create_app(lms.Settings(database_url=f"sqlite:///{tmp_path / 'b.db'}", clock=clock)))
