@@ -53,12 +53,12 @@ def TEST(tmp_path, clock):
     settings = file_settings(tmp_path, clock)
     c1 = TestClient(lms.create_app(settings))
     adm = login(c1, "admin@library.local", "ChangeMe123")
-    create_branch(c1, adm, "A")
+    create_branch(c1, adm, "AA")
     assert (tmp_path / "lms.db").exists()
     c2 = TestClient(lms.create_app(settings))
     adm2 = login(c2, "admin@library.local", "ChangeMe123")
     codes = [b["code"] for b in c2.get("/api/v1/branches", headers=adm2).json()["items"]]
-    assert codes == ["A"]
+    assert codes == ["AA"]
 '''),
     static("T-TECH-06-a", "LIB-TECH-06", "Source code", "Synchronous SQLAlchemy `Session`; no `async def` endpoints"),
     dict(id="T-TECH-07-a", req="LIB-TECH-07", type="Normal", input="New empty database file", expected="`create_app` creates the schema; bootstrap admin can log in", code='''
@@ -203,16 +203,16 @@ def TEST(client, librarian, branch_a):
 '''),
     dict(id="T-COM-14-a", req="LIB-COM-14", type="Normal", input="Create two branches in a new database", expected="ids 1 and 2", code='''
 def TEST(client, admin):
-    assert create_branch(client, admin, "X")["id"] == 1
-    assert create_branch(client, admin, "Y")["id"] == 2
+    assert create_branch(client, admin, "XX")["id"] == 1
+    assert create_branch(client, admin, "YY")["id"] == 2
 '''),
     dict(id="T-COM-15-a", req="LIB-COM-15", type="Normal", input="Branch name `\"  Central  \"`", expected="Stored and returned as `\"Central\"`", code='''
 def TEST(client, admin):
-    assert create_branch(client, admin, "C", name="  Central  ")["name"] == "Central"
+    assert create_branch(client, admin, "CC", name="  Central  ")["name"] == "Central"
 '''),
     dict(id="T-COM-15-b", req="LIB-COM-15", type="Error", input="Branch name of spaces only", expected="`422 VALIDATION_ERROR`", code='''
 def TEST(client, admin):
-    create_branch(client, admin, "D", name="   ", expect=422)
+    create_branch(client, admin, "DD", name="   ", expect=422)
 '''),
     dict(id="T-COM-16-a", req="LIB-COM-16", type="Boundary", input="User `full_name` of 200 characters", expected="Accepted", code='''
 def TEST(client, admin):
@@ -359,7 +359,7 @@ def TEST(tmp_path, clock):
 def TEST(tmp_path, clock):
     c1 = TestClient(lms.create_app(file_settings(tmp_path, clock, name="one.db")))
     c2 = TestClient(lms.create_app(file_settings(tmp_path, clock, name="two.db")))
-    create_branch(c1, login(c1, "admin@library.local", "ChangeMe123"), "A")
+    create_branch(c1, login(c1, "admin@library.local", "ChangeMe123"), "AA")
     adm2 = login(c2, "admin@library.local", "ChangeMe123")
     assert c2.get("/api/v1/branches", headers=adm2).json()["total"] == 0
 '''),
@@ -370,7 +370,7 @@ def TEST():
 '''),
     dict(id="T-IF-05-a", req="LIB-IF-05", type="Normal", input="In-memory database: create a branch, read it in a later request", expected="The branch is visible", code='''
 def TEST(client, admin):
-    create_branch(client, admin, "M")
+    create_branch(client, admin, "MM")
     assert client.get("/api/v1/branches", headers=admin).json()["total"] == 1
 '''),
     dict(id="T-IF-06-a", req="LIB-IF-06", type="Boundary", input="`token_ttl_hours` 0 and 169", expected="`ValueError` both", code='''
@@ -426,7 +426,7 @@ def TEST(tmp_path, clock):
 '''),
     dict(id="T-IF-12-a", req="LIB-IF-12", type="Normal", input="After creating a branch: `export_dataset(settings)` and `GET /api/v1/export`", expected="Equal documents", code='''
 def TEST(client, admin, settings):
-    create_branch(client, admin, "A")
+    create_branch(client, admin, "AA")
     assert lms.export_dataset(settings) == client.get("/api/v1/export", headers=admin).json()
 '''),
 

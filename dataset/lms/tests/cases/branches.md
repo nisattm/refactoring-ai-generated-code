@@ -5,8 +5,8 @@ Generated from one case list; 17 cases for 9 requirements (feedback 8, held-out 
 | ID | Requirement | Type | Input | Expected | Set |
 | --- | --- | --- | --- | --- | --- |
 | T-BR-01-a | LIB-BR-01 | Normal | Admin creates branch `kampus` named `Kampüs` | 201; `code` `KAMPUS`, `is_active` true | feedback |
-| T-BR-01-b | LIB-BR-01 | Error | Code `A` again as `a`; code `X` (1 char) and 11 chars; librarian creates a branch | `409 CONFLICT`; `422`; `403 FORBIDDEN` | held-out |
-| T-BR-02-a | LIB-BR-02 | Normal | Branches `C`, `A` (fixture), `B` (fixture), one inactive; list; filter `is_active=false`; member reads list | Ordered by code A, B, C; filter returns the inactive one; member 200 | held-out |
+| T-BR-01-b | LIB-BR-01 | Error | Code `AA` again as `aa`; code `X` (1 char) and 11 chars; librarian creates a branch | `409 CONFLICT`; `422`; `403 FORBIDDEN` | held-out |
+| T-BR-02-a | LIB-BR-02 | Normal | Branches `CC`, `AA` (fixture), `BB` (fixture), one inactive; list; filter `is_active=false`; member reads list | Ordered by code AA, BB, CC; filter returns the inactive one; member 200 | held-out |
 | T-BR-03-a | LIB-BR-03 | Error | Deactivate a branch that is a member's home branch; one that holds a copy | `409 BRANCH_IN_USE` both | feedback |
 | T-BR-03-b | LIB-BR-03 | Boundary | Branch whose only copy is withdrawn and with no members; branch that is the pickup branch of an active reservation | First 200 (`is_active` false); second `409 BRANCH_IN_USE` | held-out |
 | T-BR-04-a | LIB-BR-04 | Error | Inactive branch used as member home branch, copy home branch, pickup branch | `409 BRANCH_INACTIVE` each | feedback |

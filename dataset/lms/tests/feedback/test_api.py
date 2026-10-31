@@ -73,5 +73,5 @@ def test_t_api_03_a(client, librarian, branch_a):
 
 def test_t_api_05_a(client, admin):
     """T-API-05-a (LIB-API-05): 422 VALIDATION_ERROR"""
-    r = client.post("/api/v1/branches", headers={**admin, "Content-Type": "text/plain"}, content=b'{"code": "Z", "name": "Z", "address": ""}')
+    r = client.post("/api/v1/branches", headers={**admin, "Content-Type": "text/plain"}, content=b'{"code": "ZZ", "name": "Z", "address": ""}')
     assert r.status_code == 422 and error_code(r) == "VALIDATION_ERROR"

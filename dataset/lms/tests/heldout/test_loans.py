@@ -352,7 +352,7 @@ def test_t_loan_09_b(client, admin, librarian, branch_a):
     """
     loan = api.new_loan(client, librarian, branch_id=branch_a["id"])["loan"]
     api.return_loan(client, librarian, loan["id"], branch_id=branch_a["id"])
-    inactive = api.create_branch(client, admin, "C")
+    inactive = api.create_branch(client, admin, "CC")
     api.deactivate_branch(client, admin, inactive["id"])
     r = api.return_loan(client, librarian, loan["id"], branch_id=inactive["id"], expect=409)
     assert api.error_code(r) == "LOAN_NOT_OPEN"

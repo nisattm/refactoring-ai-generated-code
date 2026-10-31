@@ -148,7 +148,7 @@ def test_t_pur_02_h(client, admin, librarian):
     """
     book = api.create_book(client, librarian)
     p = supplier(client, librarian)
-    inactive = api.create_branch(client, admin, "C")
+    inactive = api.create_branch(client, admin, "CC")
     api.deactivate_branch(client, admin, inactive["id"])
     r = order(client, librarian, supplier_id=p["id"], branch_id=inactive["id"], lines=[line(book["id"])], expect=409)
     assert api.error_code(r) == "BRANCH_INACTIVE"

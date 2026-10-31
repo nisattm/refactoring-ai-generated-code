@@ -93,7 +93,7 @@ Names and signatures are fixed; both test authors rely on them.
 | `client` | `fastapi.testclient.TestClient(app)` |
 | `admin` | Authorization header dict of the bootstrap admin (`admin@library.local` / `ChangeMe123`) |
 | `librarian` | Header dict of a librarian created by the admin (`lib@library.local` / `Librarian123`) |
-| `branch_a`, `branch_b` | Branches created by the admin, codes `A` and `B` (JSON dicts) |
+| `branch_a`, `branch_b` | Branches created by the admin, codes `AA` and `BB` (JSON dicts; branch codes are 2–10 characters, LIB-BR) |
 
 **`support/api.py`** — every function takes `expect` (the success status by default), asserts the status code and returns the parsed JSON (or a header dict).
 

@@ -191,7 +191,7 @@ def test_t_auth_24_a(client, librarian, branch_a):
     """T-AUTH-24-a (LIB-AUTH-24): 403 FORBIDDEN both"""
     mh = member_headers(client, register_member(client, librarian, home_branch_id=branch_a["id"]))
     assert client.get("/api/v1/users", headers=mh).status_code == 403
-    r = client.post("/api/v1/branches", headers=mh, json={"code": "Z", "name": "Z", "address": ""})
+    r = client.post("/api/v1/branches", headers=mh, json={"code": "ZZ", "name": "Z", "address": ""})
     assert r.status_code == 403 and error_code(r) == "FORBIDDEN"
 
 

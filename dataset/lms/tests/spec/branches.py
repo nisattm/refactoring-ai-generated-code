@@ -40,21 +40,21 @@ def TEST(client, admin):
     b = create_branch(client, admin, "kampus", name="Kampüs")
     assert b["code"] == "KAMPUS" and b["name"] == "Kampüs" and b["is_active"] is True
 '''),
-    dict(id="T-BR-01-b", req="LIB-BR-01", type="Error", input="Code `A` again as `a`; code `X` (1 char) and 11 chars; librarian creates a branch", expected="`409 CONFLICT`; `422`; `403 FORBIDDEN`", code='''
+    dict(id="T-BR-01-b", req="LIB-BR-01", type="Error", input="Code `AA` again as `aa`; code `X` (1 char) and 11 chars; librarian creates a branch", expected="`409 CONFLICT`; `422`; `403 FORBIDDEN`", code='''
 def TEST(client, admin, librarian, branch_a):
-    create_branch(client, admin, "a", expect=409)
+    create_branch(client, admin, "aa", expect=409)
     create_branch(client, admin, "X", expect=422)
     create_branch(client, admin, "ABCDEFGHIJK", expect=422)
     create_branch(client, librarian, "LIBX", expect=403)
 '''),
-    dict(id="T-BR-02-a", req="LIB-BR-02", type="Normal", input="Branches `C`, `A` (fixture), `B` (fixture), one inactive; list; filter `is_active=false`; member reads list", expected="Ordered by code A, B, C; filter returns the inactive one; member 200", code='''
+    dict(id="T-BR-02-a", req="LIB-BR-02", type="Normal", input="Branches `CC`, `AA` (fixture), `BB` (fixture), one inactive; list; filter `is_active=false`; member reads list", expected="Ordered by code AA, BB, CC; filter returns the inactive one; member 200", code='''
 def TEST(client, admin, librarian, branch_a, branch_b):
-    c = create_branch(client, admin, "C")
+    c = create_branch(client, admin, "CC")
     deactivate(client, admin, c["id"])
     codes = [b["code"] for b in client.get("/api/v1/branches", headers=admin).json()["items"]]
-    assert codes == ["A", "B", "C"]
+    assert codes == ["AA", "BB", "CC"]
     inactive = client.get("/api/v1/branches", headers=admin, params={"is_active": "false"}).json()["items"]
-    assert [b["code"] for b in inactive] == ["C"]
+    assert [b["code"] for b in inactive] == ["CC"]
     mh = member_headers(client, register_member(client, librarian, home_branch_id=branch_a["id"]))
     assert client.get("/api/v1/branches", headers=mh).status_code == 200
 '''),
@@ -68,13 +68,13 @@ def TEST(client, admin, librarian, branch_a, branch_b):
 '''),
     dict(id="T-BR-03-b", req="LIB-BR-03", type="Boundary", input="Branch whose only copy is withdrawn and with no members; branch that is the pickup branch of an active reservation", expected="First 200 (`is_active` false); second `409 BRANCH_IN_USE`", code='''
 def TEST(client, admin, librarian, branch_a, branch_b):
-    c = create_branch(client, admin, "C")
+    c = create_branch(client, admin, "CC")
     book = create_book(client, librarian)
     cp = add_copy(client, librarian, book["id"], home_branch_id=c["id"])
     client.post(f"/api/v1/copies/{cp['id']}/withdraw", headers=librarian, json={"reason": "Damaged beyond repair"})
     r = deactivate(client, admin, c["id"])
     assert r.status_code == 200 and r.json()["is_active"] is False
-    d = create_branch(client, admin, "D")
+    d = create_branch(client, admin, "DD")
     book2 = create_book(client, librarian)
     c2 = add_copy(client, librarian, book2["id"], home_branch_id=branch_a["id"])
     lend(client, librarian, register_member(client, librarian, home_branch_id=branch_a["id"])["id"], c2["id"])
@@ -216,7 +216,7 @@ def TEST(client, clock, librarian, branch_a, branch_b):
 '''),
     dict(id="T-BR-09-a", req="LIB-BR-09", type="Normal", input="Two relocations; filters `status`, `reason`, `to_branch_id`; order", expected="Ordered by `id` descending; filters match", code='''
 def TEST(client, admin, librarian, branch_a, branch_b):
-    c_branch = create_branch(client, admin, "C")
+    c_branch = create_branch(client, admin, "CC")
     book = create_book(client, librarian)
     c1 = add_copy(client, librarian, book["id"], home_branch_id=branch_a["id"])
     c2 = add_copy(client, librarian, book["id"], home_branch_id=branch_a["id"])
