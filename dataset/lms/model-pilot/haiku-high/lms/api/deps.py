@@ -69,3 +69,6 @@ def require_roles(*roles: str) -> typing.Callable[..., Authenticated]:
 
 
 AdminDep = Annotated[Authenticated, Depends(require_roles("admin"))]
+StaffDep = Annotated[Authenticated, Depends(require_roles("librarian", "admin"))]
+# Only member accounts: used by the endpoints that return the member's own record.
+MemberAccountDep = Annotated[Authenticated, Depends(require_roles("member"))]

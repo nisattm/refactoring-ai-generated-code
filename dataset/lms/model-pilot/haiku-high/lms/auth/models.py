@@ -23,7 +23,7 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     failed_login_count: Mapped[int] = mapped_column(default=0)
     locked_until: Mapped[datetime.datetime | None] = mapped_column(TZDateTime, nullable=True)
-    # Links a member user to its member record (module 3). The members table does not exist yet.
+    # Links a member user to its member record (module 3); set at registration.
     member_id: Mapped[int | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(TZDateTime)
     last_login_at: Mapped[datetime.datetime | None] = mapped_column(TZDateTime, nullable=True)

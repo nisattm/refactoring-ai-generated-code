@@ -5,7 +5,9 @@ from sqlalchemy.orm import sessionmaker
 
 import lms.audit.models  # noqa: F401  (registers the tables before create_schema)
 import lms.auth.models  # noqa: F401
-from lms.api import auth_routes, calendar_routes, user_routes
+import lms.branches.models  # noqa: F401
+import lms.members.models  # noqa: F401
+from lms.api import auth_routes, branch_routes, calendar_routes, member_routes, user_routes
 from lms.api.deps import get_settings
 from lms.api.errors import install_error_handlers
 from lms.auth.service import ensure_bootstrap_admin
@@ -35,6 +37,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(calendar_routes.router)
     app.include_router(auth_routes.router)
     app.include_router(user_routes.router)
+    app.include_router(branch_routes.router)
+    app.include_router(member_routes.router)
 
     @app.get("/health", tags=["core"])
     def health(settings: Settings = Depends(get_settings)) -> dict:
