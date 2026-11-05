@@ -31,3 +31,12 @@ def clean_email(value: str) -> str:
     if not sep or "@" in domain or not local or "." not in domain:
         raise ValueError("must be an e-mail address")
     return trimmed.lower()
+
+
+def email_key(value: str) -> str:
+    """LIB-COM-17 with LIB-COM-30: the comparison key of an e-mail address.
+
+    Uniqueness and login compare this key. It is taken from the address as typed,
+    not from the lower-cased copy, because str.lower() maps 'İ' to two characters.
+    """
+    return normalize(value.strip())

@@ -1,14 +1,46 @@
 """Database engine and schema (LIB-TECH-05 to LIB-TECH-07, LIB-IF-03, LIB-IF-05)."""
 
+import datetime
+import typing
+
 import sqlalchemy
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import StaticPool
 
+from lms.core.localtime import LOCAL_TZ
+
 
 class Base(DeclarativeBase):
     """Base class of all ORM models. Module packages import their models so they are registered here."""
+
+
+class TZDateTime(sqlalchemy.types.TypeDecorator):
+    """A timezone-aware date-time (LIB-COM-03).
+
+    SQLite has no time zones, so the instant is stored as naive UTC and read back
+    as an aware date-time in local time.
+    """
+
+    impl = sqlalchemy.DateTime
+    cache_ok = True
+
+    def process_bind_param(
+        self, value: typing.Any, dialect: typing.Any
+    ) -> datetime.datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("date-time must be timezone-aware")
+        return value.astimezone(datetime.UTC).replace(tzinfo=None)
+
+    def process_result_value(
+        self, value: typing.Any, dialect: typing.Any
+    ) -> datetime.datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=datetime.UTC).astimezone(LOCAL_TZ)
 
 
 def create_engine_for(database_url: str) -> Engine:
