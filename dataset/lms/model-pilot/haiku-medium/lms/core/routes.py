@@ -3,8 +3,9 @@
 import datetime
 import re
 
-from fastapi import APIRouter, Depends, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query
 
+from lms.api.deps import get_settings
 from lms.api.errors import validation_error
 from lms.core.settings import HOLIDAY_NAMES, UNNAMED_HOLIDAY, Settings
 from lms.core.working_days import (
@@ -20,10 +21,6 @@ router = APIRouter(prefix="/api/v1/calendar", tags=["calendar"])
 _DATE_FORMAT = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _MAX_SPAN_DAYS = 3660
 _MAX_ADD_DAYS = 365
-
-
-def get_settings(request: Request) -> Settings:
-    return request.app.state.settings
 
 
 def parse_date(value: str, field: str) -> datetime.date:
