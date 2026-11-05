@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-05T20:31:30+00:00",
+  "code": "/work/dataset/lms/model-pilot/haiku-medium",
+  "tests": "/work/dataset/lms/tests",
+  "valid": true,
+  "test_file_changes": {
+    "changed": [],
+    "added": [],
+    "removed": []
+  },
+  "sets": {
+    "feedback": {
+      "tests": 282,
+      "passed": 77,
+      "failed": 205,
+      "errors": 0,
+      "skipped": 0
+    },
+    "heldout": {
+      "tests": 239,
+      "passed": 61,
+      "failed": 178,
+      "errors": 0,
+      "skipped": 0
+    }
+  }
+}
