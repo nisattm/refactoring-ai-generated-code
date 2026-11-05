@@ -9,10 +9,14 @@ from lms.audit import models as _audit_models  # noqa: F401  registers the table
 from lms.auth import models as _auth_models  # noqa: F401
 from lms.auth.routes import auth_router, users_router
 from lms.auth.service import ensure_bootstrap_admin
+from lms.branches import models as _branch_models  # noqa: F401
+from lms.branches.routes import router as branches_router
 from lms.core.clock import today
 from lms.core.database import create_engine, create_schema
 from lms.core.routes import router as calendar_router
 from lms.core.settings import Settings
+from lms.members import models as _member_models  # noqa: F401
+from lms.members.routes import router as members_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -36,4 +40,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(calendar_router)
     app.include_router(auth_router)
     app.include_router(users_router)
+    app.include_router(branches_router)
+    app.include_router(members_router)
     return app
