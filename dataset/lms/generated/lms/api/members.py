@@ -16,6 +16,7 @@ from lms.core.text import normalize
 from lms.fines.schemas import balance_out
 from lms.members import service
 from lms.members.models import Member
+from lms.digital.usage import member_summary as digital_summary
 from lms.equipment.usage import member_summary as equipment_summary
 from lms.rooms.usage import member_summary as room_summary
 from lms.members.schemas import (
@@ -155,4 +156,5 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
         borrowing=BorrowingOut(eligible=not reasons, reasons=reasons),
         rooms=room_summary(db, now, member.id),
         equipment=equipment_summary(db, now, member.id),
+        digital=digital_summary(db, now, member.id),
     )

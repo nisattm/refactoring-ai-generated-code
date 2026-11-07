@@ -17,6 +17,7 @@ from lms.catalog.service import add_copy
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.core.money import format_amount
 from lms.core.text import normalize
+from lms.digital.models import DigitalLicense
 from lms.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier
 from lms.purchasing.schemas import LineIn, ReceiveLineIn
 
@@ -274,6 +275,12 @@ def cancel_order(db: Session, now: datetime.datetime, actor: User, order: Purcha
     """LIB-PUR-05."""
     if order.status not in ("draft", "ordered"):
         raise _invalid_status(order, "cancel")
+    if db.scalar(sa.select(DigitalLicense.id).where(DigitalLicense.order_id == order.id).limit(1)) is not None:
+        raise Conflict(  # LIB-DIG-06
+            f"Purchase order {order.id} is referenced by a digital license",
+            code="ORDER_HAS_LICENSE",
+            details={"id": order.id},
+        )
     old = order.status
     order.status = "cancelled"
     record(
