@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
-**Status:** Complete draft (sections 1–23), revised after team review.
-**Version:** 0.8 · 2026-11-07 (adds section 23, module 15 Study rooms)
+**Status:** Complete draft (sections 1–24), revised after team review.
+**Version:** 0.9 · 2026-11-07 (adds section 24, module 16 Equipment loans)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -13,9 +13,9 @@ The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119. Each testa
 
 ### 1.1 System overview
 
-The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, and study rooms. It is used through a REST API.
+The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, study rooms and equipment loans. It is used through a REST API.
 
-The system consists of 15 modules:
+The system consists of 16 modules:
 
 | # | Module | Package | Section |
 | --- | --- | --- | --- |
@@ -34,6 +34,7 @@ The system consists of 15 modules:
 | 13 | Audit log and import/export | `lms.audit` | 19 |
 | 14 | API layer | `lms.api` | 20 (endpoints are listed with each module) |
 | 15 | Study rooms | `lms.rooms` | 23 |
+| 16 | Equipment loans | `lms.equipment` | 24 |
 
 ### 1.2 Out of scope
 
@@ -94,7 +95,8 @@ lms/
 ├── purchasing/          Module 12
 ├── audit/               Module 13
 ├── api/                 Module 14 (FastAPI routers and request/response schemas)
-└── rooms/               Module 15
+├── rooms/               Module 15
+└── equipment/           Module 16
 ```
 
 | ID | Requirement |
@@ -455,6 +457,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Branches and transfers (module 11) | – | Read branches | Read branches; full transfers | Full |
 | Purchasing (module 12) | – | – | Full | Full |
 | Study rooms (module 15) | – | Read rooms and availability; book, change, cancel, leave, check in and out own bookings; read own bans | Full, except creating and changing rooms and bans | Full |
+| Equipment loans (module 16) | – | Read types and availability; reserve and cancel own reservations; extend own loans; read own loans, reservations and trainings | Full, except creating and changing types and items and retiring items | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -536,9 +539,9 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40). |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40) and `equipment` (LIB-EQ-37). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -673,7 +676,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | LIB-LOAN-02 | **Overdue.** An open loan is overdue when today > `due_date`. |
 | LIB-LOAN-03 | **Due date.** `due_date` = the next working day on or after `loan_date` + `loan_period_days` calendar days (LIB-COM-08). Examples: student, lent 2026-11-02 → due 2026-11-16; academic, lent 2026-12-02 → 2027-01-01 is a holiday → due 2027-01-04. |
 | LIB-LOAN-04 | **Terms are fixed per loan.** `loan_period_days`, `max_renewals` and `daily_fee` are copied from the member's type (7.1) when the loan is created and are used for that loan until it closes, even if the member's type changes. |
-| LIB-LOAN-05 | **Lending checks.** The checks run in this order; the first failure decides the response (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) today > `valid_until` → `MEMBERSHIP_EXPIRED`; (3) the member has an overdue loan → `MEMBER_HAS_OVERDUE`; (4) the member's total debt (LIB-FEE-09) ≥ 50.00 TL → `MEMBER_BLOCKED_BY_DEBT`, with `details.total_debt`; (5) the member's open loans ≥ the loan limit of the member's current type → `LOAN_LIMIT_REACHED`; (6) copy status: `available` → allowed; `on_hold` → allowed only if the hold belongs to a `ready` reservation of this member (LIB-RES-10), otherwise `COPY_ON_HOLD`; any other status → `COPY_NOT_AVAILABLE`, with `details.status`. |
+| LIB-LOAN-05 | **Lending checks.** The checks run in this order; the first failure decides the response (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) today > `valid_until` → `MEMBERSHIP_EXPIRED`; (3) the member has an overdue loan (equipment loans: LIB-EQ-14) → `MEMBER_HAS_OVERDUE`; (4) the member's total debt (LIB-FEE-09) ≥ 50.00 TL → `MEMBER_BLOCKED_BY_DEBT`, with `details.total_debt`; (5) the member's open loans ≥ the loan limit of the member's current type → `LOAN_LIMIT_REACHED`; (6) copy status: `available` → allowed; `on_hold` → allowed only if the hold belongs to a `ready` reservation of this member (LIB-RES-10), otherwise `COPY_ON_HOLD`; any other status → `COPY_NOT_AVAILABLE`, with `details.status`. |
 | LIB-LOAN-06 | **Debt boundary.** Total debt 49.99 TL allows lending; 50.00 TL does not. |
 | LIB-LOAN-07 | **Renew.** `POST /api/v1/loans/{loan_id}/renew` returns `200` with `LoanOut`. Checks in order (all `409`): loan not `open` → `LOAN_NOT_OPEN`; member `passive` → `MEMBER_PASSIVE`; membership expired → `MEMBERSHIP_EXPIRED`; loan overdue → `LOAN_OVERDUE`; `renewal_count` ≥ `max_renewals` → `RENEWAL_LIMIT_REACHED`; the book has an active reservation (status `waiting`, `in_transit` or `ready`) by any member → `BOOK_RESERVED`. |
 | LIB-LOAN-08 | **Renewed due date.** New `due_date` = the next working day on or after today + `loan_period_days` (the new period starts on the renewal day). Because today is never before the previous loan or renewal date, the new due date is never earlier than the current one. `renewal_count` increases by 1. A renewal on the due date itself is allowed (not overdue). Examples: student loan due 2026-11-16, renewed on 2026-11-10 → due 2026-11-24. Student loan due 2026-06-01, renewed on 2026-05-15 → 2026-05-29 is a holiday → due 2026-06-01 (unchanged); the renewal still counts. |
@@ -749,8 +752,9 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | `id` | integer | LIB-COM-14 |
 | `member_id` | integer | |
 | `loan_id` | integer or null | The loan the fee comes from |
-| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` | `no_show_fee`: LIB-ROOM-30 |
+| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25 |
 | `room_booking_id` | integer or null | The room booking a `no_show_fee` comes from |
+| `equipment_loan_id` | integer or null | The equipment loan an `equipment_*` fee comes from |
 | `amount` | amount | > 0.00 |
 | `paid_amount` | amount | 0.00 ≤ `paid_amount` ≤ `amount` |
 | `status` | `open` \| `paid` \| `waived` | `paid` when `paid_amount` = `amount` |
@@ -784,7 +788,7 @@ API representation (`FeeOut`): all fields, plus `outstanding` = `amount` − `pa
 | LIB-FEE-06 | **Allocation.** A payment is applied to the member's `open` fees in order of `created_on`, then `id`: each fee receives as much as it still owes until the payment is used up. A fee whose `paid_amount` reaches `amount` becomes `paid`. Partial payment is allowed. Example: open fees A 6.00 (older) and B 20.00; payment 10.00 → A 6.00 paid (status `paid`), B 4.00 paid (status `open`, outstanding 16.00). |
 | LIB-FEE-07 | **Waive.** `POST /api/v1/fees/{fee_id}/waive` with `{"reason"}` (5–500 characters) sets an `open` fee to `waived` and returns `200` with `FeeOut`. Only `admin` may waive (`403 FORBIDDEN` for librarians). A fee that is not `open` returns `409 FEE_NOT_OPEN`. Amounts already paid stay paid; only the outstanding part is waived. |
 | LIB-FEE-08 | **Fee lists.** `GET /api/v1/members/{member_id}/fees` and `GET /api/v1/fees` are paginated, ordered by `created_on`, then `id`. Filters: `status`, `kind`, `loan_id`; `GET /api/v1/fees` also `member_id`. |
-| LIB-FEE-09 | **Total debt.** A member's total debt = the sum of `outstanding` of all `open` fees + the sum of `accrued_late_fee` of all open overdue loans. This value is used by LIB-LOAN-05 step 4. |
+| LIB-FEE-09 | **Total debt.** A member's total debt = the sum of `outstanding` of all `open` fees + the sum of `accrued_late_fee` of all open overdue loans. This value is used by LIB-LOAN-05 step 4. Equipment loans: LIB-EQ-14. |
 | LIB-FEE-10 | **Balance.** `GET /api/v1/members/{member_id}/balance` returns `200` with `BalanceOut`: `{"outstanding_fees": "<amount>", "accrued_late_fees": "<amount>", "total_debt": "<amount>", "blocked": <bool>}`, where `blocked` is `total_debt` ≥ 50.00. |
 | LIB-FEE-11 | **Payments list.** `GET /api/v1/members/{member_id}/payments` is paginated, ordered by `paid_at`, then `id`. |
 
@@ -852,7 +856,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -871,7 +875,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41 and the room reminders of LIB-ROOM-42. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 and the equipment events of LIB-EQ-38. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -908,7 +912,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40.
 
 ### 16.1 Endpoints and requirements
 
@@ -959,7 +963,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. |
@@ -1073,7 +1077,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | --- | --- |
 | LIB-API-01 | Every endpoint listed in this document MUST exist with the given method and path. Path parameters named `*_id` are positive integers; any other value returns `422 VALIDATION_ERROR`. |
 | LIB-API-02 | A request to an unknown path returns `404 NOT_FOUND`, and an unsupported method on a known path returns `405` with code `METHOD_NOT_ALLOWED`, both in the error format of LIB-COM-25. |
-| LIB-API-03 | Every response with a body uses the representations defined in this document (`UserOut`, `MemberOut`, `BookOut`, `LoanOut`, `ReservationOut`, `FeeOut`, `BalanceOut`, `RoomBookingOut` and the objects given in each requirement). Fields that are null are included with value `null`. |
+| LIB-API-03 | Every response with a body uses the representations defined in this document (`UserOut`, `MemberOut`, `BookOut`, `LoanOut`, `ReservationOut`, `FeeOut`, `BalanceOut`, `RoomBookingOut`, `EquipmentLoanOut` and the objects given in each requirement). Fields that are null are included with value `null`. |
 | LIB-API-04 | The OpenAPI document is served at `GET /openapi.json` and MUST list every endpoint of this document. |
 | LIB-API-05 | Requests with a body MUST use `Content-Type: application/json`; another content type returns `422 VALIDATION_ERROR`. |
 
@@ -1100,7 +1104,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10.
 
 ---
 
@@ -1370,6 +1374,215 @@ Weeks run Monday to Sunday. Hours are summed over the durations of bookings that
 
 ---
 
+## 24. Module 16: Equipment loans
+
+The library lends devices (chargers, tablets, laptops, cameras and others) for short periods at the equipment desk of a branch. Package `lms.equipment`. Times are local (LIB-COM-01); date-times in requests and responses follow LIB-COM-03 and LIB-COM-04.
+
+### 24.1 Desk hours
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EQ-01 | **Desk hours.** The equipment desk of every active branch is open on working days (LIB-COM-05) from 08:00 to 20:00. "Desk open at `t`" means: the local date of `t` is a working day and 08:00 ≤ local time of `t` < 20:00. |
+| LIB-EQ-02 | **Next desk opening.** For a date-time `t` at which the desk is closed: 08:00 of the date of `t` if that date is a working day and `t` is before 08:00; otherwise 08:00 of the first working day after the date of `t`. Examples: Friday 2026-11-06 20:30 → Monday 2026-11-09 08:00; Tuesday 2026-11-03 07:00 → Tuesday 08:00; Thursday 2026-10-29 (holiday) 10:00 → Friday 2026-10-30 08:00. |
+
+### 24.2 Data
+
+**Equipment type**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `code` | text | 2–20 characters `[A-Z0-9_]`, stored in upper case, unique |
+| `name` | text | LIB-COM-16 |
+| `period_unit` | `hours` \| `working_days` | |
+| `period` | integer | `hours`: 1–8; `working_days`: 1–10 |
+| `hourly_late_fee` | amount | 0.50–50.00 |
+| `requires_training` | boolean | Default `false` |
+| `max_open_per_member` | integer | 1–3; open loans of this type per member |
+| `is_active` | boolean | Default `true` |
+
+**Equipment item**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `type_id` | integer | Existing type |
+| `asset_tag` | text | 4–20 characters `[A-Z0-9-]`, stored in upper case, unique |
+| `serial_no` | text | 1–50 characters |
+| `branch_id` | integer | The branch whose desk lends and receives the item |
+| `value` | amount | 1.00–100000.00 |
+| `status` | `available` \| `on_loan` \| `in_repair` \| `lost` \| `retired` | Initially `available` |
+| `acquired_on` | date | Not after today |
+| `created_at` | date-time | From the clock |
+
+*Lendable items* of a type at a branch are its items with status `available` or `on_loan`. Items `in_repair`, `lost` or `retired` are not lendable.
+
+**Training record:** `id`, `member_id`, `type_id`, `completed_on` (date, not after today), `valid_until` (= `completed_on` + 364 days), `recorded_by` (user id), `created_at`.
+
+**Equipment loan**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `item_id`, `member_id` | integer | |
+| `branch_id` | integer | The item's branch |
+| `reservation_id` | integer or null | Set when the loan collects a reservation |
+| `loaned_at` | date-time | From the clock |
+| `due_at` | date-time | LIB-EQ-15 |
+| `extended` | boolean | `true` after an extension (LIB-EQ-19) |
+| `status` | `open` \| `returned` \| `lost` | |
+| `returned_at` | date-time or null | |
+| `return_condition` | `good` \| `damaged` \| null | |
+| `late_hours` | integer or null | Set when closed (LIB-EQ-22) |
+| `lent_by`, `received_by` | integer or null | User ids |
+| `hourly_late_fee` | amount | Copied from the type when the loan is created (LIB-EQ-04); not part of the API representation |
+
+API representation (`EquipmentLoanOut`): all fields except `hourly_late_fee`, plus `asset_tag`, `type_id`, `type_code`, `overdue` (boolean: `open` and now > `due_at` + 15 minutes) and `accrued_late_fee` (amount; LIB-EQ-23 for an open loan as if returned now, `"0.00"` otherwise).
+
+**Equipment reservation**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `type_id`, `branch_id`, `member_id` | integer | |
+| `starts_at` | date-time | Minutes `00` or `30`, seconds 0; desk open at `starts_at` |
+| `ends_at` | date-time | The `due_at` a loan collected at `starts_at` would get (LIB-EQ-15) |
+| `status` | `booked` \| `collected` \| `cancelled` \| `expired` | Initially `booked` |
+| `loan_id` | integer or null | Set when collected |
+| `created_at`, `closed_at` | date-time | `closed_at` null while `booked` |
+| `cancel_reason` | text or null | `member_request`, `staff_request`, `member_deactivated`, `type_inactive` |
+
+A reservation *holds* an item of its type at its branch during the interval [`starts_at` − 15 minutes, `ends_at`) while it is `booked` and not expired (LIB-EQ-31). An open loan *needs* its item during [`loaned_at`, `due_at` + 15 minutes); an overdue open loan needs it at every moment until it is closed. Intervals include their start and exclude their end.
+
+### 24.3 Rules by membership type
+
+| Type | Open equipment loans in total | Equipment reservations (`booked`) | Training needed for types with `requires_training` |
+| --- | --- | --- | --- |
+| `student` | 2 | 2 | yes |
+| `academic` | 3 | 3 | no |
+| `staff` | 3 | 3 | no |
+| `guest` | 0 | 0 | – |
+
+### 24.4 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/equipment-types`, `PATCH /api/v1/equipment-types/{type_id}` | admin | Create, change |
+| `GET /api/v1/equipment-types`, `GET /api/v1/equipment-types/{type_id}` | all authenticated users | Read |
+| `GET /api/v1/equipment-types/{type_id}/availability` | all authenticated users | Free capacity per half hour |
+| `POST /api/v1/equipment-items`, `PATCH /api/v1/equipment-items/{item_id}` | admin | Create, change |
+| `GET /api/v1/equipment-items`, `GET /api/v1/equipment-items/{item_id}` | librarian, admin | Read |
+| `POST /api/v1/equipment-items/{item_id}/retire` | admin | Retire |
+| `POST /api/v1/equipment-items/{item_id}/repair-done` | librarian, admin | Back from repair |
+| `POST /api/v1/members/{member_id}/equipment-trainings` | librarian, admin | Record a training |
+| `GET /api/v1/members/{member_id}/equipment-trainings` | librarian, admin; member (own) | Trainings of a member |
+| `POST /api/v1/equipment-loans` | librarian, admin | Lend |
+| `GET /api/v1/equipment-loans`, `GET /api/v1/equipment-loans/{loan_id}` | librarian, admin; member (own, single loan) | Read |
+| `GET /api/v1/members/{member_id}/equipment-loans` | librarian, admin; member (own) | Loans of a member |
+| `POST /api/v1/equipment-loans/{loan_id}/return` | librarian, admin | Return |
+| `POST /api/v1/equipment-loans/{loan_id}/extend` | member (own), librarian, admin | Extend once |
+| `POST /api/v1/equipment-loans/{loan_id}/report-lost` | librarian, admin | Lost |
+| `POST /api/v1/equipment-reservations` | member (own), librarian, admin | Reserve |
+| `GET /api/v1/equipment-reservations`, `GET /api/v1/equipment-reservations/{reservation_id}` | librarian, admin; member (own, single) | Read |
+| `GET /api/v1/members/{member_id}/equipment-reservations` | librarian, admin; member (own) | Reservations of a member |
+| `POST /api/v1/equipment-reservations/{reservation_id}/cancel` | member (own), librarian, admin | Cancel |
+| `POST /api/v1/equipment/process` | librarian, admin | Expire reservations, send overdue notices |
+| `GET /api/v1/reports/equipment-usage` | librarian, admin | Usage per type (section 16) |
+
+### 24.5 Types, items and training
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EQ-03 | **Create type.** `POST /api/v1/equipment-types` with `{"code", "name", "period_unit", "period", "hourly_late_fee", "requires_training", "max_open_per_member"}` returns `201`. `requires_training` MAY be omitted. Values outside 24.2 return `422 VALIDATION_ERROR`; a duplicate code `409 CONFLICT` with `details.field` `"code"`. |
+| LIB-EQ-04 | **Change type.** `PATCH /api/v1/equipment-types/{type_id}` accepts any subset of `{"name", "period", "hourly_late_fee", "requires_training", "max_open_per_member", "is_active"}` and returns `200`. `code` and `period_unit` cannot be changed (`422`). A change applies to loans and reservations created afterwards; open loans keep their `due_at`, and their late fee uses the `hourly_late_fee` stored with the loan (24.2). |
+| LIB-EQ-05 | **Deactivate type.** `PATCH` with `{"is_active": false}` cancels every `booked` reservation of the type with reason `type_inactive` (event `equipment_reservation_cancelled`). Open loans are not affected. An inactive type cannot be lent or reserved: `409 TYPE_INACTIVE`. |
+| LIB-EQ-06 | **Lists of types.** `GET /api/v1/equipment-types` is paginated, ordered by `code`, filter `is_active`. Each item has `items_total` (items of the type that are not `retired`) and `items_available` (status `available`), both over all branches. |
+| LIB-EQ-07 | **Create item.** `POST /api/v1/equipment-items` with `{"type_id", "asset_tag", "serial_no", "branch_id", "value", "acquired_on"}` returns `201`. A duplicate `asset_tag` returns `409 CONFLICT`; an inactive branch `409 BRANCH_INACTIVE`. |
+| LIB-EQ-08 | **Change item.** `PATCH /api/v1/equipment-items/{item_id}` accepts `{"serial_no", "value", "branch_id"}` and returns `200`. `branch_id` can only be changed while the item is `available` and no `booked` reservation would lose its held item by the move (LIB-EQ-27 check at the old branch); otherwise `409 INVALID_ITEM_STATUS` or `409 ITEM_NEEDED_FOR_RESERVATION`. `status`, `type_id` and `asset_tag` cannot be changed (`422`). |
+| LIB-EQ-09 | **Item list.** `GET /api/v1/equipment-items` is paginated, ordered by `asset_tag`. Filters: `type_id`, `branch_id`, `status`, `q` (case-insensitive substring of `asset_tag` or `serial_no`, LIB-COM-30). |
+| LIB-EQ-10 | **Retire and repair.** `retire` sets an `available` or `in_repair` item to `retired` (`200`); `repair-done` sets an `in_repair` item to `available` (`200`). Any other status returns `409 INVALID_ITEM_STATUS`. Retiring follows the check of LIB-EQ-08 (`409 ITEM_NEEDED_FOR_RESERVATION`). |
+| LIB-EQ-11 | **Training.** `POST /api/v1/members/{member_id}/equipment-trainings` with `{"type_id", "completed_on"}` records a training and returns `201`. `completed_on` after today returns `422 VALIDATION_ERROR`; a type without `requires_training` returns `409 TRAINING_NOT_REQUIRED`. Several records for the same member and type are allowed. A member *has valid training* for a type on a date `d` when a record of that type has `completed_on` ≤ `d` ≤ `valid_until`. Example: completed 2026-11-02 → valid until 2027-11-01. |
+
+### 24.6 Lending
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EQ-12 | **Lend.** `POST /api/v1/equipment-loans` with `{"member_id", "item_id"}` or `{"member_id", "reservation_id"}` (exactly one of `item_id` and `reservation_id`, otherwise `422 VALIDATION_ERROR`) creates an `open` loan with `loaned_at` = now and `lent_by` = the user, sets the item `on_loan` and returns `201` with `EquipmentLoanOut` (event `equipment_loan_created`). |
+| LIB-EQ-13 | **Lending checks.** After LIB-COM-28 steps 1–5, in this order (all `409`): (1) the item's branch inactive → `BRANCH_INACTIVE`; (2) desk not open now (LIB-EQ-01) → `DESK_CLOSED` with `details.opens_at` (LIB-EQ-02); (3) type inactive → `TYPE_INACTIVE`; (4) member `passive` → `MEMBER_PASSIVE`; (5) membership not valid today → `MEMBERSHIP_EXPIRED`; (6) member is a `guest` → `EQUIPMENT_NOT_ALLOWED_FOR_TYPE`; (7) member has an overdue equipment loan (LIB-EQ-16) or an overdue book loan (LIB-LOAN-02) → `MEMBER_HAS_OVERDUE`; (8) total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (9) the type requires training, the member is a `student` and has no valid training today → `TRAINING_REQUIRED`; (10) open equipment loans of the member ≥ the total of 24.3 → `EQUIPMENT_LIMIT_REACHED` with `details.limit`; (11) open loans of this type ≥ `max_open_per_member` → `TYPE_LIMIT_REACHED` with `details.limit`; (12) the item is not `available` → `ITEM_NOT_AVAILABLE`; (13) the new loan would break the capacity rule (LIB-EQ-27) → `ITEM_NEEDED_FOR_RESERVATION`. With `reservation_id`, checks (12) and (13) are replaced by LIB-EQ-29. |
+| LIB-EQ-14 | **Debt and overdue across modules.** An overdue equipment loan also blocks book lending: LIB-LOAN-05 step 3 (`MEMBER_HAS_OVERDUE`) applies when the member has an overdue book loan **or** an overdue equipment loan. Accrued equipment late fees count for total debt: LIB-FEE-09 adds the `accrued_late_fee` of open overdue equipment loans, and `accrued_late_fees` of `BalanceOut` (LIB-FEE-10) includes them. |
+| LIB-EQ-15 | **Due time.** For `period_unit` `hours`: `due_at` = `loaned_at` + `period` hours, but at most 20:00 of the date of `loaned_at`. For `working_days`: `due_at` = 17:00 on the date `loaned_at`'s date + `period` working days (LIB-COM-09). Seconds are kept. Examples: charger (4 hours) lent Tue 2026-11-03 10:20 → due 14:20; lent 17:30 → due 20:00; laptop (3 working days) lent Wed 2026-10-28 15:00 → due Tue 2026-11-03 17:00 (29 Oct holiday, 30 Oct counts 1, 31 Oct–1 Nov weekend, 2 Nov counts 2, 3 Nov counts 3). |
+| LIB-EQ-16 | **Overdue boundary.** A loan is overdue when now > `due_at` + 15 minutes. Due 14:20: at 14:35 not overdue; at 14:35 plus one second overdue. |
+| LIB-EQ-17 | **Lists.** `GET /api/v1/equipment-loans` and `GET /api/v1/members/{member_id}/equipment-loans` are paginated, ordered by `loaned_at`, then `id`. Filters: `status`, `type_id`, `branch_id`, `overdue` (`true`/`false`); the first also `member_id`. A member reading a loan of another member receives `403 FORBIDDEN`. |
+| LIB-EQ-18 | **Reservations of the same member.** When a member with a `booked` reservation of the type at the branch borrows an item of that type at that branch with `item_id` from 15 minutes before `starts_at` to 30 minutes after it, the given item is lent and the reservation becomes `collected` as in LIB-EQ-29; checks (12) and (13) of LIB-EQ-13 apply, and in (13) this reservation no longer counts. |
+
+### 24.7 Extension, return and loss
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EQ-19 | **Extend.** `POST /api/v1/equipment-loans/{loan_id}/extend` on an `open` loan sets a new `due_at` by applying LIB-EQ-15 with the current `due_at` in place of `loaned_at` (for `hours` types at most 20:00 of the date of the current `due_at`), sets `extended` and returns `200` (event `equipment_loan_extended`). Checks in order (all `409`): loan not `open` → `LOAN_NOT_OPEN`; already extended → `EXTENSION_LIMIT_REACHED`; overdue → `LOAN_OVERDUE`; the longer loan would break the capacity rule (LIB-EQ-27) → `ITEM_NEEDED_FOR_RESERVATION`. For `hours` types, an extension that would not move `due_at` (already 20:00) returns `409 EXTENSION_NOT_POSSIBLE`. Example: charger due Tue 14:20, extended at 13:00 → due 18:20; due 17:30, extended → due 20:00. |
+| LIB-EQ-20 | **Return.** `POST /api/v1/equipment-loans/{loan_id}/return` with `{"condition": "good" \| "damaged", "damage_fee": "<amount>"}` closes an `open` loan: `status` `returned`, `returned_at` = now, `received_by`, `late_hours` (LIB-EQ-22); `200` with `EquipmentLoanOut` (event `equipment_loan_returned`). A loan not `open` returns `409 LOAN_NOT_OPEN`. Returns are accepted at any time, also when the desk is closed (drop box). |
+| LIB-EQ-21 | **Condition.** `good`: the item becomes `available`. `damaged`: `damage_fee` is required (`422` without it, `422` with it for `good`), MUST be ≥ 0.00 and ≤ the item's `value` (`409 DAMAGE_FEE_EXCEEDS_VALUE`); a fee of kind `equipment_damage_fee` is created if `damage_fee` > 0.00; the item becomes `in_repair`. |
+| LIB-EQ-22 | **Late hours.** `late_hours` = 0 if `returned_at` ≤ `due_at` + 15 minutes; otherwise the number of started hours between `due_at` and `returned_at` (wall-clock time, including nights, weekends and holidays). Examples: due 14:20, returned 14:35 → 0; returned 14:36 → 1; returned 15:20 → 1; returned 15:21 → 2. |
+| LIB-EQ-23 | **Late fee.** At return, if `late_hours` > 0, a fee of kind `equipment_late_fee` = `min(late_hours × hourly_late_fee, 20 % of value)` is created, rounded per LIB-COM-12. `hourly_late_fee` is the value stored with the loan (LIB-EQ-04). Example: laptop value 30,000.00, 25.00 per hour, 30 hours late → 750.00; 300 hours late → 6,000.00 (cap 20 %). |
+| LIB-EQ-24 | **Lost.** `POST /api/v1/equipment-loans/{loan_id}/report-lost` closes an `open` loan with `status` `lost`, `returned_at` null and `late_hours` computed with now as return time; it creates `equipment_late_fee` (if `late_hours` > 0, LIB-EQ-23) and `equipment_lost` = the item's `value`; the item becomes `lost`; `200` (event `equipment_loan_lost`). |
+| LIB-EQ-25 | **Fees.** Equipment fees are fees of module 7 with `loan_id` null and `equipment_loan_id` set; they are paid, allocated and waived like other fees (LIB-FEE-05–07) and appear in fee lists and balances. |
+
+### 24.8 Reservations
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EQ-26 | **Reserve.** `POST /api/v1/equipment-reservations` with `{"type_id", "branch_id", "starts_at"}` returns `201` with the reservation and its `ends_at` (event `equipment_reservation_created`). A librarian or admin MUST also send `member_id`; a member MUST NOT (`422`). `starts_at` with minutes other than `00`/`30` or with seconds returns `422 VALIDATION_ERROR`. |
+| LIB-EQ-27 | **Capacity.** The *demand* of a type at a branch at a moment `t` is the number of open loans of the type at the branch that need their item at `t` plus the number of reservations of the type at the branch that hold an item at `t` (24.2). The *capacity* is the number of lendable items of the type at the branch (24.2). A new reservation, a new loan or an extension is possible only if, counting it with its new interval, the demand does not exceed the capacity at any moment `t` ≥ now of that interval. Example: one charger (4 hours); a reservation of another member for Tue 14:30 holds it from 14:15; a loan at 10:00 (due 14:00, needed until 14:15) is possible, a loan at 10:01 is not. |
+| LIB-EQ-28 | **Reservation checks.** In order (all `409`): (1) branch inactive → `BRANCH_INACTIVE`; (2) type inactive → `TYPE_INACTIVE`; (3) member `passive` → `MEMBER_PASSIVE`; (4) membership not valid on the date of `ends_at` → `MEMBERSHIP_EXPIRED`; (5) `guest` → `EQUIPMENT_NOT_ALLOWED_FOR_TYPE`; (6) total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (7) `student` without valid training on the date of `starts_at` for a type that requires it → `TRAINING_REQUIRED`; (8) desk not open at `starts_at` → `DESK_CLOSED`; (9) `starts_at` earlier than now + 30 minutes → `RESERVATION_TOO_SOON`; (10) the date of `starts_at` later than today + 14 days → `RESERVATION_TOO_FAR_AHEAD` with `details.latest_date`; (11) `booked` reservations of the member ≥ the limit of 24.3 → `EQUIPMENT_RESERVATION_LIMIT_REACHED`; (12) the member already has a `booked` reservation of the same type whose interval [`starts_at`, `ends_at`) overlaps the new one → `DUPLICATE_EQUIPMENT_RESERVATION`; (13) capacity (LIB-EQ-27) → `NO_EQUIPMENT_AVAILABLE` with `details.next_free_at` (the earliest `starts_at` after the requested one, at minutes `00` or `30`, with the desk open and on or before today + 14 days, at which the capacity rule holds; null if there is none). |
+| LIB-EQ-29 | **Collect.** A loan with `reservation_id` collects a `booked` reservation of the same member, from 15 minutes before `starts_at` to 30 minutes after it (both inclusive): earlier → `409 RESERVATION_NOT_READY`, later → `409 RESERVATION_EXPIRED`; another member's reservation → `409 RESERVATION_OF_OTHER_MEMBER`; not `booked` → `409 RESERVATION_NOT_ACTIVE`. The system lends the `available` item of the type at the reservation's branch with the smallest `asset_tag`; none → `409 ITEM_NOT_AVAILABLE` (the reservation stays `booked`). The capacity rule is not checked again. The reservation becomes `collected` with `loan_id` and `closed_at`. `due_at` follows LIB-EQ-15 from `loaned_at`, not from `starts_at`. |
+| LIB-EQ-30 | **Cancel.** `cancel` sets a `booked` reservation to `cancelled` with `member_request` (member) or `staff_request` (staff) and returns `200`. Not `booked` → `409 RESERVATION_NOT_ACTIVE`. |
+| LIB-EQ-31 | **Expiry.** A `booked` reservation with now > `starts_at` + 30 minutes is expired. `POST /api/v1/equipment/process` marks every such reservation `expired` (`closed_at` = now, event `equipment_reservation_expired`) in order of `starts_at`, then `id`. Until processed, an expired reservation no longer holds an item (LIB-EQ-27) and cannot be collected. |
+| LIB-EQ-32 | **Overdue notices.** `POST /api/v1/equipment/process` also creates one `equipment_overdue` notification for every overdue open equipment loan, at most one per loan per day, and returns `200` with `{"expired_reservations": <count>, "overdue_notices": <count>}`. |
+| LIB-EQ-33 | **Availability.** `GET /api/v1/equipment-types/{type_id}/availability?branch_id=&date=` returns `200` with `{"type_id", "branch_id", "date", "capacity", "slots": [{"start": "HH:MM", "free": <int>}]}`: one slot per half hour of desk hours of that date (`08:00` … `19:30`; none if the desk is closed that day), where `free` = capacity − the highest demand (LIB-EQ-27) during the slot, never below 0. |
+| LIB-EQ-34 | **Lists.** Reservation lists are paginated, ordered by `starts_at`, then `id`; filters `status`, `type_id`, `branch_id`, `from`, `to` (dates of `starts_at`, inclusive); the general list also `member_id`. |
+
+### 24.9 Effects on other modules
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EQ-35 | **Member deactivation.** LIB-MEM-10 also returns `409 MEMBER_HAS_OPEN_LOANS` when the member has an open equipment loan, and cancels the member's `booked` equipment reservations with reason `member_deactivated`. |
+| LIB-EQ-36 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) if an equipment item that is not `retired` or `lost` belongs to the branch. |
+| LIB-EQ-37 | **Member summary.** LIB-MEM-12 also returns `"equipment": {"open_loans": <int>, "overdue_loans": <int>, "booked_reservations": <int>}`. `borrowing.reasons` includes `MEMBER_HAS_OVERDUE` also for an overdue equipment loan (LIB-EQ-14). |
+| LIB-EQ-38 | **Notifications.** Added to LIB-NOT-01: `equipment_loan_created`, `equipment_loan_returned`, `equipment_loan_lost`, `equipment_reservation_cancelled` (reasons `staff_request`, `member_deactivated`, `type_inactive`), `equipment_reservation_expired`, plus `equipment_overdue` (LIB-EQ-32). Messages contain the type name, the asset tag (loans) and `due_at` or `starts_at`. Notifications get a nullable `equipment_loan_id` and `equipment_reservation_id`. Fees created by this module also notify as `fee_created`. |
+| LIB-EQ-39 | **Audit.** Module 16 reports to the audit log: `equipment_type_created`, `equipment_type_updated`, `equipment_item_created`, `equipment_item_updated`, `equipment_item_retired`, `equipment_item_repaired`, `equipment_training_recorded`, `equipment_loan_created`, `equipment_loan_extended`, `equipment_loan_returned`, `equipment_loan_lost`, `equipment_reservation_created`, `equipment_reservation_cancelled`, `equipment_reservation_expired`, `equipment_processed`. |
+| LIB-EQ-40 | **Usage report.** `GET /api/v1/reports/equipment-usage?from=&to=&branch_id=` (dates inclusive, `from` ≤ `to`, at most 366 days; otherwise `422`) returns a paginated list ordered by type `code`, one item per type (all types, also inactive ones and those without activity): `{"type_id", "type_code", "loans", "late_returns", "late_hours", "damaged_returns", "lost", "reservations", "expired_reservations", "fees_created"}`. `loans`: loans by the date of `loaned_at`; `late_returns`, `late_hours` and `damaged_returns`: returned loans by the date of `returned_at` with `late_hours` > 0 (count and sum of `late_hours`) and with `return_condition` `damaged`; `lost`: loans reported lost on a date in the range; `reservations` (any status) and `expired_reservations`: by the date of `starts_at`; `fees_created`: sum (amount) of the fees of the type's loans with `created_on` in the range. With `branch_id`, only loans and reservations of that branch. |
+| LIB-EQ-41 | **Not exported.** Equipment data is not part of import and export (module 13). |
+
+### 24.10 Error codes of module 16
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `DESK_CLOSED` | LIB-EQ-13, LIB-EQ-28 |
+| 409 | `TYPE_INACTIVE` | LIB-EQ-05, LIB-EQ-13, LIB-EQ-28 |
+| 409 | `EQUIPMENT_NOT_ALLOWED_FOR_TYPE` | LIB-EQ-13, LIB-EQ-28 |
+| 409 | `TRAINING_REQUIRED` | LIB-EQ-13, LIB-EQ-28 |
+| 409 | `TRAINING_NOT_REQUIRED` | LIB-EQ-11 |
+| 409 | `EQUIPMENT_LIMIT_REACHED` | LIB-EQ-13 |
+| 409 | `TYPE_LIMIT_REACHED` | LIB-EQ-13 |
+| 409 | `ITEM_NOT_AVAILABLE` | LIB-EQ-13, LIB-EQ-29 |
+| 409 | `ITEM_NEEDED_FOR_RESERVATION` | LIB-EQ-08, LIB-EQ-10, LIB-EQ-13, LIB-EQ-19 |
+| 409 | `INVALID_ITEM_STATUS` | LIB-EQ-08, LIB-EQ-10 |
+| 409 | `EXTENSION_LIMIT_REACHED` | LIB-EQ-19 |
+| 409 | `EXTENSION_NOT_POSSIBLE` | LIB-EQ-19 |
+| 409 | `DAMAGE_FEE_EXCEEDS_VALUE` | LIB-EQ-21 |
+| 409 | `RESERVATION_TOO_SOON` | LIB-EQ-28 |
+| 409 | `RESERVATION_TOO_FAR_AHEAD` | LIB-EQ-28 |
+| 409 | `EQUIPMENT_RESERVATION_LIMIT_REACHED` | LIB-EQ-28 |
+| 409 | `DUPLICATE_EQUIPMENT_RESERVATION` | LIB-EQ-28 |
+| 409 | `NO_EQUIPMENT_AVAILABLE` | LIB-EQ-28 |
+| 409 | `RESERVATION_NOT_READY` | LIB-EQ-29 |
+| 409 | `RESERVATION_EXPIRED` | LIB-EQ-29 |
+| 409 | `RESERVATION_OF_OTHER_MEMBER` | LIB-EQ-29 |
+
+`MEMBER_PASSIVE`, `MEMBERSHIP_EXPIRED`, `MEMBER_HAS_OVERDUE`, `MEMBER_BLOCKED_BY_DEBT`, `BRANCH_INACTIVE`, `LOAN_NOT_OPEN`, `LOAN_OVERDUE`, `RESERVATION_NOT_ACTIVE` and `CONFLICT` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -1393,4 +1606,5 @@ Weeks run Monday to Sunday. Hours are summed over the durations of bookings that
 | Module 14: API layer | LIB-API-01 – LIB-API-05 | 5 |
 | End-to-end scenarios | LIB-E2E-01 – LIB-E2E-11 | 11 |
 | Module 15: Study rooms | LIB-ROOM-01 – LIB-ROOM-45 | 45 |
-| **Total** | | **270** |
+| Module 16: Equipment loans | LIB-EQ-01 – LIB-EQ-41 | 41 |
+| **Total** | | **311** |
