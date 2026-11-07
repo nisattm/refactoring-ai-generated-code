@@ -18,3 +18,17 @@ Every action calls the endpoint named in brackets and shows the result; an error
 | LIB-UI-ROOM-08 | **Bans.** Librarian and admin see a member's bans (LIB-ROOM-36) on the member page; admin can create a ban (LIB-ROOM-34) and lift one (LIB-ROOM-35). |
 | LIB-UI-ROOM-09 | **Room usage report.** Librarian and admin. Date range and branch; shows LIB-ROOM-44 as a table. |
 
+## Module 16: Equipment loans
+
+Same conventions as module 15: every action calls the endpoint named in brackets, an error shows `error.message` and keeps the entered values, and only the actions of the user's role are shown (6.6).
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-EQ-01 | **Equipment catalog.** All roles. Lists types (LIB-EQ-06) with items total and available; selecting a type and a branch shows the availability grid of a chosen date (LIB-EQ-33), a closed day shown as "closed". |
+| LIB-UI-EQ-02 | **Reserve equipment.** Member for themselves; librarian and admin also choose the member. Type, branch and start (picked from the grid); shows the resulting `ends_at` before sending LIB-EQ-26. Errors of LIB-EQ-28 are shown with their `details`; for `NO_EQUIPMENT_AVAILABLE` the next free time is offered as a button that fills in the start. |
+| LIB-UI-EQ-03 | **My equipment.** Member. Open and past loans (LIB-EQ-17) with due time, overdue flag and accrued fee; "Extend" (LIB-EQ-19) on open loans; booked reservations (LIB-EQ-34) with "Cancel" (LIB-EQ-30); own trainings with validity (LIB-EQ-11). |
+| LIB-UI-EQ-04 | **Equipment desk.** Librarian and admin. Find a member; lend by asset tag (LIB-EQ-12) or collect one of the member's reservations (LIB-EQ-29); return with condition and damage fee (LIB-EQ-20, LIB-EQ-21); report lost (LIB-EQ-24); today's reservations of a chosen branch; "Process" (LIB-EQ-31, LIB-EQ-32) shows both counts. `DESK_CLOSED` shows the opening time. |
+| LIB-UI-EQ-05 | **Types and items.** Admin creates and changes types and items (LIB-EQ-03, LIB-EQ-04, LIB-EQ-07, LIB-EQ-08) and retires items (LIB-EQ-10); deactivating a type asks for confirmation and states that booked reservations will be cancelled (LIB-EQ-05). Librarian sees the item list with filters (LIB-EQ-09) and marks repairs done. |
+| LIB-UI-EQ-06 | **Trainings.** Librarian and admin record a training on the member page (LIB-EQ-11) and see the member's trainings with validity. |
+| LIB-UI-EQ-07 | **Equipment usage report.** Librarian and admin. Date range and branch; shows LIB-EQ-40 as a table. |
+
