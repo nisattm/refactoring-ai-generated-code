@@ -32,3 +32,16 @@ Same conventions as module 15: every action calls the endpoint named in brackets
 | LIB-UI-EQ-06 | **Trainings.** Librarian and admin record a training on the member page (LIB-EQ-11) and see the member's trainings with validity. |
 | LIB-UI-EQ-07 | **Equipment usage report.** Librarian and admin. Date range and branch; shows LIB-EQ-40 as a table. |
 
+## Module 17: Digital resources
+
+Same conventions as modules 15 and 16.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-DIG-01 | **Digital library.** All roles. Resources with kind, availability and waiting holds; e-books also on the book page (LIB-DIG-09). |
+| LIB-UI-DIG-02 | **Borrow, hold, open.** Member for themselves, staff choose the member. "Borrow" when a copy is free, otherwise "Place hold" with the queue length; "Open session" for databases with the remaining minutes; errors with `details`. |
+| LIB-UI-DIG-03 | **My digital library.** Member. Active and past loans with due time, "Return" and "Renew" (with `renewable_from`); holds with position or "ready until", "Borrow" and "Cancel"; open sessions with "Close". |
+| LIB-UI-DIG-04 | **Licenses.** Admin adds and cancels licenses (with an optional purchase order); librarian sees them. |
+| LIB-UI-DIG-05 | **Resources.** Librarian and admin create and change resources; deactivation asks for confirmation (holds will be cancelled). |
+| LIB-UI-DIG-06 | **Digital desk.** Librarian and admin. Hold queue of a resource; "Process" (LIB-DIG-35) with its four counts. |
+| LIB-UI-DIG-07 | **Digital usage report.** Librarian and admin. Date range and kind; LIB-DIG-39 as a table. |

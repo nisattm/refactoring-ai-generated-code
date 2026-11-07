@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
-**Status:** Complete draft (sections 1–24), revised after team review.
-**Version:** 0.9 · 2026-11-07 (adds section 24, module 16 Equipment loans)
+**Status:** Complete draft (sections 1–25), revised after team review.
+**Version:** 0.10 · 2026-11-07 (adds section 25, module 17 Digital resources)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -13,9 +13,9 @@ The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119. Each testa
 
 ### 1.1 System overview
 
-The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, study rooms and equipment loans. It is used through a REST API.
+The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, study rooms, equipment loans and digital resources. It is used through a REST API.
 
-The system consists of 16 modules:
+The system consists of 17 modules:
 
 | # | Module | Package | Section |
 | --- | --- | --- | --- |
@@ -35,6 +35,7 @@ The system consists of 16 modules:
 | 14 | API layer | `lms.api` | 20 (endpoints are listed with each module) |
 | 15 | Study rooms | `lms.rooms` | 23 |
 | 16 | Equipment loans | `lms.equipment` | 24 |
+| 17 | Digital resources | `lms.digital` | 25 |
 
 ### 1.2 Out of scope
 
@@ -96,7 +97,8 @@ lms/
 ├── audit/               Module 13
 ├── api/                 Module 14 (FastAPI routers and request/response schemas)
 ├── rooms/               Module 15
-└── equipment/           Module 16
+├── equipment/           Module 16
+└── digital/             Module 17
 ```
 
 | ID | Requirement |
@@ -458,6 +460,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Purchasing (module 12) | – | – | Full | Full |
 | Study rooms (module 15) | – | Read rooms and availability; book, change, cancel, leave, check in and out own bookings; read own bans | Full, except creating and changing rooms and bans | Full |
 | Equipment loans (module 16) | – | Read types and availability; reserve and cancel own reservations; extend own loans; read own loans, reservations and trainings | Full, except creating and changing types and items and retiring items | Full |
+| Digital resources (module 17) | – | Read resources and calendars; borrow, return and renew own e-book loans; own holds and database sessions | Full, except licenses: read only | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -539,9 +542,9 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40) and `equipment` (LIB-EQ-37). |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37) and `digital` (LIB-DIG-36). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -856,7 +859,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -875,7 +878,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 and the equipment events of LIB-EQ-38. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 and the digital events of LIB-DIG-33. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -912,7 +915,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39.
 
 ### 16.1 Endpoints and requirements
 
@@ -1013,7 +1016,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | LIB-PUR-02 | **Create order.** `POST /api/v1/purchase-orders` with `{"supplier_id", "branch_id", "lines": [{"book_id", "quantity", "unit_price"}]}` (0–50 lines) returns `201` with the order (`status` `draft`, `total`). An inactive supplier returns `409 SUPPLIER_INACTIVE`. A book repeated in `lines` returns `422 VALIDATION_ERROR`. |
 | LIB-PUR-03 | **Edit draft.** `PATCH` accepts any subset of `{"supplier_id", "branch_id", "lines"}`; `lines` replaces all lines. Only a `draft` can be edited: otherwise `409 INVALID_ORDER_STATUS`. |
 | LIB-PUR-04 | **Submit.** `submit` changes `draft` to `ordered` and sets `ordered_on` = today. An order without lines returns `409 ORDER_EMPTY`; a non-draft returns `409 INVALID_ORDER_STATUS`. |
-| LIB-PUR-05 | **Cancel.** `cancel` is allowed for `draft`, and for `ordered` when nothing has been received; then `status` becomes `cancelled`. Otherwise `409 INVALID_ORDER_STATUS`. |
+| LIB-PUR-05 | **Cancel.** `cancel` is allowed for `draft`, and for `ordered` when nothing has been received; then `status` becomes `cancelled`. Otherwise `409 INVALID_ORDER_STATUS`. An order referenced by a digital license: LIB-DIG-06. |
 | LIB-PUR-06 | **Receive.** `receive` with `{"lines": [{"line_id", "barcodes": ["...", ...]}]}` is allowed for `ordered` and `partially_received` (otherwise `409 INVALID_ORDER_STATUS`). An empty `lines` list, an empty `barcodes` list or a `line_id` repeated in the request returns `422 VALIDATION_ERROR`; a `line_id` that is not a line of this order returns `404 NOT_FOUND` (LIB-COM-29). For each barcode a copy is created (LIB-CAT-07) with `home_branch_id` = order branch, `price` = line `unit_price`, `acquired_on` = today; each new copy is released (LIB-RES-08). `received_quantity` increases by the number of barcodes. |
 | LIB-PUR-07 | **Receive limits.** If any line would exceed its `quantity`, the whole request is rejected with `409 RECEIVE_EXCEEDS_ORDERED` and nothing is created. A duplicate or existing barcode rejects the whole request with `409 CONFLICT`. |
 | LIB-PUR-08 | **Order status after receiving.** When every line has `received_quantity` = `quantity`, the status becomes `received`; otherwise, after at least one copy is received, `partially_received`. |
@@ -1104,7 +1107,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9.
 
 ---
 
@@ -1583,6 +1586,221 @@ A reservation *holds* an item of its type at its branch during the interval [`st
 
 ---
 
+## 25. Module 17: Digital resources
+
+The library licenses e-books, which members borrow for a number of days, and online databases, which members use in sessions of one hour. Package `lms.digital`. Times are local (LIB-COM-01); date-times follow LIB-COM-03 and LIB-COM-04. Digital loans have no late fees: they end by themselves.
+
+### 25.1 Data
+
+**Digital resource**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `kind` | `ebook` \| `database` | Cannot be changed |
+| `title` | text | LIB-COM-16 |
+| `provider` | text | 1–100 characters |
+| `book_id` | integer or null | An existing book; only for `ebook` (`422` for `database`) |
+| `loan_days` | integer or null | `ebook`: 1–21, default 14; `database`: null (`422` if given) |
+| `is_active` | boolean | Default `true` |
+| `created_at` | date-time | From the clock |
+
+**License**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `resource_id` | integer | Existing resource |
+| `model` | `perpetual` \| `subscription` | |
+| `copies` | integer | `ebook`: 1–100 copies; `database`: 1–500 concurrent seats |
+| `starts_on` | date | Any date |
+| `ends_on` | date or null | `perpetual`: null (`422` if given); `subscription`: required, ≥ `starts_on` |
+| `cost` | amount | 0.00–1000000.00 |
+| `order_id` | integer or null | A purchase order (module 12), LIB-DIG-06 |
+| `cancelled_on` | date or null | Set by LIB-DIG-07 |
+| `status` | derived | `cancelled` if `cancelled_on` is set; otherwise `pending` if today < `starts_on`, `ended` if `ends_on` < today, else `active` |
+
+A license *counts on date `d`* when `starts_on` ≤ `d`, (`ends_on` is null or `d` ≤ `ends_on`) and (`cancelled_on` is null or `d` < `cancelled_on`). The **capacity** of a resource at a moment `t` is the sum of `copies` of its licenses that count on the date of `t`.
+
+**Digital loan (e-books)**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `resource_id`, `member_id` | integer | |
+| `hold_id` | integer or null | The hold this loan fulfils |
+| `borrowed_at` | date-time | From the clock |
+| `due_at` | date-time | `borrowed_at` + `loan_days` × 24 hours |
+| `renewed` | boolean | LIB-DIG-21 |
+| `renewed_at` | date-time or null | Time of the renewal |
+| `status` | `open` \| `returned` \| `expired` | |
+| `ended_at` | date-time or null | Return time, or `due_at` for `expired` |
+
+An `open` loan with now ≥ `due_at` is *finished*: it no longer uses a copy, cannot be returned or renewed, and is shown with `status` `expired` and `ended_at` = `due_at` in every response, also before LIB-DIG-35 stores this.
+
+**Hold (e-books)**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `resource_id`, `member_id` | integer | |
+| `status` | `waiting` \| `ready` \| `fulfilled` \| `cancelled` \| `expired` | Initially `waiting` |
+| `created_at` | date-time | From the clock |
+| `ready_at`, `ready_until` | date-time or null | Set when `ready`; `ready_until` = `ready_at` + 48 hours |
+| `closed_at` | date-time or null | |
+| `cancel_reason` | text or null | `member_request`, `staff_request`, `member_deactivated`, `resource_inactive` |
+| `position` | integer or null | Derived: for `waiting`, 1 + the number of `waiting` holds of the resource created earlier (ties by `id`); null otherwise |
+
+A `ready` hold with now > `ready_until` is *lapsed*: it no longer keeps a copy and cannot be used, also before LIB-DIG-35 marks it `expired`.
+
+**Session (databases)**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `resource_id`, `member_id` | integer | |
+| `started_at` | date-time | From the clock |
+| `expires_at` | date-time | `started_at` + 60 minutes |
+| `closed_at` | date-time or null | Set by LIB-DIG-03, LIB-DIG-29 or LIB-DIG-37 |
+
+A session is *open* at `t` when `closed_at` is null and `t` < `expires_at`.
+
+**Counts used by the rules.** For an e-book at moment `t`: *active loans* = `open` loans with `t` < `due_at`; *kept copies* = `ready` holds that are not lapsed; *waiting* = `waiting` holds. **Free copies** = capacity − active loans − kept copies − waiting, never below 0. For a database: **free seats** = capacity − open sessions, never below 0.
+
+### 25.2 Rules by membership type
+
+| Type | Open digital loans | Holds (`waiting` + `ready`) | Database sessions at the same time |
+| --- | --- | --- | --- |
+| `student` | 5 | 5 | 1 |
+| `academic` | 10 | 10 | 2 |
+| `staff` | 5 | 5 | 1 |
+| `guest` | 0 | 0 | 0 |
+
+### 25.3 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/digital-resources`, `PATCH /api/v1/digital-resources/{resource_id}` | librarian, admin | Create, change |
+| `GET /api/v1/digital-resources`, `GET /api/v1/digital-resources/{resource_id}` | all authenticated users | Read, with availability |
+| `GET /api/v1/books/{book_id}/digital-resources` | all authenticated users | E-books of a book |
+| `POST /api/v1/digital-resources/{resource_id}/licenses` | admin | Add a license |
+| `GET /api/v1/digital-resources/{resource_id}/licenses` | librarian, admin | Licenses of a resource |
+| `PATCH /api/v1/digital-licenses/{license_id}`, `POST /api/v1/digital-licenses/{license_id}/cancel`, `POST /api/v1/digital-licenses/{license_id}/renew` | admin | Change, cancel, renew a license |
+| `GET /api/v1/digital-licenses` | librarian, admin | Subscriptions ending soon |
+| `GET /api/v1/digital-resources/{resource_id}/calendar` | all authenticated users | Capacity per day |
+| `POST /api/v1/digital-loans` | member (own), librarian, admin | Borrow an e-book |
+| `GET /api/v1/digital-loans`, `GET /api/v1/digital-loans/{loan_id}` | librarian, admin; member (own, single) | Read |
+| `GET /api/v1/members/{member_id}/digital-loans` | librarian, admin; member (own) | Loans of a member |
+| `POST /api/v1/digital-loans/{loan_id}/return`, `/renew` | member (own), librarian, admin | Return early, renew |
+| `POST /api/v1/digital-holds` | member (own), librarian, admin | Place a hold |
+| `GET /api/v1/digital-resources/{resource_id}/holds` | librarian, admin | Hold queue of a resource |
+| `GET /api/v1/members/{member_id}/digital-holds` | librarian, admin; member (own) | Holds of a member |
+| `POST /api/v1/digital-holds/{hold_id}/cancel` | member (own), librarian, admin | Cancel a hold |
+| `POST /api/v1/digital-sessions` | member (own), librarian, admin | Open a database session |
+| `POST /api/v1/digital-sessions/{session_id}/close` | member (own), librarian, admin | Close a session |
+| `GET /api/v1/members/{member_id}/digital-sessions` | librarian, admin; member (own) | Sessions of a member |
+| `POST /api/v1/digital/process` | librarian, admin | Expire loans and holds, move the queues |
+| `GET /api/v1/reports/digital-usage` | librarian, admin | Usage per resource (section 16) |
+
+`member_id` in request bodies: a librarian or admin MUST send it; a member MUST NOT (`422`) and acts for themselves. A member acting on a loan, hold or session of another member receives `403 FORBIDDEN`.
+
+### 25.4 Resources and licenses
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DIG-01 | **Create resource.** `POST /api/v1/digital-resources` with `{"kind", "title", "provider", "book_id", "loan_days"}` returns `201` (event `digital_resource_created`). `book_id` and `loan_days` MAY be omitted. Values outside 25.1 return `422 VALIDATION_ERROR`; an unknown `book_id` returns `422` with `details.fields` naming `book_id`. |
+| LIB-DIG-02 | **Change resource.** `PATCH` accepts any subset of `{"title", "provider", "book_id", "loan_days", "is_active"}` and returns `200`. `kind` cannot be changed (`422`). A new `loan_days` applies to loans created afterwards. |
+| LIB-DIG-03 | **Deactivate resource.** `{"is_active": false}` cancels every `waiting` and `ready` hold of the resource with reason `resource_inactive` (event `digital_hold_cancelled`) and closes its open sessions (`closed_at` = now). Open loans run until their `due_at`. An inactive resource cannot be borrowed, held or opened: `409 RESOURCE_INACTIVE`. |
+| LIB-DIG-04 | **Read resources.** `GET /api/v1/digital-resources` is paginated, ordered by `title` (LIB-COM-30 comparison), then `id`. Filters: `kind`, `is_active`, `q` (case-insensitive substring of `title` or `provider`), `book_id`. Each item and the single resource contain `capacity` (now), `in_use` (e-book: active loans; database: open sessions), `available` (e-book: free copies; database: free seats) and `waiting_holds` (e-book: number of `waiting` holds; database: 0). |
+| LIB-DIG-05 | **Add license.** `POST /api/v1/digital-resources/{resource_id}/licenses` with `{"model", "copies", "starts_on", "ends_on", "cost", "order_id"}` returns `201` with the license and its `status` (event `digital_license_added`). `ends_on` and `order_id` MAY be omitted. Values outside 25.1 return `422 VALIDATION_ERROR`. A license may be added to an inactive resource. |
+| LIB-DIG-06 | **License and order.** `order_id` MUST be an existing purchase order (`422` otherwise) with status `ordered`, `partially_received` or `received`; a `draft` or `cancelled` order returns `409 INVALID_ORDER_STATUS`. A purchase order referenced by a license cannot be cancelled: LIB-PUR-05 returns `409 ORDER_HAS_LICENSE`. |
+| LIB-DIG-07 | **Cancel license.** `POST /api/v1/digital-licenses/{license_id}/cancel` sets `cancelled_on` = today and returns `200` (event `digital_license_cancelled`). An already cancelled or `ended` license returns `409 INVALID_LICENSE_STATUS`. Open loans and sessions are not ended; the lower capacity applies to new loans, holds becoming ready and sessions. |
+| LIB-DIG-08 | **License list.** `GET /api/v1/digital-resources/{resource_id}/licenses` is paginated, ordered by `starts_on`, then `id`, filter `status`. The resource of a license is read with `resource_id`. |
+| LIB-DIG-09 | **E-books of a book.** `GET /api/v1/books/{book_id}/digital-resources` returns `200` with the active e-books of that book in the format of LIB-DIG-04 (not paginated, ordered by `id`); an unknown book returns `404 NOT_FOUND`. |
+| LIB-DIG-10 | **Change license.** `PATCH /api/v1/digital-licenses/{license_id}` (admin) accepts any subset of `{"copies", "cost", "ends_on"}` and returns `200`. `copies` and `cost` can only be changed while the license is `pending`, and `ends_on` only while it is `pending` or `active`; otherwise `409 INVALID_LICENSE_STATUS`. The new `ends_on` of a `subscription` MUST be ≥ today and ≥ `starts_on` (`422` otherwise); a `perpetual` license has no `ends_on` (`422`). |
+| LIB-DIG-11 | **Renew subscription.** `POST /api/v1/digital-licenses/{license_id}/renew` with `{"ends_on", "cost", "order_id"}` on a `subscription` that is `active` or `ended` creates a new `subscription` license of the same resource with the same `copies`, `starts_on` = the old `ends_on` + 1 day and the given `ends_on` (≥ the new `starts_on`, otherwise `422`), and returns `201` (event `digital_license_added`). A `perpetual` license → `409 NOT_A_SUBSCRIPTION`; a `cancelled` or `pending` one → `409 INVALID_LICENSE_STATUS`; a license already renewed (a license of the resource that is not cancelled has `starts_on` = its `ends_on` + 1 day) → `409 ALREADY_RENEWED`. `order_id` follows LIB-DIG-06. |
+| LIB-DIG-12 | **Expiring subscriptions.** `GET /api/v1/digital-licenses?ending_within_days=<n>` (librarian, admin; `n` 1–365, default 30) returns the `active` subscriptions with today ≤ `ends_on` ≤ today + `n` days that are not renewed (LIB-DIG-11), paginated, ordered by `ends_on`, then `id`; each item also has `resource_title`. |
+| LIB-DIG-13 | **Availability calendar.** `GET /api/v1/digital-resources/{resource_id}/calendar?from=&to=` (all authenticated users; at most 92 days, `from` ≤ `to`, otherwise `422`) returns `200` with `{"resource_id", "days": [{"date", "capacity"}]}`, one item per date with the capacity of that date (licenses only; loans are not considered). |
+| LIB-DIG-14 | **Capacity examples.** A perpetual license of 2 copies from 2026-11-01 and a subscription of 3 copies from 2026-11-01 to 2026-11-30: capacity 5 on 2026-11-30, 2 on 2026-12-01. A subscription from 2026-11-10: not counted on 2026-11-09 (`status` `pending`). A license cancelled on 2026-11-04 counts on 2026-11-03 and not on 2026-11-04. |
+
+### 25.5 E-book loans
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DIG-15 | **Borrow.** `POST /api/v1/digital-loans` with `{"resource_id"}` (member) or `{"resource_id", "member_id"}` (staff) creates an `open` loan and returns `201` (event `digital_loan_created`). If the member has a `ready` hold for the resource that is not lapsed, the loan fulfils it: the hold becomes `fulfilled` with `closed_at` = now, and the loan gets `hold_id`. |
+| LIB-DIG-16 | **Borrow checks.** In order (all `409` unless stated): (1) the resource is a database → `WRONG_RESOURCE_KIND`; (2) resource inactive → `RESOURCE_INACTIVE`; (3) member `passive` → `MEMBER_PASSIVE`; (4) membership not valid today → `MEMBERSHIP_EXPIRED`; (5) `guest` → `DIGITAL_NOT_ALLOWED_FOR_TYPE`; (6) total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (7) the member has an active loan of the resource → `ALREADY_BORROWED`; (8) active loans of the member ≥ the limit of 25.2 → `DIGITAL_LOAN_LIMIT_REACHED` with `details.limit`; (9) capacity now is 0 → `NO_ACTIVE_LICENSE`; (10) without a usable `ready` hold of the member: free copies = 0 → `NO_COPY_AVAILABLE` with `details.waiting` (number of `waiting` holds). With a usable `ready` hold, (10) is not checked. |
+| LIB-DIG-17 | **Due time.** `due_at` = `borrowed_at` + `loan_days` × 24 hours, with seconds kept. Example: borrowed Mon 2026-11-02 09:00 with 14 days → due Mon 2026-11-16 09:00. Weekends and holidays do not matter. |
+| LIB-DIG-18 | **End of a loan.** At `due_at` the loan is finished (25.1): at `due_at` − 1 second it is still active, at `due_at` it no longer uses a copy. A finished loan does not count for limits (LIB-DIG-16 (7), (8)). |
+| LIB-DIG-19 | **Return early.** `POST /api/v1/digital-loans/{loan_id}/return` on an active loan sets `status` `returned`, `ended_at` = now and returns `200` (event `digital_loan_returned`); then LIB-DIG-26 runs. A loan that is not active returns `409 LOAN_NOT_OPEN`. |
+| LIB-DIG-20 | **Read loans.** Lists are paginated, ordered by `borrowed_at`, then `id`; filters `status` (as shown, 25.1), `resource_id`; the general list also `member_id`. |
+| LIB-DIG-21 | **Renew.** `POST /api/v1/digital-loans/{loan_id}/renew` sets `due_at` = `due_at` + `loan_days` × 24 hours (the resource's current `loan_days`), sets `renewed` and `renewed_at` = now and returns `200` (event `digital_loan_renewed`). Checks in order (all `409`): loan not active → `LOAN_NOT_OPEN`; already renewed → `RENEWAL_LIMIT_REACHED`; now < `due_at` − 72 hours → `RENEWAL_TOO_EARLY` with `details.renewable_from`; the resource has `waiting` holds → `RESOURCE_HAS_HOLDS`; capacity now is 0 → `NO_ACTIVE_LICENSE`. |
+
+### 25.6 Holds
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DIG-22 | **Place hold.** `POST /api/v1/digital-holds` with `{"resource_id"}` (member) or `{"resource_id", "member_id"}` (staff) creates a `waiting` hold and returns `201` with its `position` (event `digital_hold_created`). |
+| LIB-DIG-23 | **Hold checks.** LIB-DIG-16 (1)–(7) in that order, then (all `409`): the member has a `waiting` or not lapsed `ready` hold of the resource → `DUPLICATE_HOLD`; holds of the member (`waiting` and not lapsed `ready`) ≥ the limit of 25.2 → `DIGITAL_HOLD_LIMIT_REACHED` with `details.limit`; capacity now is 0 → `NO_ACTIVE_LICENSE`; free copies > 0 → `HOLD_NOT_NEEDED` (the member can borrow now). |
+| LIB-DIG-24 | **Queue.** The waiting holds of a resource form a queue ordered by `created_at`, then `id`. `GET /api/v1/digital-resources/{resource_id}/holds` returns it paginated with `status=waiting` by default; filter `status`. `GET /api/v1/members/{member_id}/digital-holds` returns the member's holds of every status, paginated, ordered by `created_at`, then `id`; filter `status`. A `ready` hold that is lapsed keeps `status` `ready` until LIB-DIG-35. |
+| LIB-DIG-25 | **Cancel hold.** `cancel` sets a `waiting` or `ready` hold to `cancelled` with `member_request` (member) or `staff_request` (staff), `closed_at` = now, `200` (event `digital_hold_cancelled`). Other statuses or a lapsed `ready` hold → `409 HOLD_NOT_ACTIVE`. Cancelling a `ready` hold runs LIB-DIG-26. |
+| LIB-DIG-26 | **Move the queue.** After a return (LIB-DIG-19), a cancelled `ready` hold (LIB-DIG-25), a new or changed license (LIB-DIG-05, LIB-DIG-10, LIB-DIG-11) and in LIB-DIG-35, while the resource is active, has `waiting` holds and capacity − active loans − kept copies > 0, the first waiting hold becomes `ready` with `ready_at` = now and `ready_until` = now + 48 hours (event `digital_hold_ready`). This repeats until one of the conditions fails. |
+| LIB-DIG-27 | **Ready hold.** Only the member of a `ready` hold that is not lapsed can borrow the kept copy (LIB-DIG-15). Example: hold ready at Tue 10:00 → usable until Thu 10:00 inclusive; at Thu 10:00:01 lapsed. |
+
+### 25.7 Database sessions
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DIG-28 | **Open session.** `POST /api/v1/digital-sessions` with `{"resource_id"}` (member) or `{"resource_id", "member_id"}` (staff) returns `201` with the session (`expires_at` = `started_at` + 60 minutes, event `digital_session_opened`). Checks in order (all `409`): the resource is an e-book → `WRONG_RESOURCE_KIND`; LIB-DIG-16 (2)–(6); the member has an open session of this resource → `SESSION_ALREADY_OPEN` with `details.session_id`; open sessions of the member ≥ the limit of 25.2 → `SESSION_LIMIT_REACHED` with `details.limit`; capacity now is 0 → `NO_ACTIVE_LICENSE`; free seats = 0 → `NO_SEAT_AVAILABLE` with `details.next_free_at` (the earliest `expires_at` of the open sessions). |
+| LIB-DIG-29 | **Close session.** `close` on an open session sets `closed_at` = now and returns `200`; a session that is not open returns `409 SESSION_NOT_OPEN`. |
+| LIB-DIG-30 | **Daily sessions.** A member can open at most 6 sessions per resource per calendar day (counted by the date of `started_at`, closed ones included); the 7th returns `409 DAILY_SESSION_LIMIT_REACHED` (checked after `SESSION_ALREADY_OPEN`). |
+| LIB-DIG-31 | **End of a session.** At `expires_at` the session stops counting. Example: opened 10:00 → open at 10:59:59, not open at 11:00. Sessions are not stored as closed by LIB-DIG-35; their responses show `closed_at` null and `open` (boolean, derived). |
+| LIB-DIG-32 | **Session lists.** `GET /api/v1/members/{member_id}/digital-sessions` is paginated, ordered by `started_at` descending, then `id` descending; filter `open` (`true`/`false`), `resource_id`. |
+
+### 25.8 Processing and effects on other modules
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DIG-33 | **Notifications.** Added to LIB-NOT-01: `digital_hold_ready` (contains the title and `ready_until`), `digital_hold_expired`, `digital_hold_cancelled` (reasons `staff_request`, `member_deactivated`, `resource_inactive`), `digital_loan_expired` (by LIB-DIG-35), `digital_loan_due_soon` (LIB-DIG-34). Notifications get a nullable `digital_loan_id` and `digital_hold_id`. Borrowing, returning, renewing and sessions do not notify. |
+| LIB-DIG-34 | **Due soon.** LIB-DIG-35 also creates one `digital_loan_due_soon` notification for every active digital loan with now < `due_at` ≤ now + 24 hours, at most one per loan however often it runs. LIB-NOT-05 is not changed. |
+| LIB-DIG-35 | **Process.** `POST /api/v1/digital/process` (1) stores every finished open loan as `expired` with `ended_at` = `due_at` (event `digital_loan_expired`), in order of `due_at`, then `id`; (2) stores every lapsed `ready` hold as `expired` with `closed_at` = now (event `digital_hold_expired`); (3) runs LIB-DIG-26 for every active resource in order of `id`. It returns `200` with `{"expired_loans", "expired_holds", "holds_ready", "due_soon_notices"}` (counts of this call; `due_soon_notices` from LIB-DIG-34). |
+| LIB-DIG-36 | **Member summary.** LIB-MEM-12 also returns `"digital": {"open_loans": <int>, "waiting_holds": <int>, "ready_holds": <int>}` (active loans; not lapsed `ready` holds). Digital loans and holds do not change `borrowing`. |
+| LIB-DIG-37 | **Member deactivation.** LIB-MEM-10 is not blocked by digital loans. It returns the member's active loans (`returned`, `ended_at` = now), cancels the `waiting` and `ready` holds with reason `member_deactivated` and closes open sessions; then LIB-DIG-26 runs for the affected resources. |
+| LIB-DIG-38 | **Audit.** Module 17 reports to the audit log: `digital_resource_created`, `digital_resource_updated`, `digital_license_added`, `digital_license_cancelled`, `digital_loan_created`, `digital_loan_returned`, `digital_loan_renewed`, `digital_loan_expired`, `digital_hold_created`, `digital_hold_ready`, `digital_hold_cancelled`, `digital_hold_expired`, `digital_session_opened`, `digital_processed`. Session closing is not audited. |
+| LIB-DIG-39 | **Usage report.** `GET /api/v1/reports/digital-usage?from=&to=&kind=` (dates inclusive, `from` ≤ `to`, at most 366 days; otherwise `422`) returns a paginated list ordered by `title`, then `id`, one item per resource (also inactive ones and those without activity): `{"resource_id", "kind", "title", "loans", "renewals", "holds_placed", "holds_expired", "sessions", "license_cost"}`. `loans` and `sessions` are counted by the date of `borrowed_at` and `started_at`, `renewals` by the date of `renewed_at`, `holds_placed` by the date of `created_at`, `holds_expired` (holds with `status` `expired`) by the date of `closed_at`; `license_cost` sums `cost` of licenses with `starts_on` in the range. |
+| LIB-DIG-40 | **Not exported.** Digital data is not part of import and export (module 13). |
+
+### 25.9 Error codes of module 17
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `WRONG_RESOURCE_KIND` | LIB-DIG-16, LIB-DIG-28 |
+| 409 | `RESOURCE_INACTIVE` | LIB-DIG-03, LIB-DIG-16 |
+| 409 | `DIGITAL_NOT_ALLOWED_FOR_TYPE` | LIB-DIG-16 |
+| 409 | `ALREADY_BORROWED` | LIB-DIG-16 |
+| 409 | `DIGITAL_LOAN_LIMIT_REACHED` | LIB-DIG-16 |
+| 409 | `NO_ACTIVE_LICENSE` | LIB-DIG-16, LIB-DIG-21, LIB-DIG-23, LIB-DIG-28 |
+| 409 | `NO_COPY_AVAILABLE` | LIB-DIG-16 |
+| 409 | `RENEWAL_LIMIT_REACHED` | LIB-DIG-21 |
+| 409 | `RENEWAL_TOO_EARLY` | LIB-DIG-21 |
+| 409 | `RESOURCE_HAS_HOLDS` | LIB-DIG-21 |
+| 409 | `DUPLICATE_HOLD` | LIB-DIG-23 |
+| 409 | `DIGITAL_HOLD_LIMIT_REACHED` | LIB-DIG-23 |
+| 409 | `HOLD_NOT_NEEDED` | LIB-DIG-23 |
+| 409 | `HOLD_NOT_ACTIVE` | LIB-DIG-25 |
+| 409 | `SESSION_ALREADY_OPEN` | LIB-DIG-28 |
+| 409 | `SESSION_LIMIT_REACHED` | LIB-DIG-28 |
+| 409 | `NO_SEAT_AVAILABLE` | LIB-DIG-28 |
+| 409 | `SESSION_NOT_OPEN` | LIB-DIG-29 |
+| 409 | `INVALID_LICENSE_STATUS` | LIB-DIG-07, LIB-DIG-10, LIB-DIG-11 |
+| 409 | `NOT_A_SUBSCRIPTION` | LIB-DIG-11 |
+| 409 | `ALREADY_RENEWED` | LIB-DIG-11 |
+| 409 | `DAILY_SESSION_LIMIT_REACHED` | LIB-DIG-30 |
+| 409 | `ORDER_HAS_LICENSE` | LIB-DIG-06 |
+
+`MEMBER_PASSIVE`, `MEMBERSHIP_EXPIRED`, `MEMBER_BLOCKED_BY_DEBT`, `LOAN_NOT_OPEN` and `INVALID_ORDER_STATUS` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -1607,4 +1825,5 @@ A reservation *holds* an item of its type at its branch during the interval [`st
 | End-to-end scenarios | LIB-E2E-01 – LIB-E2E-11 | 11 |
 | Module 15: Study rooms | LIB-ROOM-01 – LIB-ROOM-45 | 45 |
 | Module 16: Equipment loans | LIB-EQ-01 – LIB-EQ-41 | 41 |
-| **Total** | | **311** |
+| Module 17: Digital resources | LIB-DIG-01 – LIB-DIG-40 | 40 |
+| **Total** | | **351** |
