@@ -42,6 +42,7 @@ Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain a
 | 14 | API layer | 5 | 0 | 13 | 2 | none | 0 | 2 | Medium |
 | 15 | Study rooms (added 2026-11-07) | 45 | 2 | 7 | 2 | booking 5 statuses; ban in force / lifted | 2 | 6 | Complex |
 | 16 | Equipment loans (added 2026-11-07) | 41 | 2 | 8 | 2 | item 5 statuses; loan 3; reservation 4 | 2 | 6 | Complex |
+| 17 | Digital resources (added 2026-11-07) | 40 | 2 | 7 | 2 | license 4 statuses; loan 3; hold 5 | 2 | 6 | Complex |
 
 Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 5, 6, 7, 13.
 
@@ -63,6 +64,7 @@ Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 
 | 14 | API layer | FastAPI endpoints, schemas, error mapping | Medium | 4,000 | Leaks between layers, duplication |
 | 15 | Study rooms | Rooms, bookings with quotas, group participants, check-in, no-show fees and bans | Complex | 2,000 | Long check sequences (high CC), Feature Envy (members, fees), duplicated time arithmetic |
 | 16 | Equipment loans | Equipment types and items, training, hourly and working-day loans, capacity-based reservations, late and damage fees | Complex | 1,900 | Long check sequences (high CC), duplicated time arithmetic, Feature Envy (members, fees, loans) |
+| 17 | Digital resources | E-books and databases, perpetual and subscription licenses, e-book loans with hold queues, database sessions | Complex | 1,900 | Long check sequences (high CC), duplicated capacity and time arithmetic, Feature Envy (members, purchasing, notifications) |
 | | **Total** | | | **~39,500** | |
 
 Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in prompts; which ones actually appear is measured after generation and recorded in [`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation).
