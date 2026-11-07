@@ -1,0 +1,13 @@
+{
+  "tests": 378,
+  "passed": 377,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 0,
+  "failed_cases": [
+    "T-DIG-01-b"
+  ],
+  "set": "heldout",
+  "pytest_exit_code": 1,
+  "duration_s": 258.303
+}
