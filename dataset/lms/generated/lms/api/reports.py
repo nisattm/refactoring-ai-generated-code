@@ -15,6 +15,8 @@ from lms.core.money import format_amount
 from lms.core.pagination import Page, PageDep, paginate_sequence
 from lms.core.timeutil import parse_date
 from lms.reports import service
+from lms.equipment import usage as equipment_usage
+from lms.equipment.schemas import EquipmentUsageOut
 from lms.rooms import usage as room_usage
 from lms.rooms.schemas import RoomKind, RoomUsageOut
 from lms.reports.schemas import (
@@ -144,3 +146,25 @@ def room_usage_report(
         raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
     items = room_usage.room_usage(db, start, end, request.app.state.settings.holidays, branch_id=branch_id, kind=kind)
     return paginate_sequence(items, page)
+
+
+@router.get("/equipment-usage", response_model=Page[EquipmentUsageOut])
+def equipment_usage_report(
+    db: SessionDep,
+    _: StaffOnly,
+    page: PageDep,
+    first: Annotated[str | None, Query(alias="from")] = None,
+    to: Annotated[str | None, Query()] = None,
+    branch_id: Annotated[int | None, Query()] = None,
+) -> Page[EquipmentUsageOut]:
+    problems: list[dict[str, str]] = []
+    start = _required_date("from", first, problems)
+    end = _required_date("to", to, problems)
+    if problems:
+        raise ValidationFailed(problems)
+    assert start is not None and end is not None
+    if start > end:
+        raise ValidationFailed.single("from", "from must not be after to")
+    if (end - start).days > 365:
+        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    return paginate_sequence(equipment_usage.equipment_usage(db, start, end, branch_id=branch_id), page)

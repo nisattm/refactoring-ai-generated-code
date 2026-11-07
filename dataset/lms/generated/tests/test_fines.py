@@ -42,7 +42,7 @@ def test_fee_representation(client, lib):
     _, lid = lose(client, lib, s, "BC-0001", "180.00")
     fee = fees_of(client, lib, s)[0]
     assert fee == {
-        "id": 1, "member_id": s, "loan_id": lid, "kind": "lost_book", "room_booking_id": None, "amount": "180.00", "paid_amount": "0.00",
+        "id": 1, "member_id": s, "loan_id": lid, "kind": "lost_book", "room_booking_id": None, "equipment_loan_id": None, "amount": "180.00", "paid_amount": "0.00",
         "status": "open", "created_on": "2026-11-02", "waived_by": None, "waived_at": None, "waive_reason": None,
         "outstanding": "180.00",
     }

@@ -18,6 +18,7 @@ from lms.catalog.models import Copy
 from lms.catalog.status import set_status
 from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.equipment.models import EquipmentItem
 from lms.members.models import Member
 from lms.reservations.models import ACTIVE_STATUSES, Reservation
 from lms.rooms.models import Room, RoomBooking
@@ -63,7 +64,7 @@ def require_active_branch(db: Session, field: str, branch_id: int) -> Branch:
 
 
 def is_branch_in_use(db: Session, branch_id: int) -> bool:
-    """LIB-BR-03, LIB-ROOM-39."""
+    """LIB-BR-03, LIB-ROOM-39, LIB-EQ-36."""
     if db.scalar(sa.select(Member.id).where(Member.home_branch_id == branch_id).limit(1)) is not None:
         return True
     in_branch = sa.or_(Copy.home_branch_id == branch_id, Copy.current_branch_id == branch_id)
@@ -79,7 +80,12 @@ def is_branch_in_use(db: Session, branch_id: int) -> bool:
     booked = sa.select(RoomBooking.id).join(Room, Room.id == RoomBooking.room_id).where(
         Room.branch_id == branch_id, RoomBooking.status.in_(("booked", "checked_in"))
     )
-    return db.scalar(booked.limit(1)) is not None
+    if db.scalar(booked.limit(1)) is not None:
+        return True
+    equipment = sa.select(EquipmentItem.id).where(
+        EquipmentItem.branch_id == branch_id, EquipmentItem.status.not_in(("retired", "lost"))
+    )
+    return db.scalar(equipment.limit(1)) is not None
 
 
 def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Branch, fields: dict[str, object]) -> Branch:

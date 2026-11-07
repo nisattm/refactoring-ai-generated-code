@@ -14,6 +14,7 @@ from lms.core.text import is_valid_email
 from lms.core.timeutil import format_datetime
 from lms.fines.schemas import BalanceOut
 from lms.members.models import Member
+from lms.equipment.schemas import EquipmentSummaryOut
 from lms.rooms.schemas import RoomSummaryOut
 
 MembershipTypeName = Literal["student", "academic", "staff", "guest"]
@@ -144,3 +145,4 @@ class MemberSummaryOut(BaseModel):
     balance: BalanceOut
     borrowing: BorrowingOut
     rooms: RoomSummaryOut
+    equipment: EquipmentSummaryOut

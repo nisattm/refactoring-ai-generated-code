@@ -16,6 +16,7 @@ from lms.core.text import normalize
 from lms.fines.schemas import balance_out
 from lms.members import service
 from lms.members.models import Member
+from lms.equipment.usage import member_summary as equipment_summary
 from lms.rooms.usage import member_summary as room_summary
 from lms.members.schemas import (
     BorrowingOut,
@@ -142,7 +143,8 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
     day = _today(request)
     member = service.get_member_or_404(db, member_id)
     _own_or_staff(principal, member)
-    activity = service.member_activity(db, member, day, request.app.state.settings.holidays)
+    now = local_now(request.app.state.settings.clock)
+    activity = service.member_activity(db, member, now, request.app.state.settings.holidays)
     reasons = service.borrowing_blockers(member, activity, day)
     return MemberSummaryOut(
         member=member_out(member, day),
@@ -151,5 +153,6 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
         active_reservations=activity.active_reservations,
         balance=balance_out(activity.outstanding_fees, activity.accrued_late_fees),
         borrowing=BorrowingOut(eligible=not reasons, reasons=reasons),
-        rooms=room_summary(db, local_now(request.app.state.settings.clock), member.id),
+        rooms=room_summary(db, now, member.id),
+        equipment=equipment_summary(db, now, member.id),
     )

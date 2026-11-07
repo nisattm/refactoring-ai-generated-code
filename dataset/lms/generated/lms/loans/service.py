@@ -77,7 +77,7 @@ def lend(
     copy = _find_copy(db, copy_id, barcode)
 
     today = now.date()
-    activity = members.member_activity(db, member, today, holidays)
+    activity = members.member_activity(db, member, now, holidays)
     reasons = members.borrowing_blockers(member, activity, today)
     if reasons:
         details: dict[str, object] = {}
