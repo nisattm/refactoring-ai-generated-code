@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-07T10:17:07+00:00",
+  "code": "/work/dataset/lms/generated",
+  "tests": "/work/dataset/lms/tests",
+  "valid": true,
+  "test_file_changes": {
+    "changed": [],
+    "added": [],
+    "removed": []
+  },
+  "sets": {
+    "feedback": {
+      "tests": 336,
+      "passed": 336,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "heldout": {
+      "tests": 284,
+      "passed": 284,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  }
+}

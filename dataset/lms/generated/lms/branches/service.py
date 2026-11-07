@@ -20,6 +20,7 @@ from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.members.models import Member
 from lms.reservations.models import ACTIVE_STATUSES, Reservation
+from lms.rooms.models import Room, RoomBooking
 
 
 def create_branch(db: Session, now: datetime.datetime, actor: User, code: str, name: str, address: str) -> Branch:
@@ -62,7 +63,7 @@ def require_active_branch(db: Session, field: str, branch_id: int) -> Branch:
 
 
 def is_branch_in_use(db: Session, branch_id: int) -> bool:
-    """LIB-BR-03."""
+    """LIB-BR-03, LIB-ROOM-39."""
     if db.scalar(sa.select(Member.id).where(Member.home_branch_id == branch_id).limit(1)) is not None:
         return True
     in_branch = sa.or_(Copy.home_branch_id == branch_id, Copy.current_branch_id == branch_id)
@@ -71,7 +72,14 @@ def is_branch_in_use(db: Session, branch_id: int) -> bool:
     pickup = sa.select(Reservation.id).where(
         Reservation.pickup_branch_id == branch_id, Reservation.status.in_(ACTIVE_STATUSES)
     )
-    return db.scalar(pickup.limit(1)) is not None
+    if db.scalar(pickup.limit(1)) is not None:
+        return True
+    if db.scalar(sa.select(Room.id).where(Room.branch_id == branch_id, Room.is_active.is_(True)).limit(1)) is not None:
+        return True
+    booked = sa.select(RoomBooking.id).join(Room, Room.id == RoomBooking.room_id).where(
+        Room.branch_id == branch_id, RoomBooking.status.in_(("booked", "checked_in"))
+    )
+    return db.scalar(booked.limit(1)) is not None
 
 
 def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Branch, fields: dict[str, object]) -> Branch:

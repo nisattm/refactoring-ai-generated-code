@@ -25,6 +25,7 @@ from lms.members.models import Member
 from lms.members.types import MEMBERSHIP_TYPES, initial_valid_until
 from lms.notifications.service import notify_member_deactivated, notify_membership_renewed
 from lms.reservations import service as reservations
+from lms.rooms import lifecycle as room_lifecycle
 
 
 def get_member_or_404(db: Session, member_id: int) -> Member:
@@ -170,6 +171,7 @@ def update_member(db: Session, now: datetime.datetime, actor: User, member: Memb
     if new["university_id"] != member.university_id:
         _check_unique_university_id(db, new["university_id"], own_member_id=member.id)
 
+    old_type = member.membership_type
     diff = changes({name: getattr(member, name) for name in new}, new)
     for name, value in new.items():
         setattr(member, name, value)
@@ -187,6 +189,8 @@ def update_member(db: Session, now: datetime.datetime, actor: User, member: Memb
         record(
             db, at=now, event="member_updated", actor_user_id=actor.id, entity_type="member", entity_id=member.id, details=diff
         )
+    if new["membership_type"] == "guest" and old_type != "guest":
+        room_lifecycle.on_member_became_guest(db, now, actor.id, member.id)  # LIB-ROOM-38
     return member
 
 
@@ -224,6 +228,8 @@ def deactivate_member(
         raise Conflict("The member is already passive", code="MEMBER_PASSIVE")
     if db.scalar(sa.select(Loan.id).where(Loan.member_id == member.id, Loan.status == "open").limit(1)) is not None:
         raise Conflict("The member has open loans", code="MEMBER_HAS_OPEN_LOANS")
+    if room_lifecycle.is_in_checked_in_room(db, member.id):
+        raise Conflict("The member is in a study room", code="MEMBER_IN_ROOM")
     member.status = "passive"
     record(
         db,
@@ -236,6 +242,7 @@ def deactivate_member(
     )
     notify_member_deactivated(db, now, member.id)
     reservations.cancel_for_deactivation(db, now, actor, holidays, member)
+    room_lifecycle.on_member_deactivated(db, now, actor.id, member.id)
     return member
 
 

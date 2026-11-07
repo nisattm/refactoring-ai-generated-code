@@ -12,9 +12,11 @@ from lms.core.clock import today as clock_today
 from lms.core.db import SessionDep
 from lms.core.errors import ValidationFailed
 from lms.core.money import format_amount
-from lms.core.pagination import PageDep
+from lms.core.pagination import Page, PageDep, paginate_sequence
 from lms.core.timeutil import parse_date
 from lms.reports import service
+from lms.rooms import usage as room_usage
+from lms.rooms.schemas import RoomKind, RoomUsageOut
 from lms.reports.schemas import (
     InventoryOut,
     MonthlySummaryOut,
@@ -117,3 +119,28 @@ def monthly_summary(
 @router.get("/inventory", response_model=InventoryOut)
 def inventory(db: SessionDep, _: StaffOnly, branch_id: Annotated[int | None, Query()] = None) -> InventoryOut:
     return InventoryOut(items=service.inventory(db, branch_id))
+
+
+@router.get("/room-usage", response_model=Page[RoomUsageOut])
+def room_usage_report(
+    request: Request,
+    db: SessionDep,
+    _: StaffOnly,
+    page: PageDep,
+    first: Annotated[str | None, Query(alias="from")] = None,
+    to: Annotated[str | None, Query()] = None,
+    branch_id: Annotated[int | None, Query()] = None,
+    kind: Annotated[RoomKind | None, Query()] = None,
+) -> Page[RoomUsageOut]:
+    problems: list[dict[str, str]] = []
+    start = _required_date("from", first, problems)
+    end = _required_date("to", to, problems)
+    if problems:
+        raise ValidationFailed(problems)
+    assert start is not None and end is not None
+    if start > end:
+        raise ValidationFailed.single("from", "from must not be after to")
+    if (end - start).days > 365:
+        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    items = room_usage.room_usage(db, start, end, request.app.state.settings.holidays, branch_id=branch_id, kind=kind)
+    return paginate_sequence(items, page)

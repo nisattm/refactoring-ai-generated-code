@@ -16,6 +16,7 @@ from lms.core.text import normalize
 from lms.fines.schemas import balance_out
 from lms.members import service
 from lms.members.models import Member
+from lms.rooms.usage import member_summary as room_summary
 from lms.members.schemas import (
     BorrowingOut,
     MemberCreateIn,
@@ -150,4 +151,5 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
         active_reservations=activity.active_reservations,
         balance=balance_out(activity.outstanding_fees, activity.accrued_late_fees),
         borrowing=BorrowingOut(eligible=not reasons, reasons=reasons),
+        rooms=room_summary(db, local_now(request.app.state.settings.clock), member.id),
     )
