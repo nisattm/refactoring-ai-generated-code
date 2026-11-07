@@ -29,6 +29,10 @@ class Notification(Base):
     equipment_reservation_id: Mapped[int | None] = mapped_column(
         sa.ForeignKey("equipment_reservations.id"), default=None
     )
+    digital_loan_id: Mapped[int | None] = mapped_column(
+        sa.ForeignKey("digital_loans.id"), default=None, index=True
+    )
+    digital_hold_id: Mapped[int | None] = mapped_column(sa.ForeignKey("digital_holds.id"), default=None)
     created_at: Mapped[datetime.datetime] = mapped_column(TZDateTime)
     read_at: Mapped[datetime.datetime | None] = mapped_column(TZDateTime, default=None)
     # Not part of the API: the date a reminder is about (due date or day of notice), for LIB-NOT-06.

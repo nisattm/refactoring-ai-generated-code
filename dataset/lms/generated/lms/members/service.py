@@ -17,6 +17,7 @@ from lms.auth.passwords import hash_password
 from lms.branches.service import require_active_branch
 from lms.core.errors import Conflict, NotFound, ValidationFailed
 from lms.core.money import ZERO
+from lms.digital import process as digital_process
 from lms.equipment import reservations as equipment_reservations
 from lms.equipment import usage as equipment_usage
 from lms.equipment.accrual import count_overdue as count_overdue_equipment
@@ -249,6 +250,7 @@ def deactivate_member(
     reservations.cancel_for_deactivation(db, now, actor, holidays, member)
     room_lifecycle.on_member_deactivated(db, now, actor.id, member.id)
     equipment_reservations.cancel_for_deactivation(db, now, actor.id, member.id)  # LIB-EQ-35
+    digital_process.on_member_deactivated(db, now, actor.id, member.id)  # LIB-DIG-37
     return member
 
 

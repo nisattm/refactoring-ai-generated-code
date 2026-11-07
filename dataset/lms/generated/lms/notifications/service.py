@@ -47,6 +47,8 @@ def _create(
     room_booking_id: int | None = None,
     equipment_loan_id: int | None = None,
     equipment_reservation_id: int | None = None,
+    digital_loan_id: int | None = None,
+    digital_hold_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -59,6 +61,8 @@ def _create(
         room_booking_id=room_booking_id,
         equipment_loan_id=equipment_loan_id,
         equipment_reservation_id=equipment_reservation_id,
+        digital_loan_id=digital_loan_id,
+        digital_hold_id=digital_hold_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -210,6 +214,33 @@ def equipment_overdue_notice_sent(db: Session, equipment_loan_id: int, day: date
         Notification.type == "equipment_overdue",
         Notification.equipment_loan_id == equipment_loan_id,
         Notification.reminder_date == day,
+    )
+    return db.scalar(stmt.limit(1)) is not None
+
+
+# --- digital resources (LIB-DIG-33, LIB-DIG-34) -----------------------------------
+
+
+def notify_digital(
+    db: Session,
+    now: datetime.datetime,
+    member_id: int,
+    type_: str,
+    message: str,
+    *,
+    digital_loan_id: int | None = None,
+    digital_hold_id: int | None = None,
+) -> Notification:
+    """``digital_hold_ready``, ``digital_hold_expired``, ``digital_hold_cancelled``, ``digital_loan_expired``
+    and ``digital_loan_due_soon``; the caller composes the message."""
+    return _create(
+        db, now, member_id, type_, message, digital_loan_id=digital_loan_id, digital_hold_id=digital_hold_id
+    )
+
+
+def digital_due_soon_sent(db: Session, digital_loan_id: int) -> bool:
+    stmt = sa.select(Notification.id).where(
+        Notification.type == "digital_loan_due_soon", Notification.digital_loan_id == digital_loan_id
     )
     return db.scalar(stmt.limit(1)) is not None
 

@@ -14,6 +14,7 @@ from lms.core.text import is_valid_email
 from lms.core.timeutil import format_datetime
 from lms.fines.schemas import BalanceOut
 from lms.members.models import Member
+from lms.digital.schemas import DigitalSummaryOut
 from lms.equipment.schemas import EquipmentSummaryOut
 from lms.rooms.schemas import RoomSummaryOut
 
@@ -146,3 +147,4 @@ class MemberSummaryOut(BaseModel):
     borrowing: BorrowingOut
     rooms: RoomSummaryOut
     equipment: EquipmentSummaryOut
+    digital: DigitalSummaryOut
