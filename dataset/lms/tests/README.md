@@ -18,7 +18,7 @@ dataset/lms/tests/
 └── heldout/test_<module>.py    Tests used only for evaluation
 ```
 
-Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`.
+Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`.
 
 ## Ownership (30 October 2026)
 
@@ -26,7 +26,7 @@ Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`
 | --- | --- |
 | `conftest.py`, `support/` | Fatima |
 | `core`, `auth`, `reservations`, `members`, `catalog`, `branches`, `e2e`, `search`, `reports`, `audit_io`, `api` | Nisa |
-| `loans`, `fees`, `notifications`, `purchasing` | Fatima |
+| `loans`, `fees`, `notifications`, `purchasing`, `rooms` | Fatima |
 
 Only the owner edits a file. A missing helper is requested from the owner of `support/`; until it exists, a test calls the API through `client` directly.
 
@@ -51,9 +51,10 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 | Audit, import, export | `audit_io` | 14 | 11 | 0 | 25 |
 | API layer | `api` | 3 | 3 | 0 | 6 |
 | End-to-end scenarios | `e2e` | 6 | 5 | 0 | 11 |
-| **Total** | | **282** | **239** | **13** | **534** |
+| Study rooms (module 15, from 7 November) | `rooms` | 54 | 45 | 0 | 99 |
+| **Total** | | **336** | **284** | **13** | **633** |
 
-`pytest --import-mode=importlib --collect-only` collects 282 feedback and 239 held-out tests without the code; every test fails until `lms` exists.
+`pytest --import-mode=importlib --collect-only` collects 336 feedback and 284 held-out tests without the code; every test fails until `lms` exists.
 
 ## Test case IDs and names
 

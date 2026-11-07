@@ -33,8 +33,10 @@ Modules are generated in dependency order. Each step implements whole sections o
 | 7 | 15 (Search), 16 (Reports) | 9, 10 | 5,000 |
 | 8 | 18 (Purchasing), 19.2–19.4 and 22 (import, export, formats) | 12, 13 | 4,000 |
 | 9 | 20 (API layer): completeness check of every endpoint and error format; 21 (scenarios) | 14 | 2,500 |
+| 10 | 23 (Study rooms) with its effects on earlier modules (23.8) | 15 | 2,000 |
+| 11+ | One step per new module (sections 24 and later), added to this table when the module's requirements are approved | 16+ | |
 
-Line estimates come from the module table in [`../../README.md`](../../README.md); they are not given to the model. The final size is measured, not steered: if the code ends below 30,000 lines, we report the real size; we do not ask for more code.
+Line estimates come from the module table in [`../../README.md`](../../README.md); they are not given to the model. The model is never asked for more code. The instructor requires at least 30,000 SLOC (Radon, `lms/`, tests excluded); steps 0–9 gave 6,449 (`v0-ai-baseline`), so new modules are specified and generated as steps 10 and later on top of that code (ADR 002, 2026-11-05). Each new module's requirements and tests are approved before its step.
 
 ## Command
 
@@ -99,13 +101,13 @@ Steps follow the dependency order, but some rules of an earlier step depend on a
 
 ## Prompt template
 
-Every step prompt has the same three parts; only the section list changes. Files: `step-00.md` … `step-09.md`.
+Every step prompt has the same three parts; only the section list changes. Files: `step-00.md` … `step-10.md`.
 
 ```text
 REQUIREMENTS.md in this folder specifies a Library Management System.
 
 Implement step <N>: sections <list> of REQUIREMENTS.md.
-<Steps 1–9 only:> The code of the earlier steps is already in this folder. Keep all behavior required by earlier sections.
+<Steps 1 and later:> The code of the earlier steps is already in this folder. Keep all behavior required by earlier sections.
 
 Follow REQUIREMENTS.md exactly, including names, paths, fields, status codes and error codes. Where a later section is needed by this step, implement only what this step needs; it will be completed in its own step.
 ```
