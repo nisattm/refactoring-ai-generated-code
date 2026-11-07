@@ -14,6 +14,7 @@ from lms.auth.models import User
 from lms.core.calendar import working_days_between
 from lms.core.errors import Conflict, NotFound
 from lms.core.money import ZERO, format_amount, quantize
+from lms.equipment.accrual import accrued_equipment_late_fees
 from lms.fines.models import Fee, Payment, PaymentAllocation
 from lms.loans.models import Loan
 from lms.notifications.service import notify_fee_created, notify_fee_waived, notify_payment_received
@@ -55,12 +56,15 @@ def outstanding_fees(db: Session, member_id: int) -> Decimal:
     return sum((f.outstanding for f in fees), ZERO)
 
 
-def accrued_late_fees(db: Session, member_id: int, today: datetime.date, holidays: Container[datetime.date]) -> Decimal:
-    """Sum of ``accrued_late_fee`` of the member's open overdue loans."""
+def accrued_late_fees(db: Session, member_id: int, now: datetime.datetime, holidays: Container[datetime.date]) -> Decimal:
+    """Sum of ``accrued_late_fee`` of the member's open overdue loans, including the open overdue
+    equipment loans (LIB-EQ-14)."""
+    today = now.date()
     loans = db.scalars(
         sa.select(Loan).where(Loan.member_id == member_id, Loan.status == "open", Loan.due_date < today)
     )
-    return sum((accrued_late_fee(loan, today, holidays) for loan in loans), ZERO)
+    books = sum((accrued_late_fee(loan, today, holidays) for loan in loans), ZERO)
+    return books + accrued_equipment_late_fees(db, member_id, now)
 
 
 # --- fees -----------------------------------------------------------------------
@@ -76,6 +80,7 @@ def create_fee(
     kind: str,
     amount: Decimal,
     room_booking_id: int | None = None,
+    equipment_loan_id: int | None = None,
 ) -> Fee:
     """Create an open fee (LIB-FEE-02 to LIB-FEE-04). ``amount`` is already rounded."""
     fee = Fee(
@@ -83,6 +88,7 @@ def create_fee(
         loan_id=loan_id,
         kind=kind,
         room_booking_id=room_booking_id,
+        equipment_loan_id=equipment_loan_id,
         amount=amount,
         paid_amount=ZERO,
         status="open",
@@ -101,6 +107,7 @@ def create_fee(
             "member_id": member_id,
             "loan_id": loan_id,
             "room_booking_id": room_booking_id,
+            "equipment_loan_id": equipment_loan_id,
             "kind": kind,
             "amount": format_amount(amount),
         },

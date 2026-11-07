@@ -75,14 +75,14 @@ def _error(code: str, message: str, **details: Any) -> Conflict:
 # --- checks of LIB-ROOM-12 ---------------------------------------------------------------
 
 
-def _total_debt(db: Session, member_id: int, today: datetime.date, holidays: Container[datetime.date]):  # noqa: ANN202
-    return fines.outstanding_fees(db, member_id) + fines.accrued_late_fees(db, member_id, today, holidays)
+def _total_debt(db: Session, member_id: int, now: datetime.datetime, holidays: Container[datetime.date]):  # noqa: ANN202
+    return fines.outstanding_fees(db, member_id) + fines.accrued_late_fees(db, member_id, now, holidays)
 
 
 def _check_organizer(
     db: Session,
     organizer: Member,
-    today: datetime.date,
+    now: datetime.datetime,
     day: datetime.date,
     holidays: Container[datetime.date],
 ) -> None:
@@ -93,14 +93,14 @@ def _check_organizer(
         raise _error("MEMBERSHIP_EXPIRED", "The membership is not valid on the booking date")
     if organizer.membership_type == "guest":
         raise _error("ROOM_NOT_ALLOWED_FOR_TYPE", "Guests cannot book study rooms")
-    bans = bans_in_force(db, organizer.id, today, day)
+    bans = bans_in_force(db, organizer.id, now.date(), day)
     if bans:
         raise _error(
             "MEMBER_BANNED_FROM_ROOMS",
             "The member is banned from study rooms",
             ends_on=max(b.ends_on for b in bans).isoformat(),
         )
-    debt = _total_debt(db, organizer.id, today, holidays)
+    debt = _total_debt(db, organizer.id, now, holidays)
     if debt >= DEBT_BLOCK:
         raise _error("MEMBER_BLOCKED_BY_DEBT", "The member's debt blocks bookings", total_debt=format_amount(debt))
 
@@ -239,7 +239,7 @@ def create_booking(
         raise _error("BRANCH_INACTIVE", f"Branch {branch.code} is inactive", id=branch.id)
     if not room.is_active:
         raise _error("ROOM_INACTIVE", "The room is inactive", id=room.id)
-    _check_organizer(db, organizer, today, day, holidays)
+    _check_organizer(db, organizer, now, day, holidays)
     if not is_working_day(day, holidays):
         raise _error("ROOM_CLOSED", "The library is closed on this date")
     if start < room.opens_at or end > room.closes_at:

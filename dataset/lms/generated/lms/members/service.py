@@ -17,6 +17,9 @@ from lms.auth.passwords import hash_password
 from lms.branches.service import require_active_branch
 from lms.core.errors import Conflict, NotFound, ValidationFailed
 from lms.core.money import ZERO
+from lms.equipment import reservations as equipment_reservations
+from lms.equipment import usage as equipment_usage
+from lms.equipment.accrual import count_overdue as count_overdue_equipment
 from lms.core.text import normalize
 from lms.fines import service as fines
 from lms.fines.schemas import BLOCKING_DEBT
@@ -228,6 +231,8 @@ def deactivate_member(
         raise Conflict("The member is already passive", code="MEMBER_PASSIVE")
     if db.scalar(sa.select(Loan.id).where(Loan.member_id == member.id, Loan.status == "open").limit(1)) is not None:
         raise Conflict("The member has open loans", code="MEMBER_HAS_OPEN_LOANS")
+    if equipment_usage.has_open_loan(db, member.id):  # LIB-EQ-35
+        raise Conflict("The member has open equipment loans", code="MEMBER_HAS_OPEN_LOANS")
     if room_lifecycle.is_in_checked_in_room(db, member.id):
         raise Conflict("The member is in a study room", code="MEMBER_IN_ROOM")
     member.status = "passive"
@@ -243,6 +248,7 @@ def deactivate_member(
     notify_member_deactivated(db, now, member.id)
     reservations.cancel_for_deactivation(db, now, actor, holidays, member)
     room_lifecycle.on_member_deactivated(db, now, actor.id, member.id)
+    equipment_reservations.cancel_for_deactivation(db, now, actor.id, member.id)  # LIB-EQ-35
     return member
 
 
@@ -272,21 +278,24 @@ class MemberActivity:
 
     open_loans: int = 0
     overdue_loans: int = 0
+    overdue_equipment_loans: int = 0
     active_reservations: int = 0
     outstanding_fees: Decimal = ZERO
     accrued_late_fees: Decimal = ZERO
 
 
 def member_activity(
-    db: Session, member: Member, today: datetime.date, holidays: Container[datetime.date]
+    db: Session, member: Member, now: datetime.datetime, holidays: Container[datetime.date]
 ) -> MemberActivity:
+    today = now.date()
     open_loans = db.scalars(sa.select(Loan).where(Loan.member_id == member.id, Loan.status == "open")).all()
     return MemberActivity(
         open_loans=len(open_loans),
         overdue_loans=sum(1 for loan in open_loans if today > loan.due_date),
+        overdue_equipment_loans=count_overdue_equipment(db, member.id, now),
         active_reservations=reservations.count_active(db, member.id),
         outstanding_fees=fines.outstanding_fees(db, member.id),
-        accrued_late_fees=fines.accrued_late_fees(db, member.id, today, holidays),
+        accrued_late_fees=fines.accrued_late_fees(db, member.id, now, holidays),
     )
 
 
@@ -297,7 +306,7 @@ def borrowing_blockers(member: Member, activity: MemberActivity, today: datetime
         reasons.append("MEMBER_PASSIVE")
     if today > member.valid_until:
         reasons.append("MEMBERSHIP_EXPIRED")
-    if activity.overdue_loans > 0:
+    if activity.overdue_loans > 0 or activity.overdue_equipment_loans > 0:  # LIB-EQ-14
         reasons.append("MEMBER_HAS_OVERDUE")
     if activity.outstanding_fees + activity.accrued_late_fees >= BLOCKING_DEBT:
         reasons.append("MEMBER_BLOCKED_BY_DEBT")

@@ -17,12 +17,18 @@ class Notification(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     member_id: Mapped[int] = mapped_column(sa.ForeignKey("members.id"), index=True)
-    type: Mapped[str] = mapped_column(sa.String(30), index=True)
+    type: Mapped[str] = mapped_column(sa.String(40), index=True)
     message: Mapped[str] = mapped_column(sa.String(1000))
     loan_id: Mapped[int | None] = mapped_column(sa.ForeignKey("loans.id"), default=None, index=True)
     reservation_id: Mapped[int | None] = mapped_column(sa.ForeignKey("reservations.id"), default=None)
     fee_id: Mapped[int | None] = mapped_column(sa.ForeignKey("fees.id"), default=None)
     room_booking_id: Mapped[int | None] = mapped_column(sa.ForeignKey("room_bookings.id"), default=None, index=True)
+    equipment_loan_id: Mapped[int | None] = mapped_column(
+        sa.ForeignKey("equipment_loans.id"), default=None, index=True
+    )
+    equipment_reservation_id: Mapped[int | None] = mapped_column(
+        sa.ForeignKey("equipment_reservations.id"), default=None
+    )
     created_at: Mapped[datetime.datetime] = mapped_column(TZDateTime)
     read_at: Mapped[datetime.datetime | None] = mapped_column(TZDateTime, default=None)
     # Not part of the API: the date a reminder is about (due date or day of notice), for LIB-NOT-06.

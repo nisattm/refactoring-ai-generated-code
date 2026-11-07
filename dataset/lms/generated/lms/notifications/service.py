@@ -45,6 +45,8 @@ def _create(
     reservation_id: int | None = None,
     fee_id: int | None = None,
     room_booking_id: int | None = None,
+    equipment_loan_id: int | None = None,
+    equipment_reservation_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -55,6 +57,8 @@ def _create(
         reservation_id=reservation_id,
         fee_id=fee_id,
         room_booking_id=room_booking_id,
+        equipment_loan_id=equipment_loan_id,
+        equipment_reservation_id=equipment_reservation_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -115,7 +119,10 @@ def notify_reservation(db: Session, now: datetime.datetime, type_: str, reservat
 
 def notify_fee_created(db: Session, now: datetime.datetime, fee: Fee) -> Notification:
     message = f"A {fee.kind.replace('_', ' ')} of {format_amount(fee.amount)} TRY was added to your account."
-    return _create(db, now, fee.member_id, "fee_created", message, loan_id=fee.loan_id, fee_id=fee.id)
+    return _create(
+        db, now, fee.member_id, "fee_created", message,
+        loan_id=fee.loan_id, fee_id=fee.id, equipment_loan_id=fee.equipment_loan_id,
+    )
 
 
 def notify_payment_received(db: Session, now: datetime.datetime, member_id: int, amount: Decimal) -> Notification:
@@ -165,6 +172,44 @@ def room_reminder_sent(db: Session, room_booking_id: int, member_id: int) -> boo
         Notification.type == "room_reminder",
         Notification.room_booking_id == room_booking_id,
         Notification.member_id == member_id,
+    )
+    return db.scalar(stmt.limit(1)) is not None
+
+
+# --- equipment (LIB-EQ-32, LIB-EQ-38) ---------------------------------------------
+
+
+def notify_equipment(
+    db: Session,
+    now: datetime.datetime,
+    member_id: int,
+    type_: str,
+    message: str,
+    *,
+    equipment_loan_id: int | None = None,
+    equipment_reservation_id: int | None = None,
+    reminder_date: datetime.date | None = None,
+) -> Notification:
+    """``equipment_loan_created``, ``equipment_loan_returned``, ``equipment_loan_lost``,
+    ``equipment_reservation_cancelled``, ``equipment_reservation_expired`` and ``equipment_overdue``;
+    the caller composes the message."""
+    return _create(
+        db,
+        now,
+        member_id,
+        type_,
+        message,
+        equipment_loan_id=equipment_loan_id,
+        equipment_reservation_id=equipment_reservation_id,
+        reminder_date=reminder_date,
+    )
+
+
+def equipment_overdue_notice_sent(db: Session, equipment_loan_id: int, day: datetime.date) -> bool:
+    stmt = sa.select(Notification.id).where(
+        Notification.type == "equipment_overdue",
+        Notification.equipment_loan_id == equipment_loan_id,
+        Notification.reminder_date == day,
     )
     return db.scalar(stmt.limit(1)) is not None
 

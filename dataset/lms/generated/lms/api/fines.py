@@ -8,7 +8,7 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
-from lms.core.clock import local_now, today
+from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden
 from lms.core.pagination import Page, PageDep, paginate
@@ -91,7 +91,7 @@ def get_balance(member_id: MemberId, request: Request, db: SessionDep, principal
     _own_or_staff(principal, member.id)
     return balance_out(
         service.outstanding_fees(db, member.id),
-        service.accrued_late_fees(db, member.id, today(settings.clock), settings.holidays),
+        service.accrued_late_fees(db, member.id, local_now(settings.clock), settings.holidays),
     )
 
 
