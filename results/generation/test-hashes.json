@@ -1,5 +1,5 @@
 {
-  "README.md": "aeaa121bacce4a324327b3107215faf97d4ec67c6d411be739570d3e09a5dbf6",
+  "README.md": "1f44dbffde691a9eec70f55859899da06a4cfb51f3f8a1e578d238bab43d3546",
   "cases/api.md": "f3121e68d25aeb84d8cb7a904426da8d5f3c5c9a6373e792efe23bbace35bb52",
   "cases/audit_io.md": "8df45805ec0a02e7520ac223f5bb75a631651132c15f142a4858c3e683fd83e3",
   "cases/auth.md": "f0fced0ea44e6832930dc255ef59ab0150f0107f0275c890a1550f71de835d18",
@@ -14,6 +14,7 @@
   "cases/purchasing.md": "23f1475b1c32cc16b857c2d8b85d392442e12a35442ecbf006f70900c402fefb",
   "cases/reports.md": "336f967a6908dfc36ba66d3b574dc7b3438f9a028c3310796a5d557108f12561",
   "cases/reservations.md": "543d0ff1621a21442fe3baa74044762e62426d7daff7542ec5be42e4cf5e88bb",
+  "cases/rooms.md": "37da3aa4ab5b6b9924f78ccdcab70e16dec3b1d0f553e8df66078128e1286f29",
   "cases/search.md": "f70f7f0dba00f08225355f18059ab0025e33eb200ae7b5738708379671003ad0",
   "conftest.py": "572c4df05699a5d2433872a73020e155fd170a7a368aa63452511c10113b07a0",
   "feedback/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -31,6 +32,7 @@
   "feedback/test_purchasing.py": "6b4976c01dad295df30ba8510250cb3fed4f98976a00dfd338d35a326fac6d86",
   "feedback/test_reports.py": "9b5c6e0a50a393cf542072c65cfaca5b7f5593052d9bf969c910eac646290590",
   "feedback/test_reservations.py": "ddd36a7ac384b04b1248db7dfefd14fe946a4a0f176dd0096b4ec54478b43300",
+  "feedback/test_rooms.py": "1509b5b2ee18d57a572bae09a834eb02731a3570248c0ebda228a8cc7bda3310",
   "feedback/test_search.py": "c60dafec8d9bfdfda4ffb23b7e133f1a73b90263c300ce4c532d8d0ce7cde2f4",
   "heldout/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "heldout/test_api.py": "186fd76e14c1ee4ba02959acf684fe40d74a42fbdfb333759fe9d1b287cab478",
@@ -47,6 +49,7 @@
   "heldout/test_purchasing.py": "e67ead467a7841f80f7e09804732afbd51f88307dc6cb2325c00e1e6afd997a9",
   "heldout/test_reports.py": "c1a9dea1af9f07c96ffedff4d5089caab3dbb87d2120304435872b5b2cc9beae",
   "heldout/test_reservations.py": "be95396b73b07dd4cf9767ff1a0b6914875653aacf309c05f153670c4fe2a534",
+  "heldout/test_rooms.py": "6be8c0bb770bf1b821bd8016a917543a72ecd6b838b5e28387d0628d6db1b917",
   "heldout/test_search.py": "131fe7bbb944075449c08643bdfae7c417fa9a4627bbb51bfe400260fe9c2b23",
   "spec/api.py": "b7f7c154497d62dac6628ee4a90847a7e05c67266baf0fb0fbd152bac8db9f28",
   "spec/audit_io.py": "e28cb008e205598a50878b1d51b9cd9c2204f17536c28c6d3a7fc6fdef2b3872",
@@ -58,6 +61,7 @@
   "spec/members.py": "c31c46f8473703ede2fe26cd14b519ca9af07de5862a2f99e1396f770696e8a6",
   "spec/reports.py": "98bfe6dbaf34456f871d8aea6ddeeccfa745d15ba2dcf50d7cc4a7caca1687b4",
   "spec/reservations.py": "a9b59514e746db10cbf5c340a2b093ffcbb9bda91e8af1b16039ba88a389975e",
+  "spec/rooms.py": "751570fcd5e2ab73282aad78846e60992def1143cf74f11447d46577e139e65e",
   "spec/search.py": "1faf6073d4d1e5ff77ad18cdcc92cbce3668ef6a7563dbad7b557aea3e9a8e11",
   "support/__init__.py": "72d45a1cd511a62f95924bc49284e321b631529f3b7b738c2fab5af389f95f1e",
   "support/api.py": "e0a5f28c6a31ff624525110f9bb7bcd161b9bb12f5d458a7275357a88af9bd7a"

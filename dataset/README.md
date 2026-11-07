@@ -40,6 +40,7 @@ Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain a
 | 12 | Purchasing | 9 | 0 | 5 | 1 | 5 order statuses | 2 | 3 | Medium |
 | 13 | Audit log, import, export | 18 | 2 | 6 | 2 | none | 0 | 4 | Complex |
 | 14 | API layer | 5 | 0 | 13 | 2 | none | 0 | 2 | Medium |
+| 15 | Study rooms (added 2026-11-07) | 45 | 2 | 7 | 2 | booking 5 statuses; ban in force / lifted | 2 | 6 | Complex |
 
 Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 5, 6, 7, 13.
 
@@ -59,6 +60,7 @@ Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 
 | 12 | Purchasing | Suppliers, orders, receiving, adding to catalog | Medium | 2,500 | Data Class, Long Method |
 | 13 | Audit log and import/export | Audit log, CSV and JSON import/export | Complex | 1,500 | Duplicate Code, swallowed exceptions (S19) |
 | 14 | API layer | FastAPI endpoints, schemas, error mapping | Medium | 4,000 | Leaks between layers, duplication |
+| 15 | Study rooms | Rooms, bookings with quotas, group participants, check-in, no-show fees and bans | Complex | 2,000 | Long check sequences (high CC), Feature Envy (members, fees), duplicated time arithmetic |
 | | **Total** | | | **~39,500** | |
 
 Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in prompts; which ones actually appear is measured after generation and recorded in [`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation).
