@@ -36,7 +36,7 @@ def err(r, status, code):
 
 def resource(client, headers, *, kind="ebook", title=None, provider="Provider", expect=201, **fields):
     _seq[0] += 1
-    body = {"kind": kind, "title": title or f"Resource {_seq[0]:03d}", "provider": provider}
+    body = {"kind": kind, "title": title if title is not None else f"Resource {_seq[0]:03d}", "provider": provider}
     body.update(fields)
     r = client.post("/api/v1/digital-resources", headers=headers, json=body)
     assert r.status_code == expect, r.text
