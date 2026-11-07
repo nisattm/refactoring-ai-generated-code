@@ -45,3 +45,16 @@ Same conventions as modules 15 and 16.
 | LIB-UI-DIG-05 | **Resources.** Librarian and admin create and change resources; deactivation asks for confirmation (holds will be cancelled). |
 | LIB-UI-DIG-06 | **Digital desk.** Librarian and admin. Hold queue of a resource; "Process" (LIB-DIG-35) with its four counts. |
 | LIB-UI-DIG-07 | **Digital usage report.** Librarian and admin. Date range and kind; LIB-DIG-39 as a table. |
+
+## Module 18: Interlibrary loans
+
+Same conventions as modules 15–17.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-ILL-01 | **Request a book from another library.** Member for themselves, staff choose the member. Title, author, ISBN; `AVAILABLE_LOCALLY` links to the book page. |
+| LIB-UI-ILL-02 | **My interlibrary requests.** Member. Requests with status, pickup branch and `collect_until`, due date and accrued late fee; "Cancel" and "Ask for more time". |
+| LIB-UI-ILL-03 | **Interlibrary desk (incoming).** Librarian and admin. Requests by status; send to a partner (partners already tried are not offered), record rejection, receive (with the computed member due date shown before saving), collect, return, close, report lost, answer renewal requests; "Process" with its counts. |
+| LIB-UI-ILL-04 | **Interlibrary desk (outgoing).** Librarian and admin. New outgoing request, ship with a copy chosen from the available copies, decline, returned, lost; overdue outgoing requests highlighted. |
+| LIB-UI-ILL-05 | **Partners.** Admin creates and changes partners; librarian sees them with their open counts. |
+| LIB-UI-ILL-06 | **Interlibrary activity report.** Librarian and admin. Date range; LIB-ILL-38 as a table. |
