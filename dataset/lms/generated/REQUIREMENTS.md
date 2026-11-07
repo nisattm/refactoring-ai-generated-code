@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
-**Status:** Complete draft (sections 1–22), revised after team review.
-**Version:** 0.7 · 2026-10-31
+**Status:** Complete draft (sections 1–23), revised after team review.
+**Version:** 0.8 · 2026-11-07 (adds section 23, module 15 Study rooms)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -13,9 +13,9 @@ The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119. Each testa
 
 ### 1.1 System overview
 
-The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, and import/export of data. It is used through a REST API.
+The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, and study rooms. It is used through a REST API.
 
-The system consists of 14 modules:
+The system consists of 15 modules:
 
 | # | Module | Package | Section |
 | --- | --- | --- | --- |
@@ -33,6 +33,7 @@ The system consists of 14 modules:
 | 12 | Purchasing | `lms.purchasing` | 18 |
 | 13 | Audit log and import/export | `lms.audit` | 19 |
 | 14 | API layer | `lms.api` | 20 (endpoints are listed with each module) |
+| 15 | Study rooms | `lms.rooms` | 23 |
 
 ### 1.2 Out of scope
 
@@ -92,7 +93,8 @@ lms/
 ├── branches/            Module 11
 ├── purchasing/          Module 12
 ├── audit/               Module 13
-└── api/                 Module 14 (FastAPI routers and request/response schemas)
+├── api/                 Module 14 (FastAPI routers and request/response schemas)
+└── rooms/               Module 15
 ```
 
 | ID | Requirement |
@@ -452,6 +454,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Reports (module 10) | – | – | Read | Read |
 | Branches and transfers (module 11) | – | Read branches | Read branches; full transfers | Full |
 | Purchasing (module 12) | – | – | Full | Full |
+| Study rooms (module 15) | – | Read rooms and availability; book, change, cancel, leave, check in and out own bookings; read own bans | Full, except creating and changing rooms and bans | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -533,9 +536,9 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -746,7 +749,8 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | `id` | integer | LIB-COM-14 |
 | `member_id` | integer | |
 | `loan_id` | integer or null | The loan the fee comes from |
-| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` | |
+| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` | `no_show_fee`: LIB-ROOM-30 |
+| `room_booking_id` | integer or null | The room booking a `no_show_fee` comes from |
 | `amount` | amount | > 0.00 |
 | `paid_amount` | amount | 0.00 ≤ `paid_amount` ≤ `amount` |
 | `status` | `open` \| `paid` \| `waived` | `paid` when `paid_amount` = `amount` |
@@ -848,7 +852,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -867,7 +871,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41 and the room reminders of LIB-ROOM-42. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -904,7 +908,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44.
 
 ### 16.1 Endpoints and requirements
 
@@ -955,7 +959,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive.
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. |
@@ -1069,7 +1073,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | --- | --- |
 | LIB-API-01 | Every endpoint listed in this document MUST exist with the given method and path. Path parameters named `*_id` are positive integers; any other value returns `422 VALIDATION_ERROR`. |
 | LIB-API-02 | A request to an unknown path returns `404 NOT_FOUND`, and an unsupported method on a known path returns `405` with code `METHOD_NOT_ALLOWED`, both in the error format of LIB-COM-25. |
-| LIB-API-03 | Every response with a body uses the representations defined in this document (`UserOut`, `MemberOut`, `BookOut`, `LoanOut`, `ReservationOut`, `FeeOut`, `BalanceOut` and the objects given in each requirement). Fields that are null are included with value `null`. |
+| LIB-API-03 | Every response with a body uses the representations defined in this document (`UserOut`, `MemberOut`, `BookOut`, `LoanOut`, `ReservationOut`, `FeeOut`, `BalanceOut`, `RoomBookingOut` and the objects given in each requirement). Fields that are null are included with value `null`. |
 | LIB-API-04 | The OpenAPI document is served at `GET /openapi.json` and MUST list every endpoint of this document. |
 | LIB-API-05 | Requests with a body MUST use `Content-Type: application/json`; another content type returns `422 VALIDATION_ERROR`. |
 
@@ -1095,6 +1099,8 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `ORDER_EMPTY` | LIB-PUR-04 |
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
+
+The error codes of module 15 are listed in 23.9.
 
 ---
 
@@ -1169,6 +1175,201 @@ Each scenario starts from an empty database with a `FixedClock`, the default hol
 
 ---
 
+## 23. Module 15: Study rooms
+
+Members book study rooms of a branch for short periods. Package `lms.rooms`. Rooms are open only on working days (LIB-COM-05), within their own opening hours. Times in this section are local times (LIB-COM-01) written `"HH:MM"`.
+
+### 23.1 Data
+
+**Room**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `branch_id` | integer | Existing branch |
+| `code` | text | 2–10 characters `[A-Z0-9]`, stored in upper case, unique within the branch |
+| `name` | text | LIB-COM-16 |
+| `kind` | `individual` \| `group` | |
+| `capacity` | integer | `individual`: exactly 1. `group`: 3–12 |
+| `min_participants` | integer | `individual`: exactly 1. `group`: 2 to `capacity` |
+| `features` | list of text | Each one of `whiteboard`, `projector`, `power_outlets`, `accessible`; no duplicates; stored in this order |
+| `opens_at`, `closes_at` | time `"HH:MM"` | Minutes `00` or `30`; `07:00` ≤ `opens_at` < `closes_at` ≤ `23:00` |
+| `is_active` | boolean | Default `true` |
+| `created_at` | date-time | From the clock |
+
+**Room booking**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `room_id` | integer | |
+| `member_id` | integer | Organizer |
+| `participant_ids` | list of integers | Other members (group rooms only); ordered ascending; does not contain the organizer |
+| `date` | date | The booked day |
+| `start_time`, `end_time` | time `"HH:MM"` | Minutes `00` or `30`; `start_time` < `end_time` |
+| `status` | `booked` \| `checked_in` \| `completed` \| `cancelled` \| `no_show` | Initially `booked` |
+| `purpose` | text | 0–200 characters |
+| `created_at` | date-time | From the clock |
+| `created_by` | integer | User id of the creator |
+| `checked_in_at`, `closed_at` | date-time or null | Set by check-in, and by completion, cancellation or no-show |
+| `cancel_reason` | text or null | `member_request`, `staff_request`, `member_deactivated`, `member_banned`, `room_closed`, `not_enough_participants` |
+| `late_cancellation` | boolean | `true` when cancelled with reason `member_request` less than 2 hours before the start (LIB-ROOM-24) |
+
+A booking's *interval* is from `date` `start_time` to `date` `end_time`; its *duration* is `end_time` − `start_time`. *Active* bookings have status `booked` or `checked_in`. A booking *counts for quota* when its status is `booked`, `checked_in`, `completed` or `no_show`. *Persons* of a booking are the organizer and the participants.
+
+API representation (`RoomBookingOut`): all fields, plus `room_code`, `branch_id` and `duration_minutes`.
+
+**Room ban**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `member_id` | integer | |
+| `starts_on`, `ends_on` | date | Inclusive; `ends_on` ≥ `starts_on` |
+| `reason` | `no_shows` \| `staff` | |
+| `note` | text | 0–500 characters |
+| `created_at` | date-time | From the clock |
+| `created_by` | integer or null | Null for bans created by the system (LIB-ROOM-31) |
+| `lifted_at`, `lifted_by` | date-time / integer or null | Set when lifted (LIB-ROOM-35) |
+
+A ban is *in force* on a date `d` when it is not lifted and `starts_on` ≤ `d` ≤ `ends_on`.
+
+### 23.2 Room rules by membership type
+
+| Type | Daily hours | Weekly hours | Booking ahead (days) | Active future bookings |
+| --- | --- | --- | --- | --- |
+| `student` | 2 | 6 | 7 | 2 |
+| `academic` | 4 | 12 | 14 | 4 |
+| `staff` | 3 | 9 | 14 | 3 |
+| `guest` | 0 | 0 | – | 0 |
+
+Weeks run Monday to Sunday. Hours are summed over the durations of bookings that count for quota and in which the member is a person (organizer or participant).
+
+### 23.3 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/rooms` | admin | Create a room |
+| `GET /api/v1/rooms`, `GET /api/v1/rooms/{room_id}` | all authenticated users | Read rooms |
+| `PATCH /api/v1/rooms/{room_id}` | admin | Change name, features, hours, capacity, active state |
+| `GET /api/v1/rooms/{room_id}/availability` | all authenticated users | Free and booked slots of one day |
+| `GET /api/v1/rooms/free` | all authenticated users | Rooms free for a whole interval |
+| `POST /api/v1/room-bookings` | member (own), librarian, admin | Book a room |
+| `GET /api/v1/room-bookings` | librarian, admin | All bookings |
+| `GET /api/v1/room-bookings/{booking_id}` | librarian, admin; member (organizer or participant) | One booking |
+| `GET /api/v1/members/{member_id}/room-bookings` | librarian, admin; member (own) | Bookings in which the member is a person |
+| `PATCH /api/v1/room-bookings/{booking_id}` | member (organizer), librarian, admin | Change participants or purpose |
+| `POST /api/v1/room-bookings/{booking_id}/cancel` | member (organizer), librarian, admin | Cancel |
+| `POST /api/v1/room-bookings/{booking_id}/leave` | member (participant) | Leave a group booking |
+| `POST /api/v1/room-bookings/{booking_id}/check-in` | member (organizer), librarian, admin | Check in |
+| `POST /api/v1/room-bookings/{booking_id}/check-out` | member (organizer), librarian, admin | End early |
+| `POST /api/v1/room-bookings/process` | librarian, admin | Mark no-shows and completed bookings |
+| `POST /api/v1/room-bookings/run-reminders` | librarian, admin | Reminders for tomorrow's bookings |
+| `GET /api/v1/members/{member_id}/room-bans` | librarian, admin; member (own) | Bans of a member |
+| `POST /api/v1/members/{member_id}/room-bans` | admin | Ban a member from rooms |
+| `POST /api/v1/room-bans/{ban_id}/lift` | admin | Lift a ban |
+| `GET /api/v1/reports/room-usage` | librarian, admin | Usage per room (section 16) |
+
+### 23.4 Rooms
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ROOM-01 | **Create room.** `POST /api/v1/rooms` with `{"branch_id", "code", "name", "kind", "capacity", "min_participants", "features", "opens_at", "closes_at"}` returns `201` with the room. `features` MAY be omitted (empty list); for `individual`, `capacity` and `min_participants` MAY be omitted and are then 1. A value outside the rules of 23.1 returns `422 VALIDATION_ERROR`. A duplicate `code` in the same branch returns `409 CONFLICT` with `details.field` `"code"`; the same code in another branch is allowed. |
+| LIB-ROOM-02 | **Branch of a room.** A room cannot be created in an inactive branch (`409 BRANCH_INACTIVE`, LIB-BR-04). `branch_id` cannot be changed. |
+| LIB-ROOM-03 | **List rooms.** `GET /api/v1/rooms` is paginated, ordered by `branch_id`, then `code`. Filters: `branch_id`, `kind`, `is_active`, `min_capacity` (rooms with `capacity` ≥ value), `feature` (repeatable; a room matches when it has every given feature). |
+| LIB-ROOM-04 | **Update room.** `PATCH /api/v1/rooms/{room_id}` accepts any subset of `{"name", "features", "capacity", "min_participants", "opens_at", "closes_at", "is_active"}` and returns `200`. The resulting room MUST satisfy 23.1 (`422 VALIDATION_ERROR`, checked on the combined values). `kind` cannot be changed. |
+| LIB-ROOM-05 | **Changes that conflict with bookings.** A change of `opens_at` or `closes_at` that would leave an active booking with a future start outside the new hours returns `409 ROOM_HAS_BOOKINGS` with `details.booking_ids` (ascending). A reduction of `capacity` below, or an increase of `min_participants` above, the number of persons of an active booking with a future start returns the same error. Bookings are not changed by a rejected update. |
+| LIB-ROOM-06 | **Deactivate room.** `PATCH` with `{"is_active": false}` cancels every `booked` booking of the room whose start is after now with reason `room_closed` (LIB-ROOM-26), in order of `date`, `start_time`, then `id`, and returns `200` with the room. A `checked_in` booking is not affected and ends normally. An inactive room cannot be booked (`409 ROOM_INACTIVE`) and does not appear in `free` (LIB-ROOM-09). |
+| LIB-ROOM-07 | **Open slots.** A room is open on a date `d` when `d` is a working day (LIB-COM-05) and the room and its branch are active. On an open date the room has 30-minute slots from `opens_at` to `closes_at`. Example: `opens_at` `09:00`, `closes_at` `11:00` → slots 09:00, 09:30, 10:00, 10:30. |
+| LIB-ROOM-08 | **Availability.** `GET /api/v1/rooms/{room_id}/availability?date=YYYY-MM-DD` returns `200` with `{"room_id", "date", "open": <bool>, "slots": [{"start": "HH:MM", "end": "HH:MM", "free": <bool>, "booking_id": <int or null>}]}`. On a date that is not open, `open` is `false` and `slots` is empty. A slot is not free when an active booking's interval covers it. `booking_id` is shown to librarians and admins and to persons of that booking; for other members it is null. A missing `date` returns `422 VALIDATION_ERROR`. Not paginated. |
+| LIB-ROOM-09 | **Free rooms.** `GET /api/v1/rooms/free?date=&start_time=&end_time=` returns a paginated list of active rooms that are open on `date` and have every slot in the interval free, ordered like LIB-ROOM-03. Filters: `branch_id`, `kind`, `min_capacity`, `feature`. Times follow 23.1 (`422 VALIDATION_ERROR` otherwise). A room whose hours do not contain the whole interval is not listed. |
+
+### 23.5 Booking
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ROOM-10 | **Create booking.** `POST /api/v1/room-bookings` with `{"room_id", "date", "start_time", "end_time", "participant_ids", "purpose"}` returns `201` with `RoomBookingOut`. `participant_ids` and `purpose` MAY be omitted (empty list, empty text). A librarian or admin MUST also send `member_id` (the organizer); a member MUST NOT send it (`422 VALIDATION_ERROR`) and books for themselves. |
+| LIB-ROOM-11 | **Request validation.** These return `422 VALIDATION_ERROR`: times not on minutes `00` or `30`; `start_time` ≥ `end_time`; a duration below 30 minutes or above 4 hours; a participant id listed twice; the organizer listed as participant; more than 11 participants. |
+| LIB-ROOM-12 | **Booking checks.** After LIB-COM-28 steps 1–5, the checks run in this order; the first failure decides the response (all `409`): (1) branch of the room inactive → `BRANCH_INACTIVE`; (2) room inactive → `ROOM_INACTIVE`; (3) organizer `passive` → `MEMBER_PASSIVE`; (4) organizer's membership not valid on `date` (LIB-MEM-04 with `date` instead of today) → `MEMBERSHIP_EXPIRED`; (5) organizer is a `guest` → `ROOM_NOT_ALLOWED_FOR_TYPE`; (6) a ban of the organizer is in force today or on `date` → `MEMBER_BANNED_FROM_ROOMS` with `details.ends_on` (latest `ends_on` of such bans); (7) organizer's total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (8) `date` is not a working day → `ROOM_CLOSED`; (9) the interval is not within `opens_at`–`closes_at` → `OUTSIDE_ROOM_HOURS`; (10) the start is not after now → `BOOKING_IN_PAST`; (11) `date` is later than today + the organizer's booking-ahead days (23.2, calendar days) → `BOOKING_TOO_FAR_AHEAD` with `details.latest_date`; (12) participant rules (LIB-ROOM-13); (13) another active booking of the room overlaps the interval → `ROOM_ALREADY_BOOKED`; (14) a person already has another active booking whose interval overlaps (any room) → `MEMBER_DOUBLE_BOOKED` with `details.member_id` (smallest such id); (15) quotas (LIB-ROOM-15) → the codes there. |
+| LIB-ROOM-13 | **Participants.** In this order: (a) an `individual` room with a non-empty `participant_ids` → `409 PARTICIPANTS_NOT_ALLOWED`; (b) a participant id that does not exist → `404 NOT_FOUND` (LIB-COM-29, checked at step 4 of LIB-COM-28); (c) persons < `min_participants` → `409 NOT_ENOUGH_PARTICIPANTS` with `details.min_participants`; (d) persons > `capacity` → `409 ROOM_CAPACITY_EXCEEDED` with `details.capacity`; (e) a participant who is `passive`, a `guest`, has no valid membership on `date`, or has a ban in force on `date` → `409 PARTICIPANT_NOT_ELIGIBLE` with `details.member_id` (smallest such id) and `details.reason` (the code that applies to the participant: `MEMBER_PASSIVE`, `ROOM_NOT_ALLOWED_FOR_TYPE`, `MEMBERSHIP_EXPIRED` or `MEMBER_BANNED_FROM_ROOMS`, first in this order). |
+| LIB-ROOM-14 | **Overlap.** Two intervals on the same date overlap when one starts before the other ends. Bookings that only touch (09:00–10:00 and 10:00–11:00) do not overlap. |
+| LIB-ROOM-15 | **Quotas.** For each person, in order of member id, with the new booking included: (a) hours on `date` > daily hours (23.2) → `DAILY_ROOM_QUOTA_EXCEEDED`; (b) hours in the week of `date` > weekly hours → `WEEKLY_ROOM_QUOTA_EXCEEDED`; (c) only for the organizer: active bookings with a start after now in which the organizer is organizer, plus the new one, > the limit of active future bookings → `ROOM_BOOKING_LIMIT_REACHED`. Each error has `details.member_id`, `details.limit` and `details.used` (hours as a decimal string with one decimal place, for example `"2.5"`, or a count for (c)). Quota rules use the membership type of each person at the time of the request. |
+| LIB-ROOM-16 | **Quota examples.** A student with a 1.5-hour booking on Tuesday can book another 30 minutes on Tuesday but not 1 hour (`DAILY_ROOM_QUOTA_EXCEEDED`, `used` `"2.5"`). A student with 2 hours each on Monday, Tuesday and Wednesday of one week cannot book on Thursday of that week (`WEEKLY_ROOM_QUOTA_EXCEEDED`), but can book on Monday of the next week. |
+| LIB-ROOM-17 | **Staff booking.** A booking created by a librarian or admin for a member follows the same checks as a member's own booking (LIB-ROOM-11 to LIB-ROOM-15); `created_by` is the staff user. |
+| LIB-ROOM-18 | **Lists.** `GET /api/v1/room-bookings` and `GET /api/v1/members/{member_id}/room-bookings` are paginated, ordered by `date`, `start_time`, then `id`. Filters: `status`, `room_id`, `branch_id`, `from`, `to` (dates, inclusive); `GET /api/v1/room-bookings` also `member_id` (bookings in which that member is a person). |
+| LIB-ROOM-19 | **Read one booking.** A member who is neither organizer nor participant of the booking receives `403 FORBIDDEN` (LIB-AUTH-25). |
+
+### 23.6 Changes, cancellation and check-in
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ROOM-20 | **Change booking.** `PATCH /api/v1/room-bookings/{booking_id}` accepts `{"participant_ids"}` and/or `{"purpose"}` for a `booked` booking whose start is after now, and returns `200`. Other states return `409 BOOKING_NOT_CHANGEABLE`. New participant lists follow LIB-ROOM-11, LIB-ROOM-13 and, for added participants only, steps (14) and (15) of LIB-ROOM-12. Date, times and room cannot be changed; a member cancels and books again. |
+| LIB-ROOM-21 | **Leave.** `POST /api/v1/room-bookings/{booking_id}/leave` by a participant of a `booked` booking whose start is after now removes the member from `participant_ids` and returns `200` with the booking. A member who is not a participant receives `403 FORBIDDEN`; another state returns `409 BOOKING_NOT_CHANGEABLE`. If the remaining persons are fewer than `min_participants`, the booking is cancelled at once with reason `not_enough_participants` (LIB-ROOM-26). |
+| LIB-ROOM-22 | **Cancel.** `POST /api/v1/room-bookings/{booking_id}/cancel` sets a `booked` booking to `cancelled`, sets `closed_at` and `cancel_reason` (`member_request` when the organizer cancels, `staff_request` otherwise) and returns `200` with `RoomBookingOut`. A booking that is not `booked` returns `409 BOOKING_NOT_ACTIVE`. A participant who is not the organizer receives `403 FORBIDDEN` (and uses `leave`). |
+| LIB-ROOM-23 | **Cancel after start.** A `booked` booking whose start has passed but which is not yet due as a no-show (now ≤ start + 15 minutes) can still be cancelled; it counts as a late cancellation if the organizer cancels. A booking due as a no-show (LIB-ROOM-28) cannot be cancelled: `409 BOOKING_NOT_ACTIVE`. |
+| LIB-ROOM-24 | **Late cancellation.** A cancellation with reason `member_request` less than 2 hours before the start sets `late_cancellation` to `true`. Exactly 2 hours before the start is not late. Example: booking 14:00–15:00; cancelled at 12:00 → not late; at 12:01 → late. No fee is created for a late cancellation; it counts for bans (LIB-ROOM-31). |
+| LIB-ROOM-25 | **Cancellation and quota.** Cancelled bookings never count for quota, late or not. |
+| LIB-ROOM-26 | **System cancellations.** Cancellations with reasons `member_deactivated`, `member_banned`, `room_closed` and `not_enough_participants` set `closed_at`, never set `late_cancellation`, and notify every person of the booking (event `room_booking_cancelled`). |
+| LIB-ROOM-27 | **Check-in.** `POST /api/v1/room-bookings/{booking_id}/check-in` sets a `booked` booking to `checked_in` and `checked_in_at` = now, and returns `200`. Allowed from 10 minutes before the start until 15 minutes after the start, both inclusive: earlier → `409 CHECK_IN_TOO_EARLY` with `details.earliest` (date-time); later (the booking is due as a no-show) → `409 CHECK_IN_TOO_LATE`. Another state returns `409 BOOKING_NOT_ACTIVE`. Example: start 10:00 → check-in from 09:50:00 to 10:15:00. |
+| LIB-ROOM-28 | **No-show.** A `booked` booking with now > start + 15 minutes is a no-show. `POST /api/v1/room-bookings/process` marks every such booking `no_show` with `closed_at` = now, in order of `date`, `start_time`, then `id`, and applies LIB-ROOM-30 and LIB-ROOM-31 to each. It also marks every `checked_in` booking with now ≥ end as `completed` with `closed_at` = now. It returns `200` with `{"no_shows": <count>, "completed": <count>, "bans": <count>}`. A `booked` booking that is due as a no-show but not yet processed keeps status `booked`, but every other rule treats it as a no-show: it is not active, so it does not block its room for new bookings (LIB-ROOM-12 (13)) and does not make its persons double-booked (14); it counts for quota; it cannot be checked in (LIB-ROOM-27) or cancelled (LIB-ROOM-23). Its fee and ban are created only when it is processed. |
+| LIB-ROOM-29 | **Check-out.** `POST /api/v1/room-bookings/{booking_id}/check-out` on a `checked_in` booking sets `status` `completed`, `closed_at` = now and `end_time` = now rounded up to the next full or half hour, but not earlier than `start_time` + 30 minutes and not later than the old `end_time`. It returns `200`. The freed slots become free; quota counts the new duration. Another state returns `409 BOOKING_NOT_ACTIVE`. Example: 10:00–12:00, check-out at 10:41 → `end_time` `11:00`, duration 60 minutes. |
+
+### 23.7 No-show fees and bans
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ROOM-30 | **No-show fee.** Each no-show creates a fee of kind `no_show_fee` with amount 10.00 TL for the organizer (module 7, `loan_id` null, `room_booking_id` set). Participants are not charged. The fee counts for total debt (LIB-FEE-09) like any other fee. |
+| LIB-ROOM-31 | **Automatic ban.** After a no-show or a late cancellation of a booking organized by a member, the system counts the member's *incidents*: bookings they organized with status `no_show`, or `cancelled` with `late_cancellation` `true`, whose `date` is in the 30 days ending on today (today − 29 to today). If the count is 3 or more and no ban of the member is in force today, a ban with reason `no_shows`, `starts_on` = today and `ends_on` = today + 13 days (14 calendar days) is created (event `room_ban_started`), and LIB-ROOM-33 applies. Incidents that led to a ban do not count again: only incidents with `closed_at` after the `created_at` of the member's latest `no_shows` ban count. |
+| LIB-ROOM-32 | **Ban example.** No-shows on 2026-11-03 and 2026-11-10 and a late cancellation on 2026-11-20 → ban from 2026-11-20 to 2026-12-03. A no-show on 2026-11-03, one on 2026-12-03 and one on 2026-12-04 → no ban (on 2026-12-04 the 30 days are 2026-11-05 to 2026-12-04, so the first is outside). |
+| LIB-ROOM-33 | **Effect of a ban.** When a ban starts, every `booked` booking organized by the member whose `date` is within the ban is cancelled with reason `member_banned` (LIB-ROOM-26). Group bookings in which the member is only a participant: the member is removed, and LIB-ROOM-21 applies to the remaining persons. |
+| LIB-ROOM-34 | **Staff ban.** `POST /api/v1/members/{member_id}/room-bans` with `{"starts_on", "ends_on", "note"}` creates a ban with reason `staff` and returns `201`. `starts_on` MUST NOT be before today and `ends_on` ≥ `starts_on` (`422 VALIDATION_ERROR`); the ban may overlap other bans. LIB-ROOM-33 applies to the dates of the ban. |
+| LIB-ROOM-35 | **Lift.** `POST /api/v1/room-bans/{ban_id}/lift` sets `lifted_at` and `lifted_by` on a ban that is not lifted and whose `ends_on` ≥ today, and returns `200`. Otherwise `409 BAN_NOT_ACTIVE`. Cancelled bookings are not restored. |
+| LIB-ROOM-36 | **Ban lists.** `GET /api/v1/members/{member_id}/room-bans` is paginated, ordered by `starts_on` descending, then `id` descending. Each item has `in_force` (boolean, for today). |
+
+### 23.8 Effects on other modules
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ROOM-37 | **Member deactivation.** LIB-MEM-10 also cancels every `booked` booking organized by the member with reason `member_deactivated`, and removes the member from every `booked` group booking in which they are a participant (LIB-ROOM-21 then applies). A member who is a person of a `checked_in` booking cannot be deactivated: `409 MEMBER_IN_ROOM`, checked after `MEMBER_HAS_OPEN_LOANS`. |
+| LIB-ROOM-38 | **Member type change.** A change of `membership_type` (LIB-MEM-08) does not change existing bookings. A change to `guest` cancels the member's future `booked` organized bookings with reason `staff_request` and removes them from group bookings as in LIB-ROOM-37. |
+| LIB-ROOM-39 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) if the branch has an active room or a room with an active booking. |
+| LIB-ROOM-40 | **Member summary.** `GET /api/v1/members/{member_id}/summary` (LIB-MEM-12) also returns `"rooms": {"upcoming_bookings": <int>, "banned_until": <date or null>, "hours_this_week": "<hours>"}`: active bookings with a start after now in which the member is a person; the latest `ends_on` of bans in force today; hours of the current week per 23.2 (format of LIB-ROOM-15). |
+| LIB-ROOM-41 | **Notifications.** Events that notify (added to LIB-NOT-01): `room_booking_cancelled` (every person, for reasons in LIB-ROOM-26, type `room_booking_cancelled`), `room_no_show` (organizer, type `room_no_show`), `room_ban_started` (member, type `room_ban_started`), `room_participant_added` (each added participant, type `room_participant_added`). Messages contain the room code, the date and the start time (bans: `starts_on` and `ends_on`). Notifications get a nullable `room_booking_id`. |
+| LIB-ROOM-42 | **Room reminders.** `POST /api/v1/room-bookings/run-reminders` creates a notification of type `room_reminder` for each person of every `booked` booking whose `date` is the next working day after today (LIB-COM-09 with n = 1), at most once per booking and person however often it is run, and returns `200` with `{"room_reminders": <count>}`. `POST /api/v1/notifications/run-reminders` (LIB-NOT-05) is not changed. |
+| LIB-ROOM-43 | **Audit.** Module 15 reports these events to the audit log: `room_created`, `room_updated`, `room_booking_created`, `room_booking_updated`, `room_booking_cancelled`, `room_participant_left`, `room_checked_in`, `room_checked_out`, `room_no_show`, `room_booking_completed`, `room_ban_started`, `room_ban_lifted`, `room_bookings_processed` (with the three counts), `room_reminders_run` (with the count). |
+| LIB-ROOM-44 | **Room usage report.** `GET /api/v1/reports/room-usage?from=&to=` (dates, inclusive, `from` ≤ `to`, at most 366 days; otherwise `422 VALIDATION_ERROR`) returns a paginated list, one item per room (filters `branch_id`, `kind`), ordered by `branch_id`, then `code`: `{"room_id", "room_code", "branch_id", "open_hours", "booked_hours", "used_hours", "no_shows", "late_cancellations", "utilization"}`. `open_hours`: hours from `opens_at` to `closes_at` (current values) on every working day in the range; `booked_hours`: durations of bookings with status `checked_in`, `completed` or `no_show`; `used_hours`: `completed` and `checked_in` only; `utilization` = `used_hours` / `open_hours` as a percentage with one decimal place (`ROUND_HALF_UP`), `"0.0"` when `open_hours` is 0. Hours are strings with one decimal place. |
+| LIB-ROOM-45 | **Not exported.** Rooms, bookings and bans are not part of import and export (module 13); an import into a database that has rooms returns `409 DATABASE_NOT_EMPTY` (LIB-IO-02). |
+
+### 23.9 Error codes of module 15
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `ROOM_INACTIVE` | LIB-ROOM-06, LIB-ROOM-12 |
+| 409 | `ROOM_HAS_BOOKINGS` | LIB-ROOM-05 |
+| 409 | `ROOM_NOT_ALLOWED_FOR_TYPE` | LIB-ROOM-12, LIB-ROOM-13 |
+| 409 | `MEMBER_BANNED_FROM_ROOMS` | LIB-ROOM-12, LIB-ROOM-13 |
+| 409 | `ROOM_CLOSED` | LIB-ROOM-12 |
+| 409 | `OUTSIDE_ROOM_HOURS` | LIB-ROOM-12 |
+| 409 | `BOOKING_IN_PAST` | LIB-ROOM-12 |
+| 409 | `BOOKING_TOO_FAR_AHEAD` | LIB-ROOM-12 |
+| 409 | `PARTICIPANTS_NOT_ALLOWED` | LIB-ROOM-13 |
+| 409 | `NOT_ENOUGH_PARTICIPANTS` | LIB-ROOM-13 |
+| 409 | `ROOM_CAPACITY_EXCEEDED` | LIB-ROOM-13 |
+| 409 | `PARTICIPANT_NOT_ELIGIBLE` | LIB-ROOM-13 |
+| 409 | `ROOM_ALREADY_BOOKED` | LIB-ROOM-12 |
+| 409 | `MEMBER_DOUBLE_BOOKED` | LIB-ROOM-12 |
+| 409 | `DAILY_ROOM_QUOTA_EXCEEDED` | LIB-ROOM-15 |
+| 409 | `WEEKLY_ROOM_QUOTA_EXCEEDED` | LIB-ROOM-15 |
+| 409 | `ROOM_BOOKING_LIMIT_REACHED` | LIB-ROOM-15 |
+| 409 | `BOOKING_NOT_CHANGEABLE` | LIB-ROOM-20, LIB-ROOM-21 |
+| 409 | `BOOKING_NOT_ACTIVE` | LIB-ROOM-22, LIB-ROOM-27, LIB-ROOM-29 |
+| 409 | `CHECK_IN_TOO_EARLY` | LIB-ROOM-27 |
+| 409 | `CHECK_IN_TOO_LATE` | LIB-ROOM-27 |
+| 409 | `BAN_NOT_ACTIVE` | LIB-ROOM-35 |
+| 409 | `MEMBER_IN_ROOM` | LIB-ROOM-37 |
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -1191,4 +1392,5 @@ Each scenario starts from an empty database with a `FixedClock`, the default hol
 | Module 13: Audit, import, export | LIB-AUD-01 – LIB-AUD-04, LIB-IO-01 – LIB-IO-14 | 18 |
 | Module 14: API layer | LIB-API-01 – LIB-API-05 | 5 |
 | End-to-end scenarios | LIB-E2E-01 – LIB-E2E-11 | 11 |
-| **Total** | | **225** |
+| Module 15: Study rooms | LIB-ROOM-01 – LIB-ROOM-45 | 45 |
+| **Total** | | **270** |
