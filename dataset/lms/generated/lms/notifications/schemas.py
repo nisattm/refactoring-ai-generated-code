@@ -25,6 +25,11 @@ NotificationType = Literal[
     "member_deactivated",
     "due_reminder",
     "overdue_notice",
+    "room_booking_cancelled",
+    "room_no_show",
+    "room_ban_started",
+    "room_participant_added",
+    "room_reminder",
 ]
 
 
@@ -36,6 +41,7 @@ class NotificationOut(BaseModel):
     loan_id: int | None
     reservation_id: int | None
     fee_id: int | None
+    room_booking_id: int | None
     created_at: str
     read_at: str | None
 
@@ -62,6 +68,7 @@ def notification_out(n: Notification) -> NotificationOut:
         loan_id=n.loan_id,
         reservation_id=n.reservation_id,
         fee_id=n.fee_id,
+        room_booking_id=n.room_booking_id,
         created_at=format_datetime(n.created_at),
         read_at=format_datetime(n.read_at) if n.read_at is not None else None,
     )

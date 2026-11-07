@@ -44,6 +44,7 @@ def _create(
     loan_id: int | None = None,
     reservation_id: int | None = None,
     fee_id: int | None = None,
+    room_booking_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -53,6 +54,7 @@ def _create(
         loan_id=loan_id,
         reservation_id=reservation_id,
         fee_id=fee_id,
+        room_booking_id=room_booking_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -139,6 +141,32 @@ def notify_membership_renewed(db: Session, now: datetime.datetime, member_id: in
 
 def notify_member_deactivated(db: Session, now: datetime.datetime, member_id: int) -> Notification:
     return _create(db, now, member_id, "member_deactivated", "Your membership was deactivated.")
+
+
+# --- study rooms (LIB-ROOM-41, LIB-ROOM-42) ---------------------------------------
+
+
+def notify_room(
+    db: Session,
+    now: datetime.datetime,
+    member_id: int,
+    type_: str,
+    message: str,
+    *,
+    room_booking_id: int | None = None,
+) -> Notification:
+    """``room_booking_cancelled``, ``room_no_show``, ``room_ban_started``, ``room_participant_added``
+    and ``room_reminder``; the caller composes the message."""
+    return _create(db, now, member_id, type_, message, room_booking_id=room_booking_id)
+
+
+def room_reminder_sent(db: Session, room_booking_id: int, member_id: int) -> bool:
+    stmt = sa.select(Notification.id).where(
+        Notification.type == "room_reminder",
+        Notification.room_booking_id == room_booking_id,
+        Notification.member_id == member_id,
+    )
+    return db.scalar(stmt.limit(1)) is not None
 
 
 # --- reminders (LIB-NOT-05, LIB-NOT-06) -------------------------------------------

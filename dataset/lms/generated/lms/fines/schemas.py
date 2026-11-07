@@ -14,7 +14,7 @@ from lms.fines.models import Fee, Payment
 
 BLOCKING_DEBT = Decimal("50.00")
 
-FeeKind = Literal["late_fee", "damage_fee", "lost_book", "lost_processing"]
+FeeKind = Literal["late_fee", "damage_fee", "lost_book", "lost_processing", "no_show_fee"]
 FeeStatus = Literal["open", "paid", "waived"]
 PaymentMethod = Literal["cash", "card"]
 
@@ -41,6 +41,7 @@ class FeeOut(BaseModel):
     member_id: int
     loan_id: int | None
     kind: str
+    room_booking_id: int | None
     amount: str
     paid_amount: str
     status: str
@@ -57,6 +58,7 @@ def fee_out(fee: Fee) -> FeeOut:
         member_id=fee.member_id,
         loan_id=fee.loan_id,
         kind=fee.kind,
+        room_booking_id=fee.room_booking_id,
         amount=format_amount(fee.amount),
         paid_amount=format_amount(fee.paid_amount),
         status=fee.status,

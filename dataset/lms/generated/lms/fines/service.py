@@ -75,12 +75,14 @@ def create_fee(
     loan_id: int | None,
     kind: str,
     amount: Decimal,
+    room_booking_id: int | None = None,
 ) -> Fee:
     """Create an open fee (LIB-FEE-02 to LIB-FEE-04). ``amount`` is already rounded."""
     fee = Fee(
         member_id=member_id,
         loan_id=loan_id,
         kind=kind,
+        room_booking_id=room_booking_id,
         amount=amount,
         paid_amount=ZERO,
         status="open",
@@ -95,7 +97,13 @@ def create_fee(
         actor_user_id=actor.id,
         entity_type="fee",
         entity_id=fee.id,
-        details={"member_id": member_id, "loan_id": loan_id, "kind": kind, "amount": format_amount(amount)},
+        details={
+            "member_id": member_id,
+            "loan_id": loan_id,
+            "room_booking_id": room_booking_id,
+            "kind": kind,
+            "amount": format_amount(amount),
+        },
     )
     notify_fee_created(db, now, fee)
     return fee

@@ -22,6 +22,7 @@ from lms.loans.models import Loan
 from lms.members.models import Member
 from lms.members.service import type_field_problems
 from lms.members.types import MEMBERSHIP_TYPES
+from lms.rooms.models import Room
 
 MAX_PROBLEMS = 100
 # LIB-IO-05: not a valid ``scrypt$salt$hash`` value, so no password ever matches.
@@ -225,7 +226,7 @@ def _check_consistency(
 
 
 def _is_empty(db: Session) -> bool:
-    return all(db.scalar(sa.select(model.id).limit(1)) is None for model in (Branch, Book, Member))
+    return all(db.scalar(sa.select(model.id).limit(1)) is None for model in (Branch, Book, Member, Room))
 
 
 def _write(
