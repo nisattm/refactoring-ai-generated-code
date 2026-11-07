@@ -18,7 +18,7 @@ dataset/lms/tests/
 └── heldout/test_<module>.py    Tests used only for evaluation
 ```
 
-Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`.
+Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`.
 
 ## Ownership (30 October 2026)
 
@@ -26,7 +26,7 @@ Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`
 | --- | --- |
 | `conftest.py`, `support/` | Fatima |
 | `core`, `auth`, `reservations`, `members`, `catalog`, `branches`, `e2e`, `search`, `reports`, `audit_io`, `api` | Nisa |
-| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital` | Fatima |
+| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill` | Fatima |
 
 Only the owner edits a file. A missing helper is requested from the owner of `support/`; until it exists, a test calls the API through `client` directly.
 
@@ -54,9 +54,10 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 | Study rooms (module 15, from 7 November) | `rooms` | 54 | 45 | 0 | 99 |
 | Equipment loans (module 16, from 7 November) | `equipment` | 59 | 51 | 0 | 110 |
 | Digital resources (module 17, from 7 November) | `digital` | 42 | 43 | 0 | 85 |
-| **Total** | | **437** | **378** | **13** | **828** |
+| Interlibrary loans (module 18, from 7 November) | `ill` | 40 | 36 | 0 | 76 |
+| **Total** | | **477** | **414** | **13** | **904** |
 
-`pytest --import-mode=importlib --collect-only` collects 437 feedback and 378 held-out tests without the code; every test fails until `lms` exists.
+`pytest --import-mode=importlib --collect-only` collects 477 feedback and 414 held-out tests without the code; every test fails until `lms` exists.
 
 ## Test case IDs and names
 
