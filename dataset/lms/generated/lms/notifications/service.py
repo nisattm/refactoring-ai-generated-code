@@ -49,6 +49,7 @@ def _create(
     equipment_reservation_id: int | None = None,
     digital_loan_id: int | None = None,
     digital_hold_id: int | None = None,
+    ill_request_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -63,6 +64,7 @@ def _create(
         equipment_reservation_id=equipment_reservation_id,
         digital_loan_id=digital_loan_id,
         digital_hold_id=digital_hold_id,
+        ill_request_id=ill_request_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -126,6 +128,7 @@ def notify_fee_created(db: Session, now: datetime.datetime, fee: Fee) -> Notific
     return _create(
         db, now, fee.member_id, "fee_created", message,
         loan_id=fee.loan_id, fee_id=fee.id, equipment_loan_id=fee.equipment_loan_id,
+        ill_request_id=fee.ill_request_id,
     )
 
 
@@ -243,6 +246,17 @@ def digital_due_soon_sent(db: Session, digital_loan_id: int) -> bool:
         Notification.type == "digital_loan_due_soon", Notification.digital_loan_id == digital_loan_id
     )
     return db.scalar(stmt.limit(1)) is not None
+
+
+# --- interlibrary loans (LIB-ILL-36) ---------------------------------------------
+
+
+def notify_ill(
+    db: Session, now: datetime.datetime, member_id: int, type_: str, message: str, *, ill_request_id: int
+) -> Notification:
+    """``ill_request_rejected``, ``ill_request_cancelled``, ``ill_request_received``, ``ill_request_uncollected``
+    and ``ill_renewal_answered``; the caller composes the message."""
+    return _create(db, now, member_id, type_, message, ill_request_id=ill_request_id)
 
 
 # --- reminders (LIB-NOT-05, LIB-NOT-06) -------------------------------------------

@@ -16,6 +16,7 @@ from lms.api import (
     digital,
     equipment,
     fines,
+    ill,
     loans,
     members,
     notifications,
@@ -80,5 +81,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api.include_router(rooms.router)
     api.include_router(equipment.router)
     api.include_router(digital.router)
+    api.include_router(ill.router)
     app.include_router(api)
     return app

@@ -19,6 +19,7 @@ from lms.catalog.status import set_status
 from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.equipment.models import EquipmentItem
+from lms.ill.models import IllRequest
 from lms.members.models import Member
 from lms.reservations.models import ACTIVE_STATUSES, Reservation
 from lms.rooms.models import Room, RoomBooking
@@ -81,6 +82,11 @@ def is_branch_in_use(db: Session, branch_id: int) -> bool:
         Room.branch_id == branch_id, RoomBooking.status.in_(("booked", "checked_in"))
     )
     if db.scalar(booked.limit(1)) is not None:
+        return True
+    receipt = sa.select(IllRequest.id).where(
+        IllRequest.pickup_branch_id == branch_id, IllRequest.status.in_(("received", "on_loan"))
+    )
+    if db.scalar(receipt.limit(1)) is not None:  # LIB-ILL-33
         return True
     equipment = sa.select(EquipmentItem.id).where(
         EquipmentItem.branch_id == branch_id, EquipmentItem.status.not_in(("retired", "lost"))

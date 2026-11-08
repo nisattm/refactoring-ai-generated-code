@@ -21,6 +21,8 @@ from lms.digital import process as digital_process
 from lms.equipment import reservations as equipment_reservations
 from lms.equipment import usage as equipment_usage
 from lms.equipment.accrual import count_overdue as count_overdue_equipment
+from lms.ill import requests as ill_requests
+from lms.ill.accrual import count_overdue as count_overdue_ill
 from lms.core.text import normalize
 from lms.fines import service as fines
 from lms.fines.schemas import BLOCKING_DEBT
@@ -234,6 +236,8 @@ def deactivate_member(
         raise Conflict("The member has open loans", code="MEMBER_HAS_OPEN_LOANS")
     if equipment_usage.has_open_loan(db, member.id):  # LIB-EQ-35
         raise Conflict("The member has open equipment loans", code="MEMBER_HAS_OPEN_LOANS")
+    if ill_requests.has_open_receipt(db, member.id):  # LIB-ILL-32
+        raise Conflict("The member has open interlibrary loans", code="MEMBER_HAS_OPEN_LOANS")
     if room_lifecycle.is_in_checked_in_room(db, member.id):
         raise Conflict("The member is in a study room", code="MEMBER_IN_ROOM")
     member.status = "passive"
@@ -251,6 +255,7 @@ def deactivate_member(
     room_lifecycle.on_member_deactivated(db, now, actor.id, member.id)
     equipment_reservations.cancel_for_deactivation(db, now, actor.id, member.id)  # LIB-EQ-35
     digital_process.on_member_deactivated(db, now, actor.id, member.id)  # LIB-DIG-37
+    ill_requests.cancel_for_deactivation(db, now, actor, member.id)  # LIB-ILL-32
     return member
 
 
@@ -281,6 +286,7 @@ class MemberActivity:
     open_loans: int = 0
     overdue_loans: int = 0
     overdue_equipment_loans: int = 0
+    overdue_ill_requests: int = 0
     active_reservations: int = 0
     outstanding_fees: Decimal = ZERO
     accrued_late_fees: Decimal = ZERO
@@ -295,6 +301,7 @@ def member_activity(
         open_loans=len(open_loans),
         overdue_loans=sum(1 for loan in open_loans if today > loan.due_date),
         overdue_equipment_loans=count_overdue_equipment(db, member.id, now),
+        overdue_ill_requests=count_overdue_ill(db, member.id, today),
         active_reservations=reservations.count_active(db, member.id),
         outstanding_fees=fines.outstanding_fees(db, member.id),
         accrued_late_fees=fines.accrued_late_fees(db, member.id, now, holidays),
@@ -308,7 +315,7 @@ def borrowing_blockers(member: Member, activity: MemberActivity, today: datetime
         reasons.append("MEMBER_PASSIVE")
     if today > member.valid_until:
         reasons.append("MEMBERSHIP_EXPIRED")
-    if activity.overdue_loans > 0 or activity.overdue_equipment_loans > 0:  # LIB-EQ-14
+    if activity.overdue_loans > 0 or activity.overdue_equipment_loans > 0 or activity.overdue_ill_requests > 0:  # LIB-EQ-14, LIB-ILL-34
         reasons.append("MEMBER_HAS_OVERDUE")
     if activity.outstanding_fees + activity.accrued_late_fees >= BLOCKING_DEBT:
         reasons.append("MEMBER_BLOCKED_BY_DEBT")

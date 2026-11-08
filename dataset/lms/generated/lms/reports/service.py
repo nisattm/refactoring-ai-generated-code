@@ -33,7 +33,7 @@ from lms.reports.schemas import (
 from lms.reservations.models import Reservation
 
 # Order of section 8.2.
-STATUS_ORDER = ("available", "on_loan", "on_hold", "in_transfer", "damaged", "lost", "withdrawn")
+STATUS_ORDER = ("available", "on_loan", "on_hold", "in_transfer", "damaged", "lost", "withdrawn", "at_partner")
 assert set(STATUS_ORDER) == set(ALLOWED_TRANSITIONS)
 
 

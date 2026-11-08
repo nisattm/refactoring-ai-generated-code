@@ -18,6 +18,8 @@ from lms.reports import service
 from lms.digital import usage as digital_usage
 from lms.digital.schemas import DigitalUsageOut, ResourceKind
 from lms.equipment import usage as equipment_usage
+from lms.ill import usage as ill_usage
+from lms.ill.schemas import IllActivityOut
 from lms.equipment.schemas import EquipmentUsageOut
 from lms.rooms import usage as room_usage
 from lms.rooms.schemas import RoomKind, RoomUsageOut
@@ -192,3 +194,24 @@ def digital_usage_report(
     if (end - start).days > 365:
         raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
     return paginate_sequence(digital_usage.digital_usage(db, start, end, kind=kind), page)
+
+
+@router.get("/ill-activity", response_model=Page[IllActivityOut])
+def ill_activity_report(
+    db: SessionDep,
+    _: StaffOnly,
+    page: PageDep,
+    first: Annotated[str | None, Query(alias="from")] = None,
+    to: Annotated[str | None, Query()] = None,
+) -> Page[IllActivityOut]:
+    problems: list[dict[str, str]] = []
+    start = _required_date("from", first, problems)
+    end = _required_date("to", to, problems)
+    if problems:
+        raise ValidationFailed(problems)
+    assert start is not None and end is not None
+    if start > end:
+        raise ValidationFailed.single("from", "from must not be after to")
+    if (end - start).days > 365:
+        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    return paginate_sequence(ill_usage.ill_activity(db, start, end), page)

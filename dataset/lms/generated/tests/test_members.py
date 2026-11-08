@@ -274,13 +274,14 @@ def test_summary(client, admin_h, clock):
     setup(client, admin_h)
     reg(client, admin_h)
     s = client.get("/api/v1/members/1/summary", headers=admin_h).json()
-    assert set(s) == {"member", "open_loans", "overdue_loans", "active_reservations", "balance", "borrowing", "rooms", "equipment", "digital"}
+    assert set(s) == {"member", "open_loans", "overdue_loans", "active_reservations", "balance", "borrowing", "rooms", "equipment", "digital", "ill"}
     assert s["member"]["id"] == 1 and s["open_loans"] == 0 and s["overdue_loans"] == 0 and s["active_reservations"] == 0
     assert s["balance"] == {"outstanding_fees": "0.00", "accrued_late_fees": "0.00", "total_debt": "0.00", "blocked": False}
     assert s["borrowing"] == {"eligible": True, "reasons": []}
     assert s["rooms"] == {"upcoming_bookings": 0, "banned_until": None, "hours_this_week": "0.0"}
     assert s["equipment"] == {"open_loans": 0, "overdue_loans": 0, "booked_reservations": 0}
     assert s["digital"] == {"open_loans": 0, "waiting_holds": 0, "ready_holds": 0}
+    assert s["ill"] == {"open_requests": 0, "on_loan": 0, "overdue": 0}
     client.post("/api/v1/members/1/deactivate", headers=admin_h)
     clock.set(datetime.datetime(2027, 11, 2, 9, tzinfo=TZ))
     admin_h.update(h(token_of(client)))
