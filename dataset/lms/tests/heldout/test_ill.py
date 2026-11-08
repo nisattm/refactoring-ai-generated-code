@@ -428,15 +428,15 @@ def test_t_ill_28_b(client, admin, librarian, branch_a):
 
 
 def test_t_ill_30_a(client, admin, librarian, branch_a):
-    """T-ILL-30-a (LIB-ILL-30): Order O1, O2; O1 book_title Kırmızı, barcode OUT-1; O2 barcode null; status=requested → O2; partner_id P1 → O1"""
+    """T-ILL-30-a (LIB-ILL-30): Order O1, O2; O1 book_title Kırmızı, barcode OUT-001; O2 barcode null; status=requested → O2; partner_id P1 → O1"""
     p1, p2 = partner(client, admin), partner(client, admin)
     book = create_book(client, librarian, title="Kırmızı")
-    copy = add_copy(client, librarian, book["id"], home_branch_id=branch_a["id"], barcode="OUT-1")
+    copy = add_copy(client, librarian, book["id"], home_branch_id=branch_a["id"], barcode="OUT-001")
     o1 = outgoing(client, librarian, p1, book)
     ok(out_step(client, librarian, o1["id"], "ship", {"copy_id": copy["id"]}))
     o2 = outgoing(client, librarian, p2, book)
     rows = items(get(client, librarian, "ill-outgoing"))
-    assert [(x["id"], x["book_title"], x["barcode"]) for x in rows] == [(o1["id"], "Kırmızı", "OUT-1"), (o2["id"], "Kırmızı", None)]
+    assert [(x["id"], x["book_title"], x["barcode"]) for x in rows] == [(o1["id"], "Kırmızı", "OUT-001"), (o2["id"], "Kırmızı", None)]
     assert [x["id"] for x in items(get(client, librarian, "ill-outgoing", status="requested"))] == [o2["id"]]
     assert [x["id"] for x in items(get(client, librarian, "ill-outgoing", partner_id=p1["id"]))] == [o1["id"]]
 
