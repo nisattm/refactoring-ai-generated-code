@@ -62,10 +62,10 @@ Generated from one case list; 76 cases for 40 requirements (feedback 40, held-ou
 | T-ILL-25-c | LIB-ILL-25 | Error | Partner has a copy due 2026-11-30 not returned; on 12-01 a second request is shipped | `409 PARTNER_HAS_OVERDUE` | feedback |
 | T-ILL-26-a | LIB-ILL-26 | Normal | Decline a requested outgoing request; decline a shipped one | 200 `declined`; `409 INVALID_ILL_STATUS` | held-out |
 | T-ILL-27-a | LIB-ILL-27 | Boundary | Partner with `max_outgoing` 2 and two requested outgoing requests: a third; after one is declined, again | `409 PARTNER_LIMIT_REACHED` with `details.limit` 2; then 201 | feedback |
-| T-ILL-28-a | LIB-ILL-28 | Normal | Copy (home branch A) shipped Mon; returned at branch B on 2026-11-10 | Outgoing `returned`, `returned_on` 11-10; copy `available` at branch B | feedback |
+| T-ILL-28-a | LIB-ILL-28 | Normal | Copy (home branch A) shipped Mon; returned at branch B on 2026-11-10 (no reservation) | Outgoing `returned`, `returned_on` 11-10; copy `in_transfer` (return transfer to its home branch, LIB-RES-08 (a)) | feedback |
 | T-ILL-28-b | LIB-ILL-28 | Normal | Only copy at a partner; a member reserves the book for pickup at A; copy returned at A | Copy `on_hold`; reservation `ready` | held-out |
 | T-ILL-29-a | LIB-ILL-29 | Normal | Copy (price 120.00) shipped; partner reports it lost | Outgoing `lost`, `amount_due` 120.00; copy `lost` | feedback |
-| T-ILL-30-a | LIB-ILL-30 | Normal | O1 (P1, book "Kırmızı", shipped with barcode OUT-1), O2 (P2, requested); list and filters | Order O1, O2; O1 `book_title` Kırmızı, `barcode` OUT-1; O2 `barcode` null; `status=requested` → O2; `partner_id` P1 → O1 | held-out |
+| T-ILL-30-a | LIB-ILL-30 | Normal | O1 (P1, book "Kırmızı", shipped with barcode OUT-001), O2 (P2, requested); list and filters | Order O1, O2; O1 `book_title` Kırmızı, `barcode` OUT-001; O2 `barcode` null; `status=requested` → O2; `partner_id` P1 → O1 | held-out |
 | T-ILL-31-a | LIB-ILL-31 | Normal | Copy at a partner: lent to a member; copies listed with `status=at_partner` | `409 COPY_NOT_AVAILABLE` with `details.status` `at_partner`; the copy is listed | feedback |
 | T-ILL-32-a | LIB-ILL-32 | Error | Member with an on-loan request is deactivated | `409 MEMBER_HAS_OPEN_LOANS` | feedback |
 | T-ILL-32-b | LIB-ILL-32 | Normal | Member with a `requested` and a `sent` request is deactivated | Both `cancelled` with `member_deactivated`; two `ill_request_cancelled` notifications | held-out |

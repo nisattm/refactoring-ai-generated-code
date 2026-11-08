@@ -16,6 +16,7 @@ from lms.fines.schemas import BalanceOut
 from lms.members.models import Member
 from lms.digital.schemas import DigitalSummaryOut
 from lms.equipment.schemas import EquipmentSummaryOut
+from lms.ill.schemas import IllSummaryOut
 from lms.rooms.schemas import RoomSummaryOut
 
 MembershipTypeName = Literal["student", "academic", "staff", "guest"]
@@ -148,3 +149,4 @@ class MemberSummaryOut(BaseModel):
     rooms: RoomSummaryOut
     equipment: EquipmentSummaryOut
     digital: DigitalSummaryOut
+    ill: IllSummaryOut

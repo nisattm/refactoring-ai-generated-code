@@ -16,6 +16,7 @@ from lms.core.errors import Conflict, NotFound
 from lms.core.money import ZERO, format_amount, quantize
 from lms.equipment.accrual import accrued_equipment_late_fees
 from lms.fines.models import Fee, Payment, PaymentAllocation
+from lms.ill.accrual import accrued_ill_late_fees
 from lms.loans.models import Loan
 from lms.notifications.service import notify_fee_created, notify_fee_waived, notify_payment_received
 
@@ -58,13 +59,13 @@ def outstanding_fees(db: Session, member_id: int) -> Decimal:
 
 def accrued_late_fees(db: Session, member_id: int, now: datetime.datetime, holidays: Container[datetime.date]) -> Decimal:
     """Sum of ``accrued_late_fee`` of the member's open overdue loans, including the open overdue
-    equipment loans (LIB-EQ-14)."""
+    equipment loans (LIB-EQ-14) and the overdue incoming interlibrary requests (LIB-ILL-19)."""
     today = now.date()
     loans = db.scalars(
         sa.select(Loan).where(Loan.member_id == member_id, Loan.status == "open", Loan.due_date < today)
     )
     books = sum((accrued_late_fee(loan, today, holidays) for loan in loans), ZERO)
-    return books + accrued_equipment_late_fees(db, member_id, now)
+    return books + accrued_equipment_late_fees(db, member_id, now) + accrued_ill_late_fees(db, member_id, today)
 
 
 # --- fees -----------------------------------------------------------------------
@@ -81,6 +82,7 @@ def create_fee(
     amount: Decimal,
     room_booking_id: int | None = None,
     equipment_loan_id: int | None = None,
+    ill_request_id: int | None = None,
 ) -> Fee:
     """Create an open fee (LIB-FEE-02 to LIB-FEE-04). ``amount`` is already rounded."""
     fee = Fee(
@@ -89,6 +91,7 @@ def create_fee(
         kind=kind,
         room_booking_id=room_booking_id,
         equipment_loan_id=equipment_loan_id,
+        ill_request_id=ill_request_id,
         amount=amount,
         paid_amount=ZERO,
         status="open",
@@ -96,6 +99,16 @@ def create_fee(
     )
     db.add(fee)
     db.flush()
+    details: dict[str, object] = {
+        "member_id": member_id,
+        "loan_id": loan_id,
+        "room_booking_id": room_booking_id,
+        "equipment_loan_id": equipment_loan_id,
+        "kind": kind,
+        "amount": format_amount(amount),
+    }
+    if ill_request_id is not None:
+        details["ill_request_id"] = ill_request_id
     record(
         db,
         at=now,
@@ -103,14 +116,7 @@ def create_fee(
         actor_user_id=actor.id,
         entity_type="fee",
         entity_id=fee.id,
-        details={
-            "member_id": member_id,
-            "loan_id": loan_id,
-            "room_booking_id": room_booking_id,
-            "equipment_loan_id": equipment_loan_id,
-            "kind": kind,
-            "amount": format_amount(amount),
-        },
+        details=details,
     )
     notify_fee_created(db, now, fee)
     return fee

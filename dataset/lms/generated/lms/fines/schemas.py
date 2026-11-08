@@ -23,6 +23,9 @@ FeeKind = Literal[
     "equipment_late_fee",
     "equipment_damage_fee",
     "equipment_lost",
+    "ill_request_fee",
+    "ill_late_fee",
+    "ill_lost",
 ]
 FeeStatus = Literal["open", "paid", "waived"]
 PaymentMethod = Literal["cash", "card"]
@@ -52,6 +55,7 @@ class FeeOut(BaseModel):
     kind: str
     room_booking_id: int | None
     equipment_loan_id: int | None
+    ill_request_id: int | None
     amount: str
     paid_amount: str
     status: str
@@ -70,6 +74,7 @@ def fee_out(fee: Fee) -> FeeOut:
         kind=fee.kind,
         room_booking_id=fee.room_booking_id,
         equipment_loan_id=fee.equipment_loan_id,
+        ill_request_id=fee.ill_request_id,
         amount=format_amount(fee.amount),
         paid_amount=format_amount(fee.paid_amount),
         status=fee.status,

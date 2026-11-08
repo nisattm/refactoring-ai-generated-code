@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
-**Status:** Complete draft (sections 1–25), revised after team review.
-**Version:** 0.10 · 2026-11-07 (adds section 25, module 17 Digital resources)
+**Status:** Complete draft (sections 1–26), revised after team review.
+**Version:** 0.11 · 2026-11-07 (adds section 26, module 18 Interlibrary loans)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -13,9 +13,9 @@ The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119. Each testa
 
 ### 1.1 System overview
 
-The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, study rooms, equipment loans and digital resources. It is used through a REST API.
+The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, study rooms, equipment loans, digital resources and interlibrary loans. It is used through a REST API.
 
-The system consists of 17 modules:
+The system consists of 18 modules:
 
 | # | Module | Package | Section |
 | --- | --- | --- | --- |
@@ -36,6 +36,7 @@ The system consists of 17 modules:
 | 15 | Study rooms | `lms.rooms` | 23 |
 | 16 | Equipment loans | `lms.equipment` | 24 |
 | 17 | Digital resources | `lms.digital` | 25 |
+| 18 | Interlibrary loans | `lms.ill` | 26 |
 
 ### 1.2 Out of scope
 
@@ -98,7 +99,8 @@ lms/
 ├── api/                 Module 14 (FastAPI routers and request/response schemas)
 ├── rooms/               Module 15
 ├── equipment/           Module 16
-└── digital/             Module 17
+├── digital/             Module 17
+└── ill/                 Module 18
 ```
 
 | ID | Requirement |
@@ -461,6 +463,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Study rooms (module 15) | – | Read rooms and availability; book, change, cancel, leave, check in and out own bookings; read own bans | Full, except creating and changing rooms and bans | Full |
 | Equipment loans (module 16) | – | Read types and availability; reserve and cancel own reservations; extend own loans; read own loans, reservations and trainings | Full, except creating and changing types and items and retiring items | Full |
 | Digital resources (module 17) | – | Read resources and calendars; borrow, return and renew own e-book loans; own holds and database sessions | Full, except licenses: read only | Full |
+| Interlibrary loans (module 18) | – | Create, read and cancel own incoming requests; ask for a renewal | Full, except partners: read only | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -542,9 +545,9 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37) and `digital` (LIB-DIG-36). |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36) and `ill` (LIB-ILL-34). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -601,8 +604,9 @@ API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]
 | `damaged` | Returned damaged, waiting for repair | No |
 | `lost` | Reported lost (module 5) | No |
 | `withdrawn` | Removed from the collection; final | No |
+| `at_partner` | Lent to a partner library (module 18, LIB-ILL-31) | No |
 
-Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withdrawn`; `on_hold` → `on_loan`, `available`, `in_transfer`; `on_loan` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost`; `in_transfer` → `available`, `on_hold`; `damaged` → `available`, `on_hold`, `in_transfer`, `withdrawn`; `lost` → `withdrawn`. The release procedure (LIB-RES-08) and transfer arrival (LIB-BR-07) may also keep a copy `on_hold` (held for the next reservation in the queue) or `in_transfer` (a new transfer starts on arrival); these are allowed. On arrival, the copy goes directly from `in_transfer` to the status that LIB-BR-07 gives it; no intermediate status is stored. Any other transition MUST be rejected with `409 INVALID_COPY_STATUS`.
+Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withdrawn`; `on_hold` → `on_loan`, `available`, `in_transfer`; `on_loan` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost`; `in_transfer` → `available`, `on_hold`; `damaged` → `available`, `on_hold`, `in_transfer`, `withdrawn`; `lost` → `withdrawn`; module 18 adds `available` → `at_partner` and `at_partner` → `available`, `lost` (LIB-ILL-31). The release procedure (LIB-RES-08) and transfer arrival (LIB-BR-07) may also keep a copy `on_hold` (held for the next reservation in the queue) or `in_transfer` (a new transfer starts on arrival); these are allowed. On arrival, the copy goes directly from `in_transfer` to the status that LIB-BR-07 gives it; no intermediate status is stored. Any other transition MUST be rejected with `409 INVALID_COPY_STATUS`.
 
 ### 8.3 Endpoints
 
@@ -625,7 +629,7 @@ Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withd
 | LIB-CAT-03 | **Create book.** `POST /api/v1/books` with `{"isbn", "title", "subtitle", "author_ids", "publisher_id", "publication_year", "language", "classification"}` returns `201` with `BookOut`. An ISBN that is already stored (after normalization) returns `409 CONFLICT`. |
 | LIB-CAT-04 | **List books.** `GET /api/v1/books` is paginated, ordered by `title` (case-insensitive) then `id`. Filters: `isbn` (normalized, exact), `author_id`, `publisher_id`, `language`, `classification_prefix`. Full-text search is module 9. |
 | LIB-CAT-05 | **Update book.** `PATCH /api/v1/books/{book_id}` accepts any subset of the create fields with the same rules. |
-| LIB-CAT-06 | **Delete.** `DELETE` returns `204`. A book that has any copy returns `409 BOOK_HAS_COPIES`. An author or publisher that is used by any book returns `409 IN_USE`. |
+| LIB-CAT-06 | **Delete.** `DELETE` returns `204`. A book that has any copy returns `409 BOOK_HAS_COPIES`. An author or publisher that is used by any book returns `409 IN_USE`. Books with interlibrary requests: LIB-ILL-40. |
 | LIB-CAT-07 | **Add copy.** `POST /api/v1/books/{book_id}/copies` with `{"barcode", "home_branch_id", "price", "acquired_on", "shelf_location"}` returns `201` with the copy. `current_branch_id` = `home_branch_id`, `status` = `available`. A duplicate barcode returns `409 CONFLICT`. The new copy is then released (LIB-RES-08), so a waiting reservation can take it at once. |
 | LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). |
 | LIB-CAT-09 | **Update copy.** `PATCH /api/v1/copies/{copy_id}` accepts any subset of `{"price", "shelf_location", "home_branch_id"}`. `home_branch_id` can change only while the copy is `available` at its home branch; it then also changes `current_branch_id`. Otherwise `409 INVALID_COPY_STATUS`. |
@@ -679,7 +683,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | LIB-LOAN-02 | **Overdue.** An open loan is overdue when today > `due_date`. |
 | LIB-LOAN-03 | **Due date.** `due_date` = the next working day on or after `loan_date` + `loan_period_days` calendar days (LIB-COM-08). Examples: student, lent 2026-11-02 → due 2026-11-16; academic, lent 2026-12-02 → 2027-01-01 is a holiday → due 2027-01-04. |
 | LIB-LOAN-04 | **Terms are fixed per loan.** `loan_period_days`, `max_renewals` and `daily_fee` are copied from the member's type (7.1) when the loan is created and are used for that loan until it closes, even if the member's type changes. |
-| LIB-LOAN-05 | **Lending checks.** The checks run in this order; the first failure decides the response (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) today > `valid_until` → `MEMBERSHIP_EXPIRED`; (3) the member has an overdue loan (equipment loans: LIB-EQ-14) → `MEMBER_HAS_OVERDUE`; (4) the member's total debt (LIB-FEE-09) ≥ 50.00 TL → `MEMBER_BLOCKED_BY_DEBT`, with `details.total_debt`; (5) the member's open loans ≥ the loan limit of the member's current type → `LOAN_LIMIT_REACHED`; (6) copy status: `available` → allowed; `on_hold` → allowed only if the hold belongs to a `ready` reservation of this member (LIB-RES-10), otherwise `COPY_ON_HOLD`; any other status → `COPY_NOT_AVAILABLE`, with `details.status`. |
+| LIB-LOAN-05 | **Lending checks.** The checks run in this order; the first failure decides the response (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) today > `valid_until` → `MEMBERSHIP_EXPIRED`; (3) the member has an overdue loan (equipment loans: LIB-EQ-14; interlibrary requests: LIB-ILL-19) → `MEMBER_HAS_OVERDUE`; (4) the member's total debt (LIB-FEE-09) ≥ 50.00 TL → `MEMBER_BLOCKED_BY_DEBT`, with `details.total_debt`; (5) the member's open loans ≥ the loan limit of the member's current type → `LOAN_LIMIT_REACHED`; (6) copy status: `available` → allowed; `on_hold` → allowed only if the hold belongs to a `ready` reservation of this member (LIB-RES-10), otherwise `COPY_ON_HOLD`; any other status → `COPY_NOT_AVAILABLE`, with `details.status`. |
 | LIB-LOAN-06 | **Debt boundary.** Total debt 49.99 TL allows lending; 50.00 TL does not. |
 | LIB-LOAN-07 | **Renew.** `POST /api/v1/loans/{loan_id}/renew` returns `200` with `LoanOut`. Checks in order (all `409`): loan not `open` → `LOAN_NOT_OPEN`; member `passive` → `MEMBER_PASSIVE`; membership expired → `MEMBERSHIP_EXPIRED`; loan overdue → `LOAN_OVERDUE`; `renewal_count` ≥ `max_renewals` → `RENEWAL_LIMIT_REACHED`; the book has an active reservation (status `waiting`, `in_transit` or `ready`) by any member → `BOOK_RESERVED`. |
 | LIB-LOAN-08 | **Renewed due date.** New `due_date` = the next working day on or after today + `loan_period_days` (the new period starts on the renewal day). Because today is never before the previous loan or renewal date, the new due date is never earlier than the current one. `renewal_count` increases by 1. A renewal on the due date itself is allowed (not overdue). Examples: student loan due 2026-11-16, renewed on 2026-11-10 → due 2026-11-24. Student loan due 2026-06-01, renewed on 2026-05-15 → 2026-05-29 is a holiday → due 2026-06-01 (unchanged); the renewal still counts. |
@@ -755,9 +759,10 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | `id` | integer | LIB-COM-14 |
 | `member_id` | integer | |
 | `loan_id` | integer or null | The loan the fee comes from |
-| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25 |
+| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25; `ill_request_fee`, `ill_late_fee`, `ill_lost`: LIB-ILL-35 |
 | `room_booking_id` | integer or null | The room booking a `no_show_fee` comes from |
 | `equipment_loan_id` | integer or null | The equipment loan an `equipment_*` fee comes from |
+| `ill_request_id` | integer or null | The incoming interlibrary request an `ill_*` fee comes from |
 | `amount` | amount | > 0.00 |
 | `paid_amount` | amount | 0.00 ≤ `paid_amount` ≤ `amount` |
 | `status` | `open` \| `paid` \| `waived` | `paid` when `paid_amount` = `amount` |
@@ -791,7 +796,7 @@ API representation (`FeeOut`): all fields, plus `outstanding` = `amount` − `pa
 | LIB-FEE-06 | **Allocation.** A payment is applied to the member's `open` fees in order of `created_on`, then `id`: each fee receives as much as it still owes until the payment is used up. A fee whose `paid_amount` reaches `amount` becomes `paid`. Partial payment is allowed. Example: open fees A 6.00 (older) and B 20.00; payment 10.00 → A 6.00 paid (status `paid`), B 4.00 paid (status `open`, outstanding 16.00). |
 | LIB-FEE-07 | **Waive.** `POST /api/v1/fees/{fee_id}/waive` with `{"reason"}` (5–500 characters) sets an `open` fee to `waived` and returns `200` with `FeeOut`. Only `admin` may waive (`403 FORBIDDEN` for librarians). A fee that is not `open` returns `409 FEE_NOT_OPEN`. Amounts already paid stay paid; only the outstanding part is waived. |
 | LIB-FEE-08 | **Fee lists.** `GET /api/v1/members/{member_id}/fees` and `GET /api/v1/fees` are paginated, ordered by `created_on`, then `id`. Filters: `status`, `kind`, `loan_id`; `GET /api/v1/fees` also `member_id`. |
-| LIB-FEE-09 | **Total debt.** A member's total debt = the sum of `outstanding` of all `open` fees + the sum of `accrued_late_fee` of all open overdue loans. This value is used by LIB-LOAN-05 step 4. Equipment loans: LIB-EQ-14. |
+| LIB-FEE-09 | **Total debt.** A member's total debt = the sum of `outstanding` of all `open` fees + the sum of `accrued_late_fee` of all open overdue loans. This value is used by LIB-LOAN-05 step 4. Equipment loans: LIB-EQ-14. Interlibrary requests: LIB-ILL-19. |
 | LIB-FEE-10 | **Balance.** `GET /api/v1/members/{member_id}/balance` returns `200` with `BalanceOut`: `{"outstanding_fees": "<amount>", "accrued_late_fees": "<amount>", "total_debt": "<amount>", "blocked": <bool>}`, where `blocked` is `total_debt` ≥ 50.00. |
 | LIB-FEE-11 | **Payments list.** `GET /api/v1/members/{member_id}/payments` is paginated, ordered by `paid_at`, then `id`. |
 
@@ -859,7 +864,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -878,7 +883,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 and the digital events of LIB-DIG-33. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 and the interlibrary events of LIB-ILL-36. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -915,7 +920,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38.
 
 ### 16.1 Endpoints and requirements
 
@@ -966,7 +971,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. |
@@ -1052,7 +1057,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 
 | ID | Requirement |
 | --- | --- |
-| LIB-IO-07 | `GET /api/v1/export` (admin only) returns `200` with all data in the format of 22.1. Importing an export into an empty database and exporting again MUST give the same document, provided no copy is `on_hold` or `in_transfer` at export time (LIB-IO-11). |
+| LIB-IO-07 | `GET /api/v1/export` (admin only) returns `200` with all data in the format of 22.1. Importing an export into an empty database and exporting again MUST give the same document, provided no copy is `on_hold`, `in_transfer` or `at_partner` at export time (LIB-IO-11, LIB-ILL-39). |
 | LIB-IO-08 | `GET /api/v1/export/{entity}.csv` (admin only), `entity` one of `branches`, `books`, `copies`, `members`, `loans`, returns `text/csv; charset=utf-8` in the format of 22.3 with the columns of 22.2, rows ordered by `id`. An unknown entity returns `404 NOT_FOUND`. |
 | LIB-IO-09 | Each export creates one audit entry `data_exported` with the entity (or `"all"`). |
 
@@ -1107,7 +1112,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9.
 
 ---
 
@@ -1801,6 +1806,189 @@ A session is *open* at `t` when `closed_at` is null and `t` < `expires_at`.
 
 ---
 
+## 26. Module 18: Interlibrary loans
+
+The library borrows books it does not have from partner libraries for its members (**incoming** requests) and lends its own copies to partner libraries (**outgoing** requests). Package `lms.ill`. Dates are local dates (LIB-COM-01); amounts follow LIB-COM-12.
+
+### 26.1 Data
+
+**Partner**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `code` | text | 2–10 characters `[A-Z0-9]`, stored in upper case, unique |
+| `name` | text | LIB-COM-16 |
+| `email` | text | LIB-COM-17 |
+| `request_fee` | amount | 0.00–50.00; charged to the member per incoming request (LIB-ILL-14) |
+| `daily_late_fee` | amount | 0.00–10.00 per day (LIB-ILL-18) |
+| `max_outgoing` | integer | 1–20; open outgoing requests of this partner (LIB-ILL-27) |
+| `is_active` | boolean | Default `true` |
+
+**Incoming request**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `member_id` | integer | |
+| `title` | text | LIB-COM-16 |
+| `author` | text | 1–200 characters |
+| `isbn` | text or null | Normalized as LIB-CAT-02 when given |
+| `status` | see 26.2 | Initially `requested` |
+| `partner_id` | integer or null | The partner it was last sent to |
+| `tried_partner_ids` | list of integers | Partners it was sent to, in order |
+| `pickup_branch_id` | integer or null | Set on receipt |
+| `received_on`, `collect_until` | date or null | `collect_until` = `received_on` + 7 days |
+| `partner_due_on`, `due_on` | date or null | LIB-ILL-12 |
+| `replacement_cost` | amount or null | Given by the partner on receipt |
+| `renewal` | `none` \| `requested` \| `approved` \| `refused` | Default `none` |
+| `collected_on`, `returned_on`, `closed_on` | date or null | |
+| `cancel_reason`, `reject_reason` | text or null | `cancel_reason`: `member_request`, `staff_request`, `member_deactivated` |
+| `created_at` | date-time | From the clock |
+
+An incoming request with `status` `on_loan` is **overdue** when today > `due_on`. The API representation of an incoming request has all fields above except the stored fees, plus `overdue` (boolean) and `accrued_late_fee` (amount: the fee of LIB-ILL-18 if it were returned today; `"0.00"` when not overdue).
+
+**Outgoing request**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `partner_id`, `book_id` | integer | Active partner, existing book |
+| `status` | `requested` \| `shipped` \| `declined` \| `returned` \| `lost` | Initially `requested` |
+| `copy_id` | integer or null | Set when shipped |
+| `shipped_on`, `due_on`, `returned_on` | date or null | `due_on` = `shipped_on` + 28 days |
+| `amount_due` | amount or null | Set when lost: the copy's `price` |
+| `created_at` | date-time | From the clock |
+
+An outgoing request with `status` `shipped` is **overdue** when today > `due_on`.
+
+### 26.2 Status of an incoming request
+
+| Status | Meaning | Next statuses |
+| --- | --- | --- |
+| `requested` | Made by or for the member | `sent`, `cancelled` |
+| `sent` | Sent to a partner | `received`, `rejected`, `cancelled` |
+| `rejected` | The partner said no | `sent` (to another partner), `cancelled` |
+| `received` | The book arrived and waits at the pickup branch | `on_loan`, `uncollected` |
+| `on_loan` | The member has the book | `returned`, `lost` |
+| `returned` | The member returned it; not yet sent back | `closed` |
+| `uncollected` | Not collected within 7 days | `closed` |
+| `closed`, `cancelled`, `lost` | Final | – |
+
+A request is **open** in the statuses `requested`, `sent`, `rejected`, `received` and `on_loan`. A wrong transition returns `409 INVALID_ILL_STATUS` with `details.status`.
+
+### 26.3 Rules by membership type
+
+| Type | Open incoming requests |
+| --- | --- |
+| `student` | 2 |
+| `academic` | 5 |
+| `staff` | 2 |
+| `guest` | 0 (not allowed) |
+
+### 26.4 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/ill-partners`, `PATCH /api/v1/ill-partners/{partner_id}` | admin | Create, change |
+| `GET /api/v1/ill-partners`, `GET /api/v1/ill-partners/{partner_id}` | librarian, admin | Read |
+| `POST /api/v1/ill-requests` | member (own), librarian, admin | New incoming request |
+| `GET /api/v1/ill-requests`, `GET /api/v1/ill-requests/{request_id}` | librarian, admin; member (own, single) | Read |
+| `GET /api/v1/members/{member_id}/ill-requests` | librarian, admin; member (own) | Requests of a member |
+| `POST /api/v1/ill-requests/{request_id}/send`, `/reject`, `/receive`, `/collect`, `/return`, `/close`, `/report-lost`, `/renewal-answer` | librarian, admin | Staff steps |
+| `POST /api/v1/ill-requests/{request_id}/cancel`, `/renewal-request` | member (own), librarian, admin | Cancel, ask for more time |
+| `POST /api/v1/ill-outgoing` | librarian, admin | New outgoing request |
+| `GET /api/v1/ill-outgoing`, `GET /api/v1/ill-outgoing/{outgoing_id}` | librarian, admin | Read |
+| `POST /api/v1/ill-outgoing/{outgoing_id}/ship`, `/decline`, `/returned`, `/report-lost` | librarian, admin | Outgoing steps |
+| `POST /api/v1/ill/process` | librarian, admin | Mark uncollected requests |
+| `GET /api/v1/reports/ill-activity` | librarian, admin | Activity per partner (section 16) |
+
+`member_id` in `POST /api/v1/ill-requests`: a librarian or admin MUST send it; a member MUST NOT (`422`).
+
+### 26.5 Partners
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ILL-01 | **Create partner.** `POST /api/v1/ill-partners` with `{"code", "name", "email", "request_fee", "daily_late_fee", "max_outgoing"}` returns `201` (event `ill_partner_created`). Values outside 26.1 return `422 VALIDATION_ERROR`; a duplicate `code` returns `409 CONFLICT` with `details.field` `"code"`. |
+| LIB-ILL-02 | **Change partner.** `PATCH` accepts any subset of `{"name", "email", "request_fee", "daily_late_fee", "max_outgoing", "is_active"}` and returns `200`; `code` cannot be changed (`422`). A changed `request_fee` or `daily_late_fee` applies to requests sent afterwards: the request keeps the values of the partner at the time it was sent (stored with the request, not returned). |
+| LIB-ILL-03 | **Inactive partner.** An inactive partner cannot be chosen for `send` or a new outgoing request: `409 PARTNER_INACTIVE`. Requests already sent to it continue. |
+| LIB-ILL-04 | **Read partners.** `GET /api/v1/ill-partners` is paginated, ordered by `code`, with filters `is_active` and `q` (case-insensitive substring of `code` or `name`). Each item has `open_incoming` (open incoming requests last sent to it with status `sent`, `received`, `on_loan`) and `open_outgoing` (outgoing requests `requested` or `shipped`). |
+
+### 26.6 Incoming requests
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ILL-05 | **New request.** `POST /api/v1/ill-requests` with `{"title", "author", "isbn"}` (member) or with `member_id` (staff) returns `201` with `status` `requested` (event `ill_request_created`). `isbn` MAY be omitted; an invalid ISBN returns `422`. |
+| LIB-ILL-06 | **Request checks.** In order (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) membership not valid today → `MEMBERSHIP_EXPIRED`; (3) `guest` → `ILL_NOT_ALLOWED_FOR_TYPE`; (4) total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (5) the member has an overdue book loan (LIB-LOAN-02) or an overdue incoming request → `MEMBER_HAS_OVERDUE`; (6) open incoming requests of the member ≥ the limit of 26.3 → `ILL_LIMIT_REACHED` with `details.limit`; (7) `isbn` is the ISBN of a book in the catalog that has a copy with status `available` → `AVAILABLE_LOCALLY` with `details.book_id`; (8) the member has an open request with the same `isbn` → `DUPLICATE_ILL_REQUEST`. A book in the catalog without an available copy can be requested. |
+| LIB-ILL-07 | **Send.** `send` with `{"partner_id"}` on a `requested` or `rejected` request sets `status` `sent`, `partner_id`, appends the partner to `tried_partner_ids`, stores the partner's `request_fee` and `daily_late_fee` with the request and returns `200` (event `ill_request_sent`). Checks in order: status → `INVALID_ILL_STATUS`; partner inactive → `PARTNER_INACTIVE`; partner already in `tried_partner_ids` → `409 PARTNER_ALREADY_TRIED`; `tried_partner_ids` already has 3 partners → `409 ILL_TRY_LIMIT_REACHED`. |
+| LIB-ILL-08 | **Reject.** `reject` with `{"reason"}` (1–200 characters) on a `sent` request sets `status` `rejected`, `reject_reason` and returns `200` (event `ill_request_rejected`). The member is notified. |
+| LIB-ILL-09 | **Cancel.** `cancel` on a `requested`, `sent` or `rejected` request sets `status` `cancelled`, `cancel_reason` `member_request` (member) or `staff_request` (staff), `closed_on` = today and returns `200` (event `ill_request_cancelled`). Other statuses → `INVALID_ILL_STATUS`. Only `staff_request` and `member_deactivated` notify the member. |
+| LIB-ILL-10 | **Receive.** `receive` with `{"partner_due_on", "replacement_cost", "pickup_branch_id"}` on a `sent` request sets `status` `received`, `received_on` = today, `collect_until` = today + 7 days, `partner_due_on`, `due_on` (LIB-ILL-12), `replacement_cost` (0.01–100000.00), `pickup_branch_id` (active branch, `409 BRANCH_INACTIVE` otherwise) and returns `200` (event `ill_request_received`, notifies the member). |
+| LIB-ILL-11 | **Too short.** If `due_on` (LIB-ILL-12) is earlier than today + 7 days, `receive` returns `409 ILL_PERIOD_TOO_SHORT` with `details.due_on`. |
+| LIB-ILL-12 | **Member due date.** `due_on` is the 3rd working day before `partner_due_on`: counting back from the day before `partner_due_on`, only working days (LIB-COM-05) count. Examples: `partner_due_on` Fri 2026-11-20 → `due_on` Tue 2026-11-17; Mon 2026-11-16 → Wed 2026-11-11; Mon 2026-11-02 → Tue 2026-10-27 (counting 30 Oct, 28 Oct, 27 Oct; 29 Oct is a holiday). |
+| LIB-ILL-13 | **Collect.** `collect` on a `received` request with today ≤ `collect_until` sets `status` `on_loan`, `collected_on` = today and returns `200` (event `ill_request_collected`). The member checks of LIB-ILL-06 (1), (2), (4) and (5) apply; a member blocked by them keeps the book waiting. After `collect_until` → `409 ILL_COLLECT_PERIOD_OVER`. |
+| LIB-ILL-14 | **Request fee.** On `collect`, if the stored `request_fee` > 0.00, a fee of kind `ill_request_fee` is created for the member with that amount and `ill_request_id` set. |
+| LIB-ILL-15 | **Renewal request.** `renewal-request` on an `on_loan` request that is not overdue and has `renewal` `none` sets `renewal` `requested` and returns `200` (event `ill_renewal_requested`). Otherwise: not `on_loan` → `INVALID_ILL_STATUS`; overdue → `409 ILL_OVERDUE`; `renewal` not `none` → `409 ILL_RENEWAL_ALREADY_REQUESTED`. |
+| LIB-ILL-16 | **Renewal answer.** `renewal-answer` with `{"approved": true, "partner_due_on"}` or `{"approved": false}` on a request with `renewal` `requested`: approved sets `renewal` `approved`, the new `partner_due_on` (later than the old one, `422` otherwise) and a new `due_on` (LIB-ILL-12); refused sets `renewal` `refused`. Returns `200` and notifies the member (`ill_renewal_answered`). `renewal` not `requested` → `409 ILL_NO_RENEWAL_REQUESTED`. |
+| LIB-ILL-17 | **Return.** `return` with `{"branch_id"}` on an `on_loan` request sets `status` `returned`, `returned_on` = today and returns `200` (event `ill_request_returned`). A return at any active branch is accepted. |
+| LIB-ILL-18 | **Late fee.** On `return`, if `returned_on` > `due_on`, a fee of kind `ill_late_fee` = days late × the stored `daily_late_fee` is created, at most `replacement_cost`. Days late = `returned_on` − `due_on` in calendar days. Example: due 2026-11-17, returned 2026-11-20, 2.50 per day → 7.50. |
+| LIB-ILL-19 | **Overdue across modules.** An overdue incoming request blocks book lending (LIB-LOAN-05 step 3 `MEMBER_HAS_OVERDUE`) and counts in the debt: LIB-FEE-09 and `accrued_late_fees` of `BalanceOut` add, for every overdue incoming request, the late fee it would get if returned today. |
+| LIB-ILL-20 | **Close.** `close` on a `returned` or `uncollected` request (the book went back to the partner) sets `status` `closed`, `closed_on` = today and returns `200` (event `ill_request_closed`). |
+| LIB-ILL-21 | **Lost.** `report-lost` on an `on_loan` request sets `status` `lost`, `closed_on` = today, creates a fee of kind `ill_lost` = `replacement_cost` and, if overdue, the `ill_late_fee` of LIB-ILL-18 with today as return date, and returns `200` (event `ill_request_lost`). |
+| LIB-ILL-22 | **Uncollected.** `POST /api/v1/ill/process` sets every `received` request with today > `collect_until` to `uncollected` (event `ill_request_uncollected`, notifies the member) in order of `id` and returns `200` with `{"uncollected": <count>, "overdue_outgoing": <count of shipped outgoing requests that are overdue today>}`. No fee is created for an uncollected book. |
+| LIB-ILL-23 | **Read requests.** Lists are paginated, ordered by `created_at`, then `id`; filters `status`, `partner_id`, `overdue` (`true`/`false`); the general list also `member_id`. A member reading a request of another member receives `403 FORBIDDEN`. |
+
+### 26.7 Outgoing requests
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ILL-24 | **New outgoing request.** `POST /api/v1/ill-outgoing` with `{"partner_id", "book_id"}` returns `201` with `status` `requested` (event `ill_outgoing_created`). Unknown book → `404 NOT_FOUND`; partner inactive → `409 PARTNER_INACTIVE`. |
+| LIB-ILL-25 | **Ship.** `ship` with `{"copy_id"}` on a `requested` outgoing request sets `status` `shipped`, `copy_id`, `shipped_on` = today, `due_on` = today + 28 days and the copy's status to `at_partner`, and returns `200` (event `ill_outgoing_shipped`). Checks in order (all `409`): status → `INVALID_ILL_STATUS`; partner inactive → `PARTNER_INACTIVE`; the partner has an overdue outgoing request → `PARTNER_HAS_OVERDUE`; the copy is not of the requested book → `422`; the copy is not `available` → `INVALID_COPY_STATUS`. |
+| LIB-ILL-26 | **Decline.** `decline` on a `requested` outgoing request sets `status` `declined` and returns `200`. |
+| LIB-ILL-27 | **Limit.** A new outgoing request when the partner already has `max_outgoing` requests `requested` or `shipped` returns `409 PARTNER_LIMIT_REACHED` with `details.limit` (checked after `PARTNER_INACTIVE`). |
+| LIB-ILL-28 | **Returned.** `returned` with `{"branch_id"}` on a `shipped` outgoing request sets `status` `returned`, `returned_on` = today; the copy becomes `available` with `current_branch_id` = `branch_id`; then the copy is released (LIB-RES-08). Returns `200` (event `ill_outgoing_returned`). |
+| LIB-ILL-29 | **Lost by partner.** `report-lost` on a `shipped` outgoing request sets `status` `lost`, `amount_due` = the copy's `price`; the copy becomes `lost`. Returns `200` (event `ill_outgoing_lost`). No member fee is created. |
+| LIB-ILL-30 | **Read outgoing.** `GET /api/v1/ill-outgoing` is paginated, ordered by `created_at`, then `id`, filters `status`, `partner_id`, `overdue`. Each item also has `book_title` and `barcode` (null before shipping). |
+
+### 26.8 Effects on other modules
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ILL-31 | **Copy status.** 8.2 adds `at_partner` (lent to a partner, module 18; cannot be lent). Transitions: `available` → `at_partner`; `at_partner` → `available`, `lost`. A copy `at_partner` counts as not available in `BookOut.availability` and in search. |
+| LIB-ILL-32 | **Member deactivation.** LIB-MEM-10 returns `409 MEMBER_HAS_OPEN_LOANS` when the member has an incoming request `received` or `on_loan`; it cancels the member's `requested`, `sent` and `rejected` requests with reason `member_deactivated`. |
+| LIB-ILL-33 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) when the branch is the `pickup_branch_id` of a `received` or `on_loan` incoming request. |
+| LIB-ILL-34 | **Member summary.** LIB-MEM-12 also returns `"ill": {"open_requests": <int>, "on_loan": <int>, "overdue": <int>}`. `borrowing.reasons` includes `MEMBER_HAS_OVERDUE` also for an overdue incoming request. |
+| LIB-ILL-35 | **Fees.** Fee `kind` adds `ill_request_fee`, `ill_late_fee`, `ill_lost`; Fee gets a nullable `ill_request_id`. These fees are paid, allocated and waived like other fees (LIB-FEE-05–07). |
+| LIB-ILL-36 | **Notifications.** Added to LIB-NOT-01: `ill_request_rejected`, `ill_request_cancelled` (reasons `staff_request`, `member_deactivated`), `ill_request_received` (contains the title, the pickup branch name and `collect_until`), `ill_request_uncollected`, `ill_renewal_answered`; fees also notify as `fee_created`. Notifications get a nullable `ill_request_id`. LIB-NOT-05 is not changed. |
+| LIB-ILL-37 | **Audit.** Module 18 reports to the audit log: `ill_partner_created`, `ill_partner_updated`, `ill_request_created`, `ill_request_sent`, `ill_request_rejected`, `ill_request_cancelled`, `ill_request_received`, `ill_request_collected`, `ill_renewal_requested`, `ill_renewal_answered`, `ill_request_returned`, `ill_request_closed`, `ill_request_lost`, `ill_request_uncollected`, `ill_outgoing_created`, `ill_outgoing_shipped`, `ill_outgoing_declined`, `ill_outgoing_returned`, `ill_outgoing_lost`. |
+| LIB-ILL-38 | **Activity report.** `GET /api/v1/reports/ill-activity?from=&to=` (dates inclusive, `from` ≤ `to`, at most 366 days; otherwise `422`) returns a paginated list ordered by partner `code`, one item per partner (also inactive ones and those without activity): `{"partner_id", "partner_code", "sent", "rejected", "received", "late_returns", "outgoing_shipped", "outgoing_returned", "outgoing_lost", "amount_due"}`. `sent` and `rejected` count the send and reject actions on dates in the range; `received` by `received_on`; `late_returns` incoming requests with `returned_on` in the range and `returned_on` > `due_on`; outgoing by `shipped_on`, `returned_on` and the date reported lost; `amount_due` sums `amount_due` of outgoing requests reported lost in the range. |
+| LIB-ILL-39 | **Not exported.** Interlibrary data is not part of import and export (module 13). A copy `at_partner` is exported with that status; import rejects the status `at_partner` (`422`), so the round trip of LIB-IO-07 does not hold while a copy is `at_partner` (as for LIB-IO-11). |
+| LIB-ILL-40 | **Book deletion.** A book that has an outgoing request (any status) cannot be deleted: LIB-CAT-06 returns `409 IN_USE` (checked after `BOOK_HAS_COPIES`). |
+
+### 26.9 Error codes of module 18
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `INVALID_ILL_STATUS` | 26.2 |
+| 409 | `ILL_NOT_ALLOWED_FOR_TYPE` | LIB-ILL-06 |
+| 409 | `ILL_LIMIT_REACHED` | LIB-ILL-06 |
+| 409 | `AVAILABLE_LOCALLY` | LIB-ILL-06 |
+| 409 | `DUPLICATE_ILL_REQUEST` | LIB-ILL-06 |
+| 409 | `PARTNER_INACTIVE` | LIB-ILL-03, LIB-ILL-07, LIB-ILL-24, LIB-ILL-25 |
+| 409 | `PARTNER_ALREADY_TRIED` | LIB-ILL-07 |
+| 409 | `ILL_TRY_LIMIT_REACHED` | LIB-ILL-07 |
+| 409 | `ILL_PERIOD_TOO_SHORT` | LIB-ILL-11 |
+| 409 | `ILL_COLLECT_PERIOD_OVER` | LIB-ILL-13 |
+| 409 | `ILL_OVERDUE` | LIB-ILL-15 |
+| 409 | `ILL_RENEWAL_ALREADY_REQUESTED` | LIB-ILL-15 |
+| 409 | `ILL_NO_RENEWAL_REQUESTED` | LIB-ILL-16 |
+| 409 | `PARTNER_HAS_OVERDUE` | LIB-ILL-25 |
+| 409 | `PARTNER_LIMIT_REACHED` | LIB-ILL-27 |
+
+`MEMBER_PASSIVE`, `MEMBERSHIP_EXPIRED`, `MEMBER_BLOCKED_BY_DEBT`, `MEMBER_HAS_OVERDUE`, `BRANCH_INACTIVE`, `INVALID_COPY_STATUS`, `IN_USE` and `CONFLICT` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -1826,4 +2014,5 @@ A session is *open* at `t` when `closed_at` is null and `t` < `expires_at`.
 | Module 15: Study rooms | LIB-ROOM-01 – LIB-ROOM-45 | 45 |
 | Module 16: Equipment loans | LIB-EQ-01 – LIB-EQ-41 | 41 |
 | Module 17: Digital resources | LIB-DIG-01 – LIB-DIG-40 | 40 |
-| **Total** | | **351** |
+| Module 18: Interlibrary loans | LIB-ILL-01 – LIB-ILL-40 | 40 |
+| **Total** | | **391** |

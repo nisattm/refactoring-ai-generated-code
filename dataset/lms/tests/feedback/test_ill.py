@@ -409,7 +409,7 @@ def test_t_ill_27_a(client, admin, librarian):
 
 
 def test_t_ill_28_a(client, clock, admin, librarian, branch_a, branch_b):
-    """T-ILL-28-a (LIB-ILL-28): Outgoing returned, returned_on 11-10; copy available at branch B"""
+    """T-ILL-28-a (LIB-ILL-28): Outgoing returned, returned_on 11-10; copy in_transfer (return transfer to its home branch, LIB-RES-08 (a))"""
     p = partner(client, admin)
     book, copy = book_with_copy(client, librarian, branch_a)
     o = outgoing(client, librarian, p, book)
@@ -417,8 +417,7 @@ def test_t_ill_28_a(client, clock, admin, librarian, branch_a, branch_b):
     at(clock, "2026-11-10")
     out = ok(out_step(client, librarian, o["id"], "returned", {"branch_id": branch_b["id"]}))
     assert (out["status"], out["returned_on"]) == ("returned", "2026-11-10")
-    c = get_copy(client, librarian, copy["id"])
-    assert (c["status"], c["current_branch_id"]) == ("available", branch_b["id"])
+    assert get_copy(client, librarian, copy["id"])["status"] == "in_transfer"
 
 
 def test_t_ill_29_a(client, admin, librarian, branch_a):
