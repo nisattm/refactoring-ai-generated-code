@@ -658,7 +658,7 @@ def TEST(client, admin, librarian):
     ok(out_step(client, librarian, o1["id"], "decline"))
     outgoing(client, librarian, p, book)
 '''),
-    dict(id="T-ILL-28-a", req="LIB-ILL-28", type="Normal", input="Copy (home branch A) shipped Mon; returned at branch B on 2026-11-10", expected="Outgoing `returned`, `returned_on` 11-10; copy `available` at branch B", code='''
+    dict(id="T-ILL-28-a", req="LIB-ILL-28", type="Normal", input="Copy (home branch A) shipped Mon; returned at branch B on 2026-11-10 (no reservation)", expected="Outgoing `returned`, `returned_on` 11-10; copy `in_transfer` (return transfer to its home branch, LIB-RES-08 (a))", code='''
 def TEST(client, clock, admin, librarian, branch_a, branch_b):
     p = partner(client, admin)
     book, copy = book_with_copy(client, librarian, branch_a)
@@ -667,8 +667,7 @@ def TEST(client, clock, admin, librarian, branch_a, branch_b):
     at(clock, "2026-11-10")
     out = ok(out_step(client, librarian, o["id"], "returned", {"branch_id": branch_b["id"]}))
     assert (out["status"], out["returned_on"]) == ("returned", "2026-11-10")
-    c = get_copy(client, librarian, copy["id"])
-    assert (c["status"], c["current_branch_id"]) == ("available", branch_b["id"])
+    assert get_copy(client, librarian, copy["id"])["status"] == "in_transfer"
 '''),
     dict(id="T-ILL-28-b", req="LIB-ILL-28", type="Normal", input="Only copy at a partner; a member reserves the book for pickup at A; copy returned at A", expected="Copy `on_hold`; reservation `ready`", code='''
 def TEST(client, admin, librarian, branch_a):
@@ -692,16 +691,16 @@ def TEST(client, admin, librarian, branch_a):
     assert (out["status"], out["amount_due"]) == ("lost", "120.00")
     assert get_copy(client, librarian, copy["id"])["status"] == "lost"
 '''),
-    dict(id="T-ILL-30-a", req="LIB-ILL-30", type="Normal", input="O1 (P1, book \"Kırmızı\", shipped with barcode OUT-1), O2 (P2, requested); list and filters", expected="Order O1, O2; O1 `book_title` Kırmızı, `barcode` OUT-1; O2 `barcode` null; `status=requested` → O2; `partner_id` P1 → O1", code='''
+    dict(id="T-ILL-30-a", req="LIB-ILL-30", type="Normal", input="O1 (P1, book \"Kırmızı\", shipped with barcode OUT-001), O2 (P2, requested); list and filters", expected="Order O1, O2; O1 `book_title` Kırmızı, `barcode` OUT-001; O2 `barcode` null; `status=requested` → O2; `partner_id` P1 → O1", code='''
 def TEST(client, admin, librarian, branch_a):
     p1, p2 = partner(client, admin), partner(client, admin)
     book = create_book(client, librarian, title="Kırmızı")
-    copy = add_copy(client, librarian, book["id"], home_branch_id=branch_a["id"], barcode="OUT-1")
+    copy = add_copy(client, librarian, book["id"], home_branch_id=branch_a["id"], barcode="OUT-001")
     o1 = outgoing(client, librarian, p1, book)
     ok(out_step(client, librarian, o1["id"], "ship", {"copy_id": copy["id"]}))
     o2 = outgoing(client, librarian, p2, book)
     rows = items(get(client, librarian, "ill-outgoing"))
-    assert [(x["id"], x["book_title"], x["barcode"]) for x in rows] == [(o1["id"], "Kırmızı", "OUT-1"), (o2["id"], "Kırmızı", None)]
+    assert [(x["id"], x["book_title"], x["barcode"]) for x in rows] == [(o1["id"], "Kırmızı", "OUT-001"), (o2["id"], "Kırmızı", None)]
     assert [x["id"] for x in items(get(client, librarian, "ill-outgoing", status="requested"))] == [o2["id"]]
     assert [x["id"] for x in items(get(client, librarian, "ill-outgoing", partner_id=p1["id"]))] == [o1["id"]]
 '''),
