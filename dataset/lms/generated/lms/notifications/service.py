@@ -54,6 +54,7 @@ def _create(
     event_registration_id: int | None = None,
     course_id: int | None = None,
     reserve_loan_id: int | None = None,
+    donation_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -73,6 +74,7 @@ def _create(
         event_registration_id=event_registration_id,
         course_id=course_id,
         reserve_loan_id=reserve_loan_id,
+        donation_id=donation_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -416,3 +418,14 @@ def notification_list_stmt(
     if type_ is not None:
         stmt = stmt.where(Notification.type == type_)
     return stmt
+
+
+# --- donations (LIB-DON-41) ----------------------------------------------------------
+
+
+def notify_donation(
+    db: Session, now: datetime.datetime, member_id: int, type_: str, message: str, *, donation_id: int
+) -> Notification:
+    """``donation_reviewed``, ``donation_received``, ``donation_expired`` and ``donor_level_reached``;
+    the caller composes the message."""
+    return _create(db, now, member_id, type_, message, donation_id=donation_id)

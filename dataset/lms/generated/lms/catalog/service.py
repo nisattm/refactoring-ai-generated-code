@@ -26,6 +26,8 @@ from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
 from lms.courses.usage import book_has_items
+from lms.donations.rules import keep_until
+from lms.donations.usage import book_has_items as book_has_donation_items
 from lms.ill.models import IllOutgoing
 
 
@@ -236,6 +238,8 @@ def delete_book(db: Session, now: datetime.datetime, actor: User, book: Book) ->
         raise Conflict("The book has interlibrary requests", code="IN_USE", details={"id": book.id})
     if book_has_items(db, book.id):  # a book on a reading list (module 21)
         raise Conflict("The book is on a reading list", code="IN_USE", details={"id": book.id})
+    if book_has_donation_items(db, book.id):  # LIB-DON-39
+        raise Conflict("The book is part of a donation", code="IN_USE", details={"id": book.id})
     details = {"isbn": book.isbn, "title": book.title}
     db.execute(sa.delete(BookAuthor).where(BookAuthor.book_id == book.id))
     db.delete(book)
@@ -323,8 +327,9 @@ def add_copy(
     acquired_on: datetime.date,
     shelf_location: str | None,
     holidays: Container[datetime.date],
+    donation_id: int | None = None,
 ) -> Copy:
-    """LIB-CAT-07. Also used for received purchase-order lines (LIB-PUR-06)."""
+    """LIB-CAT-07. Also used for received purchase-order lines (LIB-PUR-06) and donations (LIB-DON-19)."""
     require_active_branch(db, "home_branch_id", home_branch_id)
     if db.scalar(sa.select(Copy.id).where(Copy.barcode == barcode)) is not None:
         raise Conflict("A copy with this barcode already exists", details={"field": "barcode"})
@@ -337,6 +342,7 @@ def add_copy(
         status="available",
         acquired_on=acquired_on,
         shelf_location=shelf_location,
+        donation_id=donation_id,
     )
     db.add(copy)
     db.flush()
@@ -386,6 +392,14 @@ def withdraw_copy(db: Session, now: datetime.datetime, actor: User, copy: Copy, 
     """LIB-CAT-10."""
     if copy.status not in ("available", "damaged", "lost"):
         raise invalid_status(copy, "withdrawal")
+    if copy.donation_id is not None and copy.status != "lost":  # LIB-DON-25
+        until = keep_until(copy.acquired_on)
+        if now.date() < until:
+            raise Conflict(
+                "A donated copy cannot be withdrawn during its keep period",
+                code="DONATION_KEEP_PERIOD",
+                details={"id": copy.id, "keep_until": until.isoformat()},
+            )
     set_status(copy, "withdrawn")
     copy.withdrawn_reason = reason
     record(

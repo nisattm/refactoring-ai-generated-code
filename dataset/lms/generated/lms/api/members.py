@@ -19,6 +19,7 @@ from lms.members.models import Member
 from lms.digital.usage import member_summary as digital_summary
 from lms.equipment.usage import member_summary as equipment_summary
 from lms.courses.usage import member_summary as course_summary
+from lms.donations.usage import member_summary as donation_summary
 from lms.events.usage import member_summary as event_summary
 from lms.ill.usage import member_summary as ill_summary
 from lms.rooms.usage import member_summary as room_summary
@@ -163,4 +164,5 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
         ill=ill_summary(db, now.date(), member.id),
         events=event_summary(db, now, member.id),
         course_reserves=course_summary(db, now, member.id),
+        donations=donation_summary(db, now, member.id),
     )
