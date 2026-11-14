@@ -97,3 +97,16 @@ Same conventions as modules 15–20.
 | LIB-UI-CRS-04 | **Reserve desk.** Librarian and admin. Scan a barcode to lend, return, renew or report lost; place copies on reserve or take them off; overdue reserve loans highlighted; "Process" with its counts. |
 | LIB-UI-CRS-05 | **My courses.** Member. Own courses with reading lists, what is available now, own reserve loans with due times and fees. |
 | LIB-UI-CRS-06 | **Course reserves report.** Librarian and admin. Date range and branch; LIB-CRS-46 as a table. |
+
+## Module 22: Donations
+
+Same conventions as modules 15–21.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-DON-01 | **Donors.** Librarian and admin. List with filters and levels; create and change donors; admin merges two donors; a donor page with its history. |
+| LIB-UI-DON-02 | **Offer form.** Member (own) and staff. Branch, note and a list of titles with author, ISBN, year, condition and quantity; change or cancel while `offered`. |
+| LIB-UI-DON-03 | **Review.** Librarian and admin. The offer's items with the suggestions pre-filled; for each item accept (search the catalog for the book, quantity, value per copy) or decline with a reason. |
+| LIB-UI-DON-04 | **Receiving desk.** Librarian and admin. Scan barcodes per accepted item, see what is still expected and the `expected_by` date; "Process" with its count. |
+| LIB-UI-DON-05 | **Receipt and my donations.** Member: own donations with status and receipts. Staff: print view of a receipt. |
+| LIB-UI-DON-06 | **Donor wall and reports.** All users see the donor wall of a year; librarian and admin see the donations and donor reports. |
