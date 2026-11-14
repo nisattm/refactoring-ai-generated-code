@@ -18,6 +18,7 @@ from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.core.money import format_amount
 from lms.core.text import normalize
 from lms.digital.models import DigitalLicense
+from lms.donations.usage import pending_book_ids
 from lms.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier
 from lms.purchasing.schemas import LineIn, ReceiveLineIn
 
@@ -257,6 +258,13 @@ def submit_order(db: Session, now: datetime.datetime, actor: User, order: Purcha
     lines = order_lines(db, order.id)
     if not lines:
         raise Conflict("The purchase order has no lines", code="ORDER_EMPTY", details={"id": order.id})
+    pending = pending_book_ids(db, order.branch_id, [line.book_id for line in lines])
+    if pending:  # LIB-DON-35
+        raise Conflict(
+            "A donation for the branch is still expected for a book of the order",
+            code="DONATION_PENDING",
+            details={"book_ids": pending},
+        )
     order.status = "ordered"
     order.ordered_on = now.date()
     record(

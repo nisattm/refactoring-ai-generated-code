@@ -216,6 +216,7 @@ class CopyOut(BaseModel):
     withdrawn_reason: str | None
     reserve_item_id: int | None
     reserve_course_id: int | None
+    donation_id: int | None
 
 
 def copy_out(copy: Copy) -> CopyOut:
@@ -232,6 +233,7 @@ def copy_out(copy: Copy) -> CopyOut:
         withdrawn_reason=copy.withdrawn_reason,
         reserve_item_id=copy.reserve_item_id,
         reserve_course_id=copy.reserve_course_id,
+        donation_id=copy.donation_id,
     )
 
 

@@ -26,6 +26,7 @@ from lms.ill import requests as ill_requests
 from lms.ill.accrual import count_overdue as count_overdue_ill
 from lms.core.text import normalize
 from lms.courses import usage as course_usage
+from lms.donations import usage as donation_usage
 from lms.courses.accrual import count_overdue as count_overdue_reserve
 from lms.fines import service as fines
 from lms.fines.schemas import BLOCKING_DEBT
@@ -287,6 +288,7 @@ def deactivate_member(
     ill_requests.cancel_for_deactivation(db, now, actor, member.id)  # LIB-ILL-32
     event_lifecycle.on_member_deactivated(db, now, actor, member.id)  # LIB-EVT-40
     course_usage.on_member_deactivated(db, now, actor.id, member.id)  # LIB-CRS-39
+    donation_usage.on_member_deactivated(db, now, actor.id, member.id)  # LIB-DON-37
     return member
 
 

@@ -195,7 +195,7 @@ def test_add_copy(client, admin_h, cat, app):
     assert c == {
         "id": 1, "book_id": 1, "barcode": "AB-1234", "home_branch_id": 1, "current_branch_id": 1, "price": "50.00",
         "status": "available", "acquired_on": "2026-10-01", "shelf_location": "A1", "withdrawn_reason": None,
-        "reserve_item_id": None, "reserve_course_id": None,
+        "reserve_item_id": None, "reserve_course_id": None, "donation_id": None,
     }
     assert [a.entity_id for a in audit(app, "copy_added")] == [1]
     err(mk_copy(client, admin_h, barcode="AB-1234", branch=2), 409, "CONFLICT")

@@ -79,3 +79,5 @@ class Copy(Base):
         sa.ForeignKey("reading_list_items.id"), index=True, default=None
     )
     reserve_course_id: Mapped[int | None] = mapped_column(sa.ForeignKey("courses.id"), index=True, default=None)
+    # Module 22 (LIB-DON-19): the donation the copy was received from.
+    donation_id: Mapped[int | None] = mapped_column(sa.ForeignKey("donations.id"), index=True, default=None)

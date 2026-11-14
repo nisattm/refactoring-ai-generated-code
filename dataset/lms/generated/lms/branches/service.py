@@ -19,6 +19,7 @@ from lms.catalog.status import set_status
 from lms.courses.usage import branch_has_open_courses
 from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.donations.usage import branch_has_open_donations
 from lms.equipment.models import EquipmentItem
 from lms.events.queries import branch_has_open_events
 from lms.ill.models import IllRequest
@@ -106,7 +107,9 @@ def is_branch_in_use(db: Session, branch_id: int, now: datetime.datetime) -> boo
         return True
     if branch_has_open_events(db, branch_id, now):  # LIB-EVT-42
         return True
-    return branch_has_open_courses(db, branch_id)  # LIB-CRS-41
+    if branch_has_open_courses(db, branch_id):  # LIB-CRS-41
+        return True
+    return branch_has_open_donations(db, branch_id)  # LIB-DON-36
 
 
 def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Branch, fields: dict[str, object]) -> Branch:

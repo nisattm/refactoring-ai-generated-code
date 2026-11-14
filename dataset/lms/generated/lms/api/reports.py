@@ -18,6 +18,8 @@ from lms.reports import service
 from lms.courses import usage as course_usage
 from lms.courses.schemas import CourseReportOut
 from lms.digital import usage as digital_usage
+from lms.donations import reports as donation_reports
+from lms.donations.schemas import DonationReportOut, DonorReportOut
 from lms.digital.schemas import DigitalUsageOut, ResourceKind
 from lms.equipment import usage as equipment_usage
 from lms.ill import usage as ill_usage
@@ -240,3 +242,37 @@ def course_reserves_report(
         raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
     stmt = course_usage.report_courses(start, end, branch_id=branch_id)
     return paginate(db, stmt, page, lambda course: course_usage.report_out(db, course, start, end))
+
+
+@router.get("/donations", response_model=Page[DonationReportOut])
+def donations_report(
+    db: SessionDep,
+    _: StaffOnly,
+    page: PageDep,
+    first: Annotated[str | None, Query(alias="from")] = None,
+    to: Annotated[str | None, Query()] = None,
+) -> Page[DonationReportOut]:
+    problems: list[dict[str, str]] = []
+    start = _required_date("from", first, problems)
+    end = _required_date("to", to, problems)
+    if problems:
+        raise ValidationFailed(problems)
+    assert start is not None and end is not None
+    if start > end:
+        raise ValidationFailed.single("from", "from must not be after to")
+    if (end - start).days > 365:
+        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    return paginate_sequence(donation_reports.donation_report(db, start, end), page)
+
+
+@router.get("/donors", response_model=Page[DonorReportOut])
+def donors_report(
+    request: Request,
+    db: SessionDep,
+    _: StaffOnly,
+    page: PageDep,
+    year: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+) -> Page[DonorReportOut]:
+    if year is None:
+        year = clock_today(request.app.state.settings.clock).year
+    return paginate_sequence(donation_reports.donor_report(db, year), page)
