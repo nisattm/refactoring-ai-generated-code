@@ -71,3 +71,16 @@ Same conventions as modules 15–18.
 | LIB-UI-STF-04 | **My shifts.** Librarian and admin. Own shifts; "Check in" and "Check out" buttons in the allowed window; worked and late minutes. |
 | LIB-UI-STF-05 | **Leave.** Request leave (with the working days computed before sending), see own requests and balance; admin sees pending requests and approves or rejects them, with the shifts that will be cancelled shown before approving. |
 | LIB-UI-STF-06 | **Staff reports.** Admin. Staff hours and branch coverage reports as tables. |
+
+## Module 20: Events
+
+Same conventions as modules 15–19.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-EVT-01 | **Event calendar.** All roles. Month and list views of published events with free places and waiting list; filters by branch and kind; staff also see drafts. |
+| LIB-UI-EVT-02 | **Event page.** Details, "Register" (or "Join waiting list" with the position), "Cancel" with a warning when the cancellation is late; errors with `details`. |
+| LIB-UI-EVT-03 | **My events.** Member. Upcoming and past registrations with status, position and fee; bans with end dates. |
+| LIB-UI-EVT-04 | **Event management.** Librarian and admin. Create and change events and series (with the skipped dates shown), choose a free group room and the responsible staff (with `staff_covered`), publish, cancel; registrations list. |
+| LIB-UI-EVT-05 | **Event desk.** Librarian and admin. Today's events with check-in for each registered member; "Process" with its counts. |
+| LIB-UI-EVT-06 | **Attendance report.** Librarian and admin. Date range, branch, kind; LIB-EVT-46 as a table. |
