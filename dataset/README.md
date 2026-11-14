@@ -47,6 +47,7 @@ Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain a
 | 19 | Staff and shifts (added 2026-11-14) | 51 | 2 | 8 | 2 | shift 4 statuses; leave 4 | 2 | 6 | Complex |
 | 20 | Events (added 2026-11-14) | 47 | 2 | 8 | 2 | event 4 statuses; registration 5 | 2 | 6 | Complex |
 | 21 | Course reserves (added 2026-11-14) | 47 | 2 | 8 | 2 | course 3 statuses; item 3; reserve loan 3 | 2 | 6 | Complex |
+| 22 | Donations (added 2026-11-15) | 47 | 2 | 8 | 2 | donation 7 statuses; item 3 | 2 | 6 | Complex |
 
 Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 5, 6, 7, 13.
 
@@ -73,7 +74,8 @@ Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 
 | 19 | Staff and shifts | Staff profiles, branch hours and closures, shift planning with rest and weekly limits, attendance, leave with balances, coverage reports | Complex | 2,300 | Long check sequences (high CC), duplicated time and week arithmetic, Feature Envy (rooms, equipment, users) |
 | 20 | Events | Talks and workshops with rooms and responsible staff, weekly series, registrations with waiting lists and fees, cancellations, check-in, no-show bans, attendance report | Complex | 2,000 | Long check sequences (high CC), duplicated time and window arithmetic, Feature Envy (rooms, staff, fees, members) |
 | 21 | Course reserves | Courses with instructors and enrolled students, reading lists, copies placed on reserve at the course branch, short reserve loans with due times from branch hours, late fees by the hour or day, end-of-term processing | Complex | 2,000 | Long check sequences (high CC), duplicated time and fee arithmetic, Feature Envy (catalog, loans, staff hours, fees) |
-| | **Total** | | | **~43,500** | |
+| 22 | Donations | Donors with merging, offers by staff and members, suggested and final review of each title, receiving copies with receipts, keep period, yearly recognition levels and donor wall, reports | Complex | 2,000 | Long check sequences (high CC), duplicated money and year arithmetic, Feature Envy (catalog, purchasing, members) |
+| | **Total** | | | **~45,500** | |
 
 Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in prompts; which ones actually appear is measured after generation and recorded in [`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation).
 

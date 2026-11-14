@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–28), revised after team review.
-**Version:** 0.14 · 2026-11-14 (adds section 29, module 21 Course reserves)
+**Version:** 0.15 · 2026-11-15 (adds section 30, module 22 Donations)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -40,6 +40,7 @@ The system consists of 20 modules:
 | 19 | Staff and shifts | `lms.staff` | 27 |
 | 20 | Events | `lms.events` | 28 |
 | 21 | Course reserves | `lms.courses` | 29 |
+| 22 | Donations | `lms.donations` | 30 |
 
 ### 1.2 Out of scope
 
@@ -106,7 +107,8 @@ lms/
 ├── ill/                 Module 18
 ├── staff/               Module 19
 ├── events/              Module 20
-└── courses/             Module 21
+├── courses/             Module 21
+└── donations/           Module 22
 ```
 
 | ID | Requirement |
@@ -473,6 +475,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Staff and shifts (module 19) | – | Read branch hours, closures and open days | Own staff profile, own shifts and attendance, own leave requests; read branch hours, closures and open days | Full |
 | Events (module 20) | – | Read published events; register and cancel own registrations; read own registrations and bans | Full | Full |
 | Course reserves (module 21) | – | Read own courses and their reading lists; read own reserve loans and renew them; as a course's instructor: change its reading list and read its enrollments | Full | Full |
+| Donations (module 22) | – | Offer, change and cancel own donation offers; read own donations and receipts; read the donor wall | Full, except merging donors | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -554,9 +557,9 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. Course reserves: LIB-CRS-40. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39) and `course_reserves` (LIB-CRS-38). |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38) and `donations` (LIB-DON-38). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -602,6 +605,7 @@ API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]
 | `shelf_location` | text or null | 0–50 characters |
 | `withdrawn_reason` | text or null | Set when withdrawn |
 | `reserve_item_id` | integer or null | The reading list item while the copy is `on_reserve` (module 21, LIB-CRS-20); null otherwise |
+| `donation_id` | integer or null | The donation the copy was received from (module 22, LIB-DON-19) |
 
 ### 8.2 Copy statuses
 
@@ -640,11 +644,11 @@ Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withd
 | LIB-CAT-03 | **Create book.** `POST /api/v1/books` with `{"isbn", "title", "subtitle", "author_ids", "publisher_id", "publication_year", "language", "classification"}` returns `201` with `BookOut`. An ISBN that is already stored (after normalization) returns `409 CONFLICT`. |
 | LIB-CAT-04 | **List books.** `GET /api/v1/books` is paginated, ordered by `title` (case-insensitive) then `id`. Filters: `isbn` (normalized, exact), `author_id`, `publisher_id`, `language`, `classification_prefix`. Full-text search is module 9. |
 | LIB-CAT-05 | **Update book.** `PATCH /api/v1/books/{book_id}` accepts any subset of the create fields with the same rules. |
-| LIB-CAT-06 | **Delete.** `DELETE` returns `204`. A book that has any copy returns `409 BOOK_HAS_COPIES`. An author or publisher that is used by any book returns `409 IN_USE`. Books with interlibrary requests: LIB-ILL-40. |
+| LIB-CAT-06 | **Delete.** `DELETE` returns `204`. A book that has any copy returns `409 BOOK_HAS_COPIES`. An author or publisher that is used by any book returns `409 IN_USE`. Books with interlibrary requests: LIB-ILL-40. Donation items: LIB-DON-39. |
 | LIB-CAT-07 | **Add copy.** `POST /api/v1/books/{book_id}/copies` with `{"barcode", "home_branch_id", "price", "acquired_on", "shelf_location"}` returns `201` with the copy. `current_branch_id` = `home_branch_id`, `status` = `available`. A duplicate barcode returns `409 CONFLICT`. The new copy is then released (LIB-RES-08), so a waiting reservation can take it at once. |
-| LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). Copies on reserve: LIB-CRS-43. |
+| LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). Copies on reserve: LIB-CRS-43. Donated copies: LIB-DON-24. |
 | LIB-CAT-09 | **Update copy.** `PATCH /api/v1/copies/{copy_id}` accepts any subset of `{"price", "shelf_location", "home_branch_id"}`. `home_branch_id` can change only while the copy is `available` at its home branch; it then also changes `current_branch_id`. Otherwise `409 INVALID_COPY_STATUS`. |
-| LIB-CAT-10 | **Withdraw.** `POST /api/v1/copies/{copy_id}/withdraw` with `{"reason"}` (5–500 characters) sets `status` to `withdrawn` and stores the reason. Allowed from `available`, `damaged` and `lost` (8.2); otherwise `409 INVALID_COPY_STATUS`. |
+| LIB-CAT-10 | **Withdraw.** `POST /api/v1/copies/{copy_id}/withdraw` with `{"reason"}` (5–500 characters) sets `status` to `withdrawn` and stores the reason. Allowed from `available`, `damaged` and `lost` (8.2); otherwise `409 INVALID_COPY_STATUS`. Donated copies: LIB-DON-25. |
 | LIB-CAT-11 | **Repair.** `POST /api/v1/copies/{copy_id}/repair` is allowed only for a `damaged` copy (otherwise `409 INVALID_COPY_STATUS`). The copy is released (LIB-RES-08). |
 | LIB-CAT-12 | **Lendable book.** A book is *lendable* when it has at least one copy whose status is not `lost` or `withdrawn`. |
 
@@ -877,7 +881,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -896,7 +900,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44 and the course reserve events of LIB-CRS-44. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44 and the donation events of LIB-DON-41. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -933,7 +937,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44.
 
 ### 16.1 Endpoints and requirements
 
@@ -984,7 +988,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. |
@@ -1033,7 +1037,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | LIB-PUR-01 | **Suppliers.** `POST /api/v1/suppliers` with `{"name", "email", "phone"}` returns `201`; a duplicate name returns `409 CONFLICT`. Lists are paginated, ordered by `name`, then `id`, with filters `q` and `is_active`. `PATCH` changes any of `name`, `email`, `phone`, `is_active`. |
 | LIB-PUR-02 | **Create order.** `POST /api/v1/purchase-orders` with `{"supplier_id", "branch_id", "lines": [{"book_id", "quantity", "unit_price"}]}` (0–50 lines) returns `201` with the order (`status` `draft`, `total`). An inactive supplier returns `409 SUPPLIER_INACTIVE`. A book repeated in `lines` returns `422 VALIDATION_ERROR`. |
 | LIB-PUR-03 | **Edit draft.** `PATCH` accepts any subset of `{"supplier_id", "branch_id", "lines"}`; `lines` replaces all lines. Only a `draft` can be edited: otherwise `409 INVALID_ORDER_STATUS`. |
-| LIB-PUR-04 | **Submit.** `submit` changes `draft` to `ordered` and sets `ordered_on` = today. An order without lines returns `409 ORDER_EMPTY`; a non-draft returns `409 INVALID_ORDER_STATUS`. |
+| LIB-PUR-04 | **Submit.** `submit` changes `draft` to `ordered` and sets `ordered_on` = today. An order without lines returns `409 ORDER_EMPTY`; a non-draft returns `409 INVALID_ORDER_STATUS`. Pending donations: LIB-DON-35. |
 | LIB-PUR-05 | **Cancel.** `cancel` is allowed for `draft`, and for `ordered` when nothing has been received; then `status` becomes `cancelled`. Otherwise `409 INVALID_ORDER_STATUS`. An order referenced by a digital license: LIB-DIG-06. |
 | LIB-PUR-06 | **Receive.** `receive` with `{"lines": [{"line_id", "barcodes": ["...", ...]}]}` is allowed for `ordered` and `partially_received` (otherwise `409 INVALID_ORDER_STATUS`). An empty `lines` list, an empty `barcodes` list or a `line_id` repeated in the request returns `422 VALIDATION_ERROR`; a `line_id` that is not a line of this order returns `404 NOT_FOUND` (LIB-COM-29). For each barcode a copy is created (LIB-CAT-07) with `home_branch_id` = order branch, `price` = line `unit_price`, `acquired_on` = today; each new copy is released (LIB-RES-08). `received_quantity` increases by the number of barcodes. |
 | LIB-PUR-07 | **Receive limits.** If any line would exceed its `quantity`, the whole request is rejected with `409 RECEIVE_EXCEEDS_ORDERED` and nothing is created. A duplicate or existing barcode rejects the whole request with `409 CONFLICT`. |
@@ -1070,7 +1074,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 
 | ID | Requirement |
 | --- | --- |
-| LIB-IO-07 | `GET /api/v1/export` (admin only) returns `200` with all data in the format of 22.1. Importing an export into an empty database and exporting again MUST give the same document, provided no copy is `on_hold`, `in_transfer` or `at_partner` at export time (LIB-IO-11, LIB-ILL-39). |
+| LIB-IO-07 | `GET /api/v1/export` (admin only) returns `200` with all data in the format of 22.1. Importing an export into an empty database and exporting again MUST give the same document, provided no copy is `on_hold`, `in_transfer` or `at_partner` at export time (LIB-IO-11, LIB-ILL-39). Copies are exported without `donation_id` (LIB-DON-47). |
 | LIB-IO-08 | `GET /api/v1/export/{entity}.csv` (admin only), `entity` one of `branches`, `books`, `copies`, `members`, `loans`, returns `text/csv; charset=utf-8` in the format of 22.3 with the columns of 22.2, rows ordered by `id`. An unknown entity returns `404 NOT_FOUND`. |
 | LIB-IO-09 | Each export creates one audit entry `data_exported` with the entity (or `"all"`). |
 
@@ -1125,7 +1129,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9.
 
 ---
 
@@ -2594,6 +2598,186 @@ The **course's instructor** is the user of the member named by `instructor_id`. 
 
 ---
 
+## 30. Module 22: Donations
+
+People and organizations offer books to the library. A librarian reviews each offered title, accepts it for an existing catalog book or declines it, and receives the accepted copies into the collection. Donors get a receipt and a yearly recognition level. Package `lms.donations`. Times are local (LIB-COM-01).
+
+### 30.1 Data
+
+**Donor**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `kind` | `person` \| `organization` | |
+| `name` | text | LIB-COM-16 |
+| `email` | text or null | LIB-COM-17; unique among donors (case-insensitive) |
+| `phone` | text or null | As member phone |
+| `member_id` | integer or null | A member; at most one donor per member |
+| `anonymous` | boolean | Default `false`; hides the name on the donor wall (LIB-DON-40) |
+| `is_active` | boolean | Default `true` |
+| `merged_into_id` | integer or null | Set by LIB-DON-06 |
+| `created_at` | date-time | |
+
+**Donation**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `donor_id`, `branch_id` | integer | `branch_id`: the receiving branch, home branch of the copies |
+| `status` | `offered` \| `accepted` \| `rejected` \| `partially_received` \| `received` \| `expired` \| `cancelled` | Initially `offered` |
+| `note` | text | 0–500 characters; default `""` |
+| `items` | list | 1–30 items; total `quantity` at most 100 |
+| `offered_at`, `reviewed_at`, `received_at` | date-time or null | `received_at`: the last receiving |
+| `expected_by` | date or null | Set at review: today + 14 days |
+| `cancel_reason` | `donor_request` \| `staff_request` \| `member_deactivated` \| null | |
+| `receipt_no` | text or null | `"DN-<year>-<4 digits>"` (LIB-DON-28) |
+
+A donation is **open** while it is `offered`, `accepted` or `partially_received`.
+
+**Donation item**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `title` | text | 1–300 characters |
+| `author_text` | text | 0–200 characters; default `""` |
+| `isbn` | text or null | Normalized as LIB-CAT-02; two items of one donation MUST NOT have the same ISBN |
+| `publication_year` | integer | 1450 – current year |
+| `condition` | `new` \| `good` \| `fair` \| `poor` | |
+| `quantity` | integer | 1–20 |
+| `decision` | `pending` \| `accepted` \| `declined` | Initially `pending` |
+| `decline_reason` | `duplicate` \| `poor_condition` \| `out_of_scope` \| `too_old` \| `other` \| null | Only for `declined` |
+| `book_id` | integer or null | Only for `accepted` |
+| `accepted_quantity` | integer or null | 1 – `quantity`; only for `accepted` |
+| `estimated_value` | amount or null | Per copy, 0.01–5000.00; only for `accepted` |
+| `received_quantity` | integer | 0 – `accepted_quantity`; default 0 |
+
+**Receiving:** `id`, `donation_id`, `item_id`, `copies` (count), `value` (= `copies` × `estimated_value`), `received_on` (date). One record per item and receive request.
+
+**Copy:** the copy gets a nullable `donation_id` (the donation it was received from).
+
+### 30.2 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST`, `GET /api/v1/donors`; `GET`, `PATCH /api/v1/donors/{donor_id}` | librarian, admin | Donors |
+| `POST /api/v1/donors/{donor_id}/merge` | admin | Merge two donors |
+| `GET /api/v1/donors/{donor_id}/history` | librarian, admin | Totals of a donor |
+| `GET /api/v1/donor-wall` | all authenticated users | Recognition list |
+| `POST /api/v1/donations` | librarian, admin; member (own offer) | Offer |
+| `GET /api/v1/donations` | librarian, admin | List |
+| `GET /api/v1/donations/{donation_id}` | librarian, admin; member (own) | Read |
+| `GET /api/v1/members/{member_id}/donations` | librarian, admin; member (own) | Donations of a member |
+| `PATCH /api/v1/donations/{donation_id}` | librarian, admin; member (own) | Change an offer |
+| `POST /api/v1/donations/{donation_id}/cancel` | librarian, admin; member (own) | Cancel |
+| `GET /api/v1/donations/{donation_id}/suggestions` | librarian, admin | Suggested decisions |
+| `POST /api/v1/donations/{donation_id}/review` | librarian, admin | Decide every item |
+| `POST /api/v1/donations/{donation_id}/receive` | librarian, admin | Receive accepted copies |
+| `GET /api/v1/donations/{donation_id}/receipt` | librarian, admin; member (own) | Receipt |
+| `POST /api/v1/donations/process` | librarian, admin | Expire late donations |
+| `GET /api/v1/reports/donations` | librarian, admin | Report (section 16) |
+
+A member's **own** donations are those of the donor whose `member_id` is the member.
+
+### 30.3 Donors
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DON-01 | **Create donor.** `POST /api/v1/donors` with `{"kind", "name", "email", "phone", "member_id", "anonymous"}` returns `201` (event `donor_created`). Only `kind` and `name` are required. Values outside 30.1 → `422`; an unknown `member_id` → `422` with `details.fields`. A duplicate `email` → `409 CONFLICT` with `details.field` `"email"`; a member that already has a donor → `409 CONFLICT` with `details.field` `"member_id"`. |
+| LIB-DON-02 | **Member donor.** A donor with `member_id` MUST be of kind `person` (`422`). When a member makes an offer (LIB-DON-09) and has no donor, a donor `{kind person, name: the member's full_name, email: the member's email, member_id}` is created first; if another donor already has that email, the new donor's `email` is null. |
+| LIB-DON-03 | **List donors.** Paginated, ordered by `name` (case-insensitive), then `id`. Filters: `q` (case-insensitive substring of `name` or `email`), `kind`, `is_active`, `level` (LIB-DON-38, current year). Each donor contains `level` and `value_this_year`. |
+| LIB-DON-04 | **Change donor.** `PATCH` accepts any subset of `{"name", "email", "phone", "anonymous", "is_active"}` with the rules of LIB-DON-01 and returns `200` (event `donor_updated`). `kind` and `member_id` cannot be changed (`422`). A merged donor (`merged_into_id` set) cannot be changed: `409 DONOR_MERGED`. |
+| LIB-DON-05 | **Inactive donor.** An inactive donor cannot get new offers: `409 DONOR_INACTIVE` (LIB-DON-10). Deactivation is rejected while the donor has an open donation: `409 DONOR_HAS_OPEN_DONATIONS` with `details.donation_ids`. |
+| LIB-DON-06 | **Merge.** `POST /api/v1/donors/{donor_id}/merge` with `{"into_donor_id"}` moves every donation of the donor to the target, sets the donor `is_active` `false` and `merged_into_id`, and returns `200` with the target (event `donors_merged`). The same id → `422`; an unknown target → `404`. Checks in order (all `409`): either donor already merged → `DONOR_MERGED`; both have a `member_id` → `DONOR_MERGE_CONFLICT`. When only the merged donor has a `member_id` (or `email` and the target has none), it moves to the target. |
+| LIB-DON-07 | **Donor history.** `GET /api/v1/donors/{donor_id}/history` returns `{"donor_id", "donations", "open_donations", "copies_received", "value_received", "first_received_on", "last_received_on", "years": [{"year", "value", "level"}]}` over all donations of the donor; `years` lists the years with receivings, ascending. |
+
+### 30.4 Offers
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DON-08 | **Offer by staff.** `POST /api/v1/donations` with `{"donor_id", "branch_id", "note", "items": [{"title", "author_text", "isbn", "publication_year", "condition", "quantity"}]}` returns `201` with the donation, status `offered`, `offered_at` = now, every item `pending` (event `donation_offered`). Values outside 30.1 (including two items with the same ISBN and a total `quantity` above 100) → `422`. |
+| LIB-DON-09 | **Offer by a member.** A member sends the same body without `donor_id`; the donor is the member's own (created by LIB-DON-02 when missing). A member sending `donor_id` → `422`. |
+| LIB-DON-10 | **Offer checks.** In order (all `409`): (1) branch inactive → `BRANCH_INACTIVE`; (2) donor inactive → `DONOR_INACTIVE`; (3) for a member: member `passive` → `MEMBER_PASSIVE`; (4) the donor has 3 open donations → `DONOR_OFFER_LIMIT` with `details.limit` 3. |
+| LIB-DON-11 | **Change offer.** `PATCH /api/v1/donations/{donation_id}` accepts any subset of `{"branch_id", "note", "items"}` while the donation is `offered`; `items` replaces all items. Otherwise `409 INVALID_DONATION_STATUS` with `details.status`. A new `branch_id` is checked as in LIB-DON-10 step 1. Returns `200` (event `donation_updated`). |
+| LIB-DON-12 | **Cancel.** `POST /api/v1/donations/{donation_id}/cancel` on an `offered` or `accepted` donation sets `cancelled` with `cancel_reason` `donor_request` (member) or `staff_request` (staff) and returns `200` (event `donation_cancelled`). A member may cancel only `offered` donations; any other status → `409 INVALID_DONATION_STATUS`. |
+| LIB-DON-13 | **Read donations.** `GET /api/v1/donations` is paginated, ordered by `id` descending, with filters `status`, `donor_id`, `branch_id`, `from`, `to` (date of `offered_at`). Each donation contains its items, `items_count` and `copies_offered` (sum of `quantity`). `GET /api/v1/members/{member_id}/donations` returns the member's own donations in the same order. A member reading another donation → `404 NOT_FOUND`. |
+
+### 30.5 Review
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DON-14 | **Suggestions.** `GET /api/v1/donations/{donation_id}/suggestions` returns `{"items": [{"item_id", "decision", "decline_reason", "book_id"}]}` for the `pending` items, in item order, by the first rule that applies: (1) `condition` `poor` → `declined`, `poor_condition`; (2) `publication_year` < current year − 30 → `declined`, `too_old`; (3) an `isbn` matching a book that has at least 3 copies with the donation's branch as home branch and status not `lost` or `withdrawn` → `declined`, `duplicate`, with `book_id`; (4) an `isbn` matching a book → `accepted` with `book_id`; (5) otherwise `decision` null. |
+| LIB-DON-15 | **Suggestion examples.** Current year 2026, branch A. A `poor` item from 2020 → `poor_condition`; a `good` item from 1995 → `too_old`; one from 1996 → by its ISBN. A book with 3 copies at A (one of them `lost`) → `accepted`; with a fourth copy at A → `duplicate`. |
+| LIB-DON-16 | **Review.** `POST /api/v1/donations/{donation_id}/review` with `{"items": [{"item_id", "decision", "decline_reason", "book_id", "accepted_quantity", "estimated_value"}]}` decides every item at once and returns `200` (event `donation_reviewed`). `items` MUST name each item of the donation exactly once (`422` otherwise). `accepted` needs `book_id`, `accepted_quantity` and `estimated_value` and no `decline_reason`; `declined` needs `decline_reason` and none of the other three (`422` otherwise). An unknown `book_id` → `422` with `details.fields`. |
+| LIB-DON-17 | **Review checks.** In order (all `409`): not `offered` → `INVALID_DONATION_STATUS`; an accepted item with an `isbn` that differs from its book's ISBN → `ISBN_MISMATCH` with `details.item_id`; the branch inactive → `BRANCH_INACTIVE`. |
+| LIB-DON-18 | **Result of a review.** `reviewed_at` = now. If every item is `declined`, the donation becomes `rejected`; otherwise `accepted` with `expected_by` = today + 14 days. A member donor is notified (`donation_reviewed`; the message names the accepted and declined counts). |
+
+### 30.6 Receiving and receipts
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DON-19 | **Receive.** `POST /api/v1/donations/{donation_id}/receive` with `{"items": [{"item_id", "barcodes": [...]}]}` creates one copy per barcode (LIB-CAT-07) with the item's `book_id`, `home_branch_id` = the donation's branch, `price` = `estimated_value`, `acquired_on` = today and `donation_id`, releases each copy (LIB-RES-08) and returns `200` with the donation (event `donation_received`). |
+| LIB-DON-20 | **Receive validation.** An empty `items` or `barcodes` list or an `item_id` repeated in the request → `422`; an `item_id` that is not an item of the donation → `404 NOT_FOUND`. |
+| LIB-DON-21 | **Receive checks.** In order, for the whole request (all `409`; on any failure nothing is created): not `accepted` or `partially_received` → `INVALID_DONATION_STATUS`; an item that is not `accepted` → `ITEM_NOT_ACCEPTED` with `details.item_id`; `received_quantity` + new copies > `accepted_quantity` for an item → `RECEIVE_EXCEEDS_ACCEPTED` with `details.item_id`; a barcode repeated in the request or already stored → `CONFLICT`. |
+| LIB-DON-22 | **Status after receiving.** `received_quantity` increases; a receiving record is stored per item; `received_at` = now. When every accepted item has `received_quantity` = `accepted_quantity`, the donation becomes `received`; otherwise `partially_received`. A member donor is notified (`donation_received`, with the number of copies). |
+| LIB-DON-23 | **Receiving example.** Item I1 accepted 3 × 40.00, I2 accepted 1 × 150.00, I3 declined. Receive 2 of I1 → `partially_received`; receive 1 of I1 and 1 of I2 → `received`; value 3 × 40.00 + 150.00 = 270.00. |
+| LIB-DON-24 | **Donated copies.** `CopyOut` adds `donation_id`. LIB-CAT-08 accepts a filter `donated` (`true`/`false`). |
+| LIB-DON-25 | **Keep period.** A copy with `donation_id` cannot be withdrawn (LIB-CAT-10) before `acquired_on` + 180 days: `409 DONATION_KEEP_PERIOD` with `details.keep_until` (that date). The rule does not apply to `lost` copies. |
+| LIB-DON-26 | **Keep period example.** Copy received on 2026-11-02, `keep_until` 2027-05-01: withdrawal on 2027-04-30 → `409 DONATION_KEEP_PERIOD`; on 2027-05-01 → `200`. |
+| LIB-DON-27 | **Expiry.** `POST /api/v1/donations/process` sets every `accepted` or `partially_received` donation with `expected_by` before today to `expired` and returns `200` with `{"expired"}` (count; event `donations_processed`). A member donor is notified (`donation_expired`). Received copies stay. |
+| LIB-DON-28 | **Receipt number.** On the first receiving of a donation, `receipt_no` is set to `"DN-<year>-<n>"` where `<year>` is the current year and `<n>` the number of donations that got a receipt number in that year, including this one, with 4 digits (`"DN-2026-0001"`). |
+| LIB-DON-29 | **Receipt.** `GET /api/v1/donations/{donation_id}/receipt` returns `{"receipt_no", "donor": {"id", "name", "kind"}, "branch_id", "first_received_on", "last_received_on", "lines": [{"item_id", "title", "copies", "value_per_copy", "value"}], "total_copies", "total_value"}` with one line per item with received copies, in item order. A donation without received copies → `409 RECEIPT_NOT_AVAILABLE`. |
+
+### 30.7 Recognition
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DON-30 | **Value in a year.** The value of a donor in year `Y` is the sum of `value` of the receivings of the donor's donations with `received_on` in `Y`. |
+| LIB-DON-31 | **Levels.** By value in the year: below 500.00 → `none`; 500.00–1999.99 → `bronze`; 2000.00–9999.99 → `silver`; 10000.00 and more → `gold`. |
+| LIB-DON-32 | **Level examples.** 499.99 → `none`; 500.00 → `bronze`; 1999.99 → `bronze`; 2000.00 → `silver`; 10000.00 → `gold`. A receiving on 2026-12-31 counts for 2026, one on 2027-01-04 for 2027. |
+| LIB-DON-33 | **Level change.** When a receiving raises a member donor's level for the current year, the member is notified once per new level (`donor_level_reached`, naming the level). |
+| LIB-DON-34 | **Donor wall.** `GET /api/v1/donor-wall?year=` (default the current year; 2000–2100, otherwise `422`) returns `{"year", "donors": [{"name", "level"}], "anonymous_count"}`: donors with level not `none` in that year and not `anonymous`, ordered by level (`gold`, `silver`, `bronze`), then `name`; `anonymous_count` counts the anonymous donors with level not `none`. Merged donors do not appear; their value is part of the target's value because the donations moved. |
+
+### 30.8 Effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-DON-35 | **Purchasing.** LIB-PUR-04: submitting an order is rejected with `409 DONATION_PENDING` with `details.book_ids` (ascending) when a line's book has an accepted item with `received_quantity` < `accepted_quantity` in an `accepted` or `partially_received` donation for the order's branch (checked after `ORDER_EMPTY`). |
+| LIB-DON-36 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) when the branch has an open donation. |
+| LIB-DON-37 | **Member deactivation.** LIB-MEM-10 cancels the `offered` donations of the member's donor with `cancel_reason` `member_deactivated`. |
+| LIB-DON-38 | **Member summary.** LIB-MEM-12 also returns `"donations": {"open": <int>, "copies_received": <int>, "value_this_year": <amount>, "level": <level>}`; all zero, `"0.00"` and `none` for a member without a donor. |
+| LIB-DON-39 | **Book deletion.** A book that is the `book_id` of a donation item cannot be deleted: LIB-CAT-06 returns `409 IN_USE` (checked after `BOOK_HAS_COPIES`). |
+| LIB-DON-40 | **Anonymous donors.** An anonymous donor's name is shown only to staff; on the donor wall it is counted in `anonymous_count`. |
+| LIB-DON-41 | **Notifications.** Added to LIB-NOT-01: `donation_reviewed`, `donation_received`, `donation_expired`, `donor_level_reached`; only donors with a `member_id` are notified. Notifications get a nullable `donation_id`. Offers, changes and cancellations do not notify. |
+| LIB-DON-42 | **Audit.** Module 22 reports: `donor_created`, `donor_updated`, `donors_merged`, `donation_offered`, `donation_updated`, `donation_cancelled`, `donation_reviewed`, `donation_received`, `donations_processed`. |
+| LIB-DON-43 | **Donations report.** `GET /api/v1/reports/donations?from=&to=` (at most 366 days, `from` ≤ `to`, otherwise `422`) returns one row per branch with at least one donation offered in the range, ordered by branch `code`: `{"branch_id", "donations", "copies_offered", "copies_accepted", "copies_received", "value_received", "declined": {"duplicate", "poor_condition", "out_of_scope", "too_old", "other"}}` over the donations offered in the range. `declined` counts declined items by reason. |
+| LIB-DON-44 | **Donor report.** `GET /api/v1/reports/donors?year=` returns the donors with a value in that year, ordered by value descending, then `name`: `{"donor_id", "name", "kind", "value", "level", "copies"}` (staff see real names). |
+| LIB-DON-45 | **Statuses are final.** `rejected`, `received`, `expired` and `cancelled` donations cannot be changed, cancelled, reviewed or received: `409 INVALID_DONATION_STATUS`. |
+| LIB-DON-46 | **Prices.** Received copies keep `price` = `estimated_value`; it is used for lost and damaged books like any other price. |
+| LIB-DON-47 | **Not exported.** Donors, donations and receivings are not part of import and export (module 13); exported copies do not contain `donation_id`. |
+
+### 30.9 Error codes of module 22
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `DONOR_MERGED` | LIB-DON-04, LIB-DON-06 |
+| 409 | `DONOR_INACTIVE` | LIB-DON-05, LIB-DON-10 |
+| 409 | `DONOR_HAS_OPEN_DONATIONS` | LIB-DON-05 |
+| 409 | `DONOR_MERGE_CONFLICT` | LIB-DON-06 |
+| 409 | `DONOR_OFFER_LIMIT` | LIB-DON-10 |
+| 409 | `INVALID_DONATION_STATUS` | LIB-DON-11, LIB-DON-12, LIB-DON-17, LIB-DON-21, LIB-DON-45 |
+| 409 | `ISBN_MISMATCH` | LIB-DON-17 |
+| 409 | `ITEM_NOT_ACCEPTED` | LIB-DON-21 |
+| 409 | `RECEIVE_EXCEEDS_ACCEPTED` | LIB-DON-21 |
+| 409 | `DONATION_KEEP_PERIOD` | LIB-DON-25 |
+| 409 | `RECEIPT_NOT_AVAILABLE` | LIB-DON-29 |
+| 409 | `DONATION_PENDING` | LIB-DON-35 |
+
+`CONFLICT`, `BRANCH_INACTIVE`, `MEMBER_PASSIVE`, `IN_USE` and `BRANCH_IN_USE` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -2623,4 +2807,5 @@ The **course's instructor** is the user of the member named by `instructor_id`. 
 | Module 19: Staff and shifts | LIB-STF-01 – LIB-STF-51 | 51 |
 | Module 20: Events | LIB-EVT-01 – LIB-EVT-47 | 47 |
 | Module 21: Course reserves | LIB-CRS-01 – LIB-CRS-47 | 47 |
-| **Total** | | **536** |
+| Module 22: Donations | LIB-DON-01 – LIB-DON-47 | 47 |
+| **Total** | | **583** |
