@@ -163,7 +163,7 @@ def TEST(client, admin, librarian, branch_a):
     err(try_event(client, librarian, branch_a, sid, start="19:00", end="21:00"), 409, "OUTSIDE_BRANCH_HOURS")
     r = group_room(client, admin, branch_a)
     ok(client.patch(f"/api/v1/rooms/{r['id']}", headers=admin, json={"is_active": False}))
-    err(try_event(client, librarian, branch_a, sid, room_id=r["id"]), 409, "ROOM_INACTIVE")
+    err(try_event(client, librarian, branch_a, sid, room_id=r["id"], capacity=6), 409, "ROOM_INACTIVE")
 '''),
     dict(id="T-EVT-02-b", req="LIB-EVT-02", type="Boundary", input="Group room booked Wed 14:00–15:00; event in that room 14:00–16:00; event 15:00–17:00; another event 16:00–17:00", expected="`ROOM_NOT_AVAILABLE` with `details.booking_id`; 201; `ROOM_NOT_AVAILABLE` with `details.event_id`", code='''
 def TEST(client, admin, librarian, branch_a):
@@ -171,9 +171,9 @@ def TEST(client, admin, librarian, branch_a):
     r = group_room(client, admin, branch_a)
     m1, m2 = member(client, librarian, branch_a), member(client, librarian, branch_a)
     b = ok(post(client, librarian, "room-bookings", {"room_id": r["id"], "date": WED, "start_time": "14:00", "end_time": "15:00", "member_id": m1["id"], "participant_ids": [m2["id"]]}), 201)
-    assert err(try_event(client, librarian, branch_a, sid, room_id=r["id"]), 409, "ROOM_NOT_AVAILABLE")["details"]["booking_id"] == b["id"]
-    e = event(client, librarian, branch_a, sid, room_id=r["id"], start="15:00", end="17:00")
-    assert err(try_event(client, librarian, branch_a, sid, room_id=r["id"], start="16:00", end="17:00"), 409, "ROOM_NOT_AVAILABLE")["details"]["event_id"] == e["id"]
+    assert err(try_event(client, librarian, branch_a, sid, room_id=r["id"], capacity=6), 409, "ROOM_NOT_AVAILABLE")["details"]["booking_id"] == b["id"]
+    e = event(client, librarian, branch_a, sid, room_id=r["id"], capacity=6, start="15:00", end="17:00")
+    assert err(try_event(client, librarian, branch_a, sid, room_id=r["id"], capacity=6, start="16:00", end="17:00"), 409, "ROOM_NOT_AVAILABLE")["details"]["event_id"] == e["id"]
 '''),
     dict(id="T-EVT-02-c", req="LIB-EVT-02", type="Error", input="Inactive staff profile; inactive branch (no staff home)", expected="`STAFF_INACTIVE`; `BRANCH_INACTIVE`", code='''
 def TEST(client, admin, librarian, branch_a):
@@ -299,7 +299,7 @@ def TEST(client, admin, librarian, branch_a):
     dict(id="T-EVT-11-a", req="LIB-EVT-11", type="Normal", input="Draft event in a group room Wed 14:00–16:00; a room booking 15:00–16:00; availability; free rooms 14:00–15:00", expected="`409 ROOM_ALREADY_BOOKED` with `details.event_id`; slots 14:00–15:30 not free with `booking_id` null; the room is not listed", code='''
 def TEST(client, admin, librarian, branch_a):
     r = group_room(client, admin, branch_a)
-    e = event(client, librarian, branch_a, staff(client, admin, branch_a), room_id=r["id"])
+    e = event(client, librarian, branch_a, staff(client, admin, branch_a), room_id=r["id"], capacity=6)
     m1, m2 = member(client, librarian, branch_a), member(client, librarian, branch_a)
     body = {"room_id": r["id"], "date": WED, "start_time": "15:00", "end_time": "16:00", "member_id": m1["id"], "participant_ids": [m2["id"]]}
     assert err(post(client, librarian, "room-bookings", body), 409, "ROOM_ALREADY_BOOKED")["details"]["event_id"] == e["id"]
