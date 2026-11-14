@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from lms.core.calendar import is_working_day
 from lms.rooms.models import Room, RoomBooking
-from lms.rooms.queries import bans_in_force, is_active, involving, quota_minutes
+from lms.rooms.queries import bans_in_force, involving, is_active, quota_minutes
 from lms.rooms.rules import ACTIVE_STATUSES, format_hours, minutes_between, week_start
 from lms.rooms.schemas import RoomSummaryOut, RoomUsageOut
 

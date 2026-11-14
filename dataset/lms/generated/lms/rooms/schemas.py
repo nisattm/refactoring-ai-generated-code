@@ -6,7 +6,15 @@ import datetime
 import re
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, BeforeValidator, Field, StrictBool, StrictInt, ValidationInfo, field_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    Field,
+    StrictBool,
+    StrictInt,
+    ValidationInfo,
+    field_validator,
+)
 
 from lms.core.schemas import RequestModel
 from lms.core.timeutil import format_datetime, parse_date

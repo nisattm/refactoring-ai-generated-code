@@ -7,7 +7,14 @@ import re
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, BeforeValidator, Field, StrictBool, StrictInt, field_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    Field,
+    StrictBool,
+    StrictInt,
+    field_validator,
+)
 
 from lms.core.clock import LOCAL_TZ
 from lms.core.money import Money, format_amount

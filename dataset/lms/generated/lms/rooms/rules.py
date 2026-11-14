@@ -17,7 +17,7 @@ DEBT_BLOCK = Decimal("50.00")
 
 ACTIVE_STATUSES = ("booked", "checked_in")
 QUOTA_STATUSES = ("booked", "checked_in", "completed", "no_show")
-SYSTEM_CANCEL_REASONS = ("member_deactivated", "member_banned", "room_closed", "not_enough_participants")
+SYSTEM_CANCEL_REASONS = ("member_deactivated", "member_banned", "room_closed", "not_enough_participants", "branch_closed")
 
 
 @dataclasses.dataclass(frozen=True)

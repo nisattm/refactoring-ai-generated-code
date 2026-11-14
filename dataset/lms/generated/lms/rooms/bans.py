@@ -14,7 +14,11 @@ from lms.notifications.service import notify_room
 from lms.rooms.lifecycle import release_member
 from lms.rooms.models import RoomBan, RoomBooking
 from lms.rooms.queries import bans_in_force
-from lms.rooms.rules import INCIDENT_BAN_DAYS, INCIDENT_BAN_THRESHOLD, INCIDENT_WINDOW_DAYS
+from lms.rooms.rules import (
+    INCIDENT_BAN_DAYS,
+    INCIDENT_BAN_THRESHOLD,
+    INCIDENT_WINDOW_DAYS,
+)
 
 
 def get_ban_or_404(db: Session, ban_id: int) -> RoomBan:
