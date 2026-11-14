@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
-**Status:** Complete draft (sections 1–26), revised after team review.
-**Version:** 0.11 · 2026-11-07 (adds section 26, module 18 Interlibrary loans)
+**Status:** Complete draft (sections 1–27), revised after team review.
+**Version:** 0.12 · 2026-11-14 (adds section 27, module 19 Staff and shifts)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -13,9 +13,9 @@ The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119. Each testa
 
 ### 1.1 System overview
 
-The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, study rooms, equipment loans, digital resources and interlibrary loans. It is used through a REST API.
+The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, study rooms, equipment loans, digital resources, interlibrary loans and staff shifts. It is used through a REST API.
 
-The system consists of 18 modules:
+The system consists of 19 modules:
 
 | # | Module | Package | Section |
 | --- | --- | --- | --- |
@@ -37,6 +37,7 @@ The system consists of 18 modules:
 | 16 | Equipment loans | `lms.equipment` | 24 |
 | 17 | Digital resources | `lms.digital` | 25 |
 | 18 | Interlibrary loans | `lms.ill` | 26 |
+| 19 | Staff and shifts | `lms.staff` | 27 |
 
 ### 1.2 Out of scope
 
@@ -100,7 +101,8 @@ lms/
 ├── rooms/               Module 15
 ├── equipment/           Module 16
 ├── digital/             Module 17
-└── ill/                 Module 18
+├── ill/                 Module 18
+└── staff/               Module 19
 ```
 
 | ID | Requirement |
@@ -424,7 +426,7 @@ API representation of a user (`UserOut`): `{"id", "email", "full_name", "role", 
 | LIB-AUTH-18 | `GET /api/v1/users` returns a paginated list of `UserOut`, ordered by `id`. Optional filters: `role` (one of the three roles), `is_active` (`true`/`false`), `q` (case-insensitive substring of `email` or `full_name`). Only `admin` may call it. |
 | LIB-AUTH-19 | `GET /api/v1/users/{user_id}` returns `UserOut`. An `admin` may read any user; an unknown id returns `404 NOT_FOUND`. Any other user may read only their own record; for them every other id returns `403 FORBIDDEN`, whether or not it exists. For non-admins this ownership check is an exception to LIB-COM-28: it comes before the existence check. |
 | LIB-AUTH-20 | `PATCH /api/v1/users/{user_id}` accepts any subset of `{"full_name", "role", "is_active"}` and returns `200` with `UserOut`. Only `admin` may call it. `role: "member"` in the request returns `422 VALIDATION_ERROR`. Changing the role of a user whose role is `member` returns `409 ROLE_CHANGE_NOT_ALLOWED`. |
-| LIB-AUTH-21 | Setting `is_active` to `false` revokes all sessions of that user. Setting it to `true` also clears `locked_until` and `failed_login_count`. |
+| LIB-AUTH-21 | Setting `is_active` to `false` revokes all sessions of that user (staff profiles: LIB-STF-06, LIB-STF-48). Setting it to `true` also clears `locked_until` and `failed_login_count`. |
 | LIB-AUTH-22 | **Last administrator.** A change that would leave no active `admin` (deactivating or demoting the last active admin) MUST be rejected with `409 LAST_ADMIN`. An admin MUST NOT deactivate their own account: `409 CANNOT_DEACTIVATE_SELF`. |
 | LIB-AUTH-23 | `POST /api/v1/users/{user_id}/reset-password` with `{"new_password": "..."}` returns `204`. Only `admin` may call it. It revokes all sessions of that user and clears `locked_until` and `failed_login_count`. |
 
@@ -464,6 +466,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Equipment loans (module 16) | – | Read types and availability; reserve and cancel own reservations; extend own loans; read own loans, reservations and trainings | Full, except creating and changing types and items and retiring items | Full |
 | Digital resources (module 17) | – | Read resources and calendars; borrow, return and renew own e-book loans; own holds and database sessions | Full, except licenses: read only | Full |
 | Interlibrary loans (module 18) | – | Create, read and cancel own incoming requests; ask for a renewal | Full, except partners: read only | Full |
+| Staff and shifts (module 19) | – | Read branch hours, closures and open days | Own staff profile, own shifts and attendance, own leave requests; read branch hours, closures and open days | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -687,7 +690,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | LIB-LOAN-06 | **Debt boundary.** Total debt 49.99 TL allows lending; 50.00 TL does not. |
 | LIB-LOAN-07 | **Renew.** `POST /api/v1/loans/{loan_id}/renew` returns `200` with `LoanOut`. Checks in order (all `409`): loan not `open` → `LOAN_NOT_OPEN`; member `passive` → `MEMBER_PASSIVE`; membership expired → `MEMBERSHIP_EXPIRED`; loan overdue → `LOAN_OVERDUE`; `renewal_count` ≥ `max_renewals` → `RENEWAL_LIMIT_REACHED`; the book has an active reservation (status `waiting`, `in_transit` or `ready`) by any member → `BOOK_RESERVED`. |
 | LIB-LOAN-08 | **Renewed due date.** New `due_date` = the next working day on or after today + `loan_period_days` (the new period starts on the renewal day). Because today is never before the previous loan or renewal date, the new due date is never earlier than the current one. `renewal_count` increases by 1. A renewal on the due date itself is allowed (not overdue). Examples: student loan due 2026-11-16, renewed on 2026-11-10 → due 2026-11-24. Student loan due 2026-06-01, renewed on 2026-05-15 → 2026-05-29 is a holiday → due 2026-06-01 (unchanged); the renewal still counts. |
-| LIB-LOAN-09 | **Return.** `POST /api/v1/loans/{loan_id}/return` with `{"branch_id", "condition": "good" \| "damaged", "damage_fee"}` closes the loan (`status` `returned`, `returned_on` = today, `return_branch_id`, `condition_on_return`, `late_days`) and returns `200` with `LoanOut`. Business checks in order: loan not `open` → `409 LOAN_NOT_OPEN`; return branch inactive → `409 BRANCH_INACTIVE`; `damage_fee` above the copy's `price` → `409 DAMAGE_FEE_EXCEEDS_PRICE`. The book may be returned at any active branch. |
+| LIB-LOAN-09 | **Return.** `POST /api/v1/loans/{loan_id}/return` with `{"branch_id", "condition": "good" \| "damaged", "damage_fee"}` closes the loan (`status` `returned`, `returned_on` = today, `return_branch_id`, `condition_on_return`, `late_days`) and returns `200` with `LoanOut`. Business checks in order: loan not `open` → `409 LOAN_NOT_OPEN`; return branch inactive → `409 BRANCH_INACTIVE`; `damage_fee` above the copy's `price` → `409 DAMAGE_FEE_EXCEEDS_PRICE`. The book may be returned at any active branch that is not closed today (LIB-STF-16). |
 | LIB-LOAN-10 | **Late fee at return.** `late_days` = working days between `due_date` and `returned_on` (LIB-COM-10). If `late_days` > 0, a late fee is created (LIB-FEE-02). Example: student loan due 2026-11-16 (Mon), returned 2026-11-20 (Fri) → 4 late days → 8.00 TL. |
 | LIB-LOAN-11 | **Damaged return.** With `condition` `damaged`, `damage_fee` is required and MUST be > 0.00 (`422 VALIDATION_ERROR` otherwise) and ≤ the copy's `price` (`409 DAMAGE_FEE_EXCEEDS_PRICE` otherwise, LIB-LOAN-09). A damage fee is created (LIB-FEE-03) and the copy's status becomes `damaged` at the return branch (`current_branch_id` = `branch_id`). With `condition` `good`, `damage_fee` MUST be absent or null (`422 VALIDATION_ERROR`). |
 | LIB-LOAN-12 | **Copy after a good return.** The copy's `current_branch_id` becomes the return branch and the copy is released (LIB-RES-08). |
@@ -920,7 +923,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44.
 
 ### 16.1 Endpoints and requirements
 
@@ -971,7 +974,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. |
@@ -1112,7 +1115,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9.
 
 ---
 
@@ -1224,7 +1227,7 @@ Members book study rooms of a branch for short periods. Package `lms.rooms`. Roo
 | `created_at` | date-time | From the clock |
 | `created_by` | integer | User id of the creator |
 | `checked_in_at`, `closed_at` | date-time or null | Set by check-in, and by completion, cancellation or no-show |
-| `cancel_reason` | text or null | `member_request`, `staff_request`, `member_deactivated`, `member_banned`, `room_closed`, `not_enough_participants` |
+| `cancel_reason` | text or null | `member_request`, `staff_request`, `member_deactivated`, `member_banned`, `room_closed`, `not_enough_participants`, `branch_closed` (LIB-STF-11) |
 | `late_cancellation` | boolean | `true` when cancelled with reason `member_request` less than 2 hours before the start (LIB-ROOM-24) |
 
 A booking's *interval* is from `date` `start_time` to `date` `end_time`; its *duration* is `end_time` − `start_time`. *Active* bookings have status `booked` or `checked_in`. A booking *counts for quota* when its status is `booked`, `checked_in`, `completed` or `no_show`. *Persons* of a booking are the organizer and the participants.
@@ -1292,7 +1295,7 @@ Weeks run Monday to Sunday. Hours are summed over the durations of bookings that
 | LIB-ROOM-04 | **Update room.** `PATCH /api/v1/rooms/{room_id}` accepts any subset of `{"name", "features", "capacity", "min_participants", "opens_at", "closes_at", "is_active"}` and returns `200`. The resulting room MUST satisfy 23.1 (`422 VALIDATION_ERROR`, checked on the combined values). `kind` cannot be changed. |
 | LIB-ROOM-05 | **Changes that conflict with bookings.** A change of `opens_at` or `closes_at` that would leave an active booking with a future start outside the new hours returns `409 ROOM_HAS_BOOKINGS` with `details.booking_ids` (ascending). A reduction of `capacity` below, or an increase of `min_participants` above, the number of persons of an active booking with a future start returns the same error. Bookings are not changed by a rejected update. |
 | LIB-ROOM-06 | **Deactivate room.** `PATCH` with `{"is_active": false}` cancels every `booked` booking of the room whose start is after now with reason `room_closed` (LIB-ROOM-26), in order of `date`, `start_time`, then `id`, and returns `200` with the room. A `checked_in` booking is not affected and ends normally. An inactive room cannot be booked (`409 ROOM_INACTIVE`) and does not appear in `free` (LIB-ROOM-09). |
-| LIB-ROOM-07 | **Open slots.** A room is open on a date `d` when `d` is a working day (LIB-COM-05) and the room and its branch are active. On an open date the room has 30-minute slots from `opens_at` to `closes_at`. Example: `opens_at` `09:00`, `closes_at` `11:00` → slots 09:00, 09:30, 10:00, 10:30. |
+| LIB-ROOM-07 | **Open slots.** A room is open on a date `d` when `d` is a working day (LIB-COM-05) and the room and its branch are active and the branch has no closure on `d` (LIB-STF-15). On an open date the room has 30-minute slots from `opens_at` to `closes_at`. Example: `opens_at` `09:00`, `closes_at` `11:00` → slots 09:00, 09:30, 10:00, 10:30. |
 | LIB-ROOM-08 | **Availability.** `GET /api/v1/rooms/{room_id}/availability?date=YYYY-MM-DD` returns `200` with `{"room_id", "date", "open": <bool>, "slots": [{"start": "HH:MM", "end": "HH:MM", "free": <bool>, "booking_id": <int or null>}]}`. On a date that is not open, `open` is `false` and `slots` is empty. A slot is not free when an active booking's interval covers it. `booking_id` is shown to librarians and admins and to persons of that booking; for other members it is null. A missing `date` returns `422 VALIDATION_ERROR`. Not paginated. |
 | LIB-ROOM-09 | **Free rooms.** `GET /api/v1/rooms/free?date=&start_time=&end_time=` returns a paginated list of active rooms that are open on `date` and have every slot in the interval free, ordered like LIB-ROOM-03. Filters: `branch_id`, `kind`, `min_capacity`, `feature`. Times follow 23.1 (`422 VALIDATION_ERROR` otherwise). A room whose hours do not contain the whole interval is not listed. |
 
@@ -1321,7 +1324,7 @@ Weeks run Monday to Sunday. Hours are summed over the durations of bookings that
 | LIB-ROOM-23 | **Cancel after start.** A `booked` booking whose start has passed but which is not yet due as a no-show (now ≤ start + 15 minutes) can still be cancelled; it counts as a late cancellation if the organizer cancels. A booking due as a no-show (LIB-ROOM-28) cannot be cancelled: `409 BOOKING_NOT_ACTIVE`. |
 | LIB-ROOM-24 | **Late cancellation.** A cancellation with reason `member_request` less than 2 hours before the start sets `late_cancellation` to `true`. Exactly 2 hours before the start is not late. Example: booking 14:00–15:00; cancelled at 12:00 → not late; at 12:01 → late. No fee is created for a late cancellation; it counts for bans (LIB-ROOM-31). |
 | LIB-ROOM-25 | **Cancellation and quota.** Cancelled bookings never count for quota, late or not. |
-| LIB-ROOM-26 | **System cancellations.** Cancellations with reasons `member_deactivated`, `member_banned`, `room_closed` and `not_enough_participants` set `closed_at`, never set `late_cancellation`, and notify every person of the booking (event `room_booking_cancelled`). |
+| LIB-ROOM-26 | **System cancellations.** Cancellations with reasons `member_deactivated`, `member_banned`, `room_closed`, `not_enough_participants` and `branch_closed` set `closed_at`, never set `late_cancellation`, and notify every person of the booking (event `room_booking_cancelled`). |
 | LIB-ROOM-27 | **Check-in.** `POST /api/v1/room-bookings/{booking_id}/check-in` sets a `booked` booking to `checked_in` and `checked_in_at` = now, and returns `200`. Allowed from 10 minutes before the start until 15 minutes after the start, both inclusive: earlier → `409 CHECK_IN_TOO_EARLY` with `details.earliest` (date-time); later (the booking is due as a no-show) → `409 CHECK_IN_TOO_LATE`. Another state returns `409 BOOKING_NOT_ACTIVE`. Example: start 10:00 → check-in from 09:50:00 to 10:15:00. |
 | LIB-ROOM-28 | **No-show.** A `booked` booking with now > start + 15 minutes is a no-show. `POST /api/v1/room-bookings/process` marks every such booking `no_show` with `closed_at` = now, in order of `date`, `start_time`, then `id`, and applies LIB-ROOM-30 and LIB-ROOM-31 to each. It also marks every `checked_in` booking with now ≥ end as `completed` with `closed_at` = now. It returns `200` with `{"no_shows": <count>, "completed": <count>, "bans": <count>}`. A `booked` booking that is due as a no-show but not yet processed keeps status `booked`, but every other rule treats it as a no-show: it is not active, so it does not block its room for new bookings (LIB-ROOM-12 (13)) and does not make its persons double-booked (14); it counts for quota; it cannot be checked in (LIB-ROOM-27) or cancelled (LIB-ROOM-23). Its fee and ban are created only when it is processed. |
 | LIB-ROOM-29 | **Check-out.** `POST /api/v1/room-bookings/{booking_id}/check-out` on a `checked_in` booking sets `status` `completed`, `closed_at` = now and `end_time` = now rounded up to the next full or half hour, but not earlier than `start_time` + 30 minutes and not later than the old `end_time`. It returns `200`. The freed slots become free; quota counts the new duration. Another state returns `409 BOOKING_NOT_ACTIVE`. Example: 10:00–12:00, check-out at 10:41 → `end_time` `11:00`, duration 60 minutes. |
@@ -1390,7 +1393,7 @@ The library lends devices (chargers, tablets, laptops, cameras and others) for s
 
 | ID | Requirement |
 | --- | --- |
-| LIB-EQ-01 | **Desk hours.** The equipment desk of every active branch is open on working days (LIB-COM-05) from 08:00 to 20:00. "Desk open at `t`" means: the local date of `t` is a working day and 08:00 ≤ local time of `t` < 20:00. |
+| LIB-EQ-01 | **Desk hours.** The equipment desk of every active branch is open on working days (LIB-COM-05) from 08:00 to 20:00. "Desk open at `t`" means: the local date of `t` is a working day and 08:00 ≤ local time of `t` < 20:00. Branch hours and closures: LIB-STF-09. |
 | LIB-EQ-02 | **Next desk opening.** For a date-time `t` at which the desk is closed: 08:00 of the date of `t` if that date is a working day and `t` is before 08:00; otherwise 08:00 of the first working day after the date of `t`. Examples: Friday 2026-11-06 20:30 → Monday 2026-11-09 08:00; Tuesday 2026-11-03 07:00 → Tuesday 08:00; Thursday 2026-10-29 (holiday) 10:00 → Friday 2026-10-30 08:00. |
 
 ### 24.2 Data
@@ -1458,7 +1461,7 @@ API representation (`EquipmentLoanOut`): all fields except `hourly_late_fee`, pl
 | `status` | `booked` \| `collected` \| `cancelled` \| `expired` | Initially `booked` |
 | `loan_id` | integer or null | Set when collected |
 | `created_at`, `closed_at` | date-time | `closed_at` null while `booked` |
-| `cancel_reason` | text or null | `member_request`, `staff_request`, `member_deactivated`, `type_inactive` |
+| `cancel_reason` | text or null | `member_request`, `staff_request`, `member_deactivated`, `type_inactive`, `branch_closed` (LIB-STF-11) |
 
 A reservation *holds* an item of its type at its branch during the interval [`starts_at` − 15 minutes, `ends_at`) while it is `booked` and not expired (LIB-EQ-31). An open loan *needs* its item during [`loaned_at`, `due_at` + 15 minutes); an overdue open loan needs it at every moment until it is closed. Intervals include their start and exclude their end.
 
@@ -1556,7 +1559,7 @@ A reservation *holds* an item of its type at its branch during the interval [`st
 | LIB-EQ-35 | **Member deactivation.** LIB-MEM-10 also returns `409 MEMBER_HAS_OPEN_LOANS` when the member has an open equipment loan, and cancels the member's `booked` equipment reservations with reason `member_deactivated`. |
 | LIB-EQ-36 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) if an equipment item that is not `retired` or `lost` belongs to the branch. |
 | LIB-EQ-37 | **Member summary.** LIB-MEM-12 also returns `"equipment": {"open_loans": <int>, "overdue_loans": <int>, "booked_reservations": <int>}`. `borrowing.reasons` includes `MEMBER_HAS_OVERDUE` also for an overdue equipment loan (LIB-EQ-14). |
-| LIB-EQ-38 | **Notifications.** Added to LIB-NOT-01: `equipment_loan_created`, `equipment_loan_returned`, `equipment_loan_lost`, `equipment_reservation_cancelled` (reasons `staff_request`, `member_deactivated`, `type_inactive`), `equipment_reservation_expired`, plus `equipment_overdue` (LIB-EQ-32). Messages contain the type name, the asset tag (loans) and `due_at` or `starts_at`. Notifications get a nullable `equipment_loan_id` and `equipment_reservation_id`. Fees created by this module also notify as `fee_created`. |
+| LIB-EQ-38 | **Notifications.** Added to LIB-NOT-01: `equipment_loan_created`, `equipment_loan_returned`, `equipment_loan_lost`, `equipment_reservation_cancelled` (reasons `staff_request`, `member_deactivated`, `type_inactive`, `branch_closed`), `equipment_reservation_expired`, plus `equipment_overdue` (LIB-EQ-32). Messages contain the type name, the asset tag (loans) and `due_at` or `starts_at`. Notifications get a nullable `equipment_loan_id` and `equipment_reservation_id`. Fees created by this module also notify as `fee_created`. |
 | LIB-EQ-39 | **Audit.** Module 16 reports to the audit log: `equipment_type_created`, `equipment_type_updated`, `equipment_item_created`, `equipment_item_updated`, `equipment_item_retired`, `equipment_item_repaired`, `equipment_training_recorded`, `equipment_loan_created`, `equipment_loan_extended`, `equipment_loan_returned`, `equipment_loan_lost`, `equipment_reservation_created`, `equipment_reservation_cancelled`, `equipment_reservation_expired`, `equipment_processed`. |
 | LIB-EQ-40 | **Usage report.** `GET /api/v1/reports/equipment-usage?from=&to=&branch_id=` (dates inclusive, `from` ≤ `to`, at most 366 days; otherwise `422`) returns a paginated list ordered by type `code`, one item per type (all types, also inactive ones and those without activity): `{"type_id", "type_code", "loans", "late_returns", "late_hours", "damaged_returns", "lost", "reservations", "expired_reservations", "fees_created"}`. `loans`: loans by the date of `loaned_at`; `late_returns`, `late_hours` and `damaged_returns`: returned loans by the date of `returned_at` with `late_hours` > 0 (count and sum of `late_hours`) and with `return_condition` `damaged`; `lost`: loans reported lost on a date in the range; `reservations` (any status) and `expired_reservations`: by the date of `starts_at`; `fees_created`: sum (amount) of the fees of the type's loans with `created_on` in the range. With `branch_id`, only loans and reservations of that branch. |
 | LIB-EQ-41 | **Not exported.** Equipment data is not part of import and export (module 13). |
@@ -1989,6 +1992,217 @@ A request is **open** in the statuses `requested`, `sent`, `rejected`, `received
 
 ---
 
+## 27. Module 19: Staff and shifts
+
+The library plans the work of its librarians and administrators: staff profiles, branch opening hours, branch closure days, shifts, attendance and leave. Package `lms.staff`. Dates and times are local (LIB-COM-01); times are `HH:MM` on minutes `00` or `30`.
+
+### 27.1 Data
+
+**Staff profile**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `user_id` | integer | An active user with role `librarian` or `admin`; one profile per user |
+| `home_branch_id` | integer | Active branch |
+| `employment` | `full_time` \| `part_time` | |
+| `weekly_hours` | integer | `full_time`: 40; `part_time`: 10–30 |
+| `annual_leave_days` | integer | 0–30; default 14 (`full_time`) or 7 (`part_time`) |
+| `started_on` | date | Not after today |
+| `is_active` | boolean | Default `true` |
+
+**Branch hours** (one record per branch, created with default values when first read)
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `branch_id` | integer | |
+| `opens_at`, `closes_at` | time | Default `08:00` and `20:00`; `opens_at` < `closes_at`; at least 4 hours |
+| `min_staff` | integer | 1–10, default 1: staff needed at every open moment (LIB-STF-46) |
+
+**Closure** (a day on which a branch is closed although it is a working day)
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `branch_id` | integer | Active branch |
+| `date` | date | A working day after today |
+| `reason` | text | 1–200 characters |
+| `created_by` | integer | User id |
+
+A branch is **open on a date `d`** when it is active, `d` is a working day (LIB-COM-05) and the branch has no closure on `d`. On an open date its **open hours** are [`opens_at`, `closes_at`).
+
+**Shift**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `staff_id`, `branch_id` | integer | |
+| `date` | date | |
+| `start_time`, `end_time` | time | Minutes `00`/`30`; 2–10 hours long |
+| `status` | `planned` \| `cancelled` \| `completed` \| `missed` | Initially `planned` |
+| `cancel_reason` | text or null | `staff_request`, `leave`, `branch_closed`, `staff_deactivated` |
+| `checked_in_at`, `checked_out_at` | date-time or null | LIB-STF-30, LIB-STF-31 |
+| `late_minutes`, `worked_minutes` | integer or null | Set at check-in and check-out |
+
+A shift **counts** while its status is `planned` or `completed`. Shift hours = (`end_time` − `start_time`) in hours (a half hour is 0.5).
+
+**Leave request**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `staff_id` | integer | |
+| `kind` | `annual` \| `sick` \| `unpaid` | |
+| `from_date`, `to_date` | date | `from_date` ≤ `to_date`; at most 30 calendar days |
+| `days` | integer | Working days (LIB-COM-05) from `from_date` to `to_date`, both included |
+| `note` | text | 0–500 characters |
+| `status` | `pending` \| `approved` \| `rejected` \| `cancelled` | Initially `pending` |
+| `decided_by`, `decided_at`, `decision_note` | | Set by LIB-STF-38 |
+| `created_at` | date-time | |
+
+### 27.2 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/staff`, `PATCH /api/v1/staff/{staff_id}` | admin | Create, change, deactivate |
+| `GET /api/v1/staff`, `GET /api/v1/staff/{staff_id}` | admin; librarian (own profile, single) | Read |
+| `GET /api/v1/staff/me` | librarian, admin | Own profile |
+| `GET /api/v1/branches/{branch_id}/hours`, `PUT /api/v1/branches/{branch_id}/hours` | all authenticated users; admin (`PUT`) | Opening hours |
+| `POST /api/v1/branches/{branch_id}/closures`, `DELETE /api/v1/closures/{closure_id}` | admin | Add, remove a closure |
+| `GET /api/v1/closures` | all authenticated users | Closures |
+| `GET /api/v1/branches/{branch_id}/open-days?from=&to=` | all authenticated users | Open dates and hours |
+| `POST /api/v1/shifts`, `PATCH /api/v1/shifts/{shift_id}` | admin | Plan, change |
+| `POST /api/v1/shifts/{shift_id}/cancel` | admin | Cancel |
+| `GET /api/v1/shifts` | admin; librarian (own) | Read |
+| `POST /api/v1/shifts/{shift_id}/check-in`, `/check-out` | the shift's staff member | Attendance |
+| `POST /api/v1/shifts/copy-week` | admin | Copy a week's plan |
+| `POST /api/v1/leave-requests` | librarian, admin (own) | Request leave |
+| `GET /api/v1/leave-requests` | admin; librarian (own) | Read |
+| `POST /api/v1/leave-requests/{leave_id}/approve`, `/reject` | admin | Decide |
+| `POST /api/v1/leave-requests/{leave_id}/cancel` | owner, admin | Cancel |
+| `GET /api/v1/staff/{staff_id}/leave-balance?year=` | admin; librarian (own) | Leave balance |
+| `POST /api/v1/staff/process` | admin | Mark missed shifts |
+| `GET /api/v1/reports/staff-hours`, `GET /api/v1/reports/branch-coverage` | admin | Reports (section 16) |
+
+"Own" means the staff profile whose `user_id` is the authenticated user. A librarian without a staff profile who calls an "own" endpoint receives `409 NOT_STAFF`; reading another staff member's data returns `403 FORBIDDEN`. Members receive `403` for every endpoint of this module except the three "all authenticated users" reads.
+
+### 27.3 Staff profiles
+
+| ID | Requirement |
+| --- | --- |
+| LIB-STF-01 | **Create profile.** `POST /api/v1/staff` with `{"user_id", "home_branch_id", "employment", "weekly_hours", "annual_leave_days", "started_on"}` returns `201` (event `staff_created`). `weekly_hours` and `annual_leave_days` MAY be omitted (defaults of 27.1; `weekly_hours` of a `part_time` profile has no default: `422`). Values outside 27.1 → `422`. |
+| LIB-STF-02 | **Profile checks.** In order (all `409`): the user does not exist → `404 NOT_FOUND`; the user is inactive → `USER_INACTIVE`; the user's role is `member` → `NOT_STAFF_ROLE`; the user already has a profile → `CONFLICT` with `details.field` `"user_id"`; `home_branch_id` inactive → `BRANCH_INACTIVE`. |
+| LIB-STF-03 | **Change profile.** `PATCH` accepts any subset of `{"home_branch_id", "employment", "weekly_hours", "annual_leave_days", "is_active"}` and returns `200` (event `staff_updated`). The combined values MUST satisfy 27.1 (`422`). A lower `weekly_hours` does not change planned shifts. |
+| LIB-STF-04 | **Deactivate.** `{"is_active": false}` cancels the profile's `planned` shifts that start after now with reason `staff_deactivated` and its `pending` leave requests (status `cancelled`). An inactive profile cannot get shifts or request leave: `409 STAFF_INACTIVE`. |
+| LIB-STF-05 | **Read profiles.** `GET /api/v1/staff` is paginated, ordered by `id`, with filters `home_branch_id`, `employment`, `is_active`. Each item contains the profile and `full_name` and `email` of the user. `GET /api/v1/staff/me` returns the own profile or `409 NOT_STAFF`. |
+| LIB-STF-06 | **Deactivated user.** When a user with a profile is deactivated (LIB-AUTH), the profile is deactivated as in LIB-STF-04. |
+
+### 27.4 Opening hours and closures
+
+| ID | Requirement |
+| --- | --- |
+| LIB-STF-07 | **Read hours.** `GET /api/v1/branches/{branch_id}/hours` returns `200` with `{"branch_id", "opens_at", "closes_at", "min_staff"}`; a branch without a record returns the defaults. Unknown branch → `404`. |
+| LIB-STF-08 | **Set hours.** `PUT /api/v1/branches/{branch_id}/hours` with `{"opens_at", "closes_at", "min_staff"}` returns `200` (event `branch_hours_updated`). Values outside 27.1 → `422`. A change that would leave a counting shift with a date after today outside the new hours → `409 SHIFTS_OUTSIDE_HOURS` with `details.shift_ids` (ascending); nothing is changed. |
+| LIB-STF-09 | **Hours and the equipment desk.** The equipment desk of a branch (LIB-EQ-01) is open at `t` when the branch is open on the date of `t` and `opens_at` ≤ local time of `t` < `closes_at`. With the default hours this is LIB-EQ-01 unchanged. LIB-EQ-02 uses the branch's hours and open dates. |
+| LIB-STF-10 | **Add closure.** `POST /api/v1/branches/{branch_id}/closures` with `{"date", "reason"}` returns `201` (event `branch_closure_added`). Checks (all `409` unless stated): branch inactive → `BRANCH_INACTIVE`; `date` not after today → `422`; `date` not a working day → `NOT_A_WORKING_DAY`; a closure of the branch on that date exists → `CONFLICT`. |
+| LIB-STF-11 | **Effects of a closure.** On creation, in this order: (1) counting `planned` shifts of the branch on that date are cancelled with reason `branch_closed`; (2) `booked` room bookings in rooms of the branch on that date are cancelled with reason `branch_closed` (LIB-ROOM-26, notifies the persons); (3) `booked` equipment reservations of the branch with `starts_at` on that date are cancelled with reason `branch_closed` (notifies the member). The `201` response is the closure (`id`, `branch_id`, `date`, `reason`, `created_by`) plus the counts `cancelled_shifts`, `cancelled_room_bookings` and `cancelled_equipment_reservations`. |
+| LIB-STF-12 | **Remove closure.** `DELETE /api/v1/closures/{closure_id}` returns `204` (event `branch_closure_removed`) when the date is after today; otherwise `409 CLOSURE_IN_PAST`. Cancelled shifts and bookings are not restored. |
+| LIB-STF-13 | **Read closures.** `GET /api/v1/closures` is paginated, ordered by `date`, then `branch_id`, with filters `branch_id`, `from`, `to` (inclusive). |
+| LIB-STF-14 | **Open days.** `GET /api/v1/branches/{branch_id}/open-days?from=&to=` (at most 62 days, `from` ≤ `to`, otherwise `422`) returns `200` with `{"branch_id", "days": [{"date", "open": <bool>, "reason": <text or null>, "opens_at": <time or null>, "closes_at": <time or null>}]}`, one item per date. `reason` is `"weekend"`, `"holiday"`, `"closure"` (with the closure reason after a colon, e.g. `"closure: Sayım"`) or null when open. |
+| LIB-STF-15 | **Closures and rooms.** A room is not open on a closure date of its branch (LIB-ROOM-07); a booking on such a date returns `409 ROOM_CLOSED` (LIB-ROOM-12) and LIB-ROOM-08 shows `open` false. |
+| LIB-STF-16 | **Closures and book returns.** A book return (LIB-LOAN-09) at a branch that has a closure today returns `409 BRANCH_CLOSED_TODAY` (checked right after `BRANCH_INACTIVE`); the book can be returned at another branch. Due dates, overdue status and late fees of loans are not changed by closures. |
+| LIB-STF-17 | **Closure examples.** Closure of branch A on Wed 2026-11-11: open-days 2026-11-09 to 2026-11-15 shows Mon, Tue, Thu, Fri open, Wed `"closure: …"`, Sat and Sun `"weekend"`. On Wed 2026-11-11 a return at branch A → `409 BRANCH_CLOSED_TODAY`, at branch B → `200`; a room of branch A shows `open` false for that date. |
+
+### 27.5 Shifts
+
+| ID | Requirement |
+| --- | --- |
+| LIB-STF-18 | **Plan a shift.** `POST /api/v1/shifts` with `{"staff_id", "branch_id", "date", "start_time", "end_time"}` returns `201` with `status` `planned` (event `shift_planned`). Times outside 27.1 → `422`. |
+| LIB-STF-19 | **Shift checks.** In order (all `409`): (1) branch inactive → `BRANCH_INACTIVE`; (2) profile inactive → `STAFF_INACTIVE`; (3) `date` before today → `SHIFT_IN_PAST`; (4) the branch is not open on `date` → `BRANCH_NOT_OPEN` with `details.reason` (`weekend`, `holiday`, `closure`); (5) the shift is not inside the branch's open hours → `OUTSIDE_BRANCH_HOURS`; (6) the staff member has an `approved` leave covering `date` → `STAFF_ON_LEAVE` with `details.leave_id`; (7) another counting shift of the staff member overlaps → `SHIFT_OVERLAP` with `details.shift_id`; (8) the rest between this shift and a counting shift of the staff member on the day before or after is less than 11 hours → `REST_PERIOD_TOO_SHORT`; (9) the counting shift hours of the staff member in the ISO week of `date` (Monday–Sunday) plus this shift exceed `weekly_hours` → `WEEKLY_HOURS_EXCEEDED` with `details.planned_hours` and `details.limit`. |
+| LIB-STF-20 | **Rest examples.** Branch hours 07:00–22:00 and a shift Mon 14:00–22:00: a shift Tue 08:00–12:00 has 10 hours of rest → `REST_PERIOD_TOO_SHORT`; Tue 09:00–13:00 has 11 hours → allowed. The rest is measured from the end of one shift to the start of the other, in both directions. |
+| LIB-STF-21 | **Week examples.** A part-time profile with 20 weekly hours and shifts Mon 4 h, Tue 8 h, Wed 8 h: a Thu shift of 2 h → `WEEKLY_HOURS_EXCEEDED` with `planned_hours` 20 and `limit` 20; after cancelling Mon, Thu 4 h is allowed. Shifts of the next Monday belong to the next week. |
+| LIB-STF-22 | **Change shift.** `PATCH /api/v1/shifts/{shift_id}` accepts any subset of `{"date", "start_time", "end_time", "branch_id", "staff_id"}` on a `planned` shift that has not started (`409 SHIFT_NOT_CHANGEABLE` otherwise) and returns `200` (event `shift_updated`). The changed shift MUST pass LIB-STF-19 as if newly planned, ignoring itself. |
+| LIB-STF-23 | **Cancel shift.** `POST /api/v1/shifts/{shift_id}/cancel` on a `planned` shift that has not started sets `status` `cancelled`, `cancel_reason` `staff_request` and returns `200` (event `shift_cancelled`). Otherwise `409 SHIFT_NOT_CHANGEABLE`. |
+| LIB-STF-24 | **Read shifts.** `GET /api/v1/shifts` is paginated, ordered by `date`, `start_time`, then `id`. Filters: `staff_id`, `branch_id`, `status`, `from`, `to` (dates, inclusive). A librarian sees only own shifts (other `staff_id` → `403`). |
+| LIB-STF-25 | **Copy a week.** `POST /api/v1/shifts/copy-week` with `{"branch_id", "from_week", "to_week"}` (Mondays; `to_week` after today and after `from_week`, otherwise `422`) copies every counting shift of the branch in `from_week` to the same weekday and times in `to_week`. Each copy runs LIB-STF-19; copies that fail are skipped. Returns `200` with `{"created": <count>, "skipped": [{"source_shift_id", "error_code"}]}` (event `shifts_copied`). |
+| LIB-STF-26 | **Copy example.** Week of 2026-11-02 has shifts Mon, Tue, Wed; a closure on Tue 2026-11-10: copying to 2026-11-09 creates 2 shifts and skips the Tuesday one with `BRANCH_NOT_OPEN`. |
+| LIB-STF-27 | **Shift hours in responses.** Each shift contains `hours` (number with one decimal) and `staff_name`. |
+
+### 27.6 Attendance
+
+| ID | Requirement |
+| --- | --- |
+| LIB-STF-28 | **Who.** Only the user of the shift's staff profile may check in and out (another user, also an admin → `403`). |
+| LIB-STF-29 | **Check-in window.** Check-in is possible from 30 minutes before the start of the shift (inclusive) until its end (exclusive): earlier → `409 CHECK_IN_TOO_EARLY` with `details.opens_at`; at or after the end → `409 SHIFT_OVER`. A shift that is not `planned` or already checked in → `409 SHIFT_NOT_CHANGEABLE`. |
+| LIB-STF-30 | **Check-in.** `POST /api/v1/shifts/{shift_id}/check-in` sets `checked_in_at` = now and `late_minutes` = whole minutes from `start_time` to now when now is more than 5 minutes after `start_time`, otherwise 0; returns `200` (event `shift_checked_in`). Examples: start 09:00, check-in 09:05 → 0; 09:06 → 6; 08:40 → 0. |
+| LIB-STF-31 | **Check-out.** `POST /api/v1/shifts/{shift_id}/check-out` on a checked-in shift sets `checked_out_at` = now, `status` `completed` and `worked_minutes` = whole minutes from max(`checked_in_at`, start of the shift) to min(now, end of the shift), and returns `200` (event `shift_checked_out`). Not checked in → `409 NOT_CHECKED_IN`; already checked out → `SHIFT_NOT_CHANGEABLE`. Example: shift 09:00–17:00, in 08:50, out 17:20 → 480; in 09:30, out 16:00 → 390. |
+| LIB-STF-32 | **Missed shifts.** `POST /api/v1/staff/process` marks every `planned` shift whose end is before now and that has no check-in as `missed`, and every checked-in shift whose end + 60 minutes is before now and has no check-out as `completed` with `checked_out_at` = end of the shift + 60 minutes and `worked_minutes` from max(`checked_in_at`, start) to the end of the shift; in order of `date`, `start_time`, `id`. Returns `200` with `{"missed": <count>, "auto_checked_out": <count>}` (event `staff_processed`). |
+| LIB-STF-33 | **Attendance example.** Shift Tue 09:00–17:00 without check-in: process at Tue 16:59 → not missed; at Tue 17:00:01 → `missed`. |
+
+### 27.7 Leave
+
+| ID | Requirement |
+| --- | --- |
+| LIB-STF-34 | **Request leave.** `POST /api/v1/leave-requests` with `{"kind", "from_date", "to_date", "note"}` creates a `pending` request for the own profile and returns `201` with `days` (event `leave_requested`). `note` MAY be omitted. Values outside 27.1 → `422`. |
+| LIB-STF-35 | **Leave checks.** In order (all `409`): own profile inactive → `STAFF_INACTIVE`; `kind` `annual` or `unpaid` with `from_date` before today → `LEAVE_IN_PAST` (`sick` may start up to 7 days before today, earlier → `LEAVE_IN_PAST`); `days` = 0 → `NO_WORKING_DAYS`; a `pending` or `approved` request of the staff member overlaps → `LEAVE_OVERLAP` with `details.leave_id`; `kind` `annual` and `days` greater than the remaining annual leave of each calendar year it touches (LIB-STF-40) → `LEAVE_BALANCE_EXCEEDED` with `details.remaining`. |
+| LIB-STF-36 | **Working days of a leave.** Example: annual leave Fri 2026-10-23 – Tue 2026-11-03 counts Fri 23, Mon 26, Tue 27, Wed 28 (arife), Fri 30, Mon 2, Tue 3 = 7 days (29 Oct holiday, weekends not counted). |
+| LIB-STF-37 | **Read leave.** `GET /api/v1/leave-requests` is paginated, ordered by `from_date`, then `id`, with filters `staff_id`, `status`, `kind`, `year` (requests touching that year). |
+| LIB-STF-38 | **Approve or reject.** `approve` and `reject` with `{"note"}` (optional) on a `pending` request set the status, `decided_by`, `decided_at`, `decision_note` and return `200` (events `leave_approved`, `leave_rejected`). Not `pending` → `409 LEAVE_NOT_PENDING`. An admin cannot decide on own leave → `409 OWN_LEAVE`. Approval re-checks the balance (`LEAVE_BALANCE_EXCEEDED`). |
+| LIB-STF-39 | **Effect of approval.** Approving cancels the staff member's `planned` shifts on dates of the leave with reason `leave` and returns them in `cancelled_shift_ids` with the request. |
+| LIB-STF-40 | **Balance.** `GET /api/v1/staff/{staff_id}/leave-balance?year=` (default: this year) returns `{"staff_id", "year", "entitled", "used", "pending", "remaining"}`: `entitled` = `annual_leave_days` (for the year of `started_on`: rounded down by the share of the year from `started_on`, e.g. 14 days and start on 2026-07-01 → 7); `used` = working days in that year of `approved` annual leave; `pending` = the same for `pending` annual leave; `remaining` = `entitled` − `used` − `pending`. |
+| LIB-STF-41 | **Cancel leave.** `cancel` by the owner on a `pending` request, or by an admin on a `pending` or `approved` request whose `from_date` is after today, sets `cancelled` and returns `200` (event `leave_cancelled`). Otherwise `409 LEAVE_NOT_CANCELLABLE`. Shifts cancelled by the approval are not restored. |
+| LIB-STF-42 | **Sick and unpaid leave.** `sick` and `unpaid` leave do not use the balance. `sick` leave of at most 2 working days is approved on creation (`status` `approved`, `decided_by` null) and runs LIB-STF-39. |
+
+### 27.8 Reports and effects on other modules
+
+| ID | Requirement |
+| --- | --- |
+| LIB-STF-43 | **Staff hours report.** `GET /api/v1/reports/staff-hours?from=&to=` (at most 92 days) returns a paginated list ordered by `staff_id`, one item per staff profile (also inactive ones): `{"staff_id", "full_name", "planned_hours", "worked_hours", "missed_shifts", "late_minutes", "leave_days"}`. `planned_hours` sums counting shifts in the range; `worked_hours` sums `worked_minutes` / 60 rounded to one decimal; `leave_days` counts working days of approved leave in the range. Filter `branch_id` (shifts of that branch; `leave_days` of profiles with that home branch). |
+| LIB-STF-44 | **Coverage report.** `GET /api/v1/reports/branch-coverage?branch_id=&date=` returns `200` with `{"branch_id", "date", "open": <bool>, "min_staff", "slots": [{"start": "HH:MM", "staff": <int>, "ok": <bool>}]}`: one slot per half hour of the open hours, `staff` = counting shifts of the branch covering the whole slot, `ok` = `staff` ≥ `min_staff`. On a date the branch is not open, `slots` is empty. |
+| LIB-STF-45 | **Understaffed days.** `GET /api/v1/reports/branch-coverage?branch_id=&from=&to=` (at most 31 days) returns `{"branch_id", "days": [{"date", "missing_slots": <int>}]}` for the open dates of the range, where `missing_slots` counts slots with `ok` false. |
+| LIB-STF-46 | **Coverage example.** Branch hours 08:00–20:00, `min_staff` 1, shifts 08:00–14:00 and 13:00–19:00: slots 08:00 … 18:30 ok, 19:00 and 19:30 not ok → `missing_slots` 2. |
+| LIB-STF-47 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) if a staff profile has the branch as `home_branch_id` or a counting shift of the branch is after today. |
+| LIB-STF-48 | **User deactivation.** LIB-STF-06; deactivating a user with a checked-in shift that is not checked out → `409 SHIFT_IN_PROGRESS`. |
+| LIB-STF-49 | **Notifications.** Staff are not members; this module creates no notifications for staff. The cancellations of LIB-STF-11 notify members through the existing types (`room_booking_cancelled`, `equipment_reservation_cancelled` with reason `branch_closed`). |
+| LIB-STF-50 | **Audit.** Module 19 reports to the audit log: `staff_created`, `staff_updated`, `branch_hours_updated`, `branch_closure_added`, `branch_closure_removed`, `shift_planned`, `shift_updated`, `shift_cancelled`, `shifts_copied`, `shift_checked_in`, `shift_checked_out`, `staff_processed`, `leave_requested`, `leave_approved`, `leave_rejected`, `leave_cancelled`. |
+| LIB-STF-51 | **Not exported.** Staff data is not part of import and export (module 13). |
+
+### 27.9 Error codes of module 19
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `NOT_STAFF` | 27.2 |
+| 409 | `USER_INACTIVE` | LIB-STF-02 |
+| 409 | `NOT_STAFF_ROLE` | LIB-STF-02 |
+| 409 | `STAFF_INACTIVE` | LIB-STF-04, LIB-STF-19, LIB-STF-35 |
+| 409 | `SHIFTS_OUTSIDE_HOURS` | LIB-STF-08 |
+| 409 | `NOT_A_WORKING_DAY` | LIB-STF-10 |
+| 409 | `CLOSURE_IN_PAST` | LIB-STF-12 |
+| 409 | `BRANCH_CLOSED_TODAY` | LIB-STF-16 |
+| 409 | `SHIFT_IN_PAST` | LIB-STF-19 |
+| 409 | `BRANCH_NOT_OPEN` | LIB-STF-19 |
+| 409 | `OUTSIDE_BRANCH_HOURS` | LIB-STF-19 |
+| 409 | `STAFF_ON_LEAVE` | LIB-STF-19 |
+| 409 | `SHIFT_OVERLAP` | LIB-STF-19 |
+| 409 | `REST_PERIOD_TOO_SHORT` | LIB-STF-19 |
+| 409 | `WEEKLY_HOURS_EXCEEDED` | LIB-STF-19 |
+| 409 | `SHIFT_NOT_CHANGEABLE` | LIB-STF-22, LIB-STF-23, LIB-STF-29, LIB-STF-31 |
+| 409 | `CHECK_IN_TOO_EARLY` | LIB-STF-29 |
+| 409 | `SHIFT_OVER` | LIB-STF-29 |
+| 409 | `NOT_CHECKED_IN` | LIB-STF-31 |
+| 409 | `LEAVE_IN_PAST` | LIB-STF-35 |
+| 409 | `NO_WORKING_DAYS` | LIB-STF-35 |
+| 409 | `LEAVE_OVERLAP` | LIB-STF-35 |
+| 409 | `LEAVE_BALANCE_EXCEEDED` | LIB-STF-35, LIB-STF-38 |
+| 409 | `LEAVE_NOT_PENDING` | LIB-STF-38 |
+| 409 | `OWN_LEAVE` | LIB-STF-38 |
+| 409 | `LEAVE_NOT_CANCELLABLE` | LIB-STF-41 |
+| 409 | `SHIFT_IN_PROGRESS` | LIB-STF-48 |
+
+`BRANCH_INACTIVE`, `BRANCH_IN_USE`, `CONFLICT` and `ROOM_CLOSED` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -2015,4 +2229,5 @@ A request is **open** in the statuses `requested`, `sent`, `rejected`, `received
 | Module 16: Equipment loans | LIB-EQ-01 – LIB-EQ-41 | 41 |
 | Module 17: Digital resources | LIB-DIG-01 – LIB-DIG-40 | 40 |
 | Module 18: Interlibrary loans | LIB-ILL-01 – LIB-ILL-40 | 40 |
-| **Total** | | **391** |
+| Module 19: Staff and shifts | LIB-STF-01 – LIB-STF-51 | 51 |
+| **Total** | | **442** |

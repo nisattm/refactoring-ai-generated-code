@@ -58,3 +58,16 @@ Same conventions as modules 15–17.
 | LIB-UI-ILL-04 | **Interlibrary desk (outgoing).** Librarian and admin. New outgoing request, ship with a copy chosen from the available copies, decline, returned, lost; overdue outgoing requests highlighted. |
 | LIB-UI-ILL-05 | **Partners.** Admin creates and changes partners; librarian sees them with their open counts. |
 | LIB-UI-ILL-06 | **Interlibrary activity report.** Librarian and admin. Date range; LIB-ILL-38 as a table. |
+
+## Module 19: Staff and shifts
+
+Same conventions as modules 15–18.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-STF-01 | **Staff.** Admin. List, create and change staff profiles; deactivation asks for confirmation (planned shifts will be cancelled). |
+| LIB-UI-STF-02 | **Branch hours and closures.** Admin sets hours and `min_staff`; adds and removes closures and sees the counts of cancelled shifts and bookings. All users see a branch's open days for a month. |
+| LIB-UI-STF-03 | **Shift plan.** Admin. Week view per branch with shifts per day; plan, change, cancel; "Copy last week" with the skipped shifts and their reasons; coverage per half hour with missing slots highlighted. |
+| LIB-UI-STF-04 | **My shifts.** Librarian and admin. Own shifts; "Check in" and "Check out" buttons in the allowed window; worked and late minutes. |
+| LIB-UI-STF-05 | **Leave.** Request leave (with the working days computed before sending), see own requests and balance; admin sees pending requests and approves or rejects them, with the shifts that will be cancelled shown before approving. |
+| LIB-UI-STF-06 | **Staff reports.** Admin. Staff hours and branch coverage reports as tables. |
