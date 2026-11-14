@@ -18,6 +18,7 @@ from lms.members import service
 from lms.members.models import Member
 from lms.digital.usage import member_summary as digital_summary
 from lms.equipment.usage import member_summary as equipment_summary
+from lms.events.usage import member_summary as event_summary
 from lms.ill.usage import member_summary as ill_summary
 from lms.rooms.usage import member_summary as room_summary
 from lms.members.schemas import (
@@ -159,4 +160,5 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
         equipment=equipment_summary(db, now, member.id),
         digital=digital_summary(db, now, member.id),
         ill=ill_summary(db, now.date(), member.id),
+        events=event_summary(db, now, member.id),
     )

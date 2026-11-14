@@ -50,6 +50,8 @@ def _create(
     digital_loan_id: int | None = None,
     digital_hold_id: int | None = None,
     ill_request_id: int | None = None,
+    event_id: int | None = None,
+    event_registration_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -65,6 +67,8 @@ def _create(
         digital_loan_id=digital_loan_id,
         digital_hold_id=digital_hold_id,
         ill_request_id=ill_request_id,
+        event_id=event_id,
+        event_registration_id=event_registration_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -257,6 +261,33 @@ def notify_ill(
     """``ill_request_rejected``, ``ill_request_cancelled``, ``ill_request_received``, ``ill_request_uncollected``
     and ``ill_renewal_answered``; the caller composes the message."""
     return _create(db, now, member_id, type_, message, ill_request_id=ill_request_id)
+
+
+# --- events (LIB-EVT-44) ---------------------------------------------------------
+
+
+def notify_event(
+    db: Session,
+    now: datetime.datetime,
+    member_id: int,
+    type_: str,
+    message: str,
+    *,
+    event_id: int | None = None,
+    event_registration_id: int | None = None,
+) -> Notification:
+    """``event_cancelled``, ``event_changed``, ``event_promoted``, ``event_reminder`` and ``event_ban_started``;
+    the caller composes the message."""
+    return _create(
+        db, now, member_id, type_, message, event_id=event_id, event_registration_id=event_registration_id
+    )
+
+
+def event_reminder_sent(db: Session, event_registration_id: int) -> bool:
+    stmt = sa.select(Notification.id).where(
+        Notification.type == "event_reminder", Notification.event_registration_id == event_registration_id
+    )
+    return db.scalar(stmt.limit(1)) is not None
 
 
 # --- reminders (LIB-NOT-05, LIB-NOT-06) -------------------------------------------

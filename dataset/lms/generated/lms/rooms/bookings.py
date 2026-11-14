@@ -16,6 +16,7 @@ from lms.core.calendar import add_working_days, is_working_day
 from lms.core.clock import LOCAL_TZ
 from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
 from lms.core.money import format_amount
+from lms.events.queries import room_event_conflict
 from lms.fines import service as fines
 from lms.members.models import Member
 from lms.notifications.service import notify_room, room_reminder_sent
@@ -261,6 +262,9 @@ def create_booking(
     for other in active_bookings_of_room(db, room.id, day, now):
         if other.start_time < end and start < other.end_time:
             raise _error("ROOM_ALREADY_BOOKED", "The room is already booked", booking_id=other.id)
+    event = room_event_conflict(db, room.id, day, start, end)  # LIB-EVT-11
+    if event is not None:
+        raise _error("ROOM_ALREADY_BOOKED", "The room is used by an event", event_id=event.id)
     persons = [organizer, *participants]
     _check_double_booking(db, now, [m.id for m in persons], day, start, end)
     _check_quotas(db, now, persons, organizer.id, day, minutes_between(start, end))

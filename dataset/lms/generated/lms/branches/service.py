@@ -19,6 +19,7 @@ from lms.catalog.status import set_status
 from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.equipment.models import EquipmentItem
+from lms.events.queries import branch_has_open_events
 from lms.ill.models import IllRequest
 from lms.members.models import Member
 from lms.reservations.models import ACTIVE_STATUSES, Reservation
@@ -65,8 +66,9 @@ def require_active_branch(db: Session, field: str, branch_id: int) -> Branch:
     return branch
 
 
-def is_branch_in_use(db: Session, branch_id: int, today: datetime.date) -> bool:
-    """LIB-BR-03, LIB-ROOM-39, LIB-EQ-36, LIB-STF-47."""
+def is_branch_in_use(db: Session, branch_id: int, now: datetime.datetime) -> bool:
+    """LIB-BR-03, LIB-ROOM-39, LIB-EQ-36, LIB-STF-47, LIB-EVT-42."""
+    today = now.date()
     if db.scalar(sa.select(Member.id).where(Member.home_branch_id == branch_id).limit(1)) is not None:
         return True
     in_branch = sa.or_(Copy.home_branch_id == branch_id, Copy.current_branch_id == branch_id)
@@ -99,12 +101,14 @@ def is_branch_in_use(db: Session, branch_id: int, today: datetime.date) -> bool:
     upcoming = sa.select(Shift.id).where(
         Shift.branch_id == branch_id, Shift.status.in_(("planned", "completed")), Shift.date > today
     )
-    return db.scalar(upcoming.limit(1)) is not None
+    if db.scalar(upcoming.limit(1)) is not None:
+        return True
+    return branch_has_open_events(db, branch_id, now)  # LIB-EVT-42
 
 
 def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Branch, fields: dict[str, object]) -> Branch:
     """LIB-BR-03. ``fields`` holds only the fields present in the request."""
-    if fields.get("is_active") is False and branch.is_active and is_branch_in_use(db, branch.id, now.date()):
+    if fields.get("is_active") is False and branch.is_active and is_branch_in_use(db, branch.id, now):
         raise Conflict(
             "The branch is still used by copies, members or reservations",
             code="BRANCH_IN_USE",

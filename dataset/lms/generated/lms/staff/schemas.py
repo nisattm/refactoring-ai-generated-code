@@ -118,6 +118,7 @@ class ClosureCreatedOut(ClosureOut):
     cancelled_shifts: int
     cancelled_room_bookings: int
     cancelled_equipment_reservations: int
+    cancelled_events: int
 
 
 class OpenDayOut(BaseModel):

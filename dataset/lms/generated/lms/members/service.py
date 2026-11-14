@@ -21,6 +21,7 @@ from lms.digital import process as digital_process
 from lms.equipment import reservations as equipment_reservations
 from lms.equipment import usage as equipment_usage
 from lms.equipment.accrual import count_overdue as count_overdue_equipment
+from lms.events import lifecycle as event_lifecycle
 from lms.ill import requests as ill_requests
 from lms.ill.accrual import count_overdue as count_overdue_ill
 from lms.core.text import normalize
@@ -256,6 +257,7 @@ def deactivate_member(
     equipment_reservations.cancel_for_deactivation(db, now, actor.id, member.id)  # LIB-EQ-35
     digital_process.on_member_deactivated(db, now, actor.id, member.id)  # LIB-DIG-37
     ill_requests.cancel_for_deactivation(db, now, actor, member.id)  # LIB-ILL-32
+    event_lifecycle.on_member_deactivated(db, now, actor, member.id)  # LIB-EVT-40
     return member
 
 

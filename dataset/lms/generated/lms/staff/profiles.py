@@ -18,6 +18,7 @@ from lms.core.errors import (
     ValidationFailed,
     reference_not_found,
 )
+from lms.events.queries import open_event_ids_of_staff
 from lms.staff import leave as leave_service
 from lms.staff import shifts
 from lms.staff.models import LeaveRequest, Shift, StaffProfile
@@ -144,6 +145,15 @@ def create_profile(
     return profile
 
 
+def require_no_open_events(db: Session, now: datetime.datetime, profile: StaffProfile) -> None:
+    """LIB-EVT-43: a staff profile responsible for a ``draft`` or upcoming ``published`` event cannot be deactivated."""
+    event_ids = open_event_ids_of_staff(db, profile.id, now)
+    if event_ids:
+        raise Conflict(
+            "The staff member is responsible for events", code="STAFF_HAS_EVENTS", details={"event_ids": event_ids}
+        )
+
+
 def deactivate(db: Session, now: datetime.datetime, actor_id: int | None, profile: StaffProfile) -> None:
     """LIB-STF-04: cancel the planned shifts that start after now and the pending leave requests."""
     for shift in shifts.planned_shifts(db, Shift.staff_id == profile.id, Shift.date >= now.date()):
@@ -178,6 +188,8 @@ def update_profile(
             )
     old = _snapshot(profile)
     deactivating = profile.is_active and new["is_active"] is False
+    if deactivating:
+        require_no_open_events(db, now, profile)
     for name, value in new.items():
         setattr(profile, name, value)
     diff = changes(old, _snapshot(profile))
@@ -198,6 +210,7 @@ def on_user_deactivated(db: Session, now: datetime.datetime, actor: User, user: 
     if shifts.in_progress_shift_exists(db, profile.id):
         raise Conflict("The user has a shift in progress", code="SHIFT_IN_PROGRESS", details={"staff_id": profile.id})
     if profile.is_active:
+        require_no_open_events(db, now, profile)
         profile.is_active = False
         record(
             db,

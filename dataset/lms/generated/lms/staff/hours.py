@@ -17,6 +17,7 @@ from lms.core.clock import LOCAL_TZ
 from lms.core.errors import Conflict, ValidationFailed
 from lms.equipment.inventory import cancel_reservation as cancel_equipment_reservation
 from lms.equipment.models import EquipmentReservation
+from lms.events.events import cancel_for_closure as cancel_events_for_closure
 from lms.rooms.lifecycle import cancel_booking
 from lms.rooms.models import Room, RoomBooking
 from lms.rooms.schemas import format_time
@@ -190,11 +191,14 @@ def add_closure(
     for reservation in reservations:
         cancel_equipment_reservation(db, now, actor.id, reservation, "branch_closed")
 
+    cancelled_events = cancel_events_for_closure(db, now, actor, branch.id, day)  # LIB-EVT-12
+
     return ClosureCreatedOut(
         **closure_out(closure).model_dump(),
         cancelled_shifts=len(cancelled_shifts),
         cancelled_room_bookings=len(room_bookings),
         cancelled_equipment_reservations=len(reservations),
+        cancelled_events=cancelled_events,
     )
 
 
