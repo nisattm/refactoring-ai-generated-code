@@ -7,10 +7,12 @@ from typing import Literal
 from lms.catalog.models import Copy
 from lms.core.errors import Conflict
 
-CopyStatus = Literal["available", "on_loan", "on_hold", "in_transfer", "damaged", "lost", "withdrawn", "at_partner"]
+CopyStatus = Literal[
+    "available", "on_loan", "on_hold", "in_transfer", "damaged", "lost", "withdrawn", "at_partner", "on_reserve"
+]
 
 ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
-    "available": frozenset({"on_loan", "on_hold", "in_transfer", "withdrawn", "at_partner"}),
+    "available": frozenset({"on_loan", "on_hold", "in_transfer", "withdrawn", "at_partner", "on_reserve"}),
     # on_hold -> on_hold and in_transfer -> in_transfer: the release procedure and transfer arrival
     # may keep a copy held or start a new transfer.
     "on_hold": frozenset({"on_loan", "available", "in_transfer", "on_hold"}),
@@ -21,6 +23,8 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     "withdrawn": frozenset(),
     # Lent to a partner library (LIB-ILL-31).
     "at_partner": frozenset({"available", "lost"}),
+    # Kept at the reserve desk for a course (LIB-CRS-20); leaves through the release procedure or when lost.
+    "on_reserve": frozenset({"available", "on_hold", "in_transfer", "lost"}),
 }
 
 # Statuses that do not count towards a book's lendability or availability totals (LIB-CAT-12).

@@ -14,6 +14,7 @@ from lms.auth.models import User
 from lms.core.calendar import working_days_between
 from lms.core.errors import Conflict, NotFound
 from lms.core.money import ZERO, format_amount, quantize
+from lms.courses.accrual import accrued_reserve_late_fees
 from lms.equipment.accrual import accrued_equipment_late_fees
 from lms.fines.models import Fee, Payment, PaymentAllocation
 from lms.ill.accrual import accrued_ill_late_fees
@@ -59,13 +60,19 @@ def outstanding_fees(db: Session, member_id: int) -> Decimal:
 
 def accrued_late_fees(db: Session, member_id: int, now: datetime.datetime, holidays: Container[datetime.date]) -> Decimal:
     """Sum of ``accrued_late_fee`` of the member's open overdue loans, including the open overdue
-    equipment loans (LIB-EQ-14) and the overdue incoming interlibrary requests (LIB-ILL-19)."""
+    equipment loans (LIB-EQ-14), the overdue incoming interlibrary requests (LIB-ILL-19) and the overdue
+    reserve loans (LIB-CRS-36)."""
     today = now.date()
     loans = db.scalars(
         sa.select(Loan).where(Loan.member_id == member_id, Loan.status == "open", Loan.due_date < today)
     )
     books = sum((accrued_late_fee(loan, today, holidays) for loan in loans), ZERO)
-    return books + accrued_equipment_late_fees(db, member_id, now) + accrued_ill_late_fees(db, member_id, today)
+    return (
+        books
+        + accrued_equipment_late_fees(db, member_id, now)
+        + accrued_ill_late_fees(db, member_id, today)
+        + accrued_reserve_late_fees(db, member_id, now)
+    )
 
 
 # --- fees -----------------------------------------------------------------------
@@ -84,6 +91,7 @@ def create_fee(
     equipment_loan_id: int | None = None,
     ill_request_id: int | None = None,
     event_registration_id: int | None = None,
+    reserve_loan_id: int | None = None,
 ) -> Fee:
     """Create an open fee (LIB-FEE-02 to LIB-FEE-04). ``amount`` is already rounded."""
     fee = Fee(
@@ -94,6 +102,7 @@ def create_fee(
         equipment_loan_id=equipment_loan_id,
         ill_request_id=ill_request_id,
         event_registration_id=event_registration_id,
+        reserve_loan_id=reserve_loan_id,
         amount=amount,
         paid_amount=ZERO,
         status="open",
@@ -113,6 +122,8 @@ def create_fee(
         details["ill_request_id"] = ill_request_id
     if event_registration_id is not None:
         details["event_registration_id"] = event_registration_id
+    if reserve_loan_id is not None:
+        details["reserve_loan_id"] = reserve_loan_id
     record(
         db,
         at=now,

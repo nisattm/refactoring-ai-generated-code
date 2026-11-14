@@ -74,3 +74,8 @@ class Copy(Base):
     acquired_on: Mapped[datetime.date] = mapped_column(sa.Date)
     shelf_location: Mapped[str | None] = mapped_column(sa.String(50), default=None)
     withdrawn_reason: Mapped[str | None] = mapped_column(sa.String(500), default=None)
+    # Module 21 (LIB-CRS-20, LIB-CRS-43): the reading list item and its course while the copy is ``on_reserve``.
+    reserve_item_id: Mapped[int | None] = mapped_column(
+        sa.ForeignKey("reading_list_items.id"), index=True, default=None
+    )
+    reserve_course_id: Mapped[int | None] = mapped_column(sa.ForeignKey("courses.id"), index=True, default=None)

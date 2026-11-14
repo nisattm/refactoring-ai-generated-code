@@ -20,6 +20,7 @@ from lms.catalog.models import Book, Copy
 from lms.catalog.status import GONE_STATUSES, set_status
 from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.courses.placement import place_on_release
 from lms.loans.models import Loan
 from lms.members.models import Member
 from lms.notifications.service import notify_reservation
@@ -146,8 +147,13 @@ def release_copy(
     now: datetime.datetime,
     holidays: Container[datetime.date],
     actor_user_id: int | None = None,
+    *,
+    course_reserves: bool = True,
 ) -> None:
-    """LIB-RES-08: a copy became free; the first waiting reservation of its book takes it."""
+    """LIB-RES-08: a copy became free; the first waiting reservation of its book takes it. Course reserves come
+    first (LIB-CRS-22), except for a copy that LIB-CRS-06, LIB-CRS-16 or LIB-CRS-21 take off reserve."""
+    if course_reserves and place_on_release(db, copy, now, actor_user_id):
+        return
     reservation = _first_waiting(db, copy.book_id)
     if reservation is None:
         if copy.current_branch_id == copy.home_branch_id:

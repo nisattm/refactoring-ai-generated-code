@@ -12,9 +12,11 @@ from lms.core.clock import today as clock_today
 from lms.core.db import SessionDep
 from lms.core.errors import ValidationFailed
 from lms.core.money import format_amount
-from lms.core.pagination import Page, PageDep, paginate_sequence
+from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
 from lms.core.timeutil import parse_date
 from lms.reports import service
+from lms.courses import usage as course_usage
+from lms.courses.schemas import CourseReportOut
 from lms.digital import usage as digital_usage
 from lms.digital.schemas import DigitalUsageOut, ResourceKind
 from lms.equipment import usage as equipment_usage
@@ -215,3 +217,26 @@ def ill_activity_report(
     if (end - start).days > 365:
         raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
     return paginate_sequence(ill_usage.ill_activity(db, start, end), page)
+
+
+@router.get("/course-reserves", response_model=Page[CourseReportOut])
+def course_reserves_report(
+    db: SessionDep,
+    _: StaffOnly,
+    page: PageDep,
+    first: Annotated[str | None, Query(alias="from")] = None,
+    to: Annotated[str | None, Query()] = None,
+    branch_id: Annotated[int | None, Query()] = None,
+) -> Page[CourseReportOut]:
+    problems: list[dict[str, str]] = []
+    start = _required_date("from", first, problems)
+    end = _required_date("to", to, problems)
+    if problems:
+        raise ValidationFailed(problems)
+    assert start is not None and end is not None
+    if start > end:
+        raise ValidationFailed.single("from", "from must not be after to")
+    if (end - start).days > 365:
+        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    stmt = course_usage.report_courses(start, end, branch_id=branch_id)
+    return paginate(db, stmt, page, lambda course: course_usage.report_out(db, course, start, end))

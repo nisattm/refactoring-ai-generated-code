@@ -25,6 +25,8 @@ from lms.events import lifecycle as event_lifecycle
 from lms.ill import requests as ill_requests
 from lms.ill.accrual import count_overdue as count_overdue_ill
 from lms.core.text import normalize
+from lms.courses import usage as course_usage
+from lms.courses.accrual import count_overdue as count_overdue_reserve
 from lms.fines import service as fines
 from lms.fines.schemas import BLOCKING_DEBT
 from lms.loans.models import Loan
@@ -179,6 +181,23 @@ def update_member(db: Session, now: datetime.datetime, actor: User, member: Memb
         _check_unique_university_id(db, new["university_id"], own_member_id=member.id)
 
     old_type = member.membership_type
+    if new["membership_type"] != old_type:  # LIB-CRS-40
+        if new["membership_type"] != "student":
+            enrolled_ids = course_usage.enrolled_course_ids(db, member.id)
+            if enrolled_ids:
+                raise Conflict(
+                    "The member is enrolled in courses",
+                    code="MEMBER_HAS_ENROLLMENTS",
+                    details={"course_ids": enrolled_ids},
+                )
+        if new["membership_type"] != "academic":
+            course_ids = course_usage.instructed_course_ids(db, member.id)
+            if course_ids:
+                raise Conflict(
+                    "The member is the instructor of courses",
+                    code="INSTRUCTOR_HAS_COURSES",
+                    details={"course_ids": course_ids},
+                )
     diff = changes({name: getattr(member, name) for name in new}, new)
     for name, value in new.items():
         setattr(member, name, value)
@@ -239,6 +258,15 @@ def deactivate_member(
         raise Conflict("The member has open equipment loans", code="MEMBER_HAS_OPEN_LOANS")
     if ill_requests.has_open_receipt(db, member.id):  # LIB-ILL-32
         raise Conflict("The member has open interlibrary loans", code="MEMBER_HAS_OPEN_LOANS")
+    if course_usage.has_open_loan(db, member.id):  # LIB-CRS-39
+        raise Conflict("The member has open reserve loans", code="MEMBER_HAS_OPEN_LOANS")
+    course_ids = course_usage.instructed_course_ids(db, member.id)
+    if course_ids:  # LIB-CRS-39
+        raise Conflict(
+            "The member is the instructor of courses",
+            code="INSTRUCTOR_HAS_COURSES",
+            details={"course_ids": course_ids},
+        )
     if room_lifecycle.is_in_checked_in_room(db, member.id):
         raise Conflict("The member is in a study room", code="MEMBER_IN_ROOM")
     member.status = "passive"
@@ -258,6 +286,7 @@ def deactivate_member(
     digital_process.on_member_deactivated(db, now, actor.id, member.id)  # LIB-DIG-37
     ill_requests.cancel_for_deactivation(db, now, actor, member.id)  # LIB-ILL-32
     event_lifecycle.on_member_deactivated(db, now, actor, member.id)  # LIB-EVT-40
+    course_usage.on_member_deactivated(db, now, actor.id, member.id)  # LIB-CRS-39
     return member
 
 
@@ -289,6 +318,7 @@ class MemberActivity:
     overdue_loans: int = 0
     overdue_equipment_loans: int = 0
     overdue_ill_requests: int = 0
+    overdue_reserve_loans: int = 0
     active_reservations: int = 0
     outstanding_fees: Decimal = ZERO
     accrued_late_fees: Decimal = ZERO
@@ -304,6 +334,7 @@ def member_activity(
         overdue_loans=sum(1 for loan in open_loans if today > loan.due_date),
         overdue_equipment_loans=count_overdue_equipment(db, member.id, now),
         overdue_ill_requests=count_overdue_ill(db, member.id, today),
+        overdue_reserve_loans=count_overdue_reserve(db, member.id, now),
         active_reservations=reservations.count_active(db, member.id),
         outstanding_fees=fines.outstanding_fees(db, member.id),
         accrued_late_fees=fines.accrued_late_fees(db, member.id, now, holidays),
@@ -317,7 +348,12 @@ def borrowing_blockers(member: Member, activity: MemberActivity, today: datetime
         reasons.append("MEMBER_PASSIVE")
     if today > member.valid_until:
         reasons.append("MEMBERSHIP_EXPIRED")
-    if activity.overdue_loans > 0 or activity.overdue_equipment_loans > 0 or activity.overdue_ill_requests > 0:  # LIB-EQ-14, LIB-ILL-34
+    if (
+        activity.overdue_loans > 0
+        or activity.overdue_equipment_loans > 0
+        or activity.overdue_ill_requests > 0
+        or activity.overdue_reserve_loans > 0
+    ):  # LIB-EQ-14, LIB-ILL-34, LIB-CRS-37
         reasons.append("MEMBER_HAS_OVERDUE")
     if activity.outstanding_fees + activity.accrued_late_fees >= BLOCKING_DEBT:
         reasons.append("MEMBER_BLOCKED_BY_DEBT")
