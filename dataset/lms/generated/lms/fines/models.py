@@ -26,6 +26,9 @@ class Fee(Base):
         sa.ForeignKey("equipment_loans.id"), index=True, default=None
     )
     ill_request_id: Mapped[int | None] = mapped_column(sa.ForeignKey("ill_requests.id"), index=True, default=None)
+    event_registration_id: Mapped[int | None] = mapped_column(
+        sa.ForeignKey("event_registrations.id", use_alter=True), index=True, default=None
+    )
     amount: Mapped[Decimal] = mapped_column(MoneyType)
     paid_amount: Mapped[Decimal] = mapped_column(MoneyType, default=Decimal("0.00"))
     status: Mapped[str] = mapped_column(sa.String(10), default="open", index=True)

@@ -67,6 +67,7 @@ def create_schema(engine: sa.Engine) -> None:
     import lms.catalog.models  # noqa: F401
     import lms.digital.models  # noqa: F401
     import lms.equipment.models  # noqa: F401
+    import lms.events.models  # noqa: F401
     import lms.fines.models  # noqa: F401
     import lms.ill.models  # noqa: F401
     import lms.loans.models  # noqa: F401

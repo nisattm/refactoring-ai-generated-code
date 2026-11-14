@@ -16,6 +16,7 @@ from lms.branches.models import Branch
 from lms.branches.service import require_active_branch
 from lms.core.calendar import is_working_day
 from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.events.queries import events_using_room
 from lms.rooms.lifecycle import cancel_booking
 from lms.rooms.models import Room, RoomBooking
 from lms.rooms.queries import bookings_on, is_active, is_person
@@ -212,15 +213,17 @@ def availability(
     if not is_open_on(db, room, day, holidays):
         return AvailabilityOut(room_id=room.id, date=day.isoformat(), open=False, slots=[])
     active = [b for b in bookings_on(db, day, ACTIVE_STATUSES) if b.room_id == room.id and is_active(b, now)]
+    events = events_using_room(db, room.id, day)  # LIB-EVT-11
     slots: list[SlotOut] = []
     for start, end in _slots(room):
         booking = next((b for b in active if b.start_time <= start and end <= b.end_time), None)
+        in_event = any(e.start_time < end and start < e.end_time for e in events)
         shown = booking is not None and (staff or (member_id is not None and is_person(booking, member_id)))
         slots.append(
             SlotOut(
                 start=format_time(start),
                 end=format_time(end),
-                free=booking is None,
+                free=booking is None and not in_event,
                 booking_id=booking.id if shown and booking is not None else None,
             )
         )
@@ -273,6 +276,8 @@ def free_rooms(
         if start < room.opens_at or end > room.closes_at:
             continue
         if any(b.start_time < end and start < b.end_time for b in busy[room.id]):
+            continue
+        if any(e.start_time < end and start < e.end_time for e in events_using_room(db, room.id, day)):
             continue
         result.append(room)
     return result

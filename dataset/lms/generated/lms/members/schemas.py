@@ -16,6 +16,7 @@ from lms.fines.schemas import BalanceOut
 from lms.members.models import Member
 from lms.digital.schemas import DigitalSummaryOut
 from lms.equipment.schemas import EquipmentSummaryOut
+from lms.events.schemas import EventSummaryOut
 from lms.ill.schemas import IllSummaryOut
 from lms.rooms.schemas import RoomSummaryOut
 
@@ -150,3 +151,4 @@ class MemberSummaryOut(BaseModel):
     equipment: EquipmentSummaryOut
     digital: DigitalSummaryOut
     ill: IllSummaryOut
+    events: EventSummaryOut

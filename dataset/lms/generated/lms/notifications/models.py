@@ -34,7 +34,10 @@ class Notification(Base):
     )
     digital_hold_id: Mapped[int | None] = mapped_column(sa.ForeignKey("digital_holds.id"), default=None)
     ill_request_id: Mapped[int | None] = mapped_column(sa.ForeignKey("ill_requests.id"), default=None, index=True)
+    event_id: Mapped[int | None] = mapped_column(sa.ForeignKey("events.id"), default=None, index=True)
     created_at: Mapped[datetime.datetime] = mapped_column(TZDateTime)
     read_at: Mapped[datetime.datetime | None] = mapped_column(TZDateTime, default=None)
     # Not part of the API: the date a reminder is about (due date or day of notice), for LIB-NOT-06.
     reminder_date: Mapped[datetime.date | None] = mapped_column(sa.Date, default=None)
+    # Not part of the API: the registration an ``event_reminder`` is about (LIB-EVT-33).
+    event_registration_id: Mapped[int | None] = mapped_column(default=None, index=True)

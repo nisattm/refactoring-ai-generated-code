@@ -46,6 +46,11 @@ NotificationType = Literal[
     "ill_request_received",
     "ill_request_uncollected",
     "ill_renewal_answered",
+    "event_cancelled",
+    "event_changed",
+    "event_promoted",
+    "event_reminder",
+    "event_ban_started",
 ]
 
 
@@ -63,6 +68,7 @@ class NotificationOut(BaseModel):
     digital_loan_id: int | None
     digital_hold_id: int | None
     ill_request_id: int | None
+    event_id: int | None
     created_at: str
     read_at: str | None
 
@@ -95,6 +101,7 @@ def notification_out(n: Notification) -> NotificationOut:
         digital_loan_id=n.digital_loan_id,
         digital_hold_id=n.digital_hold_id,
         ill_request_id=n.ill_request_id,
+        event_id=n.event_id,
         created_at=format_datetime(n.created_at),
         read_at=format_datetime(n.read_at) if n.read_at is not None else None,
     )
