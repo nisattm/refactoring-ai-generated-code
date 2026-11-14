@@ -45,6 +45,7 @@ Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain a
 | 17 | Digital resources (added 2026-11-07) | 40 | 2 | 7 | 2 | license 4 statuses; loan 3; hold 5 | 2 | 6 | Complex |
 | 18 | Interlibrary loans (added 2026-11-07) | 40 | 2 | 9 | 2 | incoming request 10 statuses; outgoing 5 | 2 | 6 | Complex |
 | 19 | Staff and shifts (added 2026-11-14) | 51 | 2 | 8 | 2 | shift 4 statuses; leave 4 | 2 | 6 | Complex |
+| 20 | Events (added 2026-11-14) | 47 | 2 | 8 | 2 | event 4 statuses; registration 5 | 2 | 6 | Complex |
 
 Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 5, 6, 7, 13.
 
@@ -69,7 +70,8 @@ Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 
 | 17 | Digital resources | E-books and databases, perpetual and subscription licenses, e-book loans with hold queues, database sessions | Complex | 1,900 | Long check sequences (high CC), duplicated capacity and time arithmetic, Feature Envy (members, purchasing, notifications) |
 | 18 | Interlibrary loans | Partner libraries, incoming requests with sending, receiving, member due dates, fees and renewals; outgoing loans of copies | Complex | 1,900 | Long status machines (high CC), duplicated date arithmetic, Feature Envy (members, fees, catalog) |
 | 19 | Staff and shifts | Staff profiles, branch hours and closures, shift planning with rest and weekly limits, attendance, leave with balances, coverage reports | Complex | 2,300 | Long check sequences (high CC), duplicated time and week arithmetic, Feature Envy (rooms, equipment, users) |
-| | **Total** | | | **~39,500** | |
+| 20 | Events | Talks and workshops with rooms and responsible staff, weekly series, registrations with waiting lists and fees, cancellations, check-in, no-show bans, attendance report | Complex | 2,000 | Long check sequences (high CC), duplicated time and window arithmetic, Feature Envy (rooms, staff, fees, members) |
+| | **Total** | | | **~41,500** | |
 
 Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in prompts; which ones actually appear is measured after generation and recorded in [`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation).
 

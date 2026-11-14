@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
-**Status:** Complete draft (sections 1–27), revised after team review.
-**Version:** 0.12 · 2026-11-14 (adds section 27, module 19 Staff and shifts)
+**Status:** Complete draft (sections 1–28), revised after team review.
+**Version:** 0.13 · 2026-11-14 (adds section 28, module 20 Events)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -13,9 +13,9 @@ The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119. Each testa
 
 ### 1.1 System overview
 
-The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, study rooms, equipment loans, digital resources, interlibrary loans and staff shifts. It is used through a REST API.
+The LMS manages a university library: members and their memberships, the catalog of books and physical copies, loans and returns, reservations, late fees and payments, notifications, search, reports, multiple branches with transfers between them, purchasing, an audit log, import/export of data, study rooms, equipment loans, digital resources, interlibrary loans, staff shifts and events. It is used through a REST API.
 
-The system consists of 19 modules:
+The system consists of 20 modules:
 
 | # | Module | Package | Section |
 | --- | --- | --- | --- |
@@ -38,6 +38,7 @@ The system consists of 19 modules:
 | 17 | Digital resources | `lms.digital` | 25 |
 | 18 | Interlibrary loans | `lms.ill` | 26 |
 | 19 | Staff and shifts | `lms.staff` | 27 |
+| 20 | Events | `lms.events` | 28 |
 
 ### 1.2 Out of scope
 
@@ -102,7 +103,8 @@ lms/
 ├── equipment/           Module 16
 ├── digital/             Module 17
 ├── ill/                 Module 18
-└── staff/               Module 19
+├── staff/               Module 19
+└── events/              Module 20
 ```
 
 | ID | Requirement |
@@ -467,6 +469,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Digital resources (module 17) | – | Read resources and calendars; borrow, return and renew own e-book loans; own holds and database sessions | Full, except licenses: read only | Full |
 | Interlibrary loans (module 18) | – | Create, read and cancel own incoming requests; ask for a renewal | Full, except partners: read only | Full |
 | Staff and shifts (module 19) | – | Read branch hours, closures and open days | Own staff profile, own shifts and attendance, own leave requests; read branch hours, closures and open days | Full |
+| Events (module 20) | – | Read published events; register and cancel own registrations; read own registrations and bans | Full | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -548,9 +551,9 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36) and `ill` (LIB-ILL-34). |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34) and `events` (LIB-EVT-39). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -762,10 +765,11 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | `id` | integer | LIB-COM-14 |
 | `member_id` | integer | |
 | `loan_id` | integer or null | The loan the fee comes from |
-| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25; `ill_request_fee`, `ill_late_fee`, `ill_lost`: LIB-ILL-35 |
+| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` \| `event_fee` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25; `ill_request_fee`, `ill_late_fee`, `ill_lost`: LIB-ILL-35; `event_fee`: LIB-EVT-38 |
 | `room_booking_id` | integer or null | The room booking a `no_show_fee` comes from |
 | `equipment_loan_id` | integer or null | The equipment loan an `equipment_*` fee comes from |
 | `ill_request_id` | integer or null | The incoming interlibrary request an `ill_*` fee comes from |
+| `event_registration_id` | integer or null | The event registration an `event_fee` comes from |
 | `amount` | amount | > 0.00 |
 | `paid_amount` | amount | 0.00 ≤ `paid_amount` ≤ `amount` |
 | `status` | `open` \| `paid` \| `waived` | `paid` when `paid_amount` = `amount` |
@@ -797,7 +801,7 @@ API representation (`FeeOut`): all fields, plus `outstanding` = `amount` − `pa
 | LIB-FEE-04 | **Lost book.** At report-lost (LIB-LOAN-13), up to three fees are created: `late_fee` per LIB-FEE-02 for the late days until the report date (only if > 0); `lost_book` = the copy's `price`; `lost_processing` = 25.00 TL. Example: student loan due 2026-11-16, reported lost 2026-11-18, copy price 180.00 → late fee 4.00 (2 working days), lost book 180.00, processing 25.00. |
 | LIB-FEE-05 | **Payment.** `POST /api/v1/members/{member_id}/payments` with `{"amount", "method"}` records a payment and returns `201` with the payment including `allocations`. `amount` MUST be > 0.00 (`422 VALIDATION_ERROR`) and ≤ the member's `outstanding_fees` (LIB-FEE-10); otherwise `409 PAYMENT_EXCEEDS_BALANCE` with `details.outstanding_fees`. Accrued late fees of open loans cannot be paid before the loan is closed. |
 | LIB-FEE-06 | **Allocation.** A payment is applied to the member's `open` fees in order of `created_on`, then `id`: each fee receives as much as it still owes until the payment is used up. A fee whose `paid_amount` reaches `amount` becomes `paid`. Partial payment is allowed. Example: open fees A 6.00 (older) and B 20.00; payment 10.00 → A 6.00 paid (status `paid`), B 4.00 paid (status `open`, outstanding 16.00). |
-| LIB-FEE-07 | **Waive.** `POST /api/v1/fees/{fee_id}/waive` with `{"reason"}` (5–500 characters) sets an `open` fee to `waived` and returns `200` with `FeeOut`. Only `admin` may waive (`403 FORBIDDEN` for librarians). A fee that is not `open` returns `409 FEE_NOT_OPEN`. Amounts already paid stay paid; only the outstanding part is waived. |
+| LIB-FEE-07 | **Waive.** `POST /api/v1/fees/{fee_id}/waive` with `{"reason"}` (5–500 characters) sets an `open` fee to `waived` and returns `200` with `FeeOut`. Only `admin` may waive (`403 FORBIDDEN` for librarians). A fee that is not `open` returns `409 FEE_NOT_OPEN`. Amounts already paid stay paid; only the outstanding part is waived. Automatic waivers of events: LIB-EVT-38. |
 | LIB-FEE-08 | **Fee lists.** `GET /api/v1/members/{member_id}/fees` and `GET /api/v1/fees` are paginated, ordered by `created_on`, then `id`. Filters: `status`, `kind`, `loan_id`; `GET /api/v1/fees` also `member_id`. |
 | LIB-FEE-09 | **Total debt.** A member's total debt = the sum of `outstanding` of all `open` fees + the sum of `accrued_late_fee` of all open overdue loans. This value is used by LIB-LOAN-05 step 4. Equipment loans: LIB-EQ-14. Interlibrary requests: LIB-ILL-19. |
 | LIB-FEE-10 | **Balance.** `GET /api/v1/members/{member_id}/balance` returns `200` with `BalanceOut`: `{"outstanding_fees": "<amount>", "accrued_late_fees": "<amount>", "total_debt": "<amount>", "blocked": <bool>}`, where `blocked` is `total_debt` ≥ 50.00. |
@@ -867,7 +871,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -886,7 +890,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 and the interlibrary events of LIB-ILL-36. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 and the events of LIB-EVT-44. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -923,7 +927,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46.
 
 ### 16.1 Endpoints and requirements
 
@@ -974,7 +978,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. |
@@ -1115,7 +1119,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9.
 
 ---
 
@@ -1296,7 +1300,7 @@ Weeks run Monday to Sunday. Hours are summed over the durations of bookings that
 | LIB-ROOM-05 | **Changes that conflict with bookings.** A change of `opens_at` or `closes_at` that would leave an active booking with a future start outside the new hours returns `409 ROOM_HAS_BOOKINGS` with `details.booking_ids` (ascending). A reduction of `capacity` below, or an increase of `min_participants` above, the number of persons of an active booking with a future start returns the same error. Bookings are not changed by a rejected update. |
 | LIB-ROOM-06 | **Deactivate room.** `PATCH` with `{"is_active": false}` cancels every `booked` booking of the room whose start is after now with reason `room_closed` (LIB-ROOM-26), in order of `date`, `start_time`, then `id`, and returns `200` with the room. A `checked_in` booking is not affected and ends normally. An inactive room cannot be booked (`409 ROOM_INACTIVE`) and does not appear in `free` (LIB-ROOM-09). |
 | LIB-ROOM-07 | **Open slots.** A room is open on a date `d` when `d` is a working day (LIB-COM-05) and the room and its branch are active and the branch has no closure on `d` (LIB-STF-15). On an open date the room has 30-minute slots from `opens_at` to `closes_at`. Example: `opens_at` `09:00`, `closes_at` `11:00` → slots 09:00, 09:30, 10:00, 10:30. |
-| LIB-ROOM-08 | **Availability.** `GET /api/v1/rooms/{room_id}/availability?date=YYYY-MM-DD` returns `200` with `{"room_id", "date", "open": <bool>, "slots": [{"start": "HH:MM", "end": "HH:MM", "free": <bool>, "booking_id": <int or null>}]}`. On a date that is not open, `open` is `false` and `slots` is empty. A slot is not free when an active booking's interval covers it. `booking_id` is shown to librarians and admins and to persons of that booking; for other members it is null. A missing `date` returns `422 VALIDATION_ERROR`. Not paginated. |
+| LIB-ROOM-08 | **Availability.** `GET /api/v1/rooms/{room_id}/availability?date=YYYY-MM-DD` returns `200` with `{"room_id", "date", "open": <bool>, "slots": [{"start": "HH:MM", "end": "HH:MM", "free": <bool>, "booking_id": <int or null>}]}`. On a date that is not open, `open` is `false` and `slots` is empty. A slot is not free when an active booking's interval covers it. `booking_id` is shown to librarians and admins and to persons of that booking; for other members it is null. A missing `date` returns `422 VALIDATION_ERROR`. Not paginated. Events: LIB-EVT-11. |
 | LIB-ROOM-09 | **Free rooms.** `GET /api/v1/rooms/free?date=&start_time=&end_time=` returns a paginated list of active rooms that are open on `date` and have every slot in the interval free, ordered like LIB-ROOM-03. Filters: `branch_id`, `kind`, `min_capacity`, `feature`. Times follow 23.1 (`422 VALIDATION_ERROR` otherwise). A room whose hours do not contain the whole interval is not listed. |
 
 ### 23.5 Booking
@@ -1305,7 +1309,7 @@ Weeks run Monday to Sunday. Hours are summed over the durations of bookings that
 | --- | --- |
 | LIB-ROOM-10 | **Create booking.** `POST /api/v1/room-bookings` with `{"room_id", "date", "start_time", "end_time", "participant_ids", "purpose"}` returns `201` with `RoomBookingOut`. `participant_ids` and `purpose` MAY be omitted (empty list, empty text). A librarian or admin MUST also send `member_id` (the organizer); a member MUST NOT send it (`422 VALIDATION_ERROR`) and books for themselves. |
 | LIB-ROOM-11 | **Request validation.** These return `422 VALIDATION_ERROR`: times not on minutes `00` or `30`; `start_time` ≥ `end_time`; a duration below 30 minutes or above 4 hours; a participant id listed twice; the organizer listed as participant; more than 11 participants. |
-| LIB-ROOM-12 | **Booking checks.** After LIB-COM-28 steps 1–5, the checks run in this order; the first failure decides the response (all `409`): (1) branch of the room inactive → `BRANCH_INACTIVE`; (2) room inactive → `ROOM_INACTIVE`; (3) organizer `passive` → `MEMBER_PASSIVE`; (4) organizer's membership not valid on `date` (LIB-MEM-04 with `date` instead of today) → `MEMBERSHIP_EXPIRED`; (5) organizer is a `guest` → `ROOM_NOT_ALLOWED_FOR_TYPE`; (6) a ban of the organizer is in force today or on `date` → `MEMBER_BANNED_FROM_ROOMS` with `details.ends_on` (latest `ends_on` of such bans); (7) organizer's total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (8) `date` is not a working day → `ROOM_CLOSED`; (9) the interval is not within `opens_at`–`closes_at` → `OUTSIDE_ROOM_HOURS`; (10) the start is not after now → `BOOKING_IN_PAST`; (11) `date` is later than today + the organizer's booking-ahead days (23.2, calendar days) → `BOOKING_TOO_FAR_AHEAD` with `details.latest_date`; (12) participant rules (LIB-ROOM-13); (13) another active booking of the room overlaps the interval → `ROOM_ALREADY_BOOKED`; (14) a person already has another active booking whose interval overlaps (any room) → `MEMBER_DOUBLE_BOOKED` with `details.member_id` (smallest such id); (15) quotas (LIB-ROOM-15) → the codes there. |
+| LIB-ROOM-12 | **Booking checks.** After LIB-COM-28 steps 1–5, the checks run in this order; the first failure decides the response (all `409`): (1) branch of the room inactive → `BRANCH_INACTIVE`; (2) room inactive → `ROOM_INACTIVE`; (3) organizer `passive` → `MEMBER_PASSIVE`; (4) organizer's membership not valid on `date` (LIB-MEM-04 with `date` instead of today) → `MEMBERSHIP_EXPIRED`; (5) organizer is a `guest` → `ROOM_NOT_ALLOWED_FOR_TYPE`; (6) a ban of the organizer is in force today or on `date` → `MEMBER_BANNED_FROM_ROOMS` with `details.ends_on` (latest `ends_on` of such bans); (7) organizer's total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (8) `date` is not a working day → `ROOM_CLOSED`; (9) the interval is not within `opens_at`–`closes_at` → `OUTSIDE_ROOM_HOURS`; (10) the start is not after now → `BOOKING_IN_PAST`; (11) `date` is later than today + the organizer's booking-ahead days (23.2, calendar days) → `BOOKING_TOO_FAR_AHEAD` with `details.latest_date`; (12) participant rules (LIB-ROOM-13); (13) another active booking of the room or an event using the room (LIB-EVT-11, then with `details.event_id`) overlaps the interval → `ROOM_ALREADY_BOOKED`; (14) a person already has another active booking whose interval overlaps (any room) → `MEMBER_DOUBLE_BOOKED` with `details.member_id` (smallest such id); (15) quotas (LIB-ROOM-15) → the codes there. |
 | LIB-ROOM-13 | **Participants.** In this order: (a) an `individual` room with a non-empty `participant_ids` → `409 PARTICIPANTS_NOT_ALLOWED`; (b) a participant id that does not exist → `404 NOT_FOUND` (LIB-COM-29, checked at step 4 of LIB-COM-28); (c) persons < `min_participants` → `409 NOT_ENOUGH_PARTICIPANTS` with `details.min_participants`; (d) persons > `capacity` → `409 ROOM_CAPACITY_EXCEEDED` with `details.capacity`; (e) a participant who is `passive`, a `guest`, has no valid membership on `date`, or has a ban in force on `date` → `409 PARTICIPANT_NOT_ELIGIBLE` with `details.member_id` (smallest such id) and `details.reason` (the code that applies to the participant: `MEMBER_PASSIVE`, `ROOM_NOT_ALLOWED_FOR_TYPE`, `MEMBERSHIP_EXPIRED` or `MEMBER_BANNED_FROM_ROOMS`, first in this order). |
 | LIB-ROOM-14 | **Overlap.** Two intervals on the same date overlap when one starts before the other ends. Bookings that only touch (09:00–10:00 and 10:00–11:00) do not overlap. |
 | LIB-ROOM-15 | **Quotas.** For each person, in order of member id, with the new booking included: (a) hours on `date` > daily hours (23.2) → `DAILY_ROOM_QUOTA_EXCEEDED`; (b) hours in the week of `date` > weekly hours → `WEEKLY_ROOM_QUOTA_EXCEEDED`; (c) only for the organizer: active bookings with a start after now in which the organizer is organizer, plus the new one, > the limit of active future bookings → `ROOM_BOOKING_LIMIT_REACHED`. Each error has `details.member_id`, `details.limit` and `details.used` (hours as a decimal string with one decimal place, for example `"2.5"`, or a count for (c)). Quota rules use the membership type of each person at the time of the request. |
@@ -2093,7 +2097,7 @@ A shift **counts** while its status is `planned` or `completed`. Shift hours = (
 | LIB-STF-01 | **Create profile.** `POST /api/v1/staff` with `{"user_id", "home_branch_id", "employment", "weekly_hours", "annual_leave_days", "started_on"}` returns `201` (event `staff_created`). `weekly_hours` and `annual_leave_days` MAY be omitted (defaults of 27.1; `weekly_hours` of a `part_time` profile has no default: `422`). Values outside 27.1 → `422`. |
 | LIB-STF-02 | **Profile checks.** In order (all `409`): the user does not exist → `404 NOT_FOUND`; the user is inactive → `USER_INACTIVE`; the user's role is `member` → `NOT_STAFF_ROLE`; the user already has a profile → `CONFLICT` with `details.field` `"user_id"`; `home_branch_id` inactive → `BRANCH_INACTIVE`. |
 | LIB-STF-03 | **Change profile.** `PATCH` accepts any subset of `{"home_branch_id", "employment", "weekly_hours", "annual_leave_days", "is_active"}` and returns `200` (event `staff_updated`). The combined values MUST satisfy 27.1 (`422`). A lower `weekly_hours` does not change planned shifts. |
-| LIB-STF-04 | **Deactivate.** `{"is_active": false}` cancels the profile's `planned` shifts that start after now with reason `staff_deactivated` and its `pending` leave requests (status `cancelled`). An inactive profile cannot get shifts or request leave: `409 STAFF_INACTIVE`. |
+| LIB-STF-04 | **Deactivate.** `{"is_active": false}` cancels the profile's `planned` shifts that start after now with reason `staff_deactivated` and its `pending` leave requests (status `cancelled`). An inactive profile cannot get shifts or request leave: `409 STAFF_INACTIVE`. Events: LIB-EVT-43. |
 | LIB-STF-05 | **Read profiles.** `GET /api/v1/staff` is paginated, ordered by `id`, with filters `home_branch_id`, `employment`, `is_active`. Each item contains the profile and `full_name` and `email` of the user. `GET /api/v1/staff/me` returns the own profile or `409 NOT_STAFF`. |
 | LIB-STF-06 | **Deactivated user.** When a user with a profile is deactivated (LIB-AUTH), the profile is deactivated as in LIB-STF-04. |
 
@@ -2105,7 +2109,7 @@ A shift **counts** while its status is `planned` or `completed`. Shift hours = (
 | LIB-STF-08 | **Set hours.** `PUT /api/v1/branches/{branch_id}/hours` with `{"opens_at", "closes_at", "min_staff"}` returns `200` (event `branch_hours_updated`). Values outside 27.1 → `422`. A change that would leave a counting shift with a date after today outside the new hours → `409 SHIFTS_OUTSIDE_HOURS` with `details.shift_ids` (ascending); nothing is changed. |
 | LIB-STF-09 | **Hours and the equipment desk.** The equipment desk of a branch (LIB-EQ-01) is open at `t` when the branch is open on the date of `t` and `opens_at` ≤ local time of `t` < `closes_at`. With the default hours this is LIB-EQ-01 unchanged. LIB-EQ-02 uses the branch's hours and open dates. |
 | LIB-STF-10 | **Add closure.** `POST /api/v1/branches/{branch_id}/closures` with `{"date", "reason"}` returns `201` (event `branch_closure_added`). Checks (all `409` unless stated): branch inactive → `BRANCH_INACTIVE`; `date` not after today → `422`; `date` not a working day → `NOT_A_WORKING_DAY`; a closure of the branch on that date exists → `CONFLICT`. |
-| LIB-STF-11 | **Effects of a closure.** On creation, in this order: (1) counting `planned` shifts of the branch on that date are cancelled with reason `branch_closed`; (2) `booked` room bookings in rooms of the branch on that date are cancelled with reason `branch_closed` (LIB-ROOM-26, notifies the persons); (3) `booked` equipment reservations of the branch with `starts_at` on that date are cancelled with reason `branch_closed` (notifies the member). The `201` response is the closure (`id`, `branch_id`, `date`, `reason`, `created_by`) plus the counts `cancelled_shifts`, `cancelled_room_bookings` and `cancelled_equipment_reservations`. |
+| LIB-STF-11 | **Effects of a closure.** On creation, in this order: (1) counting `planned` shifts of the branch on that date are cancelled with reason `branch_closed`; (2) `booked` room bookings in rooms of the branch on that date are cancelled with reason `branch_closed` (LIB-ROOM-26, notifies the persons); (3) `booked` equipment reservations of the branch with `starts_at` on that date are cancelled with reason `branch_closed` (notifies the member). The `201` response is the closure (`id`, `branch_id`, `date`, `reason`, `created_by`) plus the counts `cancelled_shifts`, `cancelled_room_bookings` and `cancelled_equipment_reservations`. Events: LIB-EVT-12. |
 | LIB-STF-12 | **Remove closure.** `DELETE /api/v1/closures/{closure_id}` returns `204` (event `branch_closure_removed`) when the date is after today; otherwise `409 CLOSURE_IN_PAST`. Cancelled shifts and bookings are not restored. |
 | LIB-STF-13 | **Read closures.** `GET /api/v1/closures` is paginated, ordered by `date`, then `branch_id`, with filters `branch_id`, `from`, `to` (inclusive). |
 | LIB-STF-14 | **Open days.** `GET /api/v1/branches/{branch_id}/open-days?from=&to=` (at most 62 days, `from` ≤ `to`, otherwise `422`) returns `200` with `{"branch_id", "days": [{"date", "open": <bool>, "reason": <text or null>, "opens_at": <time or null>, "closes_at": <time or null>}]}`, one item per date. `reason` is `"weekend"`, `"holiday"`, `"closure"` (with the closure reason after a colon, e.g. `"closure: Sayım"`) or null when open. |
@@ -2203,6 +2207,183 @@ A shift **counts** while its status is `planned` or `completed`. Shift hours = (
 
 ---
 
+## 28. Module 20: Events
+
+The library organises talks, workshops, book clubs and tours. Members register for a limited number of places; when an event is full they join a waiting list. Some workshops have a fee. Events can repeat weekly as a series. Package `lms.events`. Times are local (LIB-COM-01); times are `HH:MM` on minutes `00` or `30`.
+
+### 28.1 Data
+
+**Event**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `title` | text | LIB-COM-16 |
+| `description` | text | 0–2000 characters |
+| `kind` | `talk` \| `workshop` \| `book_club` \| `tour` | |
+| `branch_id` | integer | Active branch |
+| `room_id` | integer or null | A `group` room of the same branch (`422` otherwise) |
+| `date` | date | |
+| `start_time`, `end_time` | time | 1–4 hours |
+| `capacity` | integer | 1–200; with a room at most the room's `capacity` (`422`) |
+| `fee` | amount | 0.00–200.00; default 0.00 |
+| `audience` | `all` \| `students` \| `academics` | Default `all` (LIB-EVT-24) |
+| `staff_id` | integer | An active staff profile (module 19) responsible for the event |
+| `series_id` | integer or null | LIB-EVT-17 |
+| `status` | `draft` \| `published` \| `cancelled` \| `completed` | Initially `draft` |
+| `cancel_reason` | text or null | `staff_request`, `branch_closed`, `series_cancelled` |
+| `created_at`, `published_at` | date-time | |
+
+The **start** of an event is `date` + `start_time`, its **end** `date` + `end_time`. An event is **upcoming** while it is `published` and now < start.
+
+**Registration**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `event_id`, `member_id` | integer | |
+| `status` | `registered` \| `waitlisted` \| `cancelled` \| `attended` \| `no_show` | |
+| `position` | integer or null | Derived for `waitlisted`: 1 + the number of `waitlisted` registrations of the event created earlier (ties by `id`); null otherwise |
+| `created_at`, `promoted_at`, `cancelled_at`, `attended_at` | date-time or null | |
+| `late_cancellation` | boolean | LIB-EVT-29 |
+| `cancel_reason` | text or null | `member_request`, `staff_request`, `event_cancelled`, `member_deactivated`, `member_banned` |
+| `fee_id` | integer or null | The `event_fee` of this registration |
+
+A registration is **active** while it is `registered` or `waitlisted`.
+
+**Event ban:** `id`, `member_id`, `starts_on`, `ends_on` (dates, inclusive), `created_at`. A ban is **in force** on `d` when `starts_on` ≤ `d` ≤ `ends_on`.
+
+### 28.2 Rules by membership type
+
+| Type | Active registrations for upcoming events | Audiences open to the type |
+| --- | --- | --- |
+| `student` | 5 | `all`, `students` |
+| `academic` | 10 | `all`, `academics` |
+| `staff` | 10 | `all` |
+| `guest` | 2 | `all` |
+
+### 28.3 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/events`, `PATCH /api/v1/events/{event_id}` | librarian, admin | Create, change |
+| `POST /api/v1/events/{event_id}/publish`, `/cancel` | librarian, admin | Publish, cancel |
+| `GET /api/v1/events`, `GET /api/v1/events/{event_id}` | all authenticated users (members: published, cancelled and completed events only) | Read |
+| `POST /api/v1/event-series` | librarian, admin | Create a weekly series |
+| `POST /api/v1/event-series/{series_id}/cancel` | librarian, admin | Cancel the rest of a series |
+| `POST /api/v1/events/{event_id}/registrations` | member (own), librarian, admin | Register |
+| `GET /api/v1/events/{event_id}/registrations` | librarian, admin | Registrations of an event |
+| `GET /api/v1/members/{member_id}/event-registrations` | librarian, admin; member (own) | Registrations of a member |
+| `POST /api/v1/event-registrations/{registration_id}/cancel` | member (own), librarian, admin | Cancel |
+| `POST /api/v1/event-registrations/{registration_id}/check-in` | librarian, admin | Attendance |
+| `POST /api/v1/events/process` | librarian, admin | No-shows, completion, reminders |
+| `GET /api/v1/members/{member_id}/event-bans` | librarian, admin; member (own) | Bans |
+| `GET /api/v1/reports/event-attendance` | librarian, admin | Report (section 16) |
+
+`member_id` in the registration body: a librarian or admin MUST send it; a member MUST NOT (`422`). A member reading or cancelling a registration of another member receives `403 FORBIDDEN`; a member reading a `draft` event receives `404 NOT_FOUND`.
+
+### 28.4 Events
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EVT-01 | **Create event.** `POST /api/v1/events` with `{"title", "description", "kind", "branch_id", "room_id", "date", "start_time", "end_time", "capacity", "fee", "audience", "staff_id"}` creates a `draft` and returns `201` (event `event_created`). `description`, `room_id`, `fee` and `audience` MAY be omitted. Values outside 28.1 → `422 VALIDATION_ERROR`; unknown `room_id` or `staff_id` → `422` with `details.fields`. |
+| LIB-EVT-02 | **Event checks.** On create and on every change, in order (all `409`): (1) branch inactive → `BRANCH_INACTIVE`; (2) start not after now → `EVENT_IN_PAST`; (3) the branch is not open on `date` (LIB-STF-14) → `BRANCH_NOT_OPEN` with `details.reason`; (4) the interval is not inside the branch hours, or with a room not inside the room's hours → `OUTSIDE_BRANCH_HOURS`; (5) the room is inactive → `ROOM_INACTIVE`; (6) with a room: an active room booking (LIB-ROOM-14 overlap) or another event that is not `cancelled` uses the room in the interval → `ROOM_NOT_AVAILABLE` with `details.booking_id` or `details.event_id`; (7) the staff profile is inactive → `STAFF_INACTIVE`. |
+| LIB-EVT-03 | **Publish.** `POST /api/v1/events/{event_id}/publish` on a `draft` sets `published` and `published_at` (event `event_published`). Checks after LIB-EVT-02: (8) start is less than 24 hours after now → `409 EVENT_TOO_SOON`; (9) the responsible staff member has no counting shift (module 19) at the event's branch on `date` that covers the whole interval → `409 STAFF_NOT_ON_SHIFT`. Not a `draft` → `409 INVALID_EVENT_STATUS` with `details.status`. |
+| LIB-EVT-04 | **Change event.** `PATCH` accepts any subset of `{"title", "description", "room_id", "date", "start_time", "end_time", "capacity", "fee", "staff_id"}` on a `draft` or upcoming `published` event (otherwise `409 INVALID_EVENT_STATUS`) and returns `200` (event `event_updated`). The result MUST pass LIB-EVT-02 (ignoring the event itself in (6)); for a `published` event also LIB-EVT-03 (9). `kind`, `branch_id` and `audience` cannot be changed (`422`). |
+| LIB-EVT-05 | **Fee locked.** `fee` cannot be changed once the event has a registration of any status → `409 FEE_LOCKED`. |
+| LIB-EVT-06 | **Capacity change.** A new `capacity` below the number of `registered` registrations → `409 CAPACITY_BELOW_REGISTERED` with `details.registered`. A higher capacity promotes waiting members (LIB-EVT-31). |
+| LIB-EVT-07 | **Time change.** A change of `date`, `start_time`, `end_time` or `room_id` of a `published` event notifies every active registration (`event_changed`, with the new date and times). Registrations stay as they are. |
+| LIB-EVT-08 | **Read events.** `GET /api/v1/events` is paginated, ordered by `date`, `start_time`, then `id`. Filters: `branch_id`, `kind`, `status`, `from`, `to` (dates, inclusive), `series_id`, `q` (case-insensitive substring of `title`). Members never see `draft` events. Each event contains `registered` (count), `waitlisted` (count), `free_places` (= `capacity` − `registered`, at least 0) and `staff_covered` (LIB-EVT-09). |
+| LIB-EVT-09 | **Staff covered.** `staff_covered` is `true` when the responsible staff member has a counting shift that covers the whole interval at the event's branch (LIB-EVT-03 (9)) at the time of the request. A shift cancelled later (leave, closure, deactivation) makes it `false`; the event is not changed automatically. |
+| LIB-EVT-10 | **Cancel event.** `POST /api/v1/events/{event_id}/cancel` on a `draft` or upcoming `published` event sets `cancelled` with reason `staff_request` and returns `200` (event `event_cancelled`). Every active registration becomes `cancelled` with reason `event_cancelled`; its `event_fee`, if `open`, is waived with reason `"Event cancelled"`; each member with an active registration is notified (`event_cancelled`). Other statuses → `409 INVALID_EVENT_STATUS`. |
+| LIB-EVT-11 | **Room use.** A room used by a `draft` or `published` event is not free for room bookings in the event's interval: LIB-ROOM-12 returns `409 ROOM_ALREADY_BOOKED` with `details.event_id`; LIB-ROOM-08 shows the slots as not free with `booking_id` null; LIB-ROOM-09 does not list the room. |
+| LIB-EVT-12 | **Closures.** A closure (LIB-STF-11) also cancels the `draft` and `published` events of the branch on its date with reason `branch_closed`, as in LIB-EVT-10. The closure response adds `cancelled_events` (count). |
+
+### 28.5 Series
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EVT-13 | **Create series.** `POST /api/v1/event-series` with the fields of LIB-EVT-01 (with `first_date` instead of `date`) and `weeks` (2–12) returns `201` with `{"series_id", "created": [<event ids>], "skipped": [{"date", "error_code"}]}` (event `event_series_created`). It creates one `draft` event per week on `first_date` + 7 × k days (k = 0 … `weeks` − 1), each with `series_id`. |
+| LIB-EVT-14 | **Skipped dates.** Each date runs LIB-EVT-02; a date that fails is skipped with its error code and the others are created. If every date fails → `409 SERIES_EMPTY` and nothing is created. |
+| LIB-EVT-15 | **Series example.** `first_date` Tue 2026-11-10, 4 weeks, a closure of the branch on Tue 2026-11-24: created 2026-11-10, 2026-11-17 and 2026-12-01; skipped `{"date": "2026-11-24", "error_code": "BRANCH_NOT_OPEN"}`. |
+| LIB-EVT-16 | **Publish a series.** Events of a series are published one by one (LIB-EVT-03). |
+| LIB-EVT-17 | **Cancel series.** `POST /api/v1/event-series/{series_id}/cancel` cancels every `draft` and upcoming `published` event of the series with reason `series_cancelled` (as in LIB-EVT-10) and returns `200` with `{"cancelled": [<event ids>]}`. Events that already started are not changed. Unknown series → `404`. |
+| LIB-EVT-18 | **Series registration.** A member registers for each event of a series separately. |
+
+### 28.6 Registrations
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EVT-19 | **Register.** `POST /api/v1/events/{event_id}/registrations` with `{}` (member) or `{"member_id"}` (staff) returns `201` with the registration (event `event_registration_created`). If `registered` registrations < `capacity`, the status is `registered`; otherwise `waitlisted` with its `position`. |
+| LIB-EVT-20 | **Registration checks.** In order (all `409`): (1) event not `published` → `EVENT_NOT_OPEN`; (2) now ≥ start − 1 hour → `REGISTRATION_CLOSED`; (3) member `passive` → `MEMBER_PASSIVE`; (4) membership not valid on `date` → `MEMBERSHIP_EXPIRED`; (5) the member's type may not join the event's audience (28.2) → `EVENT_NOT_FOR_TYPE`; (6) an event ban is in force today or on `date` → `MEMBER_BANNED_FROM_EVENTS` with `details.ends_on`; (7) total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (8) the member has an active registration for this event → `ALREADY_REGISTERED`; (9) the member has a `registered` registration for another upcoming event whose interval overlaps (same date) → `EVENT_TIME_CONFLICT` with `details.event_id`; (10) active registrations of the member for upcoming events ≥ the limit of 28.2 → `EVENT_REGISTRATION_LIMIT_REACHED` with `details.limit`; (11) the event is full and `waitlisted` registrations ≥ `capacity` → `WAITLIST_FULL`. |
+| LIB-EVT-21 | **Fee.** A registration that becomes `registered` (at once or by promotion) for an event with `fee` > 0.00 creates a fee of kind `event_fee` with that amount for the member (`event_registration_id` set, notifies `fee_created`) and stores its id in `fee_id`. Waiting members are not charged. |
+| LIB-EVT-22 | **Read registrations.** `GET /api/v1/events/{event_id}/registrations` is paginated, ordered by status (`registered`, `waitlisted`, then the others), then `created_at`, then `id`; filter `status`. `GET /api/v1/members/{member_id}/event-registrations` is ordered by the event's start, then `id`; filters `status`, `from`, `to`. Each item contains `event_title`, `event_date`, `start_time`. |
+| LIB-EVT-23 | **Waiting list example.** Capacity 2: M1 and M2 `registered`, M3 `waitlisted` position 1, M4 position 2. M2 cancels: M3 becomes `registered` (`promoted_at` set), M4 position 1. |
+| LIB-EVT-24 | **Audience examples.** An event with audience `students`: a student and an academic → the academic gets `EVENT_NOT_FOR_TYPE`. Audience `all`: a guest may register. |
+| LIB-EVT-25 | **Overlap example.** M is `registered` for an event 14:00–16:00; another event the same day 15:30–17:00 → `EVENT_TIME_CONFLICT`; 16:00–17:00 → allowed. A `waitlisted` registration does not cause a conflict. |
+| LIB-EVT-26 | **Registration closed example.** Event starting Tue 18:00: registration at 16:59 → allowed; at 17:00 → `REGISTRATION_CLOSED`. |
+
+### 28.7 Cancellation, promotion and attendance
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EVT-27 | **Cancel registration.** `POST /api/v1/event-registrations/{registration_id}/cancel` on an active registration sets `cancelled`, `cancelled_at` = now, `cancel_reason` `member_request` (member) or `staff_request` (staff) and returns `200` (event `event_registration_cancelled`). Not active → `409 REGISTRATION_NOT_ACTIVE`; now ≥ start → `409 EVENT_STARTED`. |
+| LIB-EVT-28 | **Timely cancellation.** A `registered` registration cancelled at least 24 hours before start (now ≤ start − 24 hours): its `event_fee`, if `open` and nothing paid, is waived with reason `"Registration cancelled in time"`. |
+| LIB-EVT-29 | **Late cancellation.** A `registered` registration cancelled later than that sets `late_cancellation` `true`; its fee stays. Cancelling a `waitlisted` registration is never late. |
+| LIB-EVT-30 | **Cancellation boundary.** Event Thu 18:00: cancelled Wed 18:00 → in time; Wed 18:00:01 → late. |
+| LIB-EVT-31 | **Promotion.** When a `registered` place becomes free (cancellation, LIB-EVT-06, LIB-EVT-41) while now < start − 1 hour, the waitlisted registration with position 1 becomes `registered` with `promoted_at` = now (LIB-EVT-21 applies; notification `event_promoted`); this repeats while places are free. After start − 1 hour nobody is promoted. |
+| LIB-EVT-32 | **Check-in.** `POST /api/v1/event-registrations/{registration_id}/check-in` on a `registered` registration from start − 30 minutes until end sets `attended` and `attended_at` = now, and returns `200` (event `event_attended`). Earlier → `409 CHECK_IN_NOT_OPEN`; at or after end → `409 EVENT_OVER`; not `registered` → `409 REGISTRATION_NOT_ACTIVE`. |
+| LIB-EVT-33 | **Process.** `POST /api/v1/events/process` (1) marks every `published` event whose end is before now as `completed` and its `registered` registrations as `no_show` (event `event_no_show`), in order of start, then `id`; (2) applies LIB-EVT-34 to each member with a new no-show; (3) creates one `event_reminder` notification for every `registered` registration of an event starting within the next 24 hours (now < start ≤ now + 24 hours), at most one per registration. It returns `200` with `{"completed_events", "no_shows", "bans", "reminders"}` (counts of this call). Waitlisted registrations of a completed event become `cancelled` with reason `event_cancelled` without notification. |
+| LIB-EVT-34 | **Event ban.** After a no-show, if the member has 3 or more `no_show` registrations for events whose `date` is in the 90 days ending today and no event ban in force today, a ban from today to today + 29 days is created (notification `event_ban_started`). Only no-shows of events after the start of the member's latest ban count again. |
+| LIB-EVT-35 | **Effect of a ban.** When a ban starts, every active registration of the member for an upcoming event whose `date` is within the ban becomes `cancelled` with reason `member_banned` (fees as in LIB-EVT-28 regardless of time); places free up (LIB-EVT-31). |
+| LIB-EVT-36 | **Ban example.** No-shows on events of 2026-11-03, 2026-11-10 and 2026-11-17 processed on 2026-11-17 → ban 2026-11-17 – 2026-12-16. No-shows on 2026-08-01, 2026-10-01 and 2026-11-03 → no ban (2026-08-01 is outside the 90 days). |
+| LIB-EVT-37 | **Read bans.** `GET /api/v1/members/{member_id}/event-bans` returns the bans ordered by `starts_on` (paginated). |
+
+### 28.8 Effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-EVT-38 | **Fees.** Fee `kind` adds `event_fee`; Fee gets a nullable `event_registration_id`. Event fees are paid and allocated like other fees and count for total debt. The automatic waivers of LIB-EVT-10, LIB-EVT-28 and LIB-EVT-35 are not limited to admins. |
+| LIB-EVT-39 | **Member summary.** LIB-MEM-12 also returns `"events": {"registered": <int>, "waitlisted": <int>, "no_shows_90_days": <int>, "banned_until": <date or null>}` (active registrations for upcoming events; no-shows of events in the 90 days ending today; the latest `ends_on` of bans in force today). |
+| LIB-EVT-40 | **Member deactivation.** LIB-MEM-10 cancels the member's active registrations for upcoming events with reason `member_deactivated` (fees stay) and promotes waiting members (LIB-EVT-31). It is not blocked by registrations. |
+| LIB-EVT-41 | **Places freed by others.** Cancellations of LIB-EVT-35 and LIB-EVT-40 free places like LIB-EVT-27. |
+| LIB-EVT-42 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) when the branch has a `draft` or upcoming `published` event. |
+| LIB-EVT-43 | **Staff.** A staff profile responsible for a `draft` or upcoming `published` event cannot be deactivated: LIB-STF-04 returns `409 STAFF_HAS_EVENTS` with `details.event_ids`. |
+| LIB-EVT-44 | **Notifications.** Added to LIB-NOT-01: `event_cancelled`, `event_changed`, `event_promoted`, `event_reminder`, `event_ban_started`; messages contain the event title, date and times. Notifications get a nullable `event_id`. Registering and cancelling one's own registration do not notify (fees notify as `fee_created`). |
+| LIB-EVT-45 | **Audit.** Module 20 reports: `event_created`, `event_updated`, `event_published`, `event_cancelled`, `event_series_created`, `event_series_cancelled`, `event_registration_created`, `event_registration_cancelled`, `event_attended`, `event_no_show`, `event_ban_started`, `events_processed`. |
+| LIB-EVT-46 | **Attendance report.** `GET /api/v1/reports/event-attendance?from=&to=` (at most 366 days, `from` ≤ `to`, otherwise `422`) returns a paginated list of the events with `date` in the range (not `draft`), ordered by `date`, `start_time`, `id`: `{"event_id", "title", "kind", "date", "status", "capacity", "registered", "attended", "no_shows", "late_cancellations", "fees_charged"}`. `registered` counts registrations that are `registered`, `attended` or `no_show`; `fees_charged` sums the `amount` of event fees of the event that are not waived. Filters `branch_id`, `kind`. |
+| LIB-EVT-47 | **Not exported.** Event data is not part of import and export (module 13). |
+
+### 28.9 Error codes of module 20
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `EVENT_IN_PAST` | LIB-EVT-02 |
+| 409 | `ROOM_NOT_AVAILABLE` | LIB-EVT-02 |
+| 409 | `EVENT_TOO_SOON` | LIB-EVT-03 |
+| 409 | `STAFF_NOT_ON_SHIFT` | LIB-EVT-03 |
+| 409 | `INVALID_EVENT_STATUS` | LIB-EVT-03, LIB-EVT-04, LIB-EVT-10 |
+| 409 | `FEE_LOCKED` | LIB-EVT-05 |
+| 409 | `CAPACITY_BELOW_REGISTERED` | LIB-EVT-06 |
+| 409 | `SERIES_EMPTY` | LIB-EVT-14 |
+| 409 | `EVENT_NOT_OPEN` | LIB-EVT-20 |
+| 409 | `REGISTRATION_CLOSED` | LIB-EVT-20 |
+| 409 | `EVENT_NOT_FOR_TYPE` | LIB-EVT-20 |
+| 409 | `MEMBER_BANNED_FROM_EVENTS` | LIB-EVT-20 |
+| 409 | `ALREADY_REGISTERED` | LIB-EVT-20 |
+| 409 | `EVENT_TIME_CONFLICT` | LIB-EVT-20 |
+| 409 | `EVENT_REGISTRATION_LIMIT_REACHED` | LIB-EVT-20 |
+| 409 | `WAITLIST_FULL` | LIB-EVT-20 |
+| 409 | `REGISTRATION_NOT_ACTIVE` | LIB-EVT-27, LIB-EVT-32 |
+| 409 | `EVENT_STARTED` | LIB-EVT-27 |
+| 409 | `CHECK_IN_NOT_OPEN` | LIB-EVT-32 |
+| 409 | `EVENT_OVER` | LIB-EVT-32 |
+| 409 | `STAFF_HAS_EVENTS` | LIB-EVT-43 |
+
+`BRANCH_INACTIVE`, `BRANCH_NOT_OPEN`, `OUTSIDE_BRANCH_HOURS`, `ROOM_INACTIVE`, `STAFF_INACTIVE`, `MEMBER_PASSIVE`, `MEMBERSHIP_EXPIRED`, `MEMBER_BLOCKED_BY_DEBT`, `ROOM_ALREADY_BOOKED` and `BRANCH_IN_USE` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -2230,4 +2411,5 @@ A shift **counts** while its status is `planned` or `completed`. Shift hours = (
 | Module 17: Digital resources | LIB-DIG-01 – LIB-DIG-40 | 40 |
 | Module 18: Interlibrary loans | LIB-ILL-01 – LIB-ILL-40 | 40 |
 | Module 19: Staff and shifts | LIB-STF-01 – LIB-STF-51 | 51 |
-| **Total** | | **442** |
+| Module 20: Events | LIB-EVT-01 – LIB-EVT-47 | 47 |
+| **Total** | | **489** |
