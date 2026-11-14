@@ -18,7 +18,7 @@ dataset/lms/tests/
 └── heldout/test_<module>.py    Tests used only for evaluation
 ```
 
-Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`.
+Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`.
 
 ## Ownership (30 October 2026)
 
@@ -26,7 +26,7 @@ Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`
 | --- | --- |
 | `conftest.py`, `support/` | Fatima |
 | `core`, `auth`, `reservations`, `members`, `catalog`, `branches`, `e2e`, `search`, `reports`, `audit_io`, `api` | Nisa |
-| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events` | Fatima |
+| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses` | Fatima |
 
 Only the owner edits a file. A missing helper is requested from the owner of `support/`; until it exists, a test calls the API through `client` directly.
 
@@ -57,9 +57,10 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 | Interlibrary loans (module 18, from 7 November) | `ill` | 40 | 36 | 0 | 76 |
 | Staff and shifts (module 19, from 14 November) | `staff` | 41 | 37 | 0 | 78 |
 | Events (module 20, from 14 November) | `events` | 35 | 31 | 0 | 66 |
-| **Total** | | **553** | **482** | **13** | **1048** |
+| Course reserves (module 21, from 14 November) | `courses` | 42 | 31 | 0 | 73 |
+| **Total** | | **595** | **513** | **13** | **1121** |
 
-`pytest --import-mode=importlib --collect-only` collects 553 feedback and 482 held-out tests without the code; every test fails until `lms` exists.
+`pytest --import-mode=importlib --collect-only` collects 595 feedback and 513 held-out tests without the code; every test fails until `lms` exists.
 
 ## Test case IDs and names
 
