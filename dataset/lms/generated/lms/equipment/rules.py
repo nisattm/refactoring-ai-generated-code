@@ -7,12 +7,14 @@ import datetime
 from collections.abc import Container
 from decimal import Decimal
 
-from lms.core.calendar import add_working_days, is_working_day, next_working_day
+from lms.core.calendar import add_working_days
 from lms.core.clock import LOCAL_TZ
 from lms.core.money import quantize
+from lms.staff.schedule import BranchSchedule
 
 DESK_OPENS = datetime.time(8, 0)
 DESK_CLOSES = datetime.time(20, 0)
+DEFAULT_SCHEDULE = BranchSchedule()
 DUE_TIME_WORKING_DAYS = datetime.time(17, 0)
 GRACE = datetime.timedelta(minutes=15)
 HOLD_EARLY = datetime.timedelta(minutes=15)
@@ -50,19 +52,26 @@ def at_local(day: datetime.date, time: datetime.time) -> datetime.datetime:
     return datetime.datetime.combine(day, time, LOCAL_TZ)
 
 
-def desk_open(t: datetime.datetime, holidays: Container[datetime.date]) -> bool:
-    """LIB-EQ-01."""
+def desk_open(
+    t: datetime.datetime, holidays: Container[datetime.date], schedule: BranchSchedule = DEFAULT_SCHEDULE
+) -> bool:
+    """LIB-EQ-01 with the hours and closures of the branch (LIB-STF-09); the default schedule is 08:00-20:00."""
     local = t.astimezone(LOCAL_TZ)
-    return is_working_day(local.date(), holidays) and DESK_OPENS <= local.time() < DESK_CLOSES
+    return schedule.is_calendar_open(local.date(), holidays) and schedule.opens_at <= local.time() < schedule.closes_at
 
 
-def next_desk_opening(t: datetime.datetime, holidays: Container[datetime.date]) -> datetime.datetime:
+def next_desk_opening(
+    t: datetime.datetime, holidays: Container[datetime.date], schedule: BranchSchedule = DEFAULT_SCHEDULE
+) -> datetime.datetime:
     """LIB-EQ-02: for a moment at which the desk is closed."""
     local = t.astimezone(LOCAL_TZ)
     day = local.date()
-    if is_working_day(day, holidays) and local.time() < DESK_OPENS:
-        return at_local(day, DESK_OPENS)
-    return at_local(next_working_day(day + datetime.timedelta(days=1), holidays), DESK_OPENS)
+    if schedule.is_calendar_open(day, holidays) and local.time() < schedule.opens_at:
+        return at_local(day, schedule.opens_at)
+    day += datetime.timedelta(days=1)
+    while not schedule.is_calendar_open(day, holidays):
+        day += datetime.timedelta(days=1)
+    return at_local(day, schedule.opens_at)
 
 
 def due_at_from(

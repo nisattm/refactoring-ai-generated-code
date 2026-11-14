@@ -230,6 +230,10 @@ def update_user(db: Session, now: datetime.datetime, actor: User, user: User, fi
             raise Conflict("There must be at least one active administrator", code="LAST_ADMIN")
     if new_active is False and user.id == actor.id:
         raise Conflict("Administrators cannot deactivate their own account", code="CANNOT_DEACTIVATE_SELF")
+    if new_active is False and user.is_active:
+        from lms.staff.profiles import on_user_deactivated  # LIB-STF-06, LIB-STF-48
+
+        on_user_deactivated(db, now, actor, user)
 
     descriptive = {k: v for k, v in fields.items() if k in ("full_name", "role")}
     diff = changes({k: getattr(user, k) for k in descriptive}, descriptive)

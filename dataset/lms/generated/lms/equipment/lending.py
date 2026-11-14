@@ -19,7 +19,12 @@ from lms.core.timeutil import format_datetime
 from lms.equipment import capacity
 from lms.equipment.accrual import accrued_late_fee, overdue_open_loans
 from lms.equipment.inventory import get_type_or_404, has_valid_training
-from lms.equipment.models import EquipmentItem, EquipmentLoan, EquipmentReservation, EquipmentType
+from lms.equipment.models import (
+    EquipmentItem,
+    EquipmentLoan,
+    EquipmentReservation,
+    EquipmentType,
+)
 from lms.equipment.rules import (
     COLLECT_LATE,
     DEBT_BLOCK,
@@ -37,6 +42,7 @@ from lms.fines import service as fines
 from lms.loans.models import Loan
 from lms.members.models import Member
 from lms.notifications.service import notify_equipment
+from lms.staff.schedule import load_schedule
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> EquipmentLoan:
@@ -124,11 +130,12 @@ def _check_desk(db: Session, now: datetime.datetime, holidays: Container[datetim
     assert branch is not None
     if not branch.is_active:
         raise error("BRANCH_INACTIVE", f"Branch {branch.code} is inactive", field="branch_id", id=branch_id)
-    if not desk_open(now, holidays):
+    schedule = load_schedule(db, branch_id)
+    if not desk_open(now, holidays, schedule):
         raise error(
             "DESK_CLOSED",
             "The equipment desk is closed",
-            opens_at=format_datetime(next_desk_opening(now, holidays)),
+            opens_at=format_datetime(next_desk_opening(now, holidays, schedule)),
         )
 
 

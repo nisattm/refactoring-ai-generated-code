@@ -27,6 +27,7 @@ from lms.rooms.schemas import (
     room_capacity_problems,
     room_hours_problems,
 )
+from lms.staff.schedule import has_closure_on
 
 _SLOT = datetime.timedelta(minutes=30)
 
@@ -183,7 +184,7 @@ def is_open_on(db: Session, room: Room, day: datetime.date, holidays: Container[
     if not room.is_active or not is_working_day(day, holidays):
         return False
     branch = db.get(Branch, room.branch_id)
-    return branch is not None and branch.is_active
+    return branch is not None and branch.is_active and not has_closure_on(db, room.branch_id, day)
 
 
 def _slots(room: Room) -> list[tuple[datetime.time, datetime.time]]:

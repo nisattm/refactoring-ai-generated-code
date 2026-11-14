@@ -44,6 +44,7 @@ from lms.rooms.rules import (
     week_start,
 )
 from lms.rooms.schemas import format_time
+from lms.staff.schedule import has_closure_on
 
 _HALF_HOUR = datetime.timedelta(minutes=30)
 
@@ -240,7 +241,7 @@ def create_booking(
     if not room.is_active:
         raise _error("ROOM_INACTIVE", "The room is inactive", id=room.id)
     _check_organizer(db, organizer, now, day, holidays)
-    if not is_working_day(day, holidays):
+    if not is_working_day(day, holidays) or has_closure_on(db, branch.id, day):
         raise _error("ROOM_CLOSED", "The library is closed on this date")
     if start < room.opens_at or end > room.closes_at:
         raise _error(

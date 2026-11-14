@@ -9,7 +9,13 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from lms.equipment.models import EquipmentItem, EquipmentLoan, EquipmentReservation
-from lms.equipment.rules import COLLECT_LATE, FAR_FUTURE, GRACE, HOLD_EARLY, LENDABLE_STATUSES
+from lms.equipment.rules import (
+    COLLECT_LATE,
+    FAR_FUTURE,
+    GRACE,
+    HOLD_EARLY,
+    LENDABLE_STATUSES,
+)
 
 Interval = tuple[datetime.datetime, datetime.datetime]
 

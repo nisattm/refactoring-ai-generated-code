@@ -23,6 +23,7 @@ from lms.ill.models import IllRequest
 from lms.members.models import Member
 from lms.reservations.models import ACTIVE_STATUSES, Reservation
 from lms.rooms.models import Room, RoomBooking
+from lms.staff.models import Shift, StaffProfile
 
 
 def create_branch(db: Session, now: datetime.datetime, actor: User, code: str, name: str, address: str) -> Branch:
@@ -64,8 +65,8 @@ def require_active_branch(db: Session, field: str, branch_id: int) -> Branch:
     return branch
 
 
-def is_branch_in_use(db: Session, branch_id: int) -> bool:
-    """LIB-BR-03, LIB-ROOM-39, LIB-EQ-36."""
+def is_branch_in_use(db: Session, branch_id: int, today: datetime.date) -> bool:
+    """LIB-BR-03, LIB-ROOM-39, LIB-EQ-36, LIB-STF-47."""
     if db.scalar(sa.select(Member.id).where(Member.home_branch_id == branch_id).limit(1)) is not None:
         return True
     in_branch = sa.or_(Copy.home_branch_id == branch_id, Copy.current_branch_id == branch_id)
@@ -91,12 +92,19 @@ def is_branch_in_use(db: Session, branch_id: int) -> bool:
     equipment = sa.select(EquipmentItem.id).where(
         EquipmentItem.branch_id == branch_id, EquipmentItem.status.not_in(("retired", "lost"))
     )
-    return db.scalar(equipment.limit(1)) is not None
+    if db.scalar(equipment.limit(1)) is not None:
+        return True
+    if db.scalar(sa.select(StaffProfile.id).where(StaffProfile.home_branch_id == branch_id).limit(1)) is not None:
+        return True  # LIB-STF-47
+    upcoming = sa.select(Shift.id).where(
+        Shift.branch_id == branch_id, Shift.status.in_(("planned", "completed")), Shift.date > today
+    )
+    return db.scalar(upcoming.limit(1)) is not None
 
 
 def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Branch, fields: dict[str, object]) -> Branch:
     """LIB-BR-03. ``fields`` holds only the fields present in the request."""
-    if fields.get("is_active") is False and branch.is_active and is_branch_in_use(db, branch.id):
+    if fields.get("is_active") is False and branch.is_active and is_branch_in_use(db, branch.id, now.date()):
         raise Conflict(
             "The branch is still used by copies, members or reservations",
             code="BRANCH_IN_USE",

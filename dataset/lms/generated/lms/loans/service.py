@@ -30,6 +30,7 @@ from lms.members.models import Member
 from lms.members.types import MEMBERSHIP_TYPES
 from lms.notifications.service import notify_loan
 from lms.reservations import service as reservations
+from lms.staff.schedule import has_closure_on
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> Loan:
@@ -202,6 +203,12 @@ def return_loan(
     if not branch.is_active:
         raise Conflict(
             f"Branch {branch.code} is inactive", code="BRANCH_INACTIVE", details={"field": "branch_id", "id": branch_id}
+        )
+    if has_closure_on(db, branch.id, now.date()):
+        raise Conflict(
+            f"Branch {branch.code} is closed today",
+            code="BRANCH_CLOSED_TODAY",
+            details={"field": "branch_id", "id": branch_id},
         )
     copy = db.get(Copy, loan.copy_id)
     assert copy is not None

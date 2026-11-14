@@ -11,19 +11,25 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.calendar import is_working_day
 from lms.core.clock import LOCAL_TZ
 from lms.core.errors import NotFound, reference_not_found
 from lms.core.money import format_amount
 from lms.core.timeutil import format_datetime
 from lms.equipment import capacity
-from lms.equipment.inventory import cancel_reservation, get_type_or_404, has_valid_training
+from lms.equipment.inventory import (
+    cancel_reservation,
+    get_type_or_404,
+    has_valid_training,
+)
 from lms.equipment.lending import error, total_debt
-from lms.equipment.models import EquipmentItem, EquipmentLoan, EquipmentReservation, EquipmentType
+from lms.equipment.models import (
+    EquipmentItem,
+    EquipmentLoan,
+    EquipmentReservation,
+    EquipmentType,
+)
 from lms.equipment.rules import (
     DEBT_BLOCK,
-    DESK_CLOSES,
-    DESK_OPENS,
     EQUIPMENT_RULES,
     GRACE,
     HALF_HOUR,
@@ -37,6 +43,7 @@ from lms.equipment.rules import (
 from lms.equipment.schemas import AvailabilityOut, SlotOut
 from lms.members.models import Member
 from lms.notifications.service import equipment_overdue_notice_sent, notify_equipment
+from lms.staff.schedule import load_schedule
 
 
 def get_reservation_or_404(db: Session, reservation_id: int) -> EquipmentReservation:
@@ -79,9 +86,10 @@ def _next_free_at(
     last_day = now.date() + datetime.timedelta(days=MAX_AHEAD_DAYS)
     intervals = capacity.existing_intervals(db, equipment_type.id, branch_id, now)
     cap = capacity.capacity(db, equipment_type.id, branch_id)
+    schedule = load_schedule(db, branch_id)
     candidate = after + HALF_HOUR
     while candidate.date() <= last_day:
-        if desk_open(candidate, holidays):
+        if desk_open(candidate, holidays, schedule):
             ends_at = due_at_from(candidate, equipment_type.period_unit, equipment_type.period, holidays)
             if capacity.fits(intervals, capacity.hold_interval(candidate, ends_at), cap, now):
                 return candidate
@@ -133,9 +141,12 @@ def create_reservation(
         and not has_valid_training(db, member.id, equipment_type.id, starts_at.date())
     ):
         raise error("TRAINING_REQUIRED", "The member needs a valid training for this equipment type")
-    if not desk_open(starts_at, holidays):
+    schedule = load_schedule(db, branch_id)
+    if not desk_open(starts_at, holidays, schedule):
         raise error(
-            "DESK_CLOSED", "The equipment desk is closed at the start", opens_at=format_datetime(next_desk_opening(starts_at, holidays))
+            "DESK_CLOSED",
+            "The equipment desk is closed at the start",
+            opens_at=format_datetime(next_desk_opening(starts_at, holidays, schedule)),
         )
     if starts_at < now + MIN_LEAD:
         raise error("RESERVATION_TOO_SOON", "A reservation must start at least 30 minutes from now")
@@ -296,10 +307,11 @@ def availability(
     """LIB-EQ-33."""
     cap = capacity.capacity(db, equipment_type.id, branch_id)
     slots: list[SlotOut] = []
-    if is_working_day(day, holidays):
+    schedule = load_schedule(db, branch_id)
+    if schedule.is_calendar_open(day, holidays):
         intervals = capacity.existing_intervals(db, equipment_type.id, branch_id, now)
-        cursor = at_local(day, DESK_OPENS)
-        close = at_local(day, DESK_CLOSES)
+        cursor = at_local(day, schedule.opens_at)
+        close = at_local(day, schedule.closes_at)
         while cursor < close:
             peak = capacity.max_demand(intervals, cursor, cursor + HALF_HOUR)
             slots.append(SlotOut(start=cursor.strftime("%H:%M"), free=max(cap - peak, 0)))
