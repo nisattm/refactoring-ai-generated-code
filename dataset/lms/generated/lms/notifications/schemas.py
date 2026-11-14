@@ -51,6 +51,10 @@ NotificationType = Literal[
     "event_promoted",
     "event_reminder",
     "event_ban_started",
+    "course_enrolled",
+    "course_activated",
+    "reserve_item_available",
+    "reserve_overdue",
 ]
 
 
@@ -69,6 +73,7 @@ class NotificationOut(BaseModel):
     digital_hold_id: int | None
     ill_request_id: int | None
     event_id: int | None
+    course_id: int | None
     created_at: str
     read_at: str | None
 
@@ -102,6 +107,7 @@ def notification_out(n: Notification) -> NotificationOut:
         digital_hold_id=n.digital_hold_id,
         ill_request_id=n.ill_request_id,
         event_id=n.event_id,
+        course_id=n.course_id,
         created_at=format_datetime(n.created_at),
         read_at=format_datetime(n.read_at) if n.read_at is not None else None,
     )

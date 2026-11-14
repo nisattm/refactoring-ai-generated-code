@@ -16,6 +16,7 @@ from lms.auth.models import User
 from lms.branches.models import Branch, Transfer
 from lms.catalog.models import Copy
 from lms.catalog.status import set_status
+from lms.courses.usage import branch_has_open_courses
 from lms.core.calendar import add_working_days
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.equipment.models import EquipmentItem
@@ -103,7 +104,9 @@ def is_branch_in_use(db: Session, branch_id: int, now: datetime.datetime) -> boo
     )
     if db.scalar(upcoming.limit(1)) is not None:
         return True
-    return branch_has_open_events(db, branch_id, now)  # LIB-EVT-42
+    if branch_has_open_events(db, branch_id, now):  # LIB-EVT-42
+        return True
+    return branch_has_open_courses(db, branch_id)  # LIB-CRS-41
 
 
 def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Branch, fields: dict[str, object]) -> Branch:

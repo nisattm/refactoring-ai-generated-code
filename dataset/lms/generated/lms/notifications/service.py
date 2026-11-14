@@ -52,6 +52,8 @@ def _create(
     ill_request_id: int | None = None,
     event_id: int | None = None,
     event_registration_id: int | None = None,
+    course_id: int | None = None,
+    reserve_loan_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -69,6 +71,8 @@ def _create(
         ill_request_id=ill_request_id,
         event_id=event_id,
         event_registration_id=event_registration_id,
+        course_id=course_id,
+        reserve_loan_id=reserve_loan_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -286,6 +290,31 @@ def notify_event(
 def event_reminder_sent(db: Session, event_registration_id: int) -> bool:
     stmt = sa.select(Notification.id).where(
         Notification.type == "event_reminder", Notification.event_registration_id == event_registration_id
+    )
+    return db.scalar(stmt.limit(1)) is not None
+
+
+# --- course reserves (LIB-CRS-44) ------------------------------------------------
+
+
+def notify_course(
+    db: Session,
+    now: datetime.datetime,
+    member_id: int,
+    type_: str,
+    message: str,
+    *,
+    course_id: int,
+    reserve_loan_id: int | None = None,
+) -> Notification:
+    """``course_enrolled``, ``course_activated``, ``reserve_item_available`` and ``reserve_overdue``;
+    the caller composes the message."""
+    return _create(db, now, member_id, type_, message, course_id=course_id, reserve_loan_id=reserve_loan_id)
+
+
+def reserve_overdue_notice_sent(db: Session, reserve_loan_id: int) -> bool:
+    stmt = sa.select(Notification.id).where(
+        Notification.type == "reserve_overdue", Notification.reserve_loan_id == reserve_loan_id
     )
     return db.scalar(stmt.limit(1)) is not None
 

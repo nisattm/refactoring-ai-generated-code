@@ -25,6 +25,7 @@ from lms.catalog.status import GONE_STATUSES, invalid_status, set_status
 from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
+from lms.courses.usage import book_has_items
 from lms.ill.models import IllOutgoing
 
 
@@ -233,6 +234,8 @@ def delete_book(db: Session, now: datetime.datetime, actor: User, book: Book) ->
         raise Conflict("The book has copies", code="BOOK_HAS_COPIES", details={"id": book.id})
     if db.scalar(sa.select(IllOutgoing.id).where(IllOutgoing.book_id == book.id).limit(1)) is not None:  # LIB-ILL-40
         raise Conflict("The book has interlibrary requests", code="IN_USE", details={"id": book.id})
+    if book_has_items(db, book.id):  # a book on a reading list (module 21)
+        raise Conflict("The book is on a reading list", code="IN_USE", details={"id": book.id})
     details = {"isbn": book.isbn, "title": book.title}
     db.execute(sa.delete(BookAuthor).where(BookAuthor.book_id == book.id))
     db.delete(book)

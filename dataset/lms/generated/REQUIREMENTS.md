@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–28), revised after team review.
-**Version:** 0.13 · 2026-11-14 (adds section 28, module 20 Events)
+**Version:** 0.14 · 2026-11-14 (adds section 29, module 21 Course reserves)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -39,6 +39,7 @@ The system consists of 20 modules:
 | 18 | Interlibrary loans | `lms.ill` | 26 |
 | 19 | Staff and shifts | `lms.staff` | 27 |
 | 20 | Events | `lms.events` | 28 |
+| 21 | Course reserves | `lms.courses` | 29 |
 
 ### 1.2 Out of scope
 
@@ -104,7 +105,8 @@ lms/
 ├── digital/             Module 17
 ├── ill/                 Module 18
 ├── staff/               Module 19
-└── events/              Module 20
+├── events/              Module 20
+└── courses/             Module 21
 ```
 
 | ID | Requirement |
@@ -470,6 +472,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Interlibrary loans (module 18) | – | Create, read and cancel own incoming requests; ask for a renewal | Full, except partners: read only | Full |
 | Staff and shifts (module 19) | – | Read branch hours, closures and open days | Own staff profile, own shifts and attendance, own leave requests; read branch hours, closures and open days | Full |
 | Events (module 20) | – | Read published events; register and cancel own registrations; read own registrations and bans | Full | Full |
+| Course reserves (module 21) | – | Read own courses and their reading lists; read own reserve loans and renew them; as a course's instructor: change its reading list and read its enrollments | Full | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -548,12 +551,12 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-04 | **Valid membership.** A membership is valid on a date `d` when `status` is `active` and `d` ≤ `valid_until`. `membership_valid` in `MemberOut` is this value for today. |
 | LIB-MEM-05 | **Uniqueness.** `email` MUST be unique among all users (LIB-AUTH-05) and `university_id` unique among members. A duplicate returns `409 CONFLICT` with `details.field`. |
 | LIB-MEM-06 | **List.** `GET /api/v1/members` is paginated (LIB-COM-18) and ordered by `id`. Filters: `q` (case-insensitive substring of `full_name`, `email`, `member_no` or `university_id`), `membership_type`, `status`, `home_branch_id`, `membership_valid` (`true`/`false`). |
-| LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. |
+| LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. Course reserves: LIB-CRS-40. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34) and `events` (LIB-EVT-39). |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39) and `course_reserves` (LIB-CRS-38). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -598,6 +601,7 @@ API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]
 | `acquired_on` | date | Not after today |
 | `shelf_location` | text or null | 0–50 characters |
 | `withdrawn_reason` | text or null | Set when withdrawn |
+| `reserve_item_id` | integer or null | The reading list item while the copy is `on_reserve` (module 21, LIB-CRS-20); null otherwise |
 
 ### 8.2 Copy statuses
 
@@ -611,8 +615,9 @@ API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]
 | `lost` | Reported lost (module 5) | No |
 | `withdrawn` | Removed from the collection; final | No |
 | `at_partner` | Lent to a partner library (module 18, LIB-ILL-31) | No |
+| `on_reserve` | Kept at the reserve desk for a course (module 21) | Only as a reserve loan (LIB-CRS-24) |
 
-Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withdrawn`; `on_hold` → `on_loan`, `available`, `in_transfer`; `on_loan` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost`; `in_transfer` → `available`, `on_hold`; `damaged` → `available`, `on_hold`, `in_transfer`, `withdrawn`; `lost` → `withdrawn`; module 18 adds `available` → `at_partner` and `at_partner` → `available`, `lost` (LIB-ILL-31). The release procedure (LIB-RES-08) and transfer arrival (LIB-BR-07) may also keep a copy `on_hold` (held for the next reservation in the queue) or `in_transfer` (a new transfer starts on arrival); these are allowed. On arrival, the copy goes directly from `in_transfer` to the status that LIB-BR-07 gives it; no intermediate status is stored. Any other transition MUST be rejected with `409 INVALID_COPY_STATUS`.
+Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withdrawn`; `on_hold` → `on_loan`, `available`, `in_transfer`; `on_loan` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost`; `in_transfer` → `available`, `on_hold`; `damaged` → `available`, `on_hold`, `in_transfer`, `withdrawn`; `lost` → `withdrawn`; module 18 adds `available` → `at_partner` and `at_partner` → `available`, `lost` (LIB-ILL-31); module 21 adds `available` → `on_reserve` and `on_reserve` → `available`, `on_hold`, `in_transfer`, `lost` (LIB-CRS-20). The release procedure (LIB-RES-08) and transfer arrival (LIB-BR-07) may also keep a copy `on_hold` (held for the next reservation in the queue) or `in_transfer` (a new transfer starts on arrival); these are allowed. On arrival, the copy goes directly from `in_transfer` to the status that LIB-BR-07 gives it; no intermediate status is stored. Any other transition MUST be rejected with `409 INVALID_COPY_STATUS`.
 
 ### 8.3 Endpoints
 
@@ -637,7 +642,7 @@ Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withd
 | LIB-CAT-05 | **Update book.** `PATCH /api/v1/books/{book_id}` accepts any subset of the create fields with the same rules. |
 | LIB-CAT-06 | **Delete.** `DELETE` returns `204`. A book that has any copy returns `409 BOOK_HAS_COPIES`. An author or publisher that is used by any book returns `409 IN_USE`. Books with interlibrary requests: LIB-ILL-40. |
 | LIB-CAT-07 | **Add copy.** `POST /api/v1/books/{book_id}/copies` with `{"barcode", "home_branch_id", "price", "acquired_on", "shelf_location"}` returns `201` with the copy. `current_branch_id` = `home_branch_id`, `status` = `available`. A duplicate barcode returns `409 CONFLICT`. The new copy is then released (LIB-RES-08), so a waiting reservation can take it at once. |
-| LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). |
+| LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). Copies on reserve: LIB-CRS-43. |
 | LIB-CAT-09 | **Update copy.** `PATCH /api/v1/copies/{copy_id}` accepts any subset of `{"price", "shelf_location", "home_branch_id"}`. `home_branch_id` can change only while the copy is `available` at its home branch; it then also changes `current_branch_id`. Otherwise `409 INVALID_COPY_STATUS`. |
 | LIB-CAT-10 | **Withdraw.** `POST /api/v1/copies/{copy_id}/withdraw` with `{"reason"}` (5–500 characters) sets `status` to `withdrawn` and stores the reason. Allowed from `available`, `damaged` and `lost` (8.2); otherwise `409 INVALID_COPY_STATUS`. |
 | LIB-CAT-11 | **Repair.** `POST /api/v1/copies/{copy_id}/repair` is allowed only for a `damaged` copy (otherwise `409 INVALID_COPY_STATUS`). The copy is released (LIB-RES-08). |
@@ -689,7 +694,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | LIB-LOAN-02 | **Overdue.** An open loan is overdue when today > `due_date`. |
 | LIB-LOAN-03 | **Due date.** `due_date` = the next working day on or after `loan_date` + `loan_period_days` calendar days (LIB-COM-08). Examples: student, lent 2026-11-02 → due 2026-11-16; academic, lent 2026-12-02 → 2027-01-01 is a holiday → due 2027-01-04. |
 | LIB-LOAN-04 | **Terms are fixed per loan.** `loan_period_days`, `max_renewals` and `daily_fee` are copied from the member's type (7.1) when the loan is created and are used for that loan until it closes, even if the member's type changes. |
-| LIB-LOAN-05 | **Lending checks.** The checks run in this order; the first failure decides the response (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) today > `valid_until` → `MEMBERSHIP_EXPIRED`; (3) the member has an overdue loan (equipment loans: LIB-EQ-14; interlibrary requests: LIB-ILL-19) → `MEMBER_HAS_OVERDUE`; (4) the member's total debt (LIB-FEE-09) ≥ 50.00 TL → `MEMBER_BLOCKED_BY_DEBT`, with `details.total_debt`; (5) the member's open loans ≥ the loan limit of the member's current type → `LOAN_LIMIT_REACHED`; (6) copy status: `available` → allowed; `on_hold` → allowed only if the hold belongs to a `ready` reservation of this member (LIB-RES-10), otherwise `COPY_ON_HOLD`; any other status → `COPY_NOT_AVAILABLE`, with `details.status`. |
+| LIB-LOAN-05 | **Lending checks.** The checks run in this order; the first failure decides the response (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) today > `valid_until` → `MEMBERSHIP_EXPIRED`; (3) the member has an overdue loan (equipment loans: LIB-EQ-14; interlibrary requests: LIB-ILL-19; reserve loans: LIB-CRS-37) → `MEMBER_HAS_OVERDUE`; (4) the member's total debt (LIB-FEE-09) ≥ 50.00 TL → `MEMBER_BLOCKED_BY_DEBT`, with `details.total_debt`; (5) the member's open loans ≥ the loan limit of the member's current type → `LOAN_LIMIT_REACHED`; (6) copy status: `available` → allowed; `on_hold` → allowed only if the hold belongs to a `ready` reservation of this member (LIB-RES-10), otherwise `COPY_ON_HOLD`; any other status → `COPY_NOT_AVAILABLE`, with `details.status`. |
 | LIB-LOAN-06 | **Debt boundary.** Total debt 49.99 TL allows lending; 50.00 TL does not. |
 | LIB-LOAN-07 | **Renew.** `POST /api/v1/loans/{loan_id}/renew` returns `200` with `LoanOut`. Checks in order (all `409`): loan not `open` → `LOAN_NOT_OPEN`; member `passive` → `MEMBER_PASSIVE`; membership expired → `MEMBERSHIP_EXPIRED`; loan overdue → `LOAN_OVERDUE`; `renewal_count` ≥ `max_renewals` → `RENEWAL_LIMIT_REACHED`; the book has an active reservation (status `waiting`, `in_transit` or `ready`) by any member → `BOOK_RESERVED`. |
 | LIB-LOAN-08 | **Renewed due date.** New `due_date` = the next working day on or after today + `loan_period_days` (the new period starts on the renewal day). Because today is never before the previous loan or renewal date, the new due date is never earlier than the current one. `renewal_count` increases by 1. A renewal on the due date itself is allowed (not overdue). Examples: student loan due 2026-11-16, renewed on 2026-11-10 → due 2026-11-24. Student loan due 2026-06-01, renewed on 2026-05-15 → 2026-05-29 is a holiday → due 2026-06-01 (unchanged); the renewal still counts. |
@@ -738,13 +743,13 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | ID | Requirement |
 | --- | --- |
 | LIB-RES-01 | **Create.** `POST /api/v1/reservations` with `{"book_id", "pickup_branch_id"}` returns `201` with `ReservationOut`. A librarian or admin MUST also send `member_id`; a member MUST NOT send it (`422 VALIDATION_ERROR`) and reserves for themselves. |
-| LIB-RES-02 | **Creation checks.** In order (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) membership expired → `MEMBERSHIP_EXPIRED`; (3) the book is not lendable (LIB-CAT-12) → `BOOK_NOT_LENDABLE`; (4) the member already has an active reservation for this book → `DUPLICATE_RESERVATION`; (5) the member has an open loan of a copy of this book → `ALREADY_BORROWED`; (6) the member has 3 active reservations → `RESERVATION_LIMIT_REACHED`; (7) a copy of the book is `available` with `current_branch_id` = `pickup_branch_id` → `COPY_AVAILABLE_AT_BRANCH`. |
+| LIB-RES-02 | **Creation checks.** In order (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) membership expired → `MEMBERSHIP_EXPIRED`; (3) the book is not lendable (LIB-CAT-12) → `BOOK_NOT_LENDABLE`; (4) the member already has an active reservation for this book → `DUPLICATE_RESERVATION`; (5) the member has an open loan of a copy of this book → `ALREADY_BORROWED`; (6) the member has 3 active reservations → `RESERVATION_LIMIT_REACHED`; (7) a copy of the book is `available` with `current_branch_id` = `pickup_branch_id` → `COPY_AVAILABLE_AT_BRANCH`. Copies on reserve: LIB-CRS-42. |
 | LIB-RES-03 | **Limit boundary.** A member with 2 active reservations can create a third; with 3 they cannot. Fulfilled, cancelled and expired reservations do not count. |
 | LIB-RES-04 | **Queue.** Each book has one first-come, first-served queue across all pickup branches, ordered by `created_at`, then `id`. There is no priority by membership type. |
-| LIB-RES-05 | **Immediate assignment.** After a reservation is created, if a copy of the book is `available` at another branch, that copy is assigned at once by the release procedure (LIB-RES-08) applied to it. |
+| LIB-RES-05 | **Immediate assignment.** After a reservation is created, if a copy of the book is `available` at another branch, that copy is assigned at once by the release procedure (LIB-RES-08) applied to it. Copies on reserve: LIB-CRS-42. |
 | LIB-RES-06 | **Queue view.** `GET /api/v1/books/{book_id}/reservations` returns the active reservations of the book, paginated (LIB-COM-18) and in queue order (LIB-RES-04). |
 | LIB-RES-07 | **List.** `GET /api/v1/reservations` is paginated, ordered by `id`. Filters: `member_id`, `book_id`, `pickup_branch_id`, `status`. |
-| LIB-RES-08 | **Release procedure.** When a copy becomes free (good return LIB-LOAN-12, new copy LIB-CAT-07, repair LIB-CAT-11, cancellation or expiry of the reservation it was held for, transfer arrival in module 11, or LIB-RES-05), the system takes the first `waiting` reservation of the copy's book (LIB-RES-04) and: (a) if none exists — the copy becomes `available` if it is at its home branch; otherwise a return transfer to the home branch starts (module 11) and the copy becomes `in_transfer`; (b) if its `pickup_branch_id` = the copy's `current_branch_id` — the reservation becomes `ready` (LIB-RES-09); (c) otherwise — the copy is assigned (`copy_id`), the reservation becomes `in_transit`, and a transfer of the copy to the pickup branch starts (module 11). |
+| LIB-RES-08 | **Release procedure.** When a copy becomes free (good return LIB-LOAN-12, new copy LIB-CAT-07, repair LIB-CAT-11, cancellation or expiry of the reservation it was held for, transfer arrival in module 11, or LIB-RES-05), the system takes the first `waiting` reservation of the copy's book (LIB-RES-04) and: (a) if none exists — the copy becomes `available` if it is at its home branch; otherwise a return transfer to the home branch starts (module 11) and the copy becomes `in_transfer`; (b) if its `pickup_branch_id` = the copy's `current_branch_id` — the reservation becomes `ready` (LIB-RES-09); (c) otherwise — the copy is assigned (`copy_id`), the reservation becomes `in_transit`, and a transfer of the copy to the pickup branch starts (module 11). Course reserves come first: LIB-CRS-22. |
 | LIB-RES-09 | **Ready.** A reservation becomes `ready` with `copy_id` set, `ready_on` = today and `hold_until` = today + 3 working days (LIB-COM-09). The copy's status becomes `on_hold`. The member is notified (event `reservation_ready`). Example: ready on 2026-10-28 → `hold_until` 2026-11-03. |
 | LIB-RES-10 | **Fulfilment.** When a member borrows a copy of a book for which they have an active reservation, that reservation becomes `fulfilled`: (a) `ready` with the held copy lent (LIB-LOAN-05 step 6, on or before `hold_until`) — nothing else changes; (b) `ready` with another available copy lent — the held copy is released (LIB-RES-08); (c) `in_transit` — the transfer continues and the copy is released when it arrives (LIB-BR-07); (d) `waiting` — no copy is involved. |
 | LIB-RES-11 | **Expiry.** A `ready` reservation with today > `hold_until` is expired. `POST /api/v1/reservations/process-expired` marks every such reservation `expired` (in queue order of their books), releases each held copy (LIB-RES-08), notifies the member (event `reservation_expired`) and returns `200` with `{"expired": <count>}`. Before lending a copy that is `on_hold`, the system MUST first expire its reservation if it is past `hold_until`. |
@@ -765,11 +770,12 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | `id` | integer | LIB-COM-14 |
 | `member_id` | integer | |
 | `loan_id` | integer or null | The loan the fee comes from |
-| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` \| `event_fee` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25; `ill_request_fee`, `ill_late_fee`, `ill_lost`: LIB-ILL-35; `event_fee`: LIB-EVT-38 |
+| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` \| `event_fee` \| `reserve_late_fee` \| `reserve_lost` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25; `ill_request_fee`, `ill_late_fee`, `ill_lost`: LIB-ILL-35; `event_fee`: LIB-EVT-38; `reserve_*`: LIB-CRS-35 |
 | `room_booking_id` | integer or null | The room booking a `no_show_fee` comes from |
 | `equipment_loan_id` | integer or null | The equipment loan an `equipment_*` fee comes from |
 | `ill_request_id` | integer or null | The incoming interlibrary request an `ill_*` fee comes from |
 | `event_registration_id` | integer or null | The event registration an `event_fee` comes from |
+| `reserve_loan_id` | integer or null | The reserve loan a `reserve_*` fee comes from |
 | `amount` | amount | > 0.00 |
 | `paid_amount` | amount | 0.00 ≤ `paid_amount` ≤ `amount` |
 | `status` | `open` \| `paid` \| `waived` | `paid` when `paid_amount` = `amount` |
@@ -803,7 +809,7 @@ API representation (`FeeOut`): all fields, plus `outstanding` = `amount` − `pa
 | LIB-FEE-06 | **Allocation.** A payment is applied to the member's `open` fees in order of `created_on`, then `id`: each fee receives as much as it still owes until the payment is used up. A fee whose `paid_amount` reaches `amount` becomes `paid`. Partial payment is allowed. Example: open fees A 6.00 (older) and B 20.00; payment 10.00 → A 6.00 paid (status `paid`), B 4.00 paid (status `open`, outstanding 16.00). |
 | LIB-FEE-07 | **Waive.** `POST /api/v1/fees/{fee_id}/waive` with `{"reason"}` (5–500 characters) sets an `open` fee to `waived` and returns `200` with `FeeOut`. Only `admin` may waive (`403 FORBIDDEN` for librarians). A fee that is not `open` returns `409 FEE_NOT_OPEN`. Amounts already paid stay paid; only the outstanding part is waived. Automatic waivers of events: LIB-EVT-38. |
 | LIB-FEE-08 | **Fee lists.** `GET /api/v1/members/{member_id}/fees` and `GET /api/v1/fees` are paginated, ordered by `created_on`, then `id`. Filters: `status`, `kind`, `loan_id`; `GET /api/v1/fees` also `member_id`. |
-| LIB-FEE-09 | **Total debt.** A member's total debt = the sum of `outstanding` of all `open` fees + the sum of `accrued_late_fee` of all open overdue loans. This value is used by LIB-LOAN-05 step 4. Equipment loans: LIB-EQ-14. Interlibrary requests: LIB-ILL-19. |
+| LIB-FEE-09 | **Total debt.** A member's total debt = the sum of `outstanding` of all `open` fees + the sum of `accrued_late_fee` of all open overdue loans. This value is used by LIB-LOAN-05 step 4. Equipment loans: LIB-EQ-14. Interlibrary requests: LIB-ILL-19. Reserve loans: LIB-CRS-36. |
 | LIB-FEE-10 | **Balance.** `GET /api/v1/members/{member_id}/balance` returns `200` with `BalanceOut`: `{"outstanding_fees": "<amount>", "accrued_late_fees": "<amount>", "total_debt": "<amount>", "blocked": <bool>}`, where `blocked` is `total_debt` ≥ 50.00. |
 | LIB-FEE-11 | **Payments list.** `GET /api/v1/members/{member_id}/payments` is paginated, ordered by `paid_at`, then `id`. |
 
@@ -871,7 +877,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -890,7 +896,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 and the events of LIB-EVT-44. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44 and the course reserve events of LIB-CRS-44. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -927,7 +933,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46.
 
 ### 16.1 Endpoints and requirements
 
@@ -978,7 +984,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. |
@@ -1119,7 +1125,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10.
 
 ---
 
@@ -2384,6 +2390,210 @@ A registration is **active** while it is `registered` or `waitlisted`.
 
 ---
 
+## 29. Module 21: Course reserves
+
+Instructors put books on the reading list of a course. The library places copies of these books "on reserve" at the course's branch, where the students of the course borrow them for short periods: 2 hours, 1 day or 3 days. Package `lms.courses`. Times are local (LIB-COM-01).
+
+### 29.1 Data
+
+**Course**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `code` | text | 2–4 letters `A-Z` followed by 3 digits, e.g. `"CENG301"`; stored in upper case |
+| `title` | text | LIB-COM-16 |
+| `term` | text | `"<year>-fall"`, `"<year>-spring"` or `"<year>-summer"`, year 2000–2100 |
+| `instructor_id` | integer | A member (LIB-CRS-02) |
+| `branch_id` | integer | The branch whose desk keeps the reserve copies |
+| `starts_on`, `ends_on` | date | `ends_on` − `starts_on` is 6–179 days; on create `ends_on` is not before today |
+| `enrollment_limit` | integer | 1–300; default 100 |
+| `status` | `draft` \| `active` \| `closed` | Initially `draft` |
+| `created_at`, `activated_at`, `closed_at` | date-time or null | |
+
+A course is **running** on a date `d` when it is `active` and `starts_on` ≤ `d` ≤ `ends_on`.
+
+**Enrollment:** `id`, `course_id`, `member_id`, `status` (`enrolled` \| `dropped`), `enrolled_at`, `dropped_at`, `drop_reason` (`staff_request` \| `member_deactivated` \| null). A member enrolled again after a drop gets a new enrollment.
+
+**Reading list item**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `course_id`, `book_id` | integer | |
+| `kind` | `required` \| `recommended` | Default `required` |
+| `loan_period` | `2h` \| `1d` \| `3d` | Default `2h` |
+| `copies_wanted` | integer | 1–5; default 1 |
+| `note` | text | 0–500 characters; default `""` |
+| `position` | integer or null | 1 … n among the items that are not `removed`; null for `removed` |
+| `status` | `requested` \| `on_reserve` \| `removed` | `requested` while no copy is on reserve for the item, `on_reserve` while at least one is; `removed` is final |
+| `added_at` | date-time | |
+
+**Copy on reserve:** a copy with status `on_reserve` (LIB-CRS-20); the copy's new field `reserve_item_id` names its item and is null for every other status.
+
+**Reserve loan**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `copy_id`, `item_id`, `course_id`, `member_id` | integer | |
+| `lent_at`, `due_at` | date-time | LIB-CRS-25 |
+| `renewed` | boolean | Default `false` |
+| `status` | `open` \| `returned` \| `lost` | |
+| `returned_at` | date-time or null | |
+| `late_minutes` | integer or null | Set when the loan closes: whole minutes from `due_at` to the closing time, at least 0 |
+| `fee_id` | integer or null | The `reserve_late_fee` of the loan |
+
+An open reserve loan is **overdue** when now > `due_at`. API representation (`ReserveLoanOut`): all fields, plus `book_title`, `course_code`, `is_overdue` and `accrued_late_fee` (LIB-CRS-29 with now as the closing time; `"0.00"` for closed loans).
+
+### 29.2 Rules by membership type
+
+| Type | Role in courses | Open reserve loans at a time |
+| --- | --- | --- |
+| `student` | Can be enrolled | 2 |
+| `academic` | Can be an instructor; borrows from own courses | 3 |
+| `staff` | None | 0 |
+| `guest` | None | 0 |
+
+### 29.3 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/courses`, `PATCH /api/v1/courses/{course_id}` | librarian, admin | Create, change |
+| `POST /api/v1/courses/{course_id}/activate`, `/close` | librarian, admin | Activate, close |
+| `GET /api/v1/courses`, `GET /api/v1/courses/{course_id}` | all authenticated users (members: LIB-CRS-05) | Read |
+| `POST /api/v1/courses/{course_id}/enrollments` | librarian, admin | Enroll students |
+| `GET /api/v1/courses/{course_id}/enrollments` | librarian, admin; the course's instructor | Enrollments |
+| `POST /api/v1/enrollments/{enrollment_id}/drop` | librarian, admin | Drop |
+| `GET /api/v1/members/{member_id}/courses` | librarian, admin; member (own) | Courses of a member |
+| `POST`, `GET /api/v1/courses/{course_id}/reading-list` | write: librarian, admin, the course's instructor; read: as LIB-CRS-05 | Reading list |
+| `PUT /api/v1/courses/{course_id}/reading-list/order` | librarian, admin, the course's instructor | Order |
+| `PATCH /api/v1/reading-list-items/{item_id}`, `POST …/{item_id}/remove` | librarian, admin, the course's instructor | Change, remove |
+| `POST /api/v1/reading-list-items/{item_id}/copies` | librarian, admin | Place a copy on reserve |
+| `POST /api/v1/copies/{copy_id}/unreserve` | librarian, admin | Take a copy off reserve |
+| `POST /api/v1/reserve-loans`, `GET /api/v1/reserve-loans` | librarian, admin | Lend, list |
+| `GET /api/v1/members/{member_id}/reserve-loans` | librarian, admin; member (own) | Reserve loans of a member |
+| `POST /api/v1/reserve-loans/{loan_id}/renew` | librarian, admin; member (own) | Renew |
+| `POST /api/v1/reserve-loans/{loan_id}/return`, `/report-lost` | librarian, admin | Return, lost |
+| `POST /api/v1/course-reserves/process` | librarian, admin | Overdue notices, end of courses |
+| `GET /api/v1/reports/course-reserves` | librarian, admin | Report (section 16) |
+
+The **course's instructor** is the user of the member named by `instructor_id`. Another member calling an instructor endpoint receives `403 FORBIDDEN`.
+
+### 29.4 Courses
+
+| ID | Requirement |
+| --- | --- |
+| LIB-CRS-01 | **Create course.** `POST /api/v1/courses` with `{"code", "title", "term", "instructor_id", "branch_id", "starts_on", "ends_on", "enrollment_limit"}` creates a `draft` and returns `201` (event `course_created`). `enrollment_limit` MAY be omitted. Values outside 29.1 → `422 VALIDATION_ERROR`; unknown `instructor_id` or `branch_id` → `422` with `details.fields`. |
+| LIB-CRS-02 | **Course checks.** On create and on every change, in order (all `409`): (1) branch inactive → `BRANCH_INACTIVE`; (2) the instructor is `passive` or not of type `academic` → `INSTRUCTOR_NOT_ACADEMIC`; (3) another course has the same `code` and `term` → `CONFLICT` with `details.field` `"code"`. |
+| LIB-CRS-03 | **Change course.** `PATCH` accepts any subset of `{"title", "instructor_id", "starts_on", "ends_on", "enrollment_limit"}` on a `draft` or `active` course and returns `200` (event `course_updated`). `code`, `term` and `branch_id` cannot be changed (`422`). A `closed` course → `409 INVALID_COURSE_STATUS` with `details.status`. An `enrollment_limit` below the number of `enrolled` enrollments → `409 ENROLLMENT_LIMIT_BELOW_ENROLLED` with `details.enrolled`. |
+| LIB-CRS-04 | **Activate.** `POST /api/v1/courses/{course_id}/activate` on a `draft` sets `active` and `activated_at` (event `course_activated`) and notifies every enrolled member (`course_activated`). Checks in order (all `409`): not `draft` → `INVALID_COURSE_STATUS`; `ends_on` before today → `COURSE_ENDED`; no reading list item that is not `removed` → `COURSE_READING_LIST_EMPTY`. |
+| LIB-CRS-05 | **Read courses.** `GET /api/v1/courses` is paginated, ordered by `term`, `code`, then `id`. Filters: `term`, `branch_id`, `instructor_id`, `status`, `q` (case-insensitive substring of `code` or `title`). Each course contains `enrolled` (count of `enrolled` enrollments), `items` (count of items that are not `removed`) and `copies_on_reserve` (count). A member sees only the courses in which they are `enrolled` or the instructor; another course returns `404 NOT_FOUND`. |
+| LIB-CRS-06 | **Close.** `POST /api/v1/courses/{course_id}/close` on a `draft` or `active` course: if the course has an open reserve loan → `409 COURSE_HAS_OPEN_LOANS` with `details.loan_ids` (ascending). Otherwise every copy on reserve for the course is taken off reserve (LIB-CRS-21), the course becomes `closed` with `closed_at` (event `course_closed`) and the response is `200` with the course plus `released_copies` (count). A `closed` course → `409 INVALID_COURSE_STATUS`. |
+| LIB-CRS-07 | **Running course.** Reserve loans and renewals need a course that is running today (29.1). A `draft` course, an `active` course before `starts_on` or after `ends_on`, and a `closed` course are not running. |
+
+### 29.5 Enrollment
+
+| ID | Requirement |
+| --- | --- |
+| LIB-CRS-08 | **Enroll.** `POST /api/v1/courses/{course_id}/enrollments` with `{"member_ids": [...]}` (1–100 distinct ids, otherwise `422`) on a `draft` or `active` course (`closed` → `409 INVALID_COURSE_STATUS`) returns `200` with `{"enrolled": [<member ids>], "skipped": [{"member_id", "error_code"}]}`. The ids are handled in the given order; each one either creates an `enrolled` enrollment (event `course_enrollment_created`, notification `course_enrolled`) or is skipped with the first code that applies: unknown member → `NOT_FOUND`; type not `student` → `NOT_A_STUDENT`; `passive` → `MEMBER_PASSIVE`; `valid_until` before today → `MEMBERSHIP_EXPIRED`; already `enrolled` in the course → `ALREADY_ENROLLED`; `enrolled` count equal to `enrollment_limit` → `ENROLLMENT_FULL`. |
+| LIB-CRS-09 | **Enrollment example.** Limit 2, one member enrolled. `member_ids` [academic A, student S1, student S2] → A skipped `NOT_A_STUDENT`, S1 enrolled, S2 skipped `ENROLLMENT_FULL`. `member_ids` [S1, S1] → `422`. |
+| LIB-CRS-10 | **Drop.** `POST /api/v1/enrollments/{enrollment_id}/drop` sets an `enrolled` enrollment to `dropped` with `dropped_at` and `drop_reason` `staff_request` and returns `200` (event `course_enrollment_dropped`). Not `enrolled` → `409 ENROLLMENT_NOT_ACTIVE`; the member has an open reserve loan of the course → `409 MEMBER_HAS_RESERVE_LOANS`. |
+| LIB-CRS-11 | **Read enrollments.** `GET /api/v1/courses/{course_id}/enrollments` is paginated, ordered by `enrolled_at`, then `id`, with filter `status`; each item contains `member_no` and `full_name`. `GET /api/v1/members/{member_id}/courses` returns the courses in which the member is `enrolled` or the instructor, ordered as in LIB-CRS-05, each with `role` (`"student"` or `"instructor"`). |
+
+### 29.6 Reading list
+
+| ID | Requirement |
+| --- | --- |
+| LIB-CRS-12 | **Add item.** `POST /api/v1/courses/{course_id}/reading-list` with `{"book_id", "kind", "loan_period", "copies_wanted", "note"}` returns `201` with the item at the last position, status `requested` (event `reading_list_item_added`). Only `book_id` is required. Checks in order (all `409` unless stated): course `closed` → `INVALID_COURSE_STATUS`; unknown book → `422` with `details.fields`; the book is not lendable (LIB-CAT-12) → `BOOK_NOT_LENDABLE`; the book is already an item of the course that is not `removed` → `DUPLICATE_ITEM`; the course has 40 items that are not `removed` → `READING_LIST_FULL`. |
+| LIB-CRS-13 | **Automatic placement.** Right after a `required` item is added, `available` copies of its book whose `current_branch_id` is the course's branch are placed on reserve for it (LIB-CRS-19), in order of copy `id`, until `copies_wanted` is reached. The `201` response shows the item after this. `recommended` items are filled only by hand. |
+| LIB-CRS-14 | **Change item.** `PATCH /api/v1/reading-list-items/{item_id}` accepts any subset of `{"kind", "loan_period", "copies_wanted", "note"}` and returns `200` (event `reading_list_item_updated`). A `removed` item → `409 ITEM_REMOVED`; `copies_wanted` below the copies on reserve for the item → `409 COPIES_WANTED_BELOW_RESERVE` with `details.on_reserve`. A new `loan_period` applies to reserve loans made after the change. |
+| LIB-CRS-15 | **Order.** `PUT /api/v1/courses/{course_id}/reading-list/order` with `{"item_ids": [...]}` sets `position` 1 … n in the given order and returns `200` with the reading list (LIB-CRS-17). `item_ids` MUST contain each item of the course that is not `removed` exactly once (`422` otherwise). |
+| LIB-CRS-16 | **Remove item.** `POST /api/v1/reading-list-items/{item_id}/remove` returns `200` (event `reading_list_item_removed`). A `removed` item → `409 ITEM_REMOVED`; an open reserve loan of the item → `409 RESERVE_COPY_ON_LOAN` with `details.loan_ids`. Otherwise every copy on reserve for the item is taken off reserve (LIB-CRS-21), the item becomes `removed` with `position` null, and the positions of the later items decrease by 1. |
+| LIB-CRS-17 | **Read reading list.** `GET /api/v1/courses/{course_id}/reading-list` returns the items that are not `removed`, ordered by `position`, paginated. Every representation of an item (here and in the responses of LIB-CRS-12 – LIB-CRS-16) contains `book_title`, `copies_on_reserve`, `available_now` (copies on reserve for the item without an open reserve loan) and `next_due_at` (the earliest `due_at` of the item's open reserve loans when `available_now` is 0, otherwise null). Staff MAY add `include_removed=true`; removed items then follow, ordered by `id`. |
+| LIB-CRS-18 | **Instructor rights.** The course's instructor may add, change, order and remove items of that course (LIB-CRS-12 – LIB-CRS-16) and read its enrollments. Placing copies, lending and enrollment stay with librarians and admins. |
+
+### 29.7 Copies on reserve
+
+| ID | Requirement |
+| --- | --- |
+| LIB-CRS-19 | **Place on reserve.** `POST /api/v1/reading-list-items/{item_id}/copies` with `{"copy_id"}` returns `201` with `{"copy_id", "barcode", "item_id", "course_id", "on_loan": false}` (event `reserve_copy_placed`). Checks in order (all `409`): course `closed` → `INVALID_COURSE_STATUS`; item `removed` → `ITEM_REMOVED`; the copy is of another book → `WRONG_BOOK`; the copy is not `available` → `INVALID_COPY_STATUS` with `details.status`; its `current_branch_id` is not the course's branch → `COPY_AT_OTHER_BRANCH`; copies on reserve for the item = `copies_wanted` → `RESERVE_COPIES_COMPLETE`. The copy becomes `on_reserve` with `reserve_item_id`; the item becomes `on_reserve`. When an item goes from `requested` to `on_reserve` in an `active` course, every enrolled member is notified (`reserve_item_available`). |
+| LIB-CRS-20 | **Copy status `on_reserve`.** 8.2 adds `on_reserve` ("kept at the reserve desk for a course; lent only as a reserve loan"), with the transitions `available` → `on_reserve` and `on_reserve` → `available`, `on_hold`, `in_transfer` (through the release procedure) and `lost` (LIB-CRS-31). Lending (LIB-LOAN-05 step 6) returns `COPY_NOT_AVAILABLE` with `details.status` `on_reserve`; withdrawal and relocation return `INVALID_COPY_STATUS`. In `BookOut.availability` an `on_reserve` copy counts in `total` but not in `available`. |
+| LIB-CRS-21 | **Take off reserve.** `POST /api/v1/copies/{copy_id}/unreserve` returns `200` with the copy (event `reserve_copy_removed`). A copy that is not `on_reserve` → `409 INVALID_COPY_STATUS`; a copy with an open reserve loan → `409 RESERVE_COPY_ON_LOAN` with `details.loan_ids`. The copy's `reserve_item_id` becomes null and the copy is released (LIB-RES-08); its item becomes `requested` when no copy is left on reserve for it. |
+| LIB-CRS-22 | **Course reserves first.** In LIB-RES-08, before the reservation queue is used: if the copy's `current_branch_id` is the branch of a `draft` or `active` course that has a `required` item for the copy's book with fewer copies on reserve than `copies_wanted`, the copy is placed on reserve for that item (LIB-CRS-19 effects) instead; with several such items, the one with the earliest `added_at`, then smallest `id`, takes it. A copy released by LIB-CRS-06, LIB-CRS-16 or LIB-CRS-21 is not placed on reserve by this rule. |
+| LIB-CRS-23 | **Placement example.** Course at branch A with a `required` item for book X, `copies_wanted` 2. Copy C1 of X is `available` at A and C2 is on loan. Adding the item puts C1 on reserve (item `on_reserve`, 1 of 2). C2 is returned in good condition at A while a member's reservation of X is `waiting`: C2 goes on reserve, the reservation stays `waiting`. |
+
+### 29.8 Reserve loans
+
+| ID | Requirement |
+| --- | --- |
+| LIB-CRS-24 | **Lend.** `POST /api/v1/reserve-loans` with `{"member_id"}` and exactly one of `{"copy_id"}` or `{"barcode"}` returns `201` with `ReserveLoanOut` (event `reserve_loan_created`). Both or neither → `422`; an unknown barcode → `404` as in LIB-LOAN-01. Checks in order (all `409`): (1) the copy is not `on_reserve` → `COPY_NOT_ON_RESERVE` with `details.status`; (2) its course is not running today → `COURSE_NOT_RUNNING`; (3) the course's branch is not open now (open date and `opens_at` ≤ now < `closes_at`, LIB-STF-09) → `RESERVE_DESK_CLOSED`; (4) member `passive` → `MEMBER_PASSIVE`; (5) membership not valid today → `MEMBERSHIP_EXPIRED`; (6) the member is neither `enrolled` in the course nor its instructor → `NOT_ENROLLED`; (7) the member has an overdue loan (LIB-LOAN-02) or an overdue reserve loan → `MEMBER_HAS_OVERDUE`; (8) total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (9) the member has an open reserve loan of the same item → `ALREADY_BORROWED`; (10) the member's open reserve loans ≥ the limit of 29.2 → `RESERVE_LOAN_LIMIT_REACHED` with `details.limit`; (11) the copy has an open reserve loan → `COPY_ON_RESERVE_LOAN` with `details.due_at`. |
+| LIB-CRS-25 | **Due time.** `due_at` depends on the item's `loan_period` at lending: `2h` → the earlier of now + 2 hours and today's `closes_at` of the branch; `1d` → `closes_at` on the first open day of the branch after today; `3d` → `closes_at` on the third open day of the branch after today. Open days and hours are those of LIB-STF-14 and LIB-STF-07 at the time of lending; a later change of hours or a later closure does not change `due_at`. |
+| LIB-CRS-26 | **Due time examples.** Hours 08:00–20:00. `2h` lent Mon 2026-11-02 10:15 → due 12:15; lent 19:00 → due 20:00. `1d` lent Fri 2026-11-06 15:00 → due Mon 2026-11-09 20:00. `3d` lent Tue 2026-11-03 → due Fri 2026-11-06 20:00; with a closure of the branch on Thu 2026-11-05 → due Mon 2026-11-09 20:00. |
+| LIB-CRS-27 | **Renew.** `POST /api/v1/reserve-loans/{loan_id}/renew` returns `200` (event `reserve_loan_renewed`) with a new `due_at` computed as in LIB-CRS-25 from now, and `renewed` `true`. Checks in order (all `409`): not `open` → `RESERVE_LOAN_NOT_OPEN`; `renewed` is `true` → `RENEWAL_LIMIT_REACHED`; overdue → `LOAN_OVERDUE`; course not running → `COURSE_NOT_RUNNING`; no other copy of the item is on reserve without an open reserve loan → `RESERVE_IN_DEMAND`. |
+| LIB-CRS-28 | **Return.** `POST /api/v1/reserve-loans/{loan_id}/return` with `{"branch_id"}` sets `returned`, `returned_at` = now and `late_minutes`, and returns `200` (event `reserve_loan_returned`). Not `open` → `409 RESERVE_LOAN_NOT_OPEN`; `branch_id` not the course's branch → `409 RESERVE_RETURN_WRONG_BRANCH` with `details.branch_id` (the course's branch). The copy stays `on_reserve`. |
+| LIB-CRS-29 | **Late fee.** With `late_minutes` ≤ 5 there is no fee. Otherwise: `2h` loans 1.00 TL per started hour (`late_minutes` / 60 rounded up), `1d` and `3d` loans 5.00 TL per started day (`late_minutes` / 1440 rounded up), at most 30.00 TL per loan. The loan period is the item's `loan_period` at lending. The fee has kind `reserve_late_fee` and `reserve_loan_id` (notifies `fee_created`); its id is stored in `fee_id`. |
+| LIB-CRS-30 | **Late fee examples.** `2h` loan due 12:15: returned 12:20 → 5 minutes, no fee; 12:21 → 1.00; 14:15 (120 minutes) → 2.00; 14:16 → 3.00; three days later → 30.00. `1d` loan due Mon 20:00, returned Tue 09:00 (780 minutes) → 5.00. |
+| LIB-CRS-31 | **Lost.** `POST /api/v1/reserve-loans/{loan_id}/report-lost` closes an open reserve loan with `lost` and `late_minutes` until now, creates the late fee of LIB-CRS-29 (if any) and a fee of kind `reserve_lost` with the copy's `price`, and returns `200` (event `reserve_loan_lost`). The copy becomes `lost` with `current_branch_id` and `reserve_item_id` null; the item becomes `requested` when no copy is left on reserve for it. Not `open` → `409 RESERVE_LOAN_NOT_OPEN`. |
+| LIB-CRS-32 | **Read reserve loans.** `GET /api/v1/reserve-loans` is paginated, ordered by `id` descending, with filters `course_id`, `member_id`, `status`, `overdue` (`true`/`false`). `GET /api/v1/members/{member_id}/reserve-loans` has the same filters except `member_id`. |
+| LIB-CRS-33 | **Process.** `POST /api/v1/course-reserves/process` (1) creates one `reserve_overdue` notification for every overdue open reserve loan that has none yet, in order of `due_at`, then `id`; (2) closes every `active` course with `ends_on` before today and no open reserve loan, as in LIB-CRS-06, in order of `id`. It returns `200` with `{"overdue_notices", "closed_courses", "released_copies", "pending_courses"}`, where `pending_courses` counts `active` courses with `ends_on` before today that could not be closed (event `course_reserves_processed`). |
+| LIB-CRS-34 | **End of course example.** Course ending Fri 2026-11-20 with one open reserve loan: process on Mon 2026-11-23 → `closed_courses` 0, `pending_courses` 1. After the return, process → `closed_courses` 1 and its copies are released. |
+
+### 29.9 Effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-CRS-35 | **Fees.** Fee `kind` adds `reserve_late_fee` and `reserve_lost`; Fee gets a nullable `reserve_loan_id`. They are paid and allocated like other fees. |
+| LIB-CRS-36 | **Debt.** LIB-FEE-09 adds the `accrued_late_fee` of every overdue open reserve loan to the total debt; `BalanceOut.accrued_late_fees` includes them. |
+| LIB-CRS-37 | **Overdue and lending.** An overdue reserve loan counts as an overdue loan in LIB-LOAN-05 step 3 (`MEMBER_HAS_OVERDUE`). |
+| LIB-CRS-38 | **Member summary.** LIB-MEM-12 also returns `"course_reserves": {"courses_enrolled": <int>, "courses_teaching": <int>, "open_reserve_loans": <int>, "overdue_reserve_loans": <int>}` (courses counted when `draft` or `active`). |
+| LIB-CRS-39 | **Member deactivation.** LIB-MEM-10: a member with an open reserve loan → `409 MEMBER_HAS_OPEN_LOANS`; the instructor of a `draft` or `active` course → `409 INSTRUCTOR_HAS_COURSES` with `details.course_ids` (checked after `MEMBER_HAS_OPEN_LOANS`). Otherwise the member's `enrolled` enrollments are dropped with reason `member_deactivated`. |
+| LIB-CRS-40 | **Type change.** LIB-MEM-07: changing the `membership_type` of a member who is `enrolled` in a `draft` or `active` course to a type other than `student` → `409 MEMBER_HAS_ENROLLMENTS`; of the instructor of a `draft` or `active` course to a type other than `academic` → `409 INSTRUCTOR_HAS_COURSES`. |
+| LIB-CRS-41 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) when the branch has a `draft` or `active` course. |
+| LIB-CRS-42 | **Reservations.** LIB-RES-02 step 7 (`COPY_AVAILABLE_AT_BRANCH`) does not count `on_reserve` copies, so a member can reserve a book whose copies at the branch are all on reserve. LIB-RES-05 does not assign `on_reserve` copies. |
+| LIB-CRS-43 | **Copies.** `CopyOut` adds `reserve_item_id` and `reserve_course_id` (null unless `on_reserve`); LIB-CAT-08 accepts `status=on_reserve`. |
+| LIB-CRS-44 | **Notifications.** Added to LIB-NOT-01: `course_enrolled`, `course_activated`, `reserve_item_available`, `reserve_overdue`; messages contain the course code and, for items and loans, the book title. Notifications get a nullable `course_id`. Reserve loans, renewals and returns do not notify (fees notify as `fee_created`). |
+| LIB-CRS-45 | **Audit.** Module 21 reports: `course_created`, `course_updated`, `course_activated`, `course_closed`, `course_enrollment_created`, `course_enrollment_dropped`, `reading_list_item_added`, `reading_list_item_updated`, `reading_list_item_removed`, `reserve_copy_placed`, `reserve_copy_removed`, `reserve_loan_created`, `reserve_loan_renewed`, `reserve_loan_returned`, `reserve_loan_lost`, `course_reserves_processed`. |
+| LIB-CRS-46 | **Course reserves report.** `GET /api/v1/reports/course-reserves?from=&to=` (at most 366 days, `from` ≤ `to`, otherwise `422`) returns a paginated list of the courses that are not `draft` and whose `starts_on` – `ends_on` overlaps the range, ordered by `term`, `code`, `id`: `{"course_id", "code", "title", "term", "status", "enrolled", "items", "items_unfilled", "loans", "borrowers", "late_returns", "fees_charged"}`. `items_unfilled` counts items that are not `removed` with fewer copies on reserve than `copies_wanted`; `loans` counts reserve loans with `lent_at` in the range, `borrowers` their distinct members, `late_returns` those returned with `late_minutes` > 5; `fees_charged` sums the `amount` of their fees that are not waived. Filter `branch_id`. |
+| LIB-CRS-47 | **Not exported.** Course data and reserve loans are not part of import and export (module 13). |
+
+### 29.10 Error codes of module 21
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `INSTRUCTOR_NOT_ACADEMIC` | LIB-CRS-02 |
+| 409 | `INVALID_COURSE_STATUS` | LIB-CRS-03, LIB-CRS-04, LIB-CRS-06, LIB-CRS-08, LIB-CRS-12, LIB-CRS-19 |
+| 409 | `ENROLLMENT_LIMIT_BELOW_ENROLLED` | LIB-CRS-03 |
+| 409 | `COURSE_ENDED` | LIB-CRS-04 |
+| 409 | `COURSE_READING_LIST_EMPTY` | LIB-CRS-04 |
+| 409 | `COURSE_HAS_OPEN_LOANS` | LIB-CRS-06 |
+| — | `NOT_A_STUDENT`, `ALREADY_ENROLLED`, `ENROLLMENT_FULL` | LIB-CRS-08 (skip codes, not responses) |
+| 409 | `ENROLLMENT_NOT_ACTIVE` | LIB-CRS-10 |
+| 409 | `MEMBER_HAS_RESERVE_LOANS` | LIB-CRS-10 |
+| 409 | `DUPLICATE_ITEM` | LIB-CRS-12 |
+| 409 | `READING_LIST_FULL` | LIB-CRS-12 |
+| 409 | `ITEM_REMOVED` | LIB-CRS-14, LIB-CRS-16, LIB-CRS-19 |
+| 409 | `COPIES_WANTED_BELOW_RESERVE` | LIB-CRS-14 |
+| 409 | `RESERVE_COPY_ON_LOAN` | LIB-CRS-16, LIB-CRS-21 |
+| 409 | `WRONG_BOOK` | LIB-CRS-19 |
+| 409 | `COPY_AT_OTHER_BRANCH` | LIB-CRS-19 |
+| 409 | `RESERVE_COPIES_COMPLETE` | LIB-CRS-19 |
+| 409 | `COPY_NOT_ON_RESERVE` | LIB-CRS-24 |
+| 409 | `COURSE_NOT_RUNNING` | LIB-CRS-24, LIB-CRS-27 |
+| 409 | `RESERVE_DESK_CLOSED` | LIB-CRS-24 |
+| 409 | `NOT_ENROLLED` | LIB-CRS-24 |
+| 409 | `RESERVE_LOAN_LIMIT_REACHED` | LIB-CRS-24 |
+| 409 | `COPY_ON_RESERVE_LOAN` | LIB-CRS-24 |
+| 409 | `RESERVE_LOAN_NOT_OPEN` | LIB-CRS-27, LIB-CRS-28, LIB-CRS-31 |
+| 409 | `RESERVE_IN_DEMAND` | LIB-CRS-27 |
+| 409 | `RESERVE_RETURN_WRONG_BRANCH` | LIB-CRS-28 |
+| 409 | `INSTRUCTOR_HAS_COURSES` | LIB-CRS-39, LIB-CRS-40 |
+| 409 | `MEMBER_HAS_ENROLLMENTS` | LIB-CRS-40 |
+
+`BRANCH_INACTIVE`, `CONFLICT`, `BOOK_NOT_LENDABLE`, `INVALID_COPY_STATUS`, `MEMBER_PASSIVE`, `MEMBERSHIP_EXPIRED`, `MEMBER_HAS_OVERDUE`, `MEMBER_BLOCKED_BY_DEBT`, `ALREADY_BORROWED`, `RENEWAL_LIMIT_REACHED`, `LOAN_OVERDUE`, `MEMBER_HAS_OPEN_LOANS` and `BRANCH_IN_USE` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -2412,4 +2622,5 @@ A registration is **active** while it is `registered` or `waitlisted`.
 | Module 18: Interlibrary loans | LIB-ILL-01 – LIB-ILL-40 | 40 |
 | Module 19: Staff and shifts | LIB-STF-01 – LIB-STF-51 | 51 |
 | Module 20: Events | LIB-EVT-01 – LIB-EVT-47 | 47 |
-| **Total** | | **489** |
+| Module 21: Course reserves | LIB-CRS-01 – LIB-CRS-47 | 47 |
+| **Total** | | **536** |

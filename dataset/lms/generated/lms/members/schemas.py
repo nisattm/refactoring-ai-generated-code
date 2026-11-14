@@ -12,6 +12,7 @@ from lms.auth.schemas import RawPassword
 from lms.core.schemas import RequestModel
 from lms.core.text import is_valid_email
 from lms.core.timeutil import format_datetime
+from lms.courses.schemas import CourseReservesSummaryOut
 from lms.fines.schemas import BalanceOut
 from lms.members.models import Member
 from lms.digital.schemas import DigitalSummaryOut
@@ -152,3 +153,4 @@ class MemberSummaryOut(BaseModel):
     digital: DigitalSummaryOut
     ill: IllSummaryOut
     events: EventSummaryOut
+    course_reserves: CourseReservesSummaryOut

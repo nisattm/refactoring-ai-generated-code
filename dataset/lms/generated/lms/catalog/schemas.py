@@ -214,6 +214,8 @@ class CopyOut(BaseModel):
     acquired_on: str
     shelf_location: str | None
     withdrawn_reason: str | None
+    reserve_item_id: int | None
+    reserve_course_id: int | None
 
 
 def copy_out(copy: Copy) -> CopyOut:
@@ -228,6 +230,8 @@ def copy_out(copy: Copy) -> CopyOut:
         acquired_on=copy.acquired_on.isoformat(),
         shelf_location=copy.shelf_location,
         withdrawn_reason=copy.withdrawn_reason,
+        reserve_item_id=copy.reserve_item_id,
+        reserve_course_id=copy.reserve_course_id,
     )
 
 
