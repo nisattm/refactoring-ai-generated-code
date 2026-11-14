@@ -84,3 +84,16 @@ Same conventions as modules 15–19.
 | LIB-UI-EVT-04 | **Event management.** Librarian and admin. Create and change events and series (with the skipped dates shown), choose a free group room and the responsible staff (with `staff_covered`), publish, cancel; registrations list. |
 | LIB-UI-EVT-05 | **Event desk.** Librarian and admin. Today's events with check-in for each registered member; "Process" with its counts. |
 | LIB-UI-EVT-06 | **Attendance report.** Librarian and admin. Date range, branch, kind; LIB-EVT-46 as a table. |
+
+## Module 21: Course reserves
+
+Same conventions as modules 15–20.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-CRS-01 | **Courses.** Librarian and admin. List with filters; create and change courses; activate and close (with the open loans shown when closing is refused). |
+| LIB-UI-CRS-02 | **Enrollment.** Librarian and admin. Paste or pick members, see the enrolled ones and the skipped ones with their reasons; drop. |
+| LIB-UI-CRS-03 | **Reading list.** Librarian, admin and the course's instructor. Add books from search, change kind, loan period and wanted copies, drag to reorder, remove; for each item the copies on reserve, available now and next due time. |
+| LIB-UI-CRS-04 | **Reserve desk.** Librarian and admin. Scan a barcode to lend, return, renew or report lost; place copies on reserve or take them off; overdue reserve loans highlighted; "Process" with its counts. |
+| LIB-UI-CRS-05 | **My courses.** Member. Own courses with reading lists, what is available now, own reserve loans with due times and fees. |
+| LIB-UI-CRS-06 | **Course reserves report.** Librarian and admin. Date range and branch; LIB-CRS-46 as a table. |
