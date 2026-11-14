@@ -146,7 +146,7 @@ def test_t_evt_02_a(client, admin, librarian, branch_a):
     err(try_event(client, librarian, branch_a, sid, start="19:00", end="21:00"), 409, "OUTSIDE_BRANCH_HOURS")
     r = group_room(client, admin, branch_a)
     ok(client.patch(f"/api/v1/rooms/{r['id']}", headers=admin, json={"is_active": False}))
-    err(try_event(client, librarian, branch_a, sid, room_id=r["id"]), 409, "ROOM_INACTIVE")
+    err(try_event(client, librarian, branch_a, sid, room_id=r["id"], capacity=6), 409, "ROOM_INACTIVE")
 
 
 def test_t_evt_02_c(client, admin, librarian, branch_a):
@@ -246,7 +246,7 @@ def test_t_evt_10_a(client, admin, librarian, branch_a):
 def test_t_evt_11_a(client, admin, librarian, branch_a):
     """T-EVT-11-a (LIB-EVT-11): 409 ROOM_ALREADY_BOOKED with details.event_id; slots 14:00–15:30 not free with booking_id null; the room is not listed"""
     r = group_room(client, admin, branch_a)
-    e = event(client, librarian, branch_a, staff(client, admin, branch_a), room_id=r["id"])
+    e = event(client, librarian, branch_a, staff(client, admin, branch_a), room_id=r["id"], capacity=6)
     m1, m2 = member(client, librarian, branch_a), member(client, librarian, branch_a)
     body = {"room_id": r["id"], "date": WED, "start_time": "15:00", "end_time": "16:00", "member_id": m1["id"], "participant_ids": [m2["id"]]}
     assert err(post(client, librarian, "room-bookings", body), 409, "ROOM_ALREADY_BOOKED")["details"]["event_id"] == e["id"]

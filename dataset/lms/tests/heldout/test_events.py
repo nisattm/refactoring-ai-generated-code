@@ -149,9 +149,9 @@ def test_t_evt_02_b(client, admin, librarian, branch_a):
     r = group_room(client, admin, branch_a)
     m1, m2 = member(client, librarian, branch_a), member(client, librarian, branch_a)
     b = ok(post(client, librarian, "room-bookings", {"room_id": r["id"], "date": WED, "start_time": "14:00", "end_time": "15:00", "member_id": m1["id"], "participant_ids": [m2["id"]]}), 201)
-    assert err(try_event(client, librarian, branch_a, sid, room_id=r["id"]), 409, "ROOM_NOT_AVAILABLE")["details"]["booking_id"] == b["id"]
-    e = event(client, librarian, branch_a, sid, room_id=r["id"], start="15:00", end="17:00")
-    assert err(try_event(client, librarian, branch_a, sid, room_id=r["id"], start="16:00", end="17:00"), 409, "ROOM_NOT_AVAILABLE")["details"]["event_id"] == e["id"]
+    assert err(try_event(client, librarian, branch_a, sid, room_id=r["id"], capacity=6), 409, "ROOM_NOT_AVAILABLE")["details"]["booking_id"] == b["id"]
+    e = event(client, librarian, branch_a, sid, room_id=r["id"], capacity=6, start="15:00", end="17:00")
+    assert err(try_event(client, librarian, branch_a, sid, room_id=r["id"], capacity=6, start="16:00", end="17:00"), 409, "ROOM_NOT_AVAILABLE")["details"]["event_id"] == e["id"]
 
 
 def test_t_evt_03_b(client, admin, librarian, branch_a, branch_b):
