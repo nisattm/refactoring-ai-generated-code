@@ -195,18 +195,18 @@ def test_add_copy(client, admin_h, cat, app):
     assert c == {
         "id": 1, "book_id": 1, "barcode": "AB-1234", "home_branch_id": 1, "current_branch_id": 1, "price": "50.00",
         "status": "available", "acquired_on": "2026-10-01", "shelf_location": "A1", "withdrawn_reason": None,
-        "reserve_item_id": None, "reserve_course_id": None, "donation_id": None,
+        "reserve_item_id": None, "reserve_course_id": None, "donation_id": None, "condition": "good", "open_job_id": None,
     }
     assert [a.entity_id for a in audit(app, "copy_added")] == [1]
     err(mk_copy(client, admin_h, barcode="AB-1234", branch=2), 409, "CONFLICT")
     mk_copy(client, admin_h, barcode="XY-9999", branch=2)
     b = client.get(f"{API}/books/1", headers=admin_h).json()
-    assert b["availability"] == [{"branch_id": 1, "available": 1, "total": 1}, {"branch_id": 2, "available": 1, "total": 1}]
+    assert b["availability"] == [{"branch_id": 1, "available": 1, "total": 1, "expected_back": None}, {"branch_id": 2, "available": 1, "total": 1, "expected_back": None}]
     set_status(app, 1, "on_loan")
     b = client.get(f"{API}/books/1", headers=admin_h).json()
-    assert b["availability"][0] == {"branch_id": 1, "available": 0, "total": 1}
+    assert b["availability"][0] == {"branch_id": 1, "available": 0, "total": 1, "expected_back": None}
     set_status(app, 1, "lost")
-    assert client.get(f"{API}/books/1", headers=admin_h).json()["availability"][0] == {"branch_id": 1, "available": 0, "total": 0}
+    assert client.get(f"{API}/books/1", headers=admin_h).json()["availability"][0] == {"branch_id": 1, "available": 0, "total": 0, "expected_back": None}
 
 
 def test_copy_validation_and_refs(client, admin_h, cat):

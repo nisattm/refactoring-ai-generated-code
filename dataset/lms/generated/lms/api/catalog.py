@@ -30,6 +30,7 @@ from lms.core.clock import local_now, today
 from lms.core.db import SessionDep
 from lms.core.errors import ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate
+from lms.preservation.schemas import Condition
 from lms.core.text import normalize
 
 router = APIRouter(tags=["catalog"])
@@ -212,6 +213,7 @@ def list_copies(
     status: Annotated[CopyStatus | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
     donated: Annotated[bool | None, Query()] = None,
+    condition: Annotated[Condition | None, Query()] = None,
 ) -> Page[CopyOut]:
     book = service.get_book_or_404(db, book_id)
     stmt = sa.select(Copy).where(Copy.book_id == book.id).order_by(Copy.id)
@@ -219,6 +221,8 @@ def list_copies(
         stmt = stmt.where(Copy.status == status)
     if branch_id is not None:
         stmt = stmt.where(Copy.current_branch_id == branch_id)
+    if condition is not None:
+        stmt = stmt.where(Copy.condition == condition)
     if donated is not None:
         stmt = stmt.where(Copy.donation_id.is_not(None) if donated else Copy.donation_id.is_(None))
     return paginate(db, stmt, page, copy_out)

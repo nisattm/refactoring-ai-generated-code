@@ -22,6 +22,8 @@ from lms.donations import reports as donation_reports
 from lms.donations.schemas import DonationReportOut, DonorReportOut
 from lms.digital.schemas import DigitalUsageOut, ResourceKind
 from lms.equipment import usage as equipment_usage
+from lms.preservation import reports as preservation_reports
+from lms.preservation.schemas import MAX_YEAR, MIN_YEAR, PreservationReportOut, RecoveryPage
 from lms.ill import usage as ill_usage
 from lms.ill.schemas import IllActivityOut
 from lms.equipment.schemas import EquipmentUsageOut
@@ -276,3 +278,39 @@ def donors_report(
     if year is None:
         year = clock_today(request.app.state.settings.clock).year
     return paginate_sequence(donation_reports.donor_report(db, year), page)
+
+
+@router.get("/preservation", response_model=Page[PreservationReportOut])
+def preservation_report(
+    request: Request,
+    db: SessionDep,
+    _: StaffOnly,
+    page: PageDep,
+    year: Annotated[int | None, Query(ge=MIN_YEAR, le=MAX_YEAR)] = None,
+) -> Page[PreservationReportOut]:
+    day = clock_today(request.app.state.settings.clock)
+    rows = preservation_reports.preservation_report(db, day, year if year is not None else day.year)
+    return paginate_sequence(rows, page)
+
+
+@router.get("/damage-recovery", response_model=RecoveryPage)
+def damage_recovery_report(
+    db: SessionDep,
+    _: StaffOnly,
+    page: PageDep,
+    first: Annotated[str | None, Query(alias="from")] = None,
+    to: Annotated[str | None, Query()] = None,
+) -> RecoveryPage:
+    problems: list[dict[str, str]] = []
+    start = _required_date("from", first, problems)
+    end = _required_date("to", to, problems)
+    if problems:
+        raise ValidationFailed(problems)
+    assert start is not None and end is not None
+    if start > end:
+        raise ValidationFailed.single("from", "from must not be after to")
+    if (end - start).days > 365:
+        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    items, totals = preservation_reports.damage_recovery(db, start, end)
+    chunk = paginate_sequence(items, page)
+    return RecoveryPage(items=chunk.items, page=chunk.page, page_size=chunk.page_size, total=chunk.total, totals=totals)

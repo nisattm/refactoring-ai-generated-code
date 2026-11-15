@@ -162,7 +162,7 @@ def test_response_shape_and_paging(client, lib):
     assert search(client, lib, page=5).json()["items"] == []
     item = search(client, lib, q="A", sort="title").json()["items"][0]
     assert set(item) == {"book", "score", "loan_count"}
-    assert item["book"]["availability"] == [{"branch_id": 1, "available": 1, "total": 1}]
+    assert item["book"]["availability"] == [{"branch_id": 1, "available": 1, "total": 1, "expected_back": None}]
     assert item["book"]["authors"] == [{"id": 1, "name": "Ada Lovelace"}]
 
 

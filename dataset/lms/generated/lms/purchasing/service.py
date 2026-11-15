@@ -19,6 +19,7 @@ from lms.core.money import format_amount
 from lms.core.text import normalize
 from lms.digital.models import DigitalLicense
 from lms.donations.usage import pending_book_ids
+from lms.preservation.usage import open_job_ids_of_supplier
 from lms.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier
 from lms.purchasing.schemas import LineIn, ReceiveLineIn
 
@@ -64,6 +65,12 @@ def update_supplier(
     db: Session, now: datetime.datetime, actor: User, supplier: Supplier, fields: dict[str, Any]
 ) -> Supplier:
     """LIB-PUR-01. ``fields`` holds only the fields present in the request."""
+    if fields.get("is_active") is False:  # LIB-PRE-32
+        job_ids = open_job_ids_of_supplier(db, supplier.id)
+        if job_ids:
+            raise Conflict(
+                "The supplier has open repair jobs", code="SUPPLIER_HAS_JOBS", details={"job_ids": job_ids}
+            )
     if "name" in fields:
         _check_unique_name(db, fields["name"], own_id=supplier.id)
     diff = changes({name: getattr(supplier, name) for name in fields}, fields)

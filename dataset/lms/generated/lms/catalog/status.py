@@ -8,23 +8,25 @@ from lms.catalog.models import Copy
 from lms.core.errors import Conflict
 
 CopyStatus = Literal[
-    "available", "on_loan", "on_hold", "in_transfer", "damaged", "lost", "withdrawn", "at_partner", "on_reserve"
+    "available", "on_loan", "on_hold", "in_transfer", "damaged", "lost", "withdrawn", "at_partner", "on_reserve", "in_repair"
 ]
 
 ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
-    "available": frozenset({"on_loan", "on_hold", "in_transfer", "withdrawn", "at_partner", "on_reserve"}),
+    "available": frozenset({"on_loan", "on_hold", "in_transfer", "withdrawn", "at_partner", "on_reserve", "in_repair"}),
     # on_hold -> on_hold and in_transfer -> in_transfer: the release procedure and transfer arrival
     # may keep a copy held or start a new transfer.
     "on_hold": frozenset({"on_loan", "available", "in_transfer", "on_hold"}),
     "on_loan": frozenset({"available", "on_hold", "in_transfer", "damaged", "lost"}),
     "in_transfer": frozenset({"available", "on_hold", "in_transfer"}),
-    "damaged": frozenset({"available", "on_hold", "in_transfer", "withdrawn"}),
+    "damaged": frozenset({"available", "on_hold", "in_transfer", "withdrawn", "in_repair"}),
     "lost": frozenset({"withdrawn"}),
     "withdrawn": frozenset(),
     # Lent to a partner library (LIB-ILL-31).
     "at_partner": frozenset({"available", "lost"}),
     # Kept at the reserve desk for a course (LIB-CRS-20); leaves through the release procedure or when lost.
     "on_reserve": frozenset({"available", "on_hold", "in_transfer", "lost"}),
+    # At the workshop or bindery (LIB-PRE-27); leaves through the release procedure, back to damaged, or lost.
+    "in_repair": frozenset({"available", "on_hold", "in_transfer", "damaged", "lost"}),
 }
 
 # Statuses that do not count towards a book's lendability or availability totals (LIB-CAT-12).

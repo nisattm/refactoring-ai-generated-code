@@ -282,7 +282,7 @@ def test_add_item_and_auto_placement(client, admin_h, world, app):
     assert c["status"] == "on_reserve" and c["reserve_item_id"] == 1 and c["reserve_course_id"] == 1
     assert client.get(f"{API}/books/1/copies?status=on_reserve", headers=admin_h).json()["total"] == 2
     av = client.get(f"{API}/books/1", headers=admin_h).json()["availability"]
-    assert av == [{"branch_id": 1, "available": 1, "total": 3}, {"branch_id": 2, "available": 1, "total": 1}]
+    assert av == [{"branch_id": 1, "available": 1, "total": 3, "expected_back": None}, {"branch_id": 2, "available": 1, "total": 1, "expected_back": None}]
     c = client.get(f"{API}/courses/1", headers=admin_h).json()
     assert (c["items"], c["copies_on_reserve"]) == (1, 2)
     assert len(audit(app, "reading_list_item_added")) == 1 and len(audit(app, "reserve_copy_placed")) == 2
