@@ -162,3 +162,16 @@ Same conventions as modules 15–25.
 | LIB-UI-RDP-04 | **Leaderboard.** All users. Ranked list with short names, points, books and level. |
 | LIB-UI-RDP-05 | **Manual entries.** Librarian and admin. Add or remove a book read elsewhere for a participant (at most 3). |
 | LIB-UI-RDP-06 | **Programs report.** Librarian and admin. LIB-RDP-44 as a table with top books. |
+
+## Module 27: Announcements and messages
+
+Same conventions as modules 15–26.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-MSG-01 | **Announcements.** Librarian and admin. Write, schedule, pin, publish and withdraw announcements for a branch and membership types; reach and read rate. |
+| LIB-UI-MSG-02 | **Member home.** Member. Live announcements (pinned first, unread marked) with an unread counter. |
+| LIB-UI-MSG-03 | **Inbox.** Librarian and admin. Threads with filters (mine, overdue, category); assign, reply, write internal notes, close. |
+| LIB-UI-MSG-04 | **My messages.** Member. Own threads with unread replies; write to a branch about a loan or a fee; close, reopen and rate. |
+| LIB-UI-MSG-05 | **Messaging report.** Librarian and admin. LIB-MSG-39 as a table. |
+| LIB-UI-MSG-06 | **Header badges.** All users. Unread announcement and reply counters in the page header. |
