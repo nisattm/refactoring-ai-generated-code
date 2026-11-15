@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–28), revised after team review.
-**Version:** 0.19 · 2026-11-15 (adds section 34, module 26 Reading programs)
+**Version:** 0.20 · 2026-11-16 (adds section 35, module 27 Announcements and messages)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -45,6 +45,7 @@ The system consists of 20 modules:
 | 24 | Inventory counts | `lms.inventory` | 32 |
 | 25 | Purchase suggestions | `lms.suggestions` | 33 |
 | 26 | Reading programs | `lms.programs` | 34 |
+| 27 | Announcements and messages | `lms.messaging` | 35 |
 
 ### 1.2 Out of scope
 
@@ -116,7 +117,8 @@ lms/
 ├── preservation/        Module 23
 ├── inventory/           Module 24
 ├── suggestions/         Module 25
-└── programs/            Module 26
+├── programs/            Module 26
+└── messaging/           Module 27
 ```
 
 | ID | Requirement |
@@ -440,7 +442,7 @@ API representation of a user (`UserOut`): `{"id", "email", "full_name", "role", 
 | LIB-AUTH-18 | `GET /api/v1/users` returns a paginated list of `UserOut`, ordered by `id`. Optional filters: `role` (one of the three roles), `is_active` (`true`/`false`), `q` (case-insensitive substring of `email` or `full_name`). Only `admin` may call it. |
 | LIB-AUTH-19 | `GET /api/v1/users/{user_id}` returns `UserOut`. An `admin` may read any user; an unknown id returns `404 NOT_FOUND`. Any other user may read only their own record; for them every other id returns `403 FORBIDDEN`, whether or not it exists. For non-admins this ownership check is an exception to LIB-COM-28: it comes before the existence check. |
 | LIB-AUTH-20 | `PATCH /api/v1/users/{user_id}` accepts any subset of `{"full_name", "role", "is_active"}` and returns `200` with `UserOut`. Only `admin` may call it. `role: "member"` in the request returns `422 VALIDATION_ERROR`. Changing the role of a user whose role is `member` returns `409 ROLE_CHANGE_NOT_ALLOWED`. |
-| LIB-AUTH-21 | Setting `is_active` to `false` revokes all sessions of that user (staff profiles: LIB-STF-06, LIB-STF-48). Setting it to `true` also clears `locked_until` and `failed_login_count`. |
+| LIB-AUTH-21 | Setting `is_active` to `false` revokes all sessions of that user (staff profiles: LIB-STF-06, LIB-STF-48). Setting it to `true` also clears `locked_until` and `failed_login_count`. Assigned threads: LIB-MSG-36. |
 | LIB-AUTH-22 | **Last administrator.** A change that would leave no active `admin` (deactivating or demoting the last active admin) MUST be rejected with `409 LAST_ADMIN`. An admin MUST NOT deactivate their own account: `409 CANNOT_DEACTIVATE_SELF`. |
 | LIB-AUTH-23 | `POST /api/v1/users/{user_id}/reset-password` with `{"new_password": "..."}` returns `204`. Only `admin` may call it. It revokes all sessions of that user and clears `locked_until` and `failed_login_count`. |
 
@@ -488,6 +490,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Inventory counts (module 24) | – | – | Full, except applying counts with more than 10 missing copies | Full |
 | Purchase suggestions (module 25) | – | Suggest, change and withdraw own suggestions; support; read open suggestions and own | Full, except approving above 300.00 | Full |
 | Reading programs (module 26) | – | Read published programs and leaderboards; join and leave; own progress and certificates | Full | Full |
+| Announcements and messages (module 27) | – | Read live announcements for them; write, read, close, reopen and rate own threads | Full | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -569,9 +572,9 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. Course reserves: LIB-CRS-40. Purchase suggestions: LIB-SUG-37. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. Purchase suggestions: LIB-SUG-36. Reading programs: LIB-RDP-38. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. Purchase suggestions: LIB-SUG-36. Reading programs: LIB-RDP-38. Messages: LIB-MSG-32. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38), `donations` (LIB-DON-38), `suggestions` (LIB-SUG-38) and `programs` (LIB-RDP-39). |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38), `donations` (LIB-DON-38), `suggestions` (LIB-SUG-38), `programs` (LIB-RDP-39) and `messages` (LIB-MSG-33). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -897,7 +900,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id`, `suggestion_id`, `program_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id`, `suggestion_id`, `program_id`, `announcement_id`, `thread_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -916,7 +919,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41, `reservation_delayed` (LIB-INV-30) the suggestion events of LIB-SUG-42 and the program events of LIB-RDP-42. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41, `reservation_delayed` (LIB-INV-30) the suggestion events of LIB-SUG-42, the program events of LIB-RDP-42 and the messaging events of LIB-MSG-37. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -953,7 +956,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32; the suggestions report is LIB-SUG-44; the programs report is LIB-RDP-44.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32; the suggestions report is LIB-SUG-44; the programs report is LIB-RDP-44; the messaging report is LIB-MSG-39.
 
 ### 16.1 Endpoints and requirements
 
@@ -1004,7 +1007,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. Purchase suggestions: LIB-SUG-47. Reading programs: LIB-RDP-40. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. Purchase suggestions: LIB-SUG-47. Reading programs: LIB-RDP-40. Messages: LIB-MSG-34. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. Copies in a count: LIB-INV-13. |
@@ -1145,7 +1148,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7, those of module 25 in 33.8, those of module 26 in 34.9.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7, those of module 25 in 33.8, those of module 26 in 34.9, those of module 27 in 35.7.
 
 ---
 
@@ -3341,6 +3344,155 @@ A program is **running** on a date `d` when it is `published` and `starts_on` �
 
 ---
 
+## 35. Module 27: Announcements and messages
+
+The library publishes announcements for all members or for a branch and membership types, with scheduling, pinning and read tracking. Members write to the library in message threads; staff answer within a response time, keep internal notes and close threads. Package `lms.messaging`. Times are local (LIB-COM-01).
+
+### 35.1 Data
+
+**Announcement**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `title` | text | LIB-COM-16 |
+| `body` | text | 1–5000 characters |
+| `branch_id` | integer or null | null: all branches |
+| `audience` | list of membership types | Non-empty, distinct values of 7.1; default all four |
+| `priority` | `normal` \| `important` | Default `normal` |
+| `pinned` | boolean | Default `false` |
+| `publish_at` | date-time | Default now |
+| `expires_at` | date-time or null | After `publish_at`, at most 90 days after it |
+| `status` | `draft` \| `published` \| `withdrawn` | Initially `draft` |
+| `published_at`, `withdrawn_at` | date-time or null | `published_at`: when it became visible (LIB-MSG-07) |
+
+A `published` announcement is **live** at time `t` when `publish_at` ≤ `t` and (`expires_at` is null or `t` < `expires_at`). It is **for** a member when the member is `active`, the member's type is in `audience`, and `branch_id` is null or the member's `home_branch_id`.
+
+**Read mark:** `announcement_id`, `member_id`, `read_at`; at most one per member and announcement.
+
+**Thread**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `member_id` | integer | |
+| `branch_id` | integer | The branch the member writes to |
+| `subject` | text | 1–200 characters |
+| `category` | `general` \| `loan` \| `fee` \| `room` \| `other` | Default `general` |
+| `loan_id`, `fee_id` | integer or null | Records of the member the thread is about (LIB-MSG-20) |
+| `status` | `open` \| `answered` \| `closed` | Initially `open` |
+| `assigned_to` | integer or null | A librarian or admin user |
+| `due_at` | date-time or null | LIB-MSG-23 |
+| `close_reason` | `member_request` \| `staff_request` \| `inactive` \| `member_deactivated` \| null | |
+| `rating` | integer or null | 1–5 (LIB-MSG-30) |
+| `created_at`, `closed_at`, `first_reply_at` | date-time or null | |
+
+**Message:** `id`, `thread_id`, `author` (`member` \| `staff`), `user_id`, `body` (1–2000 characters), `internal` (boolean; only staff messages), `created_at`, `read_at` (when the other side read it; null for internal notes).
+
+### 35.2 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/announcements`, `PATCH /api/v1/announcements/{announcement_id}` | librarian, admin | Create, change |
+| `POST /api/v1/announcements/{announcement_id}/publish`, `/withdraw` | librarian, admin | Publish, withdraw |
+| `GET /api/v1/announcements`, `GET /api/v1/announcements/{announcement_id}` | all authenticated users (members: LIB-MSG-09) | Read |
+| `POST /api/v1/announcements/{announcement_id}/read` | member | Mark as read |
+| `GET /api/v1/announcements/{announcement_id}/stats` | librarian, admin | Reach and reads |
+| `POST /api/v1/threads` | member (own) | Write to the library |
+| `GET /api/v1/threads`, `GET /api/v1/threads/{thread_id}` | librarian, admin; member (own) | Threads |
+| `POST /api/v1/threads/{thread_id}/messages` | librarian, admin; member (own) | Reply |
+| `POST /api/v1/threads/{thread_id}/assign`, `/close`, `/reopen`, `/rate` | see LIB-MSG-24 – LIB-MSG-30 | Thread steps |
+| `POST /api/v1/messaging/process` | librarian, admin | Scheduled announcements, inactive threads |
+| `GET /api/v1/reports/messaging` | librarian, admin | Report (section 16) |
+
+### 35.3 Announcements
+
+| ID | Requirement |
+| --- | --- |
+| LIB-MSG-01 | **Create.** `POST /api/v1/announcements` with `{"title", "body", "branch_id", "audience", "priority", "pinned", "publish_at", "expires_at"}` returns `201` with a `draft` (event `announcement_created`). Only `title` and `body` are required. Values outside 35.1 → `422`; an unknown branch → `422` with `details.fields`; an inactive branch → `409 BRANCH_INACTIVE`. A member → `403`. |
+| LIB-MSG-02 | **Change.** `PATCH` accepts any subset of the fields of LIB-MSG-01 on a `draft` or `published` announcement and returns `200` (event `announcement_updated`). A `withdrawn` one → `409 INVALID_ANNOUNCEMENT_STATUS` with `details.status`. Changing `publish_at` of a live `published` announcement → `409 ANNOUNCEMENT_LIVE`. Changing `title` or `body` of a `published` one removes all its read marks. |
+| LIB-MSG-03 | **Publish.** `POST …/publish` on a `draft` sets `published` and returns `200` (event `announcement_published`). Checks in order (all `409`): not `draft` → `INVALID_ANNOUNCEMENT_STATUS`; `expires_at` not after now → `ANNOUNCEMENT_EXPIRED`; `pinned` and 3 other `published`, not expired, pinned announcements with the same `branch_id` → `PIN_LIMIT_REACHED` with `details.limit` 3. |
+| LIB-MSG-04 | **Schedule.** A published announcement with `publish_at` in the future is not live yet ("scheduled"). It becomes live at `publish_at`; `published_at` is set when it first becomes live: at publishing when `publish_at` ≤ now, otherwise by LIB-MSG-07. |
+| LIB-MSG-05 | **Withdraw.** `POST …/withdraw` on a `published` announcement sets `withdrawn` with `withdrawn_at` and returns `200` (event `announcement_withdrawn`); it is no longer shown to members. Otherwise `409 INVALID_ANNOUNCEMENT_STATUS`. |
+| LIB-MSG-06 | **Important announcements.** When an `important` announcement becomes live, every member it is for gets one notification (`announcement`, with the title). A scheduled important announcement notifies at LIB-MSG-07, not at publishing. |
+| LIB-MSG-07 | **Process announcements.** `POST /api/v1/messaging/process` sets `published_at` = now for every `published` announcement with `publish_at` ≤ now and `published_at` null, and sends the notifications of LIB-MSG-06 for them. The response contains `announcements_released` (count). |
+| LIB-MSG-08 | **Schedule example.** Important announcement for students with `publish_at` 2026-11-03 09:00, published on Mon: no notification on Mon; process on 2026-11-03 08:59 → `announcements_released` 0; at 09:00 → 1 and each active student gets one notification. |
+| LIB-MSG-09 | **Member feed.** `GET /api/v1/announcements` for a member returns the live `published` announcements for the member, paginated, ordered by `pinned` (pinned first), then `publish_at` descending, then `id` descending; each item has `read` (boolean). The response adds `unread` (count over all such announcements). A member reading an announcement that is not live or not for them → `404 NOT_FOUND`; reading one marks it read. |
+| LIB-MSG-10 | **Staff list.** For staff, `GET /api/v1/announcements` returns all announcements ordered by `id` descending, with filters `status`, `branch_id`, `live` (`true`/`false`, now) and `scheduled` (`true`: published with `publish_at` in the future). |
+| LIB-MSG-11 | **Mark read.** `POST …/read` by a member stores a read mark (once; repeating returns `200` without a change) and returns `200` with `{"announcement_id", "read_at"}`. An announcement that is not live or not for the member → `404`. |
+| LIB-MSG-12 | **Stats.** `GET …/stats` returns `{"audience_size", "reads", "read_rate"}`: `audience_size` counts the members it is for now; `reads` counts read marks; `read_rate` = `reads` / `audience_size` × 100 with 1 decimal (`"0.0"` when `audience_size` is 0). |
+| LIB-MSG-13 | **Audience examples.** An announcement for branch A and `["students", "academics"]` is for an active student of A and an academic of A, not for a student of B, a guest of A or a passive student of A. |
+
+### 35.4 Threads and messages
+
+| ID | Requirement |
+| --- | --- |
+| LIB-MSG-14 | **Write.** `POST /api/v1/threads` with `{"branch_id", "subject", "category", "loan_id", "fee_id", "body"}` by a member creates an `open` thread with its first message (author `member`) and returns `201` with the thread, including `messages` (LIB-MSG-17) (event `thread_created`). Values outside 35.1 → `422`; staff → `403`. |
+| LIB-MSG-15 | **Write checks.** In order (all `409`): member `passive` → `MEMBER_PASSIVE`; branch inactive → `BRANCH_INACTIVE`; the member has 3 threads that are not `closed` → `THREAD_LIMIT_REACHED` with `details.limit` 3. |
+| LIB-MSG-16 | **Read threads.** `GET /api/v1/threads` is paginated, ordered by the time of the last message descending, then `id` descending. Staff filters: `status`, `branch_id`, `assigned_to` (`me` for the current user), `category`, `overdue` (`true`/`false`), `member_id`. A member sees own threads only, with filter `status`. Each item has `last_message_at`, `unread` (messages of the other side without `read_at`; internal notes never count) and `is_overdue`. |
+| LIB-MSG-17 | **Read a thread.** `GET /api/v1/threads/{thread_id}` returns the thread with a list `messages` (each `{"id", "author", "user_id", "body", "internal", "created_at", "read_at"}`) ordered by `created_at`, then `id`. Reading marks the other side's messages read (`read_at` = now). Members never see internal notes; another member's thread → `404 NOT_FOUND`. |
+| LIB-MSG-18 | **Reply.** `POST /api/v1/threads/{thread_id}/messages` with `{"body", "internal"}` returns `201` with the message (event `thread_message_added`). A member's reply to an `answered` thread sets it `open` again (with a new `due_at`). A staff reply (not internal) sets the thread `answered`, sets `first_reply_at` the first time, clears `due_at`, and notifies the member (`message_reply`). Internal notes change nothing else. A member sending `internal` `true` → `422`. A `closed` thread → `409 THREAD_CLOSED`. |
+| LIB-MSG-19 | **Reply example.** Thread opened Mon 09:00: staff internal note at 10:00 (still `open`, no notification); staff reply at 11:00 (`answered`, `first_reply_at` 11:00, one notification); member reply at 12:00 (`open`, `due_at` Wed 12:00). |
+| LIB-MSG-20 | **Records in a thread.** `loan_id` MUST be a loan of the member and `fee_id` a fee of the member: otherwise `409 NOT_OWN_RECORD` with `details.field`. `loan_id` needs category `loan` and `fee_id` category `fee` (`422`). |
+| LIB-MSG-21 | **Thread view for staff.** Staff see `member` (`{"id", "member_no", "full_name", "membership_type"}`) and, when set, `loan` (`{"id", "status", "due_date"}`) or `fee` (`{"id", "kind", "amount", "status"}`) in the thread. |
+| LIB-MSG-22 | **Message limits.** A member may send at most 10 messages per thread per day (calendar day): the 11th → `409 MESSAGE_LIMIT_REACHED` with `details.limit` 10. Staff have no limit. |
+
+### 35.5 Response times, assignment and closing
+
+| ID | Requirement |
+| --- | --- |
+| LIB-MSG-23 | **Response time.** When a thread becomes `open` (created or reopened by a member reply), `due_at` = the same time of day on the date 2 working days later (LIB-COM-09). An `open` thread is **overdue** when now > `due_at`. Example: opened Fri 2026-11-06 16:00 → due Tue 2026-11-10 16:00. |
+| LIB-MSG-24 | **Assign.** `POST …/assign` with `{"user_id"}` (an active librarian or admin user, otherwise `422`) sets `assigned_to` and returns `200` (event `thread_assigned`); `null` removes the assignment. A `closed` thread → `409 THREAD_CLOSED`. |
+| LIB-MSG-25 | **Automatic assignment.** A thread without `assigned_to` gets the user of the first staff reply (not an internal note) as `assigned_to`. |
+| LIB-MSG-26 | **Close.** `POST …/close` sets `closed` with `closed_at` and `close_reason` (`member_request` for the member, `staff_request` for staff) and returns `200` (event `thread_closed`). Already `closed` → `409 THREAD_CLOSED`. |
+| LIB-MSG-27 | **Reopen.** `POST …/reopen` by the member on a `closed` thread with `close_reason` `member_request`, `staff_request` or `inactive`, within 14 days after `closed_at`, sets `open` (with a new `due_at`, `close_reason` and `closed_at` null) and returns `200` (event `thread_reopened`). Not `closed` → `409 THREAD_NOT_CLOSED`; later than 14 days or another reason → `409 THREAD_REOPEN_NOT_ALLOWED`; the limit of LIB-MSG-15 applies. |
+| LIB-MSG-28 | **Inactive threads.** `POST /api/v1/messaging/process` also closes every `answered` thread whose last message is more than 14 days old (`close_reason` `inactive`). The response contains `threads_closed`. |
+| LIB-MSG-29 | **Process example.** Staff reply on Mon 2026-11-02 09:00: process on 2026-11-16 09:00 → open; 09:00:01 → closed (`inactive`). |
+| LIB-MSG-30 | **Rate.** `POST …/rate` with `{"rating"}` (1–5) by the member on a `closed` thread that has at least one staff reply sets `rating` once and returns `200` (event `thread_rated`). Not `closed` → `409 THREAD_NOT_CLOSED`; already rated → `409 ALREADY_RATED`; no staff reply → `409 NOTHING_TO_RATE`. |
+| LIB-MSG-31 | **Overdue list.** `GET /api/v1/threads?overdue=true` returns the overdue threads; each overdue thread shows `overdue_by_hours` (whole hours since `due_at`, rounded down). |
+
+### 35.6 Effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-MSG-32 | **Member deactivation.** LIB-MEM-10 closes the member's threads that are not `closed` (`close_reason` `member_deactivated`); they cannot be reopened. |
+| LIB-MSG-33 | **Member summary.** LIB-MEM-12 also returns `"messages": {"unread_announcements": <int>, "open_threads": <int>, "unread_replies": <int>}` (`open_threads`: threads not `closed`; `unread_replies`: staff messages, not internal, without `read_at`). |
+| LIB-MSG-34 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) when the branch has a thread that is not `closed` or a `published` announcement that is live or scheduled. |
+| LIB-MSG-35 | **Type and branch changes.** A member whose type or home branch changes sees the announcements for the new values from then on; read marks stay. |
+| LIB-MSG-36 | **User deactivation.** A user who is deactivated (LIB-AUTH-21) loses the threads assigned to them: `assigned_to` becomes null. |
+| LIB-MSG-37 | **Notifications.** Added to LIB-NOT-01: `announcement` (LIB-MSG-06) and `message_reply` (LIB-MSG-18); messages contain the announcement title or the thread subject. Notifications get nullable `announcement_id` and `thread_id`. No other event of module 27 notifies. |
+| LIB-MSG-38 | **Audit.** Module 27 reports: `announcement_created`, `announcement_updated`, `announcement_published`, `announcement_withdrawn`, `thread_created`, `thread_message_added`, `thread_assigned`, `thread_closed`, `thread_reopened`, `thread_rated`, `messaging_processed`. Internal notes are audited like other messages. |
+| LIB-MSG-39 | **Messaging report.** `GET /api/v1/reports/messaging?from=&to=` (at most 366 days, `from` ≤ `to`, otherwise `422`) returns, over the threads created in the range, `{"threads", "by_category": {"general", "loan", "fee", "room", "other"}, "answered", "average_first_reply_hours", "overdue_now", "closed", "average_rating", "announcements": {"published", "important", "reads"}}`. `answered` counts threads with a `first_reply_at`; `average_first_reply_hours` is the mean of hours from `created_at` to `first_reply_at` with 1 decimal, or null; `average_rating` the mean of ratings with 1 decimal, or null; `announcements` counts announcements with `published_at` in the range and their read marks. Filter `branch_id`. |
+| LIB-MSG-40 | **Not exported.** Announcements, threads and messages are not part of import and export (module 13). |
+| LIB-MSG-41 | **Statuses are final.** A `withdrawn` announcement cannot be changed, published or withdrawn again (`409 INVALID_ANNOUNCEMENT_STATUS`). |
+| LIB-MSG-42 | **Process response.** `POST /api/v1/messaging/process` returns `200` with `{"announcements_released", "threads_closed"}` (event `messaging_processed`). |
+| LIB-MSG-43 | **Expired announcements.** An announcement whose `expires_at` has passed stays `published` but is no longer live; staff see it with `live` `false`. It does not count for the pin limit. |
+| LIB-MSG-44 | **Pin example.** Branch A has 3 live pinned announcements; publishing a fourth pinned one for A → `PIN_LIMIT_REACHED`; a pinned one for all branches → allowed (different `branch_id`); after one of A's expires → allowed. |
+| LIB-MSG-45 | **Staff replies by role.** Any librarian or admin may reply to any thread; replies by a user other than `assigned_to` do not change `assigned_to`. |
+| LIB-MSG-46 | **Member reading order.** For members, pinned announcements come first even when older. |
+| LIB-MSG-47 | **Read marks after changes.** A member whose read mark was removed by LIB-MSG-02 sees the announcement as unread again. |
+
+### 35.7 Error codes of module 27
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `INVALID_ANNOUNCEMENT_STATUS` | LIB-MSG-02, LIB-MSG-03, LIB-MSG-05, LIB-MSG-41 |
+| 409 | `ANNOUNCEMENT_LIVE` | LIB-MSG-02 |
+| 409 | `ANNOUNCEMENT_EXPIRED` | LIB-MSG-03 |
+| 409 | `PIN_LIMIT_REACHED` | LIB-MSG-03 |
+| 409 | `THREAD_LIMIT_REACHED` | LIB-MSG-15 |
+| 409 | `THREAD_CLOSED` | LIB-MSG-18, LIB-MSG-24, LIB-MSG-26 |
+| 409 | `NOT_OWN_RECORD` | LIB-MSG-20 |
+| 409 | `MESSAGE_LIMIT_REACHED` | LIB-MSG-22 |
+| 409 | `THREAD_NOT_CLOSED` | LIB-MSG-27, LIB-MSG-30 |
+| 409 | `THREAD_REOPEN_NOT_ALLOWED` | LIB-MSG-27 |
+| 409 | `ALREADY_RATED` | LIB-MSG-30 |
+| 409 | `NOTHING_TO_RATE` | LIB-MSG-30 |
+
+`BRANCH_INACTIVE`, `MEMBER_PASSIVE` and `BRANCH_IN_USE` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -3375,4 +3527,5 @@ A program is **running** on a date `d` when it is `published` and `starts_on` �
 | Module 24: Inventory counts | LIB-INV-01 – LIB-INV-34 | 34 |
 | Module 25: Purchase suggestions | LIB-SUG-01 – LIB-SUG-47 | 47 |
 | Module 26: Reading programs | LIB-RDP-01 – LIB-RDP-47 | 47 |
-| **Total** | | **751** |
+| Module 27: Announcements and messages | LIB-MSG-01 – LIB-MSG-47 | 47 |
+| **Total** | | **798** |
