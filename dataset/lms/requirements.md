@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–28), revised after team review.
-**Version:** 0.15 · 2026-11-15 (adds section 30, module 22 Donations)
+**Version:** 0.16 · 2026-11-15 (adds section 31, module 23 Preservation)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -41,6 +41,7 @@ The system consists of 20 modules:
 | 20 | Events | `lms.events` | 28 |
 | 21 | Course reserves | `lms.courses` | 29 |
 | 22 | Donations | `lms.donations` | 30 |
+| 23 | Preservation | `lms.preservation` | 31 |
 
 ### 1.2 Out of scope
 
@@ -108,7 +109,8 @@ lms/
 ├── staff/               Module 19
 ├── events/              Module 20
 ├── courses/             Module 21
-└── donations/           Module 22
+├── donations/           Module 22
+└── preservation/        Module 23
 ```
 
 | ID | Requirement |
@@ -476,6 +478,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Events (module 20) | – | Read published events; register and cancel own registrations; read own registrations and bans | Full | Full |
 | Course reserves (module 21) | – | Read own courses and their reading lists; read own reserve loans and renew them; as a course's instructor: change its reading list and read its enrollments | Full | Full |
 | Donations (module 22) | – | Offer, change and cancel own donation offers; read own donations and receipts; read the donor wall | Full, except merging donors | Full |
+| Preservation (module 23) | – | – | Full, except setting budgets and approving jobs above 500.00 | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -588,7 +591,7 @@ This module manages authors, publishers, books (titles) and copies (physical ite
 | `classification` | text | Dewey-style class: three digits, optionally a dot and 1–6 digits, e.g. `"005"`, `"005.133"` |
 | `created_at` | date-time | From the clock |
 
-API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]` in order instead of `author_ids`, `publisher` as `{"id", "name"}`, and `availability`: `[{"branch_id", "available", "total"}]` per branch that holds copies, ordered by `branch_id`, where `available` counts copies with status `available` at that branch (current branch) and `total` counts copies at that branch whose status is not `lost` or `withdrawn`. Copies in transfer (no current branch) are not counted.
+API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]` in order instead of `author_ids`, `publisher` as `{"id", "name"}`, and `availability`: `[{"branch_id", "available", "total"}]` per branch that holds copies, ordered by `branch_id`, where `available` counts copies with status `available` at that branch (current branch) and `total` counts copies at that branch whose status is not `lost` or `withdrawn`. Copies in transfer (no current branch) are not counted. Module 23 adds `expected_back` to each row (LIB-PRE-33).
 
 **Copy**
 
@@ -606,6 +609,7 @@ API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]
 | `withdrawn_reason` | text or null | Set when withdrawn |
 | `reserve_item_id` | integer or null | The reading list item while the copy is `on_reserve` (module 21, LIB-CRS-20); null otherwise |
 | `donation_id` | integer or null | The donation the copy was received from (module 22, LIB-DON-19) |
+| `condition` | `good` \| `worn` \| `fragile` | Default `good`; set by inspections (module 23, LIB-PRE-04) |
 
 ### 8.2 Copy statuses
 
@@ -620,8 +624,9 @@ API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]
 | `withdrawn` | Removed from the collection; final | No |
 | `at_partner` | Lent to a partner library (module 18, LIB-ILL-31) | No |
 | `on_reserve` | Kept at the reserve desk for a course (module 21) | Only as a reserve loan (LIB-CRS-24) |
+| `in_repair` | At the workshop or bindery (module 23) | No |
 
-Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withdrawn`; `on_hold` → `on_loan`, `available`, `in_transfer`; `on_loan` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost`; `in_transfer` → `available`, `on_hold`; `damaged` → `available`, `on_hold`, `in_transfer`, `withdrawn`; `lost` → `withdrawn`; module 18 adds `available` → `at_partner` and `at_partner` → `available`, `lost` (LIB-ILL-31); module 21 adds `available` → `on_reserve` and `on_reserve` → `available`, `on_hold`, `in_transfer`, `lost` (LIB-CRS-20). The release procedure (LIB-RES-08) and transfer arrival (LIB-BR-07) may also keep a copy `on_hold` (held for the next reservation in the queue) or `in_transfer` (a new transfer starts on arrival); these are allowed. On arrival, the copy goes directly from `in_transfer` to the status that LIB-BR-07 gives it; no intermediate status is stored. Any other transition MUST be rejected with `409 INVALID_COPY_STATUS`.
+Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withdrawn`; `on_hold` → `on_loan`, `available`, `in_transfer`; `on_loan` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost`; `in_transfer` → `available`, `on_hold`; `damaged` → `available`, `on_hold`, `in_transfer`, `withdrawn`; `lost` → `withdrawn`; module 18 adds `available` → `at_partner` and `at_partner` → `available`, `lost` (LIB-ILL-31); module 21 adds `available` → `on_reserve` and `on_reserve` → `available`, `on_hold`, `in_transfer`, `lost` (LIB-CRS-20); module 23 adds `damaged`, `available` → `in_repair` and `in_repair` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost` (LIB-PRE-27). The release procedure (LIB-RES-08) and transfer arrival (LIB-BR-07) may also keep a copy `on_hold` (held for the next reservation in the queue) or `in_transfer` (a new transfer starts on arrival); these are allowed. On arrival, the copy goes directly from `in_transfer` to the status that LIB-BR-07 gives it; no intermediate status is stored. Any other transition MUST be rejected with `409 INVALID_COPY_STATUS`.
 
 ### 8.3 Endpoints
 
@@ -646,10 +651,10 @@ Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withd
 | LIB-CAT-05 | **Update book.** `PATCH /api/v1/books/{book_id}` accepts any subset of the create fields with the same rules. |
 | LIB-CAT-06 | **Delete.** `DELETE` returns `204`. A book that has any copy returns `409 BOOK_HAS_COPIES`. An author or publisher that is used by any book returns `409 IN_USE`. Books with interlibrary requests: LIB-ILL-40. Donation items: LIB-DON-39. |
 | LIB-CAT-07 | **Add copy.** `POST /api/v1/books/{book_id}/copies` with `{"barcode", "home_branch_id", "price", "acquired_on", "shelf_location"}` returns `201` with the copy. `current_branch_id` = `home_branch_id`, `status` = `available`. A duplicate barcode returns `409 CONFLICT`. The new copy is then released (LIB-RES-08), so a waiting reservation can take it at once. |
-| LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). Copies on reserve: LIB-CRS-43. Donated copies: LIB-DON-24. |
+| LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). Copies on reserve: LIB-CRS-43. Donated copies: LIB-DON-24. Repairs: LIB-PRE-29. |
 | LIB-CAT-09 | **Update copy.** `PATCH /api/v1/copies/{copy_id}` accepts any subset of `{"price", "shelf_location", "home_branch_id"}`. `home_branch_id` can change only while the copy is `available` at its home branch; it then also changes `current_branch_id`. Otherwise `409 INVALID_COPY_STATUS`. |
-| LIB-CAT-10 | **Withdraw.** `POST /api/v1/copies/{copy_id}/withdraw` with `{"reason"}` (5–500 characters) sets `status` to `withdrawn` and stores the reason. Allowed from `available`, `damaged` and `lost` (8.2); otherwise `409 INVALID_COPY_STATUS`. Donated copies: LIB-DON-25. |
-| LIB-CAT-11 | **Repair.** `POST /api/v1/copies/{copy_id}/repair` is allowed only for a `damaged` copy (otherwise `409 INVALID_COPY_STATUS`). The copy is released (LIB-RES-08). |
+| LIB-CAT-10 | **Withdraw.** `POST /api/v1/copies/{copy_id}/withdraw` with `{"reason"}` (5–500 characters) sets `status` to `withdrawn` and stores the reason. Allowed from `available`, `damaged` and `lost` (8.2); otherwise `409 INVALID_COPY_STATUS`. Donated copies: LIB-DON-25. Open repair jobs: LIB-PRE-28. |
+| LIB-CAT-11 | **Repair.** `POST /api/v1/copies/{copy_id}/repair` is allowed only for a `damaged` copy (otherwise `409 INVALID_COPY_STATUS`). The copy is released (LIB-RES-08). Open repair jobs: LIB-PRE-28. |
 | LIB-CAT-12 | **Lendable book.** A book is *lendable* when it has at least one copy whose status is not `lost` or `withdrawn`. |
 
 ---
@@ -698,7 +703,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | LIB-LOAN-02 | **Overdue.** An open loan is overdue when today > `due_date`. |
 | LIB-LOAN-03 | **Due date.** `due_date` = the next working day on or after `loan_date` + `loan_period_days` calendar days (LIB-COM-08). Examples: student, lent 2026-11-02 → due 2026-11-16; academic, lent 2026-12-02 → 2027-01-01 is a holiday → due 2027-01-04. |
 | LIB-LOAN-04 | **Terms are fixed per loan.** `loan_period_days`, `max_renewals` and `daily_fee` are copied from the member's type (7.1) when the loan is created and are used for that loan until it closes, even if the member's type changes. |
-| LIB-LOAN-05 | **Lending checks.** The checks run in this order; the first failure decides the response (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) today > `valid_until` → `MEMBERSHIP_EXPIRED`; (3) the member has an overdue loan (equipment loans: LIB-EQ-14; interlibrary requests: LIB-ILL-19; reserve loans: LIB-CRS-37) → `MEMBER_HAS_OVERDUE`; (4) the member's total debt (LIB-FEE-09) ≥ 50.00 TL → `MEMBER_BLOCKED_BY_DEBT`, with `details.total_debt`; (5) the member's open loans ≥ the loan limit of the member's current type → `LOAN_LIMIT_REACHED`; (6) copy status: `available` → allowed; `on_hold` → allowed only if the hold belongs to a `ready` reservation of this member (LIB-RES-10), otherwise `COPY_ON_HOLD`; any other status → `COPY_NOT_AVAILABLE`, with `details.status`. |
+| LIB-LOAN-05 | **Lending checks.** The checks run in this order; the first failure decides the response (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) today > `valid_until` → `MEMBERSHIP_EXPIRED`; (3) the member has an overdue loan (equipment loans: LIB-EQ-14; interlibrary requests: LIB-ILL-19; reserve loans: LIB-CRS-37) → `MEMBER_HAS_OVERDUE`; (4) the member's total debt (LIB-FEE-09) ≥ 50.00 TL → `MEMBER_BLOCKED_BY_DEBT`, with `details.total_debt`; (5) the member's open loans ≥ the loan limit of the member's current type → `LOAN_LIMIT_REACHED`; (6) copy status: `available` → allowed; `on_hold` → allowed only if the hold belongs to a `ready` reservation of this member (LIB-RES-10), otherwise `COPY_ON_HOLD`; any other status → `COPY_NOT_AVAILABLE`, with `details.status`; (7) the copy's `condition` is `fragile` → `COPY_FRAGILE` (LIB-PRE-06). |
 | LIB-LOAN-06 | **Debt boundary.** Total debt 49.99 TL allows lending; 50.00 TL does not. |
 | LIB-LOAN-07 | **Renew.** `POST /api/v1/loans/{loan_id}/renew` returns `200` with `LoanOut`. Checks in order (all `409`): loan not `open` → `LOAN_NOT_OPEN`; member `passive` → `MEMBER_PASSIVE`; membership expired → `MEMBERSHIP_EXPIRED`; loan overdue → `LOAN_OVERDUE`; `renewal_count` ≥ `max_renewals` → `RENEWAL_LIMIT_REACHED`; the book has an active reservation (status `waiting`, `in_transit` or `ready`) by any member → `BOOK_RESERVED`. |
 | LIB-LOAN-08 | **Renewed due date.** New `due_date` = the next working day on or after today + `loan_period_days` (the new period starts on the renewal day). Because today is never before the previous loan or renewal date, the new due date is never earlier than the current one. `renewal_count` increases by 1. A renewal on the due date itself is allowed (not overdue). Examples: student loan due 2026-11-16, renewed on 2026-11-10 → due 2026-11-24. Student loan due 2026-06-01, renewed on 2026-05-15 → 2026-05-29 is a holiday → due 2026-06-01 (unchanged); the renewal still counts. |
@@ -747,13 +752,13 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | ID | Requirement |
 | --- | --- |
 | LIB-RES-01 | **Create.** `POST /api/v1/reservations` with `{"book_id", "pickup_branch_id"}` returns `201` with `ReservationOut`. A librarian or admin MUST also send `member_id`; a member MUST NOT send it (`422 VALIDATION_ERROR`) and reserves for themselves. |
-| LIB-RES-02 | **Creation checks.** In order (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) membership expired → `MEMBERSHIP_EXPIRED`; (3) the book is not lendable (LIB-CAT-12) → `BOOK_NOT_LENDABLE`; (4) the member already has an active reservation for this book → `DUPLICATE_RESERVATION`; (5) the member has an open loan of a copy of this book → `ALREADY_BORROWED`; (6) the member has 3 active reservations → `RESERVATION_LIMIT_REACHED`; (7) a copy of the book is `available` with `current_branch_id` = `pickup_branch_id` → `COPY_AVAILABLE_AT_BRANCH`. Copies on reserve: LIB-CRS-42. |
+| LIB-RES-02 | **Creation checks.** In order (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) membership expired → `MEMBERSHIP_EXPIRED`; (3) the book is not lendable (LIB-CAT-12) → `BOOK_NOT_LENDABLE`; (4) the member already has an active reservation for this book → `DUPLICATE_RESERVATION`; (5) the member has an open loan of a copy of this book → `ALREADY_BORROWED`; (6) the member has 3 active reservations → `RESERVATION_LIMIT_REACHED`; (7) a copy of the book is `available` with `current_branch_id` = `pickup_branch_id` → `COPY_AVAILABLE_AT_BRANCH`. Copies on reserve: LIB-CRS-42. Fragile copies: LIB-PRE-30. |
 | LIB-RES-03 | **Limit boundary.** A member with 2 active reservations can create a third; with 3 they cannot. Fulfilled, cancelled and expired reservations do not count. |
 | LIB-RES-04 | **Queue.** Each book has one first-come, first-served queue across all pickup branches, ordered by `created_at`, then `id`. There is no priority by membership type. |
-| LIB-RES-05 | **Immediate assignment.** After a reservation is created, if a copy of the book is `available` at another branch, that copy is assigned at once by the release procedure (LIB-RES-08) applied to it. Copies on reserve: LIB-CRS-42. |
+| LIB-RES-05 | **Immediate assignment.** After a reservation is created, if a copy of the book is `available` at another branch, that copy is assigned at once by the release procedure (LIB-RES-08) applied to it. Copies on reserve: LIB-CRS-42. Fragile copies: LIB-PRE-07. |
 | LIB-RES-06 | **Queue view.** `GET /api/v1/books/{book_id}/reservations` returns the active reservations of the book, paginated (LIB-COM-18) and in queue order (LIB-RES-04). |
 | LIB-RES-07 | **List.** `GET /api/v1/reservations` is paginated, ordered by `id`. Filters: `member_id`, `book_id`, `pickup_branch_id`, `status`. |
-| LIB-RES-08 | **Release procedure.** When a copy becomes free (good return LIB-LOAN-12, new copy LIB-CAT-07, repair LIB-CAT-11, cancellation or expiry of the reservation it was held for, transfer arrival in module 11, or LIB-RES-05), the system takes the first `waiting` reservation of the copy's book (LIB-RES-04) and: (a) if none exists — the copy becomes `available` if it is at its home branch; otherwise a return transfer to the home branch starts (module 11) and the copy becomes `in_transfer`; (b) if its `pickup_branch_id` = the copy's `current_branch_id` — the reservation becomes `ready` (LIB-RES-09); (c) otherwise — the copy is assigned (`copy_id`), the reservation becomes `in_transit`, and a transfer of the copy to the pickup branch starts (module 11). Course reserves come first: LIB-CRS-22. |
+| LIB-RES-08 | **Release procedure.** When a copy becomes free (good return LIB-LOAN-12, new copy LIB-CAT-07, repair LIB-CAT-11, cancellation or expiry of the reservation it was held for, transfer arrival in module 11, or LIB-RES-05), the system takes the first `waiting` reservation of the copy's book (LIB-RES-04) and: (a) if none exists — the copy becomes `available` if it is at its home branch; otherwise a return transfer to the home branch starts (module 11) and the copy becomes `in_transfer`; (b) if its `pickup_branch_id` = the copy's `current_branch_id` — the reservation becomes `ready` (LIB-RES-09); (c) otherwise — the copy is assigned (`copy_id`), the reservation becomes `in_transit`, and a transfer of the copy to the pickup branch starts (module 11). Course reserves come first: LIB-CRS-22. Fragile copies: LIB-PRE-07. |
 | LIB-RES-09 | **Ready.** A reservation becomes `ready` with `copy_id` set, `ready_on` = today and `hold_until` = today + 3 working days (LIB-COM-09). The copy's status becomes `on_hold`. The member is notified (event `reservation_ready`). Example: ready on 2026-10-28 → `hold_until` 2026-11-03. |
 | LIB-RES-10 | **Fulfilment.** When a member borrows a copy of a book for which they have an active reservation, that reservation becomes `fulfilled`: (a) `ready` with the held copy lent (LIB-LOAN-05 step 6, on or before `hold_until`) — nothing else changes; (b) `ready` with another available copy lent — the held copy is released (LIB-RES-08); (c) `in_transit` — the transfer continues and the copy is released when it arrives (LIB-BR-07); (d) `waiting` — no copy is involved. |
 | LIB-RES-11 | **Expiry.** A `ready` reservation with today > `hold_until` is expired. `POST /api/v1/reservations/process-expired` marks every such reservation `expired` (in queue order of their books), releases each held copy (LIB-RES-08), notifies the member (event `reservation_expired`) and returns `200` with `{"expired": <count>}`. Before lending a copy that is `on_hold`, the system MUST first expire its reservation if it is past `hold_until`. |
@@ -937,7 +942,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38.
 
 ### 16.1 Endpoints and requirements
 
@@ -1034,7 +1039,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 
 | ID | Requirement |
 | --- | --- |
-| LIB-PUR-01 | **Suppliers.** `POST /api/v1/suppliers` with `{"name", "email", "phone"}` returns `201`; a duplicate name returns `409 CONFLICT`. Lists are paginated, ordered by `name`, then `id`, with filters `q` and `is_active`. `PATCH` changes any of `name`, `email`, `phone`, `is_active`. |
+| LIB-PUR-01 | **Suppliers.** `POST /api/v1/suppliers` with `{"name", "email", "phone"}` returns `201`; a duplicate name returns `409 CONFLICT`. Lists are paginated, ordered by `name`, then `id`, with filters `q` and `is_active`. `PATCH` changes any of `name`, `email`, `phone`, `is_active`. Open repair jobs: LIB-PRE-32. |
 | LIB-PUR-02 | **Create order.** `POST /api/v1/purchase-orders` with `{"supplier_id", "branch_id", "lines": [{"book_id", "quantity", "unit_price"}]}` (0–50 lines) returns `201` with the order (`status` `draft`, `total`). An inactive supplier returns `409 SUPPLIER_INACTIVE`. A book repeated in `lines` returns `422 VALIDATION_ERROR`. |
 | LIB-PUR-03 | **Edit draft.** `PATCH` accepts any subset of `{"supplier_id", "branch_id", "lines"}`; `lines` replaces all lines. Only a `draft` can be edited: otherwise `409 INVALID_ORDER_STATUS`. |
 | LIB-PUR-04 | **Submit.** `submit` changes `draft` to `ordered` and sets `ordered_on` = today. An order without lines returns `409 ORDER_EMPTY`; a non-draft returns `409 INVALID_ORDER_STATUS`. Pending donations: LIB-DON-35. |
@@ -1074,7 +1079,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 
 | ID | Requirement |
 | --- | --- |
-| LIB-IO-07 | `GET /api/v1/export` (admin only) returns `200` with all data in the format of 22.1. Importing an export into an empty database and exporting again MUST give the same document, provided no copy is `on_hold`, `in_transfer` or `at_partner` at export time (LIB-IO-11, LIB-ILL-39). Copies are exported without `donation_id` (LIB-DON-47). |
+| LIB-IO-07 | `GET /api/v1/export` (admin only) returns `200` with all data in the format of 22.1. Importing an export into an empty database and exporting again MUST give the same document, provided no copy is `on_hold`, `in_transfer` or `at_partner` at export time (LIB-IO-11, LIB-ILL-39). Copies are exported without `donation_id` (LIB-DON-47). Copies `in_repair` are exported as `damaged` (LIB-PRE-39). |
 | LIB-IO-08 | `GET /api/v1/export/{entity}.csv` (admin only), `entity` one of `branches`, `books`, `copies`, `members`, `loans`, returns `text/csv; charset=utf-8` in the format of 22.3 with the columns of 22.2, rows ordered by `id`. An unknown entity returns `404 NOT_FOUND`. |
 | LIB-IO-09 | Each export creates one audit entry `data_exported` with the entity (or `"all"`). |
 
@@ -1129,7 +1134,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7.
 
 ---
 
@@ -2778,6 +2783,138 @@ A member's **own** donations are those of the donor whose `member_id` is the mem
 
 ---
 
+## 31. Module 23: Preservation
+
+Damaged and worn copies are repaired in the library's own workshop or sent to a bindery (a supplier of module 12). Each repair is a job with an estimated cost that must fit into the branch's yearly preservation budget. Copies are inspected and get a condition; fragile copies are kept from lending. Package `lms.preservation`. Times are local (LIB-COM-01).
+
+### 31.1 Data
+
+**Copy:** the copy gets `condition` (`good` \| `worn` \| `fragile`; default `good`) and a new status `in_repair` (LIB-PRE-27).
+
+**Inspection:** `id`, `copy_id`, `condition`, `note` (0–500 characters), `inspected_by` (user id), `inspected_at`.
+
+**Budget:** `branch_id`, `year` (2000–2100), `amount` (0.00–1000000.00). At most one per branch and year.
+
+**Repair job**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `copy_id` | integer | |
+| `branch_id` | integer | The copy's `current_branch_id` when the job is created |
+| `kind` | `repair` \| `rebinding` \| `conservation` | |
+| `provider` | `in_house` \| `supplier` | |
+| `supplier_id` | integer or null | Required for `supplier`, null for `in_house` |
+| `priority` | `normal` \| `urgent` | Default `normal` |
+| `estimated_cost` | amount | 0.00–100000.00 |
+| `actual_cost` | amount or null | Set at return |
+| `status` | `requested` \| `approved` \| `sent` \| `returned` \| `cancelled` \| `lost` | Initially `requested` |
+| `outcome` | `repaired` \| `unrepairable` \| null | Set at return |
+| `loan_id` | integer or null | LIB-PRE-11 |
+| `shipment_id` | integer or null | LIB-PRE-19 |
+| `note`, `cost_note` | text | 0–500 characters; default `""` |
+| `requested_at`, `approved_at`, `sent_at`, `returned_at` | date-time or null | |
+| `due_back` | date or null | Set when sent (LIB-PRE-17) |
+| `cancel_reason` | `staff_request` \| `expired` \| null | |
+
+A job is **open** while it is `requested`, `approved` or `sent`. A `sent` job is **overdue** when today > `due_back`. The **budget year** of a job is the year of its `approved_at`.
+
+**Shipment:** `id`, `code` (`"SH-<branch code>-<n>"`, `n` counting the shipments of the branch from 1), `supplier_id`, `branch_id`, `job_ids`, `sent_at`.
+
+### 31.2 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `PUT /api/v1/preservation-budgets/{branch_id}/{year}` | admin | Set a budget |
+| `GET /api/v1/preservation-budgets/{branch_id}/{year}` | librarian, admin | Budget use |
+| `POST`, `GET /api/v1/copies/{copy_id}/inspections` | librarian, admin | Inspect a copy, history |
+| `POST /api/v1/repair-jobs`, `GET /api/v1/repair-jobs`, `GET`, `PATCH /api/v1/repair-jobs/{job_id}` | librarian, admin | Jobs |
+| `POST /api/v1/repair-jobs/{job_id}/approve`, `/cancel`, `/send`, `/return`, `/lost` | librarian, admin (approve: LIB-PRE-13) | Job steps |
+| `POST`, `GET /api/v1/repair-shipments`; `GET /api/v1/repair-shipments/{shipment_id}` | librarian, admin | Shipments to a bindery |
+| `GET /api/v1/preservation/suggestions` | librarian, admin | Copies that need a job |
+| `POST /api/v1/preservation/process` | librarian, admin | Overdue jobs, old requests |
+| `GET /api/v1/reports/preservation`, `GET /api/v1/reports/damage-recovery` | librarian, admin | Reports (section 16) |
+
+Members have no access to this module (`403 FORBIDDEN`).
+
+### 31.3 Budgets
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PRE-01 | **Set budget.** `PUT /api/v1/preservation-budgets/{branch_id}/{year}` with `{"amount"}` creates or replaces the budget of the branch and year and returns `200` with the budget use (LIB-PRE-02) (event `preservation_budget_set`). An unknown branch → `404`; a year or amount outside 31.1 → `422`. |
+| LIB-PRE-02 | **Budget use.** `GET` returns `{"branch_id", "year", "amount", "committed", "spent", "available"}`. `committed` = sum of `estimated_cost` of the `approved` and `sent` jobs of the branch with that budget year; `spent` = sum of `actual_cost` of its `returned` jobs plus `estimated_cost` of its `lost` jobs; `available` = `amount` − `committed` − `spent` (may be negative). A branch and year without a budget → `404 NOT_FOUND`. |
+| LIB-PRE-03 | **Lowering a budget.** A new `amount` below `committed` + `spent` → `409 BUDGET_BELOW_USED` with `details.used`. |
+
+### 31.4 Inspections and condition
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PRE-04 | **Inspect.** `POST /api/v1/copies/{copy_id}/inspections` with `{"condition", "note"}` stores an inspection, sets the copy's `condition` and returns `201` (event `copy_inspected`). A `lost` or `withdrawn` copy → `409 INVALID_COPY_STATUS`. |
+| LIB-PRE-05 | **Inspection history.** `GET /api/v1/copies/{copy_id}/inspections` is paginated, ordered by `inspected_at` descending, then `id` descending. |
+| LIB-PRE-06 | **Fragile copies are not lent.** LIB-LOAN-05 adds step (7): the copy's `condition` is `fragile` → `409 COPY_FRAGILE`. Reserve loans (LIB-CRS-24) are not affected. |
+| LIB-PRE-07 | **Fragile copies and reservations.** The release procedure (LIB-RES-08) does not give a `fragile` copy to a reservation: the copy becomes `available` (or returns home) as if no reservation were waiting. LIB-RES-05 does not assign `fragile` copies. |
+
+### 31.5 Repair jobs
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PRE-08 | **Create job.** `POST /api/v1/repair-jobs` with `{"copy_id", "kind", "provider", "supplier_id", "priority", "estimated_cost", "note"}` returns `201` with the job, status `requested`, `requested_at` = now (event `repair_job_created`). Values outside 31.1, a `supplier_id` missing for `supplier` or present for `in_house` → `422`; an unknown copy or supplier → `422` with `details.fields`. |
+| LIB-PRE-09 | **Create checks.** In order (all `409`): (1) the copy is not `damaged` or `available` → `INVALID_COPY_STATUS` with `details.status`; (2) the copy has an open job → `COPY_HAS_REPAIR_JOB` with `details.job_id`; (3) the supplier is inactive → `SUPPLIER_INACTIVE`; (4) the copy's current branch is inactive → `BRANCH_INACTIVE`. |
+| LIB-PRE-10 | **Change job.** `PATCH /api/v1/repair-jobs/{job_id}` accepts any subset of `{"kind", "provider", "supplier_id", "priority", "estimated_cost", "note"}` while the job is `requested` (otherwise `409 INVALID_JOB_STATUS` with `details.status`), with the rules of LIB-PRE-08 and LIB-PRE-09 step 3, and returns `200` (event `repair_job_updated`). |
+| LIB-PRE-11 | **Damage link.** When the copy is `damaged` and its latest loan was returned with `condition` `damaged`, `loan_id` is that loan; otherwise null. |
+| LIB-PRE-12 | **Approve.** `POST /api/v1/repair-jobs/{job_id}/approve` sets `approved` with `approved_at` = now and returns `200` (event `repair_job_approved`). Checks in order (all `409`): not `requested` → `INVALID_JOB_STATUS`; no budget for the branch and the current year → `NO_PRESERVATION_BUDGET`; `estimated_cost` > `available` of that budget for a `normal` job, or > `available` + 10 % of `amount` for an `urgent` job → `BUDGET_EXCEEDED` with `details.available`. |
+| LIB-PRE-13 | **Who approves.** A job with `estimated_cost` above 500.00 is approved only by an admin; a librarian receives `403 FORBIDDEN`. |
+| LIB-PRE-14 | **Budget examples.** Budget 1000.00 with 700.00 committed: a `normal` job of 300.00 → approved; of 300.01 → `BUDGET_EXCEEDED` (`available` 300.00); an `urgent` job of 400.00 → approved; of 400.01 → `BUDGET_EXCEEDED`. |
+| LIB-PRE-15 | **Cancel.** `POST /api/v1/repair-jobs/{job_id}/cancel` on a `requested` or `approved` job sets `cancelled` with `cancel_reason` `staff_request` and returns `200` (event `repair_job_cancelled`); the copy does not change. Otherwise `409 INVALID_JOB_STATUS`. |
+| LIB-PRE-16 | **Send.** `POST /api/v1/repair-jobs/{job_id}/send` on an `approved` job sets `sent`, `sent_at` = now and `due_back` (LIB-PRE-17), sets the copy to `in_repair` and returns `200` (event `repair_job_sent`). Checks in order (all `409`): not `approved` → `INVALID_JOB_STATUS`; a `supplier` job → `SHIPMENT_REQUIRED` (supplier jobs are sent by LIB-PRE-19); the copy is no longer `damaged` or `available` → `INVALID_COPY_STATUS` with `details.status`. |
+| LIB-PRE-17 | **Turnaround.** `due_back` = the send date + the days of this table: `repair` 7, `rebinding` 21, `conservation` 42 for `in_house`; 7 more days for `supplier`; half of the days, rounded up, for `urgent` jobs. Example: an urgent supplier rebinding sent on 2026-11-02 is due back on 2026-11-16 (28 / 2 = 14 days). |
+| LIB-PRE-18 | **Copy in repair.** While `in_repair`, the copy keeps its `current_branch_id`. |
+| LIB-PRE-19 | **Shipment.** `POST /api/v1/repair-shipments` with `{"supplier_id", "job_ids": [...]}` (1–50 distinct ids, otherwise `422`) sends every job as in LIB-PRE-16 (without the `SHIPMENT_REQUIRED` check) with `shipment_id`, and returns `201` with the shipment (event `repair_shipment_sent`). All or nothing: a job that is not `approved`, not a `supplier` job of that supplier, or not of the same branch as the first job → `409 SHIPMENT_MISMATCH` with `details.job_id`; the copy checks of LIB-PRE-16 apply too. |
+| LIB-PRE-20 | **Read shipments.** `GET /api/v1/repair-shipments` is paginated, ordered by `id` descending, with filters `supplier_id` and `branch_id`; each shipment contains `job_ids` and `open_jobs` (count of its jobs still `sent`). |
+| LIB-PRE-21 | **Return.** `POST /api/v1/repair-jobs/{job_id}/return` with `{"outcome", "actual_cost", "cost_note"}` on a `sent` job (otherwise `409 INVALID_JOB_STATUS`) sets `returned`, `returned_at` = now, `outcome` and `actual_cost` (0.00–100000.00) and returns `200` (event `repair_job_returned`). `repaired`: the copy's `condition` becomes `good` and the copy is released (LIB-RES-08). `unrepairable`: the copy becomes `damaged`. |
+| LIB-PRE-22 | **Cost overrun.** When `actual_cost` > `estimated_cost` × 1.2, the job is marked `cost_overrun` `true` and `cost_note` MUST NOT be empty (`422`). Example: estimated 100.00: actual 120.00 without note → accepted; 120.01 without note → `422`. |
+| LIB-PRE-23 | **Lost at the provider.** `POST /api/v1/repair-jobs/{job_id}/lost` on a `sent` job sets `lost` and returns `200` (event `repair_job_lost`); the copy becomes `lost` with `current_branch_id` null. For a `supplier` job the response contains `claim_amount` = the copy's `price` (null for `in_house`). No member fee is created. Not `sent` → `409 INVALID_JOB_STATUS`. |
+| LIB-PRE-24 | **Read jobs.** `GET /api/v1/repair-jobs` is paginated, ordered by `id` descending, with filters `status`, `branch_id`, `provider`, `supplier_id`, `kind`, `overdue` (`true`/`false`) and `copy_id`. Each job contains `barcode`, `book_title`, `is_overdue` and `cost_overrun`. |
+| LIB-PRE-25 | **Process.** `POST /api/v1/preservation/process` (1) counts the overdue jobs and marks those not yet marked (`overdue_marked_at` = now); (2) cancels `requested` jobs with `requested_at` more than 60 days before now with `cancel_reason` `expired`. Returns `200` with `{"overdue", "newly_overdue", "expired_requests"}` (event `preservation_processed`). |
+| LIB-PRE-26 | **Suggestions.** `GET /api/v1/preservation/suggestions?branch_id=` returns `{"items": [{"copy_id", "barcode", "reason"}]}` for the copies with that current branch and no open job, ordered by `copy_id`: `damaged` copies (reason `damaged`), `available` copies with condition `fragile` (`fragile`), and `available` copies with condition `worn` and at least 30 loans in total (`worn_and_used`). |
+
+### 31.6 Effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PRE-27 | **Copy status `in_repair`.** 8.2 adds `in_repair` ("at the workshop or bindery"), with the transitions `damaged` → `in_repair`, `available` → `in_repair` and `in_repair` → `available`, `on_hold`, `in_transfer` (through the release procedure), `damaged`, `lost`. Lending returns `COPY_NOT_AVAILABLE` with `details.status` `in_repair`; relocation and withdrawal return `INVALID_COPY_STATUS`. In `BookOut.availability` an `in_repair` copy counts in `total` but not in `available`. |
+| LIB-PRE-28 | **Direct repair and withdrawal.** LIB-CAT-11 (repair) and LIB-CAT-10 (withdraw) of a copy with an open job → `409 COPY_HAS_REPAIR_JOB` with `details.job_id` (checked before the status check). |
+| LIB-PRE-29 | **Copies.** `CopyOut` adds `condition` and `open_job_id` (null when none). LIB-CAT-08 accepts `status=in_repair` and a filter `condition`. |
+| LIB-PRE-30 | **Reservations.** LIB-RES-02 step 7 (`COPY_AVAILABLE_AT_BRANCH`) counts only copies that are `available` and not `fragile`. |
+| LIB-PRE-31 | **Budgets of inactive branches.** A budget cannot be set for an inactive branch: `409 BRANCH_INACTIVE` (LIB-PRE-01). |
+| LIB-PRE-32 | **Supplier deactivation.** LIB-PUR-01: `{"is_active": false}` for a supplier with an open job → `409 SUPPLIER_HAS_JOBS` with `details.job_ids`. |
+| LIB-PRE-33 | **Member view.** `GET /api/v1/books/{book_id}` shows `in_repair` copies to members as not available, with `expected_back` (the latest `due_back` of the book's `sent` jobs at that branch) in each `availability` row; null when none. |
+| LIB-PRE-34 | **Course reserves.** A copy that is `on_reserve` cannot get a job (`INVALID_COPY_STATUS`, LIB-PRE-09 step 1); take it off reserve first. |
+| LIB-PRE-35 | **Audit.** Module 23 reports: `preservation_budget_set`, `copy_inspected`, `repair_job_created`, `repair_job_updated`, `repair_job_approved`, `repair_job_cancelled`, `repair_job_sent`, `repair_shipment_sent`, `repair_job_returned`, `repair_job_lost`, `preservation_processed`. |
+| LIB-PRE-36 | **Notifications.** Module 23 creates no notifications. |
+| LIB-PRE-37 | **Preservation report.** `GET /api/v1/reports/preservation?year=` returns one row per branch with a budget or a job approved in that year, ordered by branch `code`: `{"branch_id", "budget", "committed", "spent", "jobs_returned", "repaired", "unrepairable", "lost", "average_days", "overdue_now"}`. `average_days` is the mean of whole days from `sent_at` to `returned_at` over the returned jobs, with 1 decimal (`"8.5"`), or null. |
+| LIB-PRE-38 | **Damage recovery report.** `GET /api/v1/reports/damage-recovery?from=&to=` (at most 366 days, `from` ≤ `to`, otherwise `422`) lists the returned jobs with a `loan_id` and `returned_at` in the range, ordered by `returned_at`, then `id`: `{"job_id", "copy_id", "loan_id", "member_id", "damage_fee", "actual_cost", "difference"}` (`difference` = `damage_fee` − `actual_cost`), plus totals `{"damage_fees", "costs", "difference"}`. |
+| LIB-PRE-39 | **Export.** Exported copies with status `in_repair` are written as `damaged`; `condition` is not exported (module 13). |
+| LIB-PRE-40 | **Example: from damage to the shelf.** A copy returned damaged at branch A (damage fee 30.00) gets an in-house `repair` job of 25.00, approved within budget, sent on Mon 2026-11-02 (`due_back` 2026-11-09), returned `repaired` with 20.00 on 2026-11-06: the copy goes to a waiting reservation at A (`on_hold`); the damage recovery report shows a difference of 10.00. |
+
+### 31.7 Error codes of module 23
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `BUDGET_BELOW_USED` | LIB-PRE-03 |
+| 409 | `COPY_FRAGILE` | LIB-PRE-06 |
+| 409 | `COPY_HAS_REPAIR_JOB` | LIB-PRE-09, LIB-PRE-28 |
+| 409 | `INVALID_JOB_STATUS` | LIB-PRE-10, LIB-PRE-12, LIB-PRE-15, LIB-PRE-16, LIB-PRE-21, LIB-PRE-23 |
+| 409 | `NO_PRESERVATION_BUDGET` | LIB-PRE-12 |
+| 409 | `BUDGET_EXCEEDED` | LIB-PRE-12 |
+| 409 | `SHIPMENT_REQUIRED` | LIB-PRE-16 |
+| 409 | `SHIPMENT_MISMATCH` | LIB-PRE-19 |
+| 409 | `SUPPLIER_HAS_JOBS` | LIB-PRE-32 |
+
+`INVALID_COPY_STATUS`, `SUPPLIER_INACTIVE`, `BRANCH_INACTIVE` and `COPY_NOT_AVAILABLE` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -2808,4 +2945,5 @@ A member's **own** donations are those of the donor whose `member_id` is the mem
 | Module 20: Events | LIB-EVT-01 – LIB-EVT-47 | 47 |
 | Module 21: Course reserves | LIB-CRS-01 – LIB-CRS-47 | 47 |
 | Module 22: Donations | LIB-DON-01 – LIB-DON-47 | 47 |
-| **Total** | | **583** |
+| Module 23: Preservation | LIB-PRE-01 – LIB-PRE-40 | 40 |
+| **Total** | | **623** |

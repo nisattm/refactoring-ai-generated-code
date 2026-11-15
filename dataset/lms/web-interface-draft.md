@@ -110,3 +110,16 @@ Same conventions as modules 15–21.
 | LIB-UI-DON-04 | **Receiving desk.** Librarian and admin. Scan barcodes per accepted item, see what is still expected and the `expected_by` date; "Process" with its count. |
 | LIB-UI-DON-05 | **Receipt and my donations.** Member: own donations with status and receipts. Staff: print view of a receipt. |
 | LIB-UI-DON-06 | **Donor wall and reports.** All users see the donor wall of a year; librarian and admin see the donations and donor reports. |
+
+## Module 23: Preservation
+
+Same conventions as modules 15–22.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-PRE-01 | **Budgets.** Admin sets the yearly budget of each branch; librarian and admin see committed, spent and available. |
+| LIB-UI-PRE-02 | **Inspection.** Librarian and admin. Scan a copy, record its condition with a note, see its inspection history. |
+| LIB-UI-PRE-03 | **Jobs.** Librarian and admin. Suggestions of a branch, create jobs from them, approve (with the budget shown), cancel, send in-house jobs, return with outcome and cost; overdue jobs highlighted; "Process" with its counts. |
+| LIB-UI-PRE-04 | **Shipments.** Librarian and admin. Pick approved supplier jobs of a branch and send them as one shipment; list shipments with their open jobs. |
+| LIB-UI-PRE-05 | **Reports.** Librarian and admin. Preservation report of a year and damage recovery report of a range as tables. |
+| LIB-UI-PRE-06 | **Book page.** All users see "in repair, expected back on …" in the availability of a book. |
