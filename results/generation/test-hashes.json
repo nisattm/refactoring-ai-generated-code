@@ -25,7 +25,7 @@
   "cases/rooms.md": "37da3aa4ab5b6b9924f78ccdcab70e16dec3b1d0f553e8df66078128e1286f29",
   "cases/search.md": "f70f7f0dba00f08225355f18059ab0025e33eb200ae7b5738708379671003ad0",
   "cases/staff.md": "3e11e015c63d84378199232be05eba666f8544336f6f2596f07f956996b84664",
-  "cases/suggestions.md": "5ac7f07a453655c378f8382d37d2539e210dcf7be22ae6efbf6b593eaf32a5a2",
+  "cases/suggestions.md": "72b4e5b7e348018112a7a09934d7b7954c96e9cede73472411f09eecf4a9c4bb",
   "conftest.py": "572c4df05699a5d2433872a73020e155fd170a7a368aa63452511c10113b07a0",
   "feedback/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "feedback/test_api.py": "1a06713f78e0941bc61109435ced2566147b1348d3dd10fe573f4fb1b43d06a6",
@@ -53,7 +53,7 @@
   "feedback/test_rooms.py": "1509b5b2ee18d57a572bae09a834eb02731a3570248c0ebda228a8cc7bda3310",
   "feedback/test_search.py": "c60dafec8d9bfdfda4ffb23b7e133f1a73b90263c300ce4c532d8d0ce7cde2f4",
   "feedback/test_staff.py": "32027a4ea9c54aab6baf5b6af7b64a539bfc3b63aae3602d8316d826d0cd7003",
-  "feedback/test_suggestions.py": "0cb5a41fe77e8b006b39666bee1af809af7a5086364a1cdc8d8811bc85482472",
+  "feedback/test_suggestions.py": "8869b023bbe0c731d97656b02067940f506f1cb1918501f60ca6a8bb4b9dfed7",
   "heldout/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "heldout/test_api.py": "186fd76e14c1ee4ba02959acf684fe40d74a42fbdfb333759fe9d1b287cab478",
   "heldout/test_audit_io.py": "9f68f5b25b77583193be8acaf7909bdf2ff1a35cebc44a3a63b783e591112156",
@@ -102,7 +102,7 @@
   "spec/rooms.py": "751570fcd5e2ab73282aad78846e60992def1143cf74f11447d46577e139e65e",
   "spec/search.py": "1faf6073d4d1e5ff77ad18cdcc92cbce3668ef6a7563dbad7b557aea3e9a8e11",
   "spec/staff.py": "95df0fd4f5051de3909a230c93f7bf60f8c37f59c0907449496652a7bfc6d34d",
-  "spec/suggestions.py": "772f57d90990fceccf72c94e6fb40dad56460a48114f7eb5dbdef606ffd82fc4",
+  "spec/suggestions.py": "087cf92fd2ce51d1951cbef9ba12808712a64e3ce1dd14a2eb47711cddf1f309",
   "support/__init__.py": "72d45a1cd511a62f95924bc49284e321b631529f3b7b738c2fab5af389f95f1e",
   "support/api.py": "e0a5f28c6a31ff624525110f9bb7bcd161b9bb12f5d458a7275357a88af9bd7a"
 }
