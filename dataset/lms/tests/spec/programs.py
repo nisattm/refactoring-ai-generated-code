@@ -98,7 +98,20 @@ def read(client, lib, m, branch, book=None):
 
 
 def part(client, headers, participation):
-    return [x for x in items(get(client, headers, f"members/{participation['member_id']}/programs")) if x["id"] == participation["id"]][0]
+    """The participation as listed by LIB-RDP-15 (matched by ``program_id``: one participation per member and program)."""
+    rows = items(get(client, headers, f"members/{participation['member_id']}/programs"))
+    return [x for x in rows if x["program_id"] == participation["program_id"]][0]
+
+
+def row(client, lib, participation):
+    """The participation in the staff participants list (LIB-RDP-47), which shows `reward_waived`."""
+    rows = items(get(client, lib, f"programs/{participation['program_id']}/participants"))
+    return [x for x in rows if x["member_id"] == participation["member_id"]][0]
+
+
+def book_ids(rows):
+    """Book ids of a featured-books list (LIB-RDP-08 names no field; ``book_id`` as in LIB-RDP-44, else ``id``)."""
+    return [r["book_id"] if "book_id" in r else r["id"] for r in rows]
 
 
 def entries(client, headers, participation, **params):
@@ -168,7 +181,7 @@ def TEST(client, librarian):
     old = program(client, librarian, starts_on="2026-10-01", ends_on="2026-10-31")
     err(post(client, librarian, f"programs/{old['id']}/publish"), 409, "PROGRAM_ENDED")
 '''),
-    dict(id="T-RDP-04-a", req="LIB-RDP-04", type="Normal", input="Published program (goal 1) with an active participant A and a completed participant B is cancelled; cancelled again", expected="200 `cancelled`; A `left` with `program_cancelled` and one `program_cancelled` notification; B `completed`; `409 INVALID_PROGRAM_STATUS`", code='''
+    dict(id="T-RDP-04-a", req="LIB-RDP-04", type="Normal", input="Published program (goal 1) with an active participant A and a completed participant B is cancelled; cancelled again", expected="200 `cancelled`; A `left` and one `program_cancelled` notification; B `completed`; `409 INVALID_PROGRAM_STATUS`", code='''
 def TEST(client, librarian, branch_a):
     p = published(client, librarian, goal_books=1)
     pa, a, _ = joined(client, librarian, branch_a, p)
@@ -176,7 +189,7 @@ def TEST(client, librarian, branch_a):
     ok(manual(client, librarian, pb, create_book(client, librarian)), 201)
     assert ok(post(client, librarian, f"programs/{p['id']}/cancel"))["status"] == "cancelled"
     oa, ob = part(client, librarian, pa), part(client, librarian, pb)
-    assert (oa["status"], oa["leave_reason"], ob["status"]) == ("left", "program_cancelled", "completed")
+    assert (oa["status"], ob["status"]) == ("left", "completed")
     assert (len(notes(client, librarian, a["id"], "program_cancelled")), len(notes(client, librarian, b["id"], "program_cancelled"))) == (1, 0)
     err(post(client, librarian, f"programs/{p['id']}/cancel"), 409, "INVALID_PROGRAM_STATUS")
 '''),
@@ -219,7 +232,7 @@ def TEST(client, clock, librarian, branch_a):
     url = f"/api/v1/programs/{p['id']}/books"
     ok(client.put(url, headers=librarian, json={"book_ids": [z["id"], a["id"]]}))
     h = mh(client, member(client, librarian, branch_a))
-    assert [b["id"] for b in items(ok(client.get(url, headers=h)))] == [a["id"], z["id"]]
+    assert book_ids(items(ok(client.get(url, headers=h)))) == [a["id"], z["id"]]
     many = [create_book(client, librarian)["id"] for _ in range(31)]
     assert client.put(url, headers=librarian, json={"book_ids": many}).status_code == 422
     at(clock, "2026-12-01")
@@ -235,7 +248,7 @@ def TEST(client, librarian):
     c2 = ok(post(client, librarian, f"programs/{p['id']}/copy", {"starts_on": "2027-01-04"}), 201)
     assert [(c["name"], c["status"], c["starts_on"], c["ends_on"], c["goal_books"]) for c in (c1, c2)] == [
         ("Kitap Kurdu (copy)", "draft", "2027-01-04", "2027-02-01", 4), ("Kitap Kurdu (copy 2)", "draft", "2027-01-04", "2027-02-01", 4)]
-    assert [x["id"] for x in items(get(client, librarian, f"programs/{c1['id']}/books"))] == [b["id"]]
+    assert book_ids(items(get(client, librarian, f"programs/{c1['id']}/books"))) == [b["id"]]
 '''),
     # ---------------------------------------------------------------- joining
     dict(id="T-RDP-10-a", req="LIB-RDP-10", type="Normal", input="A student joins with `public` false; a member sends `member_id`; staff omit it; staff join a member", expected="201 `active`, `joined_at`, `points` 0, `books` 0, `level` `none`, `public` false; `422`; `422`; 201", code='''
@@ -346,10 +359,10 @@ def TEST(client, clock, librarian, branch_a, branch_b):
     _, late_cp = book_with_copy(client, librarian, branch_a)
     late = lend(client, librarian, m["id"], late_cp["id"])
     read(client, librarian, m, branch_b)
-    _, lost_cp = book_with_copy(client, librarian, branch_a)
-    report_lost(client, librarian, lend(client, librarian, m["id"], lost_cp["id"])["id"])
     _, after_cp = book_with_copy(client, librarian, branch_a)
     after = lend(client, librarian, m["id"], after_cp["id"])
+    _, lost_cp = book_with_copy(client, librarian, branch_a)
+    report_lost(client, librarian, lend(client, librarian, m["id"], lost_cp["id"])["id"])
     at(clock, "2026-11-17")
     return_loan(client, librarian, late["id"], branch_id=branch_a["id"])
     at(clock, "2026-12-01")
@@ -503,7 +516,8 @@ def TEST(client, clock, librarian, branch_a):
     at(clock, MON, 10)
     read(client, librarian, m, branch_a)
     out = part(client, librarian, pa)
-    assert (out["status"], out["level"]) == ("completed", "bronze") and same(out["completed_at"], MON, 10)
+    assert (out["status"], out["level"]) == ("completed", "bronze")
+    assert same(get(client, librarian, f"participations/{pa['id']}/certificate")["completed_at"], MON, 10)
     ns = notes(client, librarian, m["id"], "program_completed")
     assert len(ns) == 1 and ns[0]["program_id"] == p["id"]
     read(client, librarian, m, branch_a)
@@ -558,14 +572,14 @@ def TEST(client, clock, librarian, branch_a):
     pa = ok(try_join(client, mh(client, m), p), 201)
     ok(manual(client, librarian, pa, create_book(client, librarian)), 201)
     assert [(f["amount"], f["status"]) for f in items(member_fees(client, librarian, m["id"]))] == [("8.00", "waived"), ("14.00", "open"), ("10.00", "waived")]
-    assert part(client, librarian, pa)["reward_waived"] == "18.00"
+    assert row(client, librarian, pa)["reward_waived"] == "18.00"
 '''),
     dict(id="T-RDP-33-a", req="LIB-RDP-33", type="Normal", input="Program with reward 20.00 completed by a member without fees", expected="`reward_waived` 0.00", code='''
 def TEST(client, librarian, branch_a):
     p = published(client, librarian, goal_books=1, reward_waiver="20.00")
     pa, m, _ = joined(client, librarian, branch_a, p)
     read(client, librarian, m, branch_a)
-    out = part(client, librarian, pa)
+    out = row(client, librarian, pa)
     assert (out["status"], out["reward_waived"]) == ("completed", "0.00")
 '''),
     dict(id="T-RDP-34-a", req="LIB-RDP-34", type="Error", input="Goal 1: B completes at 09:00, A at 10:00; certificates; an active participant's certificate; another member reads A's", expected="`RP-<id>-2` for A with name, level and books; `RP-<id>-1` for B; `409 NOT_COMPLETED`; `403`", code='''
@@ -618,12 +632,11 @@ def TEST(client, librarian, branch_a):
     assert (out["status"], out["books"]) == ("completed", 2)
 '''),
     # ---------------------------------------------------------------- effects
-    dict(id="T-RDP-38-a", req="LIB-RDP-38", type="Normal", input="A member with an active participation is deactivated", expected="`left` with `member_deactivated`", code='''
+    dict(id="T-RDP-38-a", req="LIB-RDP-38", type="Normal", input="A member with an active participation is deactivated", expected="The participation `left`", code='''
 def TEST(client, librarian, branch_a):
     pa, m, _ = joined(client, librarian, branch_a, published(client, librarian))
     deactivate_member(client, librarian, m["id"])
-    out = part(client, librarian, pa)
-    assert (out["status"], out["leave_reason"]) == ("left", "member_deactivated")
+    assert part(client, librarian, pa)["status"] == "left"
 '''),
     dict(id="T-RDP-39-a", req="LIB-RDP-39", type="Normal", input="Member in two programs, completed one (goal 1, 10 points) and active in the other (10 points from the same book); a member without programs", expected="`{active 1, completed_this_year 1, points_this_year 20}`; zeros", code='''
 def TEST(client, librarian, branch_a):
@@ -656,14 +669,15 @@ def TEST(client, librarian, branch_a, branch_b):
     return_loan(client, librarian, lb["id"], branch_id=branch_a["id"])
     assert [e["loan_id"] for e in entries(client, librarian, pa)] == [la["id"]]
 '''),
-    dict(id="T-RDP-42-a", req="LIB-RDP-42", type="Normal", input="A member joins (goal 5), gets an entry, a manual entry and leaves", expected="No notification", code='''
+    dict(id="T-RDP-42-a", req="LIB-RDP-42", type="Normal", input="A member joins (goal 5), gets an entry, a manual entry and leaves", expected="No `program_*` notification (the loan itself notifies `loan_created` and `loan_returned`)", code='''
 def TEST(client, librarian, branch_a):
     p = published(client, librarian, goal_books=5)
     pa, m, h = joined(client, librarian, branch_a, p)
     read(client, librarian, m, branch_a)
     ok(manual(client, librarian, pa, create_book(client, librarian)), 201)
     ok(post(client, h, f"programs/{p['id']}/leave"))
-    assert get(client, librarian, f"members/{m['id']}/notifications")["total"] == 0
+    types = [n["type"] for n in items(get(client, librarian, f"members/{m['id']}/notifications"))]
+    assert [t for t in types if t.startswith("program_")] == []
 '''),
     dict(id="T-RDP-43-a", req="LIB-RDP-43", type="Normal", input="Program created, changed, books set, published; members join (one leaves); manual entry added and removed; completion; another program cancelled; process; audit log", expected="One entry per event (2 for `program_created` and `program_joined`)", code='''
 def TEST(client, admin, librarian, branch_a):

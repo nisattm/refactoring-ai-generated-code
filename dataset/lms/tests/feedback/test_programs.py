@@ -95,7 +95,20 @@ def read(client, lib, m, branch, book=None):
 
 
 def part(client, headers, participation):
-    return [x for x in items(get(client, headers, f"members/{participation['member_id']}/programs")) if x["id"] == participation["id"]][0]
+    """The participation as listed by LIB-RDP-15 (matched by ``program_id``: one participation per member and program)."""
+    rows = items(get(client, headers, f"members/{participation['member_id']}/programs"))
+    return [x for x in rows if x["program_id"] == participation["program_id"]][0]
+
+
+def row(client, lib, participation):
+    """The participation in the staff participants list (LIB-RDP-47), which shows `reward_waived`."""
+    rows = items(get(client, lib, f"programs/{participation['program_id']}/participants"))
+    return [x for x in rows if x["member_id"] == participation["member_id"]][0]
+
+
+def book_ids(rows):
+    """Book ids of a featured-books list (LIB-RDP-08 names no field; ``book_id`` as in LIB-RDP-44, else ``id``)."""
+    return [r["book_id"] if "book_id" in r else r["id"] for r in rows]
 
 
 def entries(client, headers, participation, **params):
@@ -176,7 +189,7 @@ def test_t_rdp_09_a(client, librarian):
     c2 = ok(post(client, librarian, f"programs/{p['id']}/copy", {"starts_on": "2027-01-04"}), 201)
     assert [(c["name"], c["status"], c["starts_on"], c["ends_on"], c["goal_books"]) for c in (c1, c2)] == [
         ("Kitap Kurdu (copy)", "draft", "2027-01-04", "2027-02-01", 4), ("Kitap Kurdu (copy 2)", "draft", "2027-01-04", "2027-02-01", 4)]
-    assert [x["id"] for x in items(get(client, librarian, f"programs/{c1['id']}/books"))] == [b["id"]]
+    assert book_ids(items(get(client, librarian, f"programs/{c1['id']}/books"))) == [b["id"]]
 
 
 def test_t_rdp_11_a(client, clock, librarian, branch_a):
@@ -237,10 +250,10 @@ def test_t_rdp_17_a(client, clock, librarian, branch_a, branch_b):
     _, late_cp = book_with_copy(client, librarian, branch_a)
     late = lend(client, librarian, m["id"], late_cp["id"])
     read(client, librarian, m, branch_b)
-    _, lost_cp = book_with_copy(client, librarian, branch_a)
-    report_lost(client, librarian, lend(client, librarian, m["id"], lost_cp["id"])["id"])
     _, after_cp = book_with_copy(client, librarian, branch_a)
     after = lend(client, librarian, m["id"], after_cp["id"])
+    _, lost_cp = book_with_copy(client, librarian, branch_a)
+    report_lost(client, librarian, lend(client, librarian, m["id"], lost_cp["id"])["id"])
     at(clock, "2026-11-17")
     return_loan(client, librarian, late["id"], branch_id=branch_a["id"])
     at(clock, "2026-12-01")
@@ -359,7 +372,7 @@ def test_t_rdp_33_a(client, librarian, branch_a):
     p = published(client, librarian, goal_books=1, reward_waiver="20.00")
     pa, m, _ = joined(client, librarian, branch_a, p)
     read(client, librarian, m, branch_a)
-    out = part(client, librarian, pa)
+    out = row(client, librarian, pa)
     assert (out["status"], out["reward_waived"]) == ("completed", "0.00")
 
 
