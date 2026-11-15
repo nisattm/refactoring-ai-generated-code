@@ -1,0 +1,14 @@
+{
+  "tests": 693,
+  "passed": 691,
+  "failed": 2,
+  "errors": 0,
+  "skipped": 0,
+  "failed_cases": [
+    "T-SUG-23-a",
+    "T-SUG-37-a"
+  ],
+  "set": "feedback",
+  "pytest_exit_code": 1,
+  "duration_s": 599.884
+}
