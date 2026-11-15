@@ -264,13 +264,14 @@ def test_t_sug_21_a(client, admin, librarian, branch_a):
     approve(client, admin, s2, b, 3, "100.01")
 
 
-def test_t_sug_23_a(client, librarian, branch_a):
-    """T-SUG-23-a (LIB-SUG-23): S2's supporters B, A; score 3"""
+def test_t_sug_23_a(client, clock, librarian, branch_a):
+    """T-SUG-23-a (LIB-SUG-23): S2's supporters B, A (A's support is created at the merge); score 3"""
     s1, a, _ = by(client, librarian, branch_a)
     s2, _, _ = by(client, librarian, branch_a)
     b = member(client, librarian, branch_a)
     ok(support(client, mh(client, b), s1), 201)
     ok(support(client, mh(client, b), s2), 201)
+    at(clock, MON, 10)
     ok(post(client, librarian, f"suggestions/{s1['id']}/merge", {"into_suggestion_id": s2["id"]}))
     assert [r["member_id"] for r in items(get(client, librarian, f"suggestions/{s2['id']}/supporters"))] == [b["id"], a["id"]]
     assert sug_of(client, librarian, s2)["score"] == 3
@@ -357,7 +358,7 @@ def test_t_sug_35_a(client, clock, librarian, branch_a):
 def test_t_sug_37_a(client, librarian, branch_a):
     """T-SUG-37-a (LIB-SUG-37): The open suggestion stays submitted; 409 MEMBERSHIP_TYPE_NOT_ALLOWED"""
     s, m, h = by(client, librarian, branch_a)
-    ok(client.patch(f"/api/v1/members/{m['id']}", headers=librarian, json={"membership_type": "guest"}))
+    ok(client.patch(f"/api/v1/members/{m['id']}", headers=librarian, json={"membership_type": "guest", "phone": "+905551112233", "university_id": None}))
     assert sug_of(client, librarian, s)["status"] == "submitted"
     err(try_sug(client, h, branch_a), 409, "MEMBERSHIP_TYPE_NOT_ALLOWED")
 
