@@ -123,3 +123,16 @@ Same conventions as modules 15–22.
 | LIB-UI-PRE-04 | **Shipments.** Librarian and admin. Pick approved supplier jobs of a branch and send them as one shipment; list shipments with their open jobs. |
 | LIB-UI-PRE-05 | **Reports.** Librarian and admin. Preservation report of a year and damage recovery report of a range as tables. |
 | LIB-UI-PRE-06 | **Book page.** All users see "in repair, expected back on …" in the availability of a book. |
+
+## Module 24: Inventory counts
+
+Same conventions as modules 15–23.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-INV-01 | **Counts.** Librarian and admin. Start a count for a branch or a shelf prefix; list counts with status and progress. |
+| LIB-UI-INV-02 | **Scanning.** Librarian and admin. A scan field that accepts a barcode scanner; each scan shows its result in colour; undo the last scan; progress bar of expected copies. |
+| LIB-UI-INV-03 | **Closing.** Librarian and admin. Summary with accuracy; lists of missing and moved copies with shelf locations; cancel or apply (admin when more than 10 copies are missing). |
+| LIB-UI-INV-04 | **Problems.** Librarian and admin. Scans grouped by result (unknown, wrong branch, unexpected status, found lost) with what applying will do. |
+| LIB-UI-INV-05 | **Found copies.** Librarian and admin. Mark a missing or lost copy as found at a branch. |
+| LIB-UI-INV-06 | **Inventory report.** Librarian and admin. The yearly report per branch as a table. |

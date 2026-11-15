@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–28), revised after team review.
-**Version:** 0.16 · 2026-11-15 (adds section 31, module 23 Preservation)
+**Version:** 0.17 · 2026-11-15 (adds section 32, module 24 Inventory counts)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -42,6 +42,7 @@ The system consists of 20 modules:
 | 21 | Course reserves | `lms.courses` | 29 |
 | 22 | Donations | `lms.donations` | 30 |
 | 23 | Preservation | `lms.preservation` | 31 |
+| 24 | Inventory counts | `lms.inventory` | 32 |
 
 ### 1.2 Out of scope
 
@@ -110,7 +111,8 @@ lms/
 ├── events/              Module 20
 ├── courses/             Module 21
 ├── donations/           Module 22
-└── preservation/        Module 23
+├── preservation/        Module 23
+└── inventory/           Module 24
 ```
 
 | ID | Requirement |
@@ -479,6 +481,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Course reserves (module 21) | – | Read own courses and their reading lists; read own reserve loans and renew them; as a course's instructor: change its reading list and read its enrollments | Full | Full |
 | Donations (module 22) | – | Offer, change and cancel own donation offers; read own donations and receipts; read the donor wall | Full, except merging donors | Full |
 | Preservation (module 23) | – | – | Full, except setting budgets and approving jobs above 500.00 | Full |
+| Inventory counts (module 24) | – | – | Full, except applying counts with more than 10 missing copies | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -591,7 +594,7 @@ This module manages authors, publishers, books (titles) and copies (physical ite
 | `classification` | text | Dewey-style class: three digits, optionally a dot and 1–6 digits, e.g. `"005"`, `"005.133"` |
 | `created_at` | date-time | From the clock |
 
-API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]` in order instead of `author_ids`, `publisher` as `{"id", "name"}`, and `availability`: `[{"branch_id", "available", "total"}]` per branch that holds copies, ordered by `branch_id`, where `available` counts copies with status `available` at that branch (current branch) and `total` counts copies at that branch whose status is not `lost` or `withdrawn`. Copies in transfer (no current branch) are not counted. Module 23 adds `expected_back` to each row (LIB-PRE-33).
+API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]` in order instead of `author_ids`, `publisher` as `{"id", "name"}`, and `availability`: `[{"branch_id", "available", "total"}]` per branch that holds copies, ordered by `branch_id`, where `available` counts copies with status `available` at that branch (current branch) and `total` counts copies at that branch whose status is not `lost` or `withdrawn`. Copies in transfer (no current branch) are not counted. Module 23 adds `expected_back` to each row (LIB-PRE-33). `missing` copies are not counted (LIB-INV-27).
 
 **Copy**
 
@@ -610,6 +613,7 @@ API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]
 | `reserve_item_id` | integer or null | The reading list item while the copy is `on_reserve` (module 21, LIB-CRS-20); null otherwise |
 | `donation_id` | integer or null | The donation the copy was received from (module 22, LIB-DON-19) |
 | `condition` | `good` \| `worn` \| `fragile` | Default `good`; set by inspections (module 23, LIB-PRE-04) |
+| `missing_since` | date or null | Set while the copy is `missing` (module 24, LIB-INV-18) |
 
 ### 8.2 Copy statuses
 
@@ -625,8 +629,9 @@ API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]
 | `at_partner` | Lent to a partner library (module 18, LIB-ILL-31) | No |
 | `on_reserve` | Kept at the reserve desk for a course (module 21) | Only as a reserve loan (LIB-CRS-24) |
 | `in_repair` | At the workshop or bindery (module 23) | No |
+| `missing` | Not found in an inventory count (module 24) | No |
 
-Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withdrawn`; `on_hold` → `on_loan`, `available`, `in_transfer`; `on_loan` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost`; `in_transfer` → `available`, `on_hold`; `damaged` → `available`, `on_hold`, `in_transfer`, `withdrawn`; `lost` → `withdrawn`; module 18 adds `available` → `at_partner` and `at_partner` → `available`, `lost` (LIB-ILL-31); module 21 adds `available` → `on_reserve` and `on_reserve` → `available`, `on_hold`, `in_transfer`, `lost` (LIB-CRS-20); module 23 adds `damaged`, `available` → `in_repair` and `in_repair` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost` (LIB-PRE-27). The release procedure (LIB-RES-08) and transfer arrival (LIB-BR-07) may also keep a copy `on_hold` (held for the next reservation in the queue) or `in_transfer` (a new transfer starts on arrival); these are allowed. On arrival, the copy goes directly from `in_transfer` to the status that LIB-BR-07 gives it; no intermediate status is stored. Any other transition MUST be rejected with `409 INVALID_COPY_STATUS`.
+Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withdrawn`; `on_hold` → `on_loan`, `available`, `in_transfer`; `on_loan` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost`; `in_transfer` → `available`, `on_hold`; `damaged` → `available`, `on_hold`, `in_transfer`, `withdrawn`; `lost` → `withdrawn`; module 18 adds `available` → `at_partner` and `at_partner` → `available`, `lost` (LIB-ILL-31); module 21 adds `available` → `on_reserve` and `on_reserve` → `available`, `on_hold`, `in_transfer`, `lost` (LIB-CRS-20); module 23 adds `damaged`, `available` → `in_repair` and `in_repair` → `available`, `on_hold`, `in_transfer`, `damaged`, `lost` (LIB-PRE-27); module 24 adds `available`, `on_hold`, `damaged`, `on_reserve` → `missing` and `missing` → `available`, `on_hold`, `in_transfer`, `lost`, `withdrawn` (LIB-INV-26). The release procedure (LIB-RES-08) and transfer arrival (LIB-BR-07) may also keep a copy `on_hold` (held for the next reservation in the queue) or `in_transfer` (a new transfer starts on arrival); these are allowed. On arrival, the copy goes directly from `in_transfer` to the status that LIB-BR-07 gives it; no intermediate status is stored. Any other transition MUST be rejected with `409 INVALID_COPY_STATUS`.
 
 ### 8.3 Endpoints
 
@@ -651,11 +656,11 @@ Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withd
 | LIB-CAT-05 | **Update book.** `PATCH /api/v1/books/{book_id}` accepts any subset of the create fields with the same rules. |
 | LIB-CAT-06 | **Delete.** `DELETE` returns `204`. A book that has any copy returns `409 BOOK_HAS_COPIES`. An author or publisher that is used by any book returns `409 IN_USE`. Books with interlibrary requests: LIB-ILL-40. Donation items: LIB-DON-39. |
 | LIB-CAT-07 | **Add copy.** `POST /api/v1/books/{book_id}/copies` with `{"barcode", "home_branch_id", "price", "acquired_on", "shelf_location"}` returns `201` with the copy. `current_branch_id` = `home_branch_id`, `status` = `available`. A duplicate barcode returns `409 CONFLICT`. The new copy is then released (LIB-RES-08), so a waiting reservation can take it at once. |
-| LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). Copies on reserve: LIB-CRS-43. Donated copies: LIB-DON-24. Repairs: LIB-PRE-29. |
+| LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). Copies on reserve: LIB-CRS-43. Donated copies: LIB-DON-24. Repairs: LIB-PRE-29. Missing copies: LIB-INV-25. |
 | LIB-CAT-09 | **Update copy.** `PATCH /api/v1/copies/{copy_id}` accepts any subset of `{"price", "shelf_location", "home_branch_id"}`. `home_branch_id` can change only while the copy is `available` at its home branch; it then also changes `current_branch_id`. Otherwise `409 INVALID_COPY_STATUS`. |
-| LIB-CAT-10 | **Withdraw.** `POST /api/v1/copies/{copy_id}/withdraw` with `{"reason"}` (5–500 characters) sets `status` to `withdrawn` and stores the reason. Allowed from `available`, `damaged` and `lost` (8.2); otherwise `409 INVALID_COPY_STATUS`. Donated copies: LIB-DON-25. Open repair jobs: LIB-PRE-28. |
+| LIB-CAT-10 | **Withdraw.** `POST /api/v1/copies/{copy_id}/withdraw` with `{"reason"}` (5–500 characters) sets `status` to `withdrawn` and stores the reason. Allowed from `available`, `damaged` and `lost` (8.2); otherwise `409 INVALID_COPY_STATUS`. Donated copies: LIB-DON-25. Open repair jobs: LIB-PRE-28. Copies in a count: LIB-INV-13. |
 | LIB-CAT-11 | **Repair.** `POST /api/v1/copies/{copy_id}/repair` is allowed only for a `damaged` copy (otherwise `409 INVALID_COPY_STATUS`). The copy is released (LIB-RES-08). Open repair jobs: LIB-PRE-28. |
-| LIB-CAT-12 | **Lendable book.** A book is *lendable* when it has at least one copy whose status is not `lost` or `withdrawn`. |
+| LIB-CAT-12 | **Lendable book.** A book is *lendable* when it has at least one copy whose status is not `lost` or `withdrawn`. Missing copies: LIB-INV-27. |
 
 ---
 
@@ -754,7 +759,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | LIB-RES-01 | **Create.** `POST /api/v1/reservations` with `{"book_id", "pickup_branch_id"}` returns `201` with `ReservationOut`. A librarian or admin MUST also send `member_id`; a member MUST NOT send it (`422 VALIDATION_ERROR`) and reserves for themselves. |
 | LIB-RES-02 | **Creation checks.** In order (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) membership expired → `MEMBERSHIP_EXPIRED`; (3) the book is not lendable (LIB-CAT-12) → `BOOK_NOT_LENDABLE`; (4) the member already has an active reservation for this book → `DUPLICATE_RESERVATION`; (5) the member has an open loan of a copy of this book → `ALREADY_BORROWED`; (6) the member has 3 active reservations → `RESERVATION_LIMIT_REACHED`; (7) a copy of the book is `available` with `current_branch_id` = `pickup_branch_id` → `COPY_AVAILABLE_AT_BRANCH`. Copies on reserve: LIB-CRS-42. Fragile copies: LIB-PRE-30. |
 | LIB-RES-03 | **Limit boundary.** A member with 2 active reservations can create a third; with 3 they cannot. Fulfilled, cancelled and expired reservations do not count. |
-| LIB-RES-04 | **Queue.** Each book has one first-come, first-served queue across all pickup branches, ordered by `created_at`, then `id`. There is no priority by membership type. |
+| LIB-RES-04 | **Queue.** Each book has one first-come, first-served queue across all pickup branches, ordered by `created_at`, then `id`. There is no priority by membership type. Holds of missing copies: LIB-INV-20. |
 | LIB-RES-05 | **Immediate assignment.** After a reservation is created, if a copy of the book is `available` at another branch, that copy is assigned at once by the release procedure (LIB-RES-08) applied to it. Copies on reserve: LIB-CRS-42. Fragile copies: LIB-PRE-07. |
 | LIB-RES-06 | **Queue view.** `GET /api/v1/books/{book_id}/reservations` returns the active reservations of the book, paginated (LIB-COM-18) and in queue order (LIB-RES-04). |
 | LIB-RES-07 | **List.** `GET /api/v1/reservations` is paginated, ordered by `id`. Filters: `member_id`, `book_id`, `pickup_branch_id`, `status`. |
@@ -905,7 +910,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44 and the donation events of LIB-DON-41. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41 and `reservation_delayed` (LIB-INV-30). No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -942,7 +947,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32.
 
 ### 16.1 Endpoints and requirements
 
@@ -996,7 +1001,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
-| LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. |
+| LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. Copies in a count: LIB-INV-13. |
 | LIB-BR-07 | **Arrival.** `POST /api/v1/transfers/process-arrivals` receives every `in_transit` transfer with `expected_on` ≤ today, in order of `expected_on`, then `id`, and returns `200` with `{"received": <count>}`. Receiving sets `status` `received`, `received_on` = today and the copy's `current_branch_id` = `to_branch_id`. Then: for `relocation`, the copy's `home_branch_id` also becomes `to_branch_id` and the copy is released (LIB-RES-08); for `reservation`, if the reservation is still `in_transit` it becomes `ready` (LIB-RES-09) at the pickup branch, otherwise the copy is released; for `return_home`, the copy is released. |
 | LIB-BR-08 | **Boundary.** A transfer with `expected_on` 2026-11-10 is not received by `process-arrivals` on 2026-11-09 and is received on 2026-11-10. |
 | LIB-BR-09 | **List transfers.** `GET /api/v1/transfers` is paginated, ordered by `id` descending, with filters `status`, `copy_id`, `from_branch_id`, `to_branch_id`, `reason`. |
@@ -1079,7 +1084,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 
 | ID | Requirement |
 | --- | --- |
-| LIB-IO-07 | `GET /api/v1/export` (admin only) returns `200` with all data in the format of 22.1. Importing an export into an empty database and exporting again MUST give the same document, provided no copy is `on_hold`, `in_transfer` or `at_partner` at export time (LIB-IO-11, LIB-ILL-39). Copies are exported without `donation_id` (LIB-DON-47). Copies `in_repair` are exported as `damaged` (LIB-PRE-39). |
+| LIB-IO-07 | `GET /api/v1/export` (admin only) returns `200` with all data in the format of 22.1. Importing an export into an empty database and exporting again MUST give the same document, provided no copy is `on_hold`, `in_transfer` or `at_partner` at export time (LIB-IO-11, LIB-ILL-39). Copies are exported without `donation_id` (LIB-DON-47). Copies `in_repair` are exported as `damaged` (LIB-PRE-39). Copies `missing` are exported as `lost` (LIB-INV-33). |
 | LIB-IO-08 | `GET /api/v1/export/{entity}.csv` (admin only), `entity` one of `branches`, `books`, `copies`, `members`, `loans`, returns `text/csv; charset=utf-8` in the format of 22.3 with the columns of 22.2, rows ordered by `id`. An unknown entity returns `404 NOT_FOUND`. |
 | LIB-IO-09 | Each export creates one audit entry `data_exported` with the entity (or `"all"`). |
 
@@ -1134,7 +1139,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7.
 
 ---
 
@@ -2915,6 +2920,117 @@ Members have no access to this module (`403 FORBIDDEN`).
 
 ---
 
+## 32. Module 24: Inventory counts
+
+Librarians count the copies on the shelves of a branch by scanning barcodes. The system compares the scans with what should be on the shelves, lists missing and misplaced copies, and on approval marks missing copies, returns found ones to circulation and corrects their branch. Package `lms.inventory`. Times are local (LIB-COM-01).
+
+### 32.1 Data
+
+**Copy:** a new status `missing` (LIB-INV-26) and a field `missing_since` (date or null).
+
+**Shelf statuses:** `available`, `on_hold`, `damaged` and `on_reserve`: the statuses of a copy that should be on a shelf of its `current_branch_id`.
+
+**Count**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `branch_id` | integer | |
+| `name` | text | LIB-COM-16 |
+| `shelf_prefix` | text or null | 1–20 characters; null counts the whole branch |
+| `status` | `open` \| `closed` \| `applied` \| `cancelled` | Initially `open` |
+| `cancel_reason` | `staff_request` \| `expired` \| null | |
+| `started_at`, `closed_at`, `applied_at` | date-time or null | |
+| `expected` | list of copy ids | The snapshot (LIB-INV-02) |
+
+A copy is **in the scope** of a count when its `current_branch_id` is the count's branch and, for a count with `shelf_prefix`, its `shelf_location` starts with the prefix (case-insensitive; copies without `shelf_location` are outside).
+
+**Scan:** `id`, `count_id`, `barcode` (upper case), `copy_id` (null for `unknown`), `result` (LIB-INV-08), `scanned_at`, `scanned_by`.
+
+**Count line** (set at closing, LIB-INV-14): one per expected copy: `copy_id`, `outcome` (`found` \| `missing` \| `moved`).
+
+### 32.2 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST`, `GET /api/v1/inventory-counts`; `GET /api/v1/inventory-counts/{count_id}` | librarian, admin | Start, list, read |
+| `POST /api/v1/inventory-counts/{count_id}/scans`, `GET …/scans` | librarian, admin | Scan barcodes, list scans |
+| `DELETE /api/v1/inventory-scans/{scan_id}` | librarian, admin | Undo a scan |
+| `POST /api/v1/inventory-counts/{count_id}/close`, `/cancel`, `/apply` | librarian, admin (apply: LIB-INV-19) | Steps |
+| `GET /api/v1/inventory-counts/{count_id}/lines` | librarian, admin | Result per expected copy |
+| `POST /api/v1/copies/{copy_id}/found` | librarian, admin | A missing or lost copy turns up |
+| `POST /api/v1/inventory/process` | librarian, admin | Old counts, long missing copies |
+| `GET /api/v1/reports/inventory` | librarian, admin | Report (section 16) |
+
+Members have no access to this module (`403 FORBIDDEN`).
+
+### 32.3 Starting a count
+
+| ID | Requirement |
+| --- | --- |
+| LIB-INV-01 | **Start.** `POST /api/v1/inventory-counts` with `{"branch_id", "name", "shelf_prefix"}` returns `201` with the count, status `open`, `started_at` = now (event `inventory_count_started`). `shelf_prefix` MAY be omitted. Values outside 32.1 → `422`; an unknown branch → `422` with `details.fields`. |
+| LIB-INV-02 | **Snapshot.** At the start, `expected` is set to the ids of the copies in the scope of the count with a shelf status, ascending. The count shows `expected_count`. |
+| LIB-INV-03 | **Start checks.** In order (all `409`): (1) branch inactive → `BRANCH_INACTIVE`; (2) an `open` count of the branch overlaps → `COUNT_SCOPE_OVERLAP` with `details.count_id`; (3) the snapshot is empty → `COUNT_EMPTY`. Two counts **overlap** when one of them has no `shelf_prefix` or one prefix starts with the other (case-insensitive). |
+| LIB-INV-04 | **Overlap examples.** Open count with prefix `A-1`: a new count with `A-2` → allowed; with `A-` → `COUNT_SCOPE_OVERLAP`; with `a-12` → `COUNT_SCOPE_OVERLAP`; without prefix → `COUNT_SCOPE_OVERLAP`. |
+| LIB-INV-05 | **Read counts.** `GET /api/v1/inventory-counts` is paginated, ordered by `id` descending, with filters `branch_id` and `status`. `GET /api/v1/inventory-counts/{count_id}` adds `progress`: `{"expected", "scanned_expected", "remaining", "problems": {"unknown", "duplicate", "found_lost", "withdrawn", "wrong_branch", "unexpected_status", "out_of_scope"}}`, where `scanned_expected` counts the expected copies with a scan and `remaining` = `expected` − `scanned_expected`. |
+| LIB-INV-06 | **Cancel.** `POST /api/v1/inventory-counts/{count_id}/cancel` on an `open` or `closed` count sets `cancelled` with `cancel_reason` `staff_request` and returns `200` (event `inventory_count_cancelled`). Copies do not change. Otherwise `409 INVALID_COUNT_STATUS` with `details.status`. |
+
+### 32.4 Scanning
+
+| ID | Requirement |
+| --- | --- |
+| LIB-INV-07 | **Scan.** `POST /api/v1/inventory-counts/{count_id}/scans` with `{"barcodes": [...]}` (1–200 strings, otherwise `422`) on an `open` count (otherwise `409 INVALID_COUNT_STATUS`) stores one scan per barcode in the given order and returns `201` with `{"scans": [{"id", "barcode", "copy_id", "result"}]}` (event `inventory_scans_added`, once per request). Barcodes are compared in upper case. |
+| LIB-INV-08 | **Scan result.** The first rule that applies: (1) no copy has the barcode → `unknown`; (2) the copy was already scanned in this count (also earlier in the same request) → `duplicate`; (3) the copy is in `expected` → `expected`; (4) the copy is `lost` or `missing` → `found_lost`; (5) the copy is `withdrawn` → `withdrawn`; (6) its `current_branch_id` is not the count's branch (or null) → `wrong_branch`; (7) its status is not a shelf status → `unexpected_status`; (8) otherwise → `out_of_scope`. |
+| LIB-INV-09 | **Scan examples.** Count of branch A with prefix `A-`: an `available` copy on shelf `A-12` (in the snapshot) → `expected`; the same again → `duplicate`; a copy on shelf `B-01` at A → `out_of_scope`; a copy lent from A → `unexpected_status`; an `available` copy of branch B → `wrong_branch`; a lost copy → `found_lost`; `NOPE-0001` → `unknown`. |
+| LIB-INV-10 | **Copies added after the start.** A copy added or moved into the scope after the start is not in `expected`; its scan gives `out_of_scope`. |
+| LIB-INV-11 | **Read scans.** `GET /api/v1/inventory-counts/{count_id}/scans` is paginated, ordered by `id`, with filter `result`. |
+| LIB-INV-12 | **Undo a scan.** `DELETE /api/v1/inventory-scans/{scan_id}` removes a scan of an `open` count and returns `204` (event `inventory_scan_removed`); otherwise `409 INVALID_COUNT_STATUS`. Removing the first scan of a copy does not change the result of its later `duplicate` scans; the copy still counts as scanned while any scan of it is left. |
+| LIB-INV-13 | **Copies in a count.** While a copy is in `expected` of an `open` count, relocation (LIB-BR-06) and withdrawal (LIB-CAT-10) return `409 COPY_IN_COUNT` with `details.count_id`. Lending, returns and holds work as usual. |
+
+### 32.5 Closing and applying
+
+| ID | Requirement |
+| --- | --- |
+| LIB-INV-14 | **Close.** `POST /api/v1/inventory-counts/{count_id}/close` on an `open` count (otherwise `409 INVALID_COUNT_STATUS`) sets `closed`, `closed_at` = now, stores one line per expected copy and returns `200` with the count and `summary` (event `inventory_count_closed`). Outcome of a line: scanned → `found`; not scanned and the copy still has a shelf status at the count's branch → `missing`; otherwise (lent, moved, lost or withdrawn since the start) → `moved`. |
+| LIB-INV-15 | **Summary.** `summary` = `{"expected", "found", "missing", "moved", "accuracy"}`; `accuracy` = `found` / (`found` + `missing`) × 100 with 1 decimal (`"87.5"`), `"100.0"` when `found` + `missing` is 0. |
+| LIB-INV-16 | **Close example.** Expected C1–C5: C1, C2, C3 scanned; C4 lent after the start; C5 not scanned and `available` → `found` 3, `missing` 1, `moved` 1, `accuracy` `"75.0"`. |
+| LIB-INV-17 | **Read lines.** `GET /api/v1/inventory-counts/{count_id}/lines` (count `closed` or `applied`, otherwise `409 INVALID_COUNT_STATUS`) is paginated, ordered by `copy_id`, with filter `outcome`; each line contains `barcode`, `book_title` and `shelf_location`. |
+| LIB-INV-18 | **Apply.** `POST /api/v1/inventory-counts/{count_id}/apply` on a `closed` count (otherwise `409 INVALID_COUNT_STATUS`) sets `applied`, `applied_at` = now and returns `200` with `{"missing_marked", "found", "relocated"}` (event `inventory_count_applied`). In this order: (1) every `missing` line whose copy still has a shelf status at the branch: the copy becomes `missing` with `missing_since` = today (LIB-INV-20, LIB-INV-21); (2) every `found_lost` scan: the copy gets `current_branch_id` = the count's branch, `missing_since` null, and is released (LIB-RES-08); (3) every `wrong_branch` scan of an `available` copy: the copy gets `current_branch_id` = the count's branch and is released (LIB-RES-08). Lines and scans whose copy changed in between are skipped. |
+| LIB-INV-19 | **Who applies.** A count with more than 10 `missing` lines is applied only by an admin; a librarian receives `403 FORBIDDEN`. |
+| LIB-INV-20 | **Missing held copies.** When an `on_hold` copy becomes `missing`, its `ready` reservation goes back to `waiting` with `copy_id`, `ready_on` and `hold_until` null and keeps its place (LIB-RES-04); the member is notified (`reservation_delayed`). |
+| LIB-INV-21 | **Missing reserve copies.** When an `on_reserve` copy becomes `missing`, its `reserve_item_id` becomes null; its reading list item becomes `requested` when no copy is left on reserve for it (module 21). |
+| LIB-INV-22 | **Found again.** `POST /api/v1/copies/{copy_id}/found` with `{"branch_id"}` for a `missing` or `lost` copy (otherwise `409 INVALID_COPY_STATUS`) sets `current_branch_id` = `branch_id`, `missing_since` null, releases the copy (LIB-RES-08) and returns `200` with the copy (event `copy_found`). An inactive branch → `409 BRANCH_INACTIVE`. Fees of a lost loan do not change. |
+| LIB-INV-23 | **Process.** `POST /api/v1/inventory/process` (1) cancels every `open` count with `started_at` more than 7 days before now (`cancel_reason` `expired`); (2) sets every `missing` copy with `missing_since` ≤ today − 90 days to `lost` with `current_branch_id` null. Returns `200` with `{"expired_counts", "marked_lost"}` (event `inventory_processed`). |
+| LIB-INV-24 | **Process examples.** Count started Mon 2026-11-02 09:00: process on 2026-11-09 09:00 → not expired; 09:00:01 → expired. Copy missing since 2026-11-02: process on 2027-01-30 → stays `missing`; on 2027-01-31 → `lost`. |
+| LIB-INV-25 | **Missing copies are listed.** LIB-CAT-08 accepts `status=missing`; `CopyOut` adds `missing_since`. |
+
+### 32.6 Effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-INV-26 | **Copy status `missing`.** 8.2 adds `missing` ("not found in an inventory count"), with the transitions from every shelf status to `missing` and `missing` → `available`, `on_hold`, `in_transfer` (through the release procedure), `lost`, `withdrawn`. Lending returns `COPY_NOT_AVAILABLE` with `details.status` `missing`; withdrawal is allowed (LIB-CAT-10); relocation returns `INVALID_COPY_STATUS`. |
+| LIB-INV-27 | **Availability and lendability.** In `BookOut.availability` a `missing` copy counts neither in `available` nor in `total`. LIB-CAT-12: a book whose copies are all `missing`, `lost` or `withdrawn` is not lendable. |
+| LIB-INV-28 | **Lost and found through lending.** A `missing` copy that is lent by barcode is refused (LIB-INV-26); it must be found first (LIB-INV-22). A `found_lost` scan does not change the copy before the count is applied. |
+| LIB-INV-29 | **Counts on closed days.** A count can be started only while the branch is open today (an open date by LIB-STF-14): otherwise `409 BRANCH_NOT_OPEN` (LIB-INV-03, checked after `BRANCH_INACTIVE`). |
+| LIB-INV-30 | **Notifications.** Added to LIB-NOT-01: `reservation_delayed` (LIB-INV-20); the message names the book title. No other notification is created by module 24. |
+| LIB-INV-31 | **Audit.** Module 24 reports: `inventory_count_started`, `inventory_scans_added`, `inventory_scan_removed`, `inventory_count_closed`, `inventory_count_applied`, `inventory_count_cancelled`, `copy_found`, `inventory_processed`. |
+| LIB-INV-32 | **Inventory report.** `GET /api/v1/reports/inventory?year=` returns one row per branch with a count applied in that year, ordered by branch `code`: `{"branch_id", "counts_applied", "last_applied_on", "expected", "found", "missing", "accuracy", "missing_now", "found_again"}`. `expected`, `found` and `missing` sum the lines of the applied counts; `accuracy` as in LIB-INV-15; `missing_now` counts the branch's copies with status `missing` now; `found_again` counts `copy_found` events and applied `found_lost` scans of the branch in that year. |
+| LIB-INV-33 | **Export.** Exported copies with status `missing` are written as `lost`; `missing_since` is not exported (module 13). |
+| LIB-INV-34 | **Member summary of holds.** A reservation sent back to `waiting` by LIB-INV-20 counts as active (LIB-MEM-12 `active_reservations`). |
+
+### 32.7 Error codes of module 24
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `COUNT_SCOPE_OVERLAP` | LIB-INV-03 |
+| 409 | `COUNT_EMPTY` | LIB-INV-03 |
+| 409 | `INVALID_COUNT_STATUS` | LIB-INV-06, LIB-INV-07, LIB-INV-12, LIB-INV-14, LIB-INV-17, LIB-INV-18 |
+| 409 | `COPY_IN_COUNT` | LIB-INV-13 |
+
+`BRANCH_INACTIVE`, `BRANCH_NOT_OPEN`, `INVALID_COPY_STATUS` and `COPY_NOT_AVAILABLE` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -2946,4 +3062,5 @@ Members have no access to this module (`403 FORBIDDEN`).
 | Module 21: Course reserves | LIB-CRS-01 – LIB-CRS-47 | 47 |
 | Module 22: Donations | LIB-DON-01 – LIB-DON-47 | 47 |
 | Module 23: Preservation | LIB-PRE-01 – LIB-PRE-40 | 40 |
-| **Total** | | **623** |
+| Module 24: Inventory counts | LIB-INV-01 – LIB-INV-34 | 34 |
+| **Total** | | **657** |
