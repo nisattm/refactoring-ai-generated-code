@@ -136,3 +136,16 @@ Same conventions as modules 15–23.
 | LIB-UI-INV-04 | **Problems.** Librarian and admin. Scans grouped by result (unknown, wrong branch, unexpected status, found lost) with what applying will do. |
 | LIB-UI-INV-05 | **Found copies.** Librarian and admin. Mark a missing or lost copy as found at a branch. |
 | LIB-UI-INV-06 | **Inventory report.** Librarian and admin. The yearly report per branch as a table. |
+
+## Module 25: Purchase suggestions
+
+Same conventions as modules 15–24.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-SUG-01 | **Suggest a book.** Member. Form with title, author, ISBN, year, reason and branch; the "already owned" and "already suggested" answers link to the book or the suggestion. |
+| LIB-UI-SUG-02 | **Suggestions board.** All users. Open suggestions by score with search; members support or stop supporting with one click and choose "reserve when it arrives". |
+| LIB-UI-SUG-03 | **My suggestions.** Member. Own suggestions with status and review notes; supported suggestions; change or withdraw while submitted. |
+| LIB-UI-SUG-04 | **Review queue.** Librarian and admin. Submitted suggestions by score; approve (catalog search for the book, quantity, price), reject with a reason, merge duplicates. |
+| LIB-UI-SUG-05 | **Ordering.** Librarian and admin. Pick approved suggestions of a branch and a supplier; preview the order lines and total; create the draft order. |
+| LIB-UI-SUG-06 | **Suggestions report.** Librarian and admin. Date range and branch; LIB-SUG-44 with the top list. |

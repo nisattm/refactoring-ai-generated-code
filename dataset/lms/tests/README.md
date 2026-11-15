@@ -18,7 +18,7 @@ dataset/lms/tests/
 └── heldout/test_<module>.py    Tests used only for evaluation
 ```
 
-Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`.
+Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`.
 
 ## Ownership (30 October 2026)
 
@@ -26,7 +26,7 @@ Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`
 | --- | --- |
 | `conftest.py`, `support/` | Fatima |
 | `core`, `auth`, `reservations`, `members`, `catalog`, `branches`, `e2e`, `search`, `reports`, `audit_io`, `api` | Nisa |
-| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory` | Fatima |
+| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions` | Fatima |
 
 Only the owner edits a file. A missing helper is requested from the owner of `support/`; until it exists, a test calls the API through `client` directly.
 
@@ -61,9 +61,10 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 | Donations (module 22, from 15 November) | `donations` | 31 | 25 | 0 | 56 |
 | Preservation (module 23, from 15 November) | `preservation` | 23 | 23 | 0 | 46 |
 | Inventory counts (module 24, from 15 November) | `inventory` | 18 | 18 | 0 | 36 |
-| **Total** | | **667** | **579** | **13** | **1259** |
+| Purchase suggestions (module 25, from 15 November) | `suggestions` | 26 | 26 | 0 | 52 |
+| **Total** | | **693** | **605** | **13** | **1311** |
 
-`pytest --import-mode=importlib --collect-only` collects 667 feedback and 579 held-out tests without the code; every test fails until `lms` exists.
+`pytest --import-mode=importlib --collect-only` collects 693 feedback and 605 held-out tests without the code; every test fails until `lms` exists.
 
 ## Test case IDs and names
 

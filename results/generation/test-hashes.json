@@ -1,5 +1,5 @@
 {
-  "README.md": "9568aa9dc8850b1bd5cb857eff38b2dbcd8d90f6fb757e1a720bd18e9f86be46",
+  "README.md": "e00a4c3e538c9d1262d39eb29c7f77b387a4c8a5ded15dce89201828a611c224",
   "cases/api.md": "f3121e68d25aeb84d8cb7a904426da8d5f3c5c9a6373e792efe23bbace35bb52",
   "cases/audit_io.md": "8df45805ec0a02e7520ac223f5bb75a631651132c15f142a4858c3e683fd83e3",
   "cases/auth.md": "f0fced0ea44e6832930dc255ef59ab0150f0107f0275c890a1550f71de835d18",
@@ -25,6 +25,7 @@
   "cases/rooms.md": "37da3aa4ab5b6b9924f78ccdcab70e16dec3b1d0f553e8df66078128e1286f29",
   "cases/search.md": "f70f7f0dba00f08225355f18059ab0025e33eb200ae7b5738708379671003ad0",
   "cases/staff.md": "3e11e015c63d84378199232be05eba666f8544336f6f2596f07f956996b84664",
+  "cases/suggestions.md": "5ac7f07a453655c378f8382d37d2539e210dcf7be22ae6efbf6b593eaf32a5a2",
   "conftest.py": "572c4df05699a5d2433872a73020e155fd170a7a368aa63452511c10113b07a0",
   "feedback/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "feedback/test_api.py": "1a06713f78e0941bc61109435ced2566147b1348d3dd10fe573f4fb1b43d06a6",
@@ -52,6 +53,7 @@
   "feedback/test_rooms.py": "1509b5b2ee18d57a572bae09a834eb02731a3570248c0ebda228a8cc7bda3310",
   "feedback/test_search.py": "c60dafec8d9bfdfda4ffb23b7e133f1a73b90263c300ce4c532d8d0ce7cde2f4",
   "feedback/test_staff.py": "32027a4ea9c54aab6baf5b6af7b64a539bfc3b63aae3602d8316d826d0cd7003",
+  "feedback/test_suggestions.py": "0cb5a41fe77e8b006b39666bee1af809af7a5086364a1cdc8d8811bc85482472",
   "heldout/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "heldout/test_api.py": "186fd76e14c1ee4ba02959acf684fe40d74a42fbdfb333759fe9d1b287cab478",
   "heldout/test_audit_io.py": "9f68f5b25b77583193be8acaf7909bdf2ff1a35cebc44a3a63b783e591112156",
@@ -78,6 +80,7 @@
   "heldout/test_rooms.py": "6be8c0bb770bf1b821bd8016a917543a72ecd6b838b5e28387d0628d6db1b917",
   "heldout/test_search.py": "131fe7bbb944075449c08643bdfae7c417fa9a4627bbb51bfe400260fe9c2b23",
   "heldout/test_staff.py": "aadcc2315d65ed2b03d37a1a36057d548d4547da1c0f5e410f3aba5816b97b02",
+  "heldout/test_suggestions.py": "0b4b7b7a465f925d449a9d74456427c81a78a98c0c92fb2d11100db1b16ded23",
   "spec/api.py": "b7f7c154497d62dac6628ee4a90847a7e05c67266baf0fb0fbd152bac8db9f28",
   "spec/audit_io.py": "e28cb008e205598a50878b1d51b9cd9c2204f17536c28c6d3a7fc6fdef2b3872",
   "spec/auth.py": "8a16c666c9aa83e6b4c163b31faeddad00040c0a618ecb45c42a5fd7c58ad688",
@@ -99,6 +102,7 @@
   "spec/rooms.py": "751570fcd5e2ab73282aad78846e60992def1143cf74f11447d46577e139e65e",
   "spec/search.py": "1faf6073d4d1e5ff77ad18cdcc92cbce3668ef6a7563dbad7b557aea3e9a8e11",
   "spec/staff.py": "95df0fd4f5051de3909a230c93f7bf60f8c37f59c0907449496652a7bfc6d34d",
+  "spec/suggestions.py": "772f57d90990fceccf72c94e6fb40dad56460a48114f7eb5dbdef606ffd82fc4",
   "support/__init__.py": "72d45a1cd511a62f95924bc49284e321b631529f3b7b738c2fab5af389f95f1e",
   "support/api.py": "e0a5f28c6a31ff624525110f9bb7bcd161b9bb12f5d458a7275357a88af9bd7a"
 }
