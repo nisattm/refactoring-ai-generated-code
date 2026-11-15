@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–28), revised after team review.
-**Version:** 0.18 · 2026-11-15 (adds section 33, module 25 Purchase suggestions)
+**Version:** 0.19 · 2026-11-15 (adds section 34, module 26 Reading programs)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -44,6 +44,7 @@ The system consists of 20 modules:
 | 23 | Preservation | `lms.preservation` | 31 |
 | 24 | Inventory counts | `lms.inventory` | 32 |
 | 25 | Purchase suggestions | `lms.suggestions` | 33 |
+| 26 | Reading programs | `lms.programs` | 34 |
 
 ### 1.2 Out of scope
 
@@ -114,7 +115,8 @@ lms/
 ├── donations/           Module 22
 ├── preservation/        Module 23
 ├── inventory/           Module 24
-└── suggestions/         Module 25
+├── suggestions/         Module 25
+└── programs/            Module 26
 ```
 
 | ID | Requirement |
@@ -485,6 +487,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Preservation (module 23) | – | – | Full, except setting budgets and approving jobs above 500.00 | Full |
 | Inventory counts (module 24) | – | – | Full, except applying counts with more than 10 missing copies | Full |
 | Purchase suggestions (module 25) | – | Suggest, change and withdraw own suggestions; support; read open suggestions and own | Full, except approving above 300.00 | Full |
+| Reading programs (module 26) | – | Read published programs and leaderboards; join and leave; own progress and certificates | Full | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -566,9 +569,9 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. Course reserves: LIB-CRS-40. Purchase suggestions: LIB-SUG-37. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. Purchase suggestions: LIB-SUG-36. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. Purchase suggestions: LIB-SUG-36. Reading programs: LIB-RDP-38. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38), `donations` (LIB-DON-38) and `suggestions` (LIB-SUG-38). |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38), `donations` (LIB-DON-38), `suggestions` (LIB-SUG-38) and `programs` (LIB-RDP-39). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -716,7 +719,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | LIB-LOAN-07 | **Renew.** `POST /api/v1/loans/{loan_id}/renew` returns `200` with `LoanOut`. Checks in order (all `409`): loan not `open` → `LOAN_NOT_OPEN`; member `passive` → `MEMBER_PASSIVE`; membership expired → `MEMBERSHIP_EXPIRED`; loan overdue → `LOAN_OVERDUE`; `renewal_count` ≥ `max_renewals` → `RENEWAL_LIMIT_REACHED`; the book has an active reservation (status `waiting`, `in_transit` or `ready`) by any member → `BOOK_RESERVED`. |
 | LIB-LOAN-08 | **Renewed due date.** New `due_date` = the next working day on or after today + `loan_period_days` (the new period starts on the renewal day). Because today is never before the previous loan or renewal date, the new due date is never earlier than the current one. `renewal_count` increases by 1. A renewal on the due date itself is allowed (not overdue). Examples: student loan due 2026-11-16, renewed on 2026-11-10 → due 2026-11-24. Student loan due 2026-06-01, renewed on 2026-05-15 → 2026-05-29 is a holiday → due 2026-06-01 (unchanged); the renewal still counts. |
 | LIB-LOAN-09 | **Return.** `POST /api/v1/loans/{loan_id}/return` with `{"branch_id", "condition": "good" \| "damaged", "damage_fee"}` closes the loan (`status` `returned`, `returned_on` = today, `return_branch_id`, `condition_on_return`, `late_days`) and returns `200` with `LoanOut`. Business checks in order: loan not `open` → `409 LOAN_NOT_OPEN`; return branch inactive → `409 BRANCH_INACTIVE`; `damage_fee` above the copy's `price` → `409 DAMAGE_FEE_EXCEEDS_PRICE`. The book may be returned at any active branch that is not closed today (LIB-STF-16). |
-| LIB-LOAN-10 | **Late fee at return.** `late_days` = working days between `due_date` and `returned_on` (LIB-COM-10). If `late_days` > 0, a late fee is created (LIB-FEE-02). Example: student loan due 2026-11-16 (Mon), returned 2026-11-20 (Fri) → 4 late days → 8.00 TL. |
+| LIB-LOAN-10 | **Late fee at return.** `late_days` = working days between `due_date` and `returned_on` (LIB-COM-10). If `late_days` > 0, a late fee is created (LIB-FEE-02). Example: student loan due 2026-11-16 (Mon), returned 2026-11-20 (Fri) → 4 late days → 8.00 TL. Reading programs: LIB-RDP-16. |
 | LIB-LOAN-11 | **Damaged return.** With `condition` `damaged`, `damage_fee` is required and MUST be > 0.00 (`422 VALIDATION_ERROR` otherwise) and ≤ the copy's `price` (`409 DAMAGE_FEE_EXCEEDS_PRICE` otherwise, LIB-LOAN-09). A damage fee is created (LIB-FEE-03) and the copy's status becomes `damaged` at the return branch (`current_branch_id` = `branch_id`). With `condition` `good`, `damage_fee` MUST be absent or null (`422 VALIDATION_ERROR`). |
 | LIB-LOAN-12 | **Copy after a good return.** The copy's `current_branch_id` becomes the return branch and the copy is released (LIB-RES-08). |
 | LIB-LOAN-13 | **Report lost.** `POST /api/v1/loans/{loan_id}/report-lost` closes an open loan with `status` `lost`, `late_days` = working days between `due_date` and today, and creates the fees of LIB-FEE-04. The copy's status becomes `lost` and `current_branch_id` becomes null. A loan that is not `open` returns `409 LOAN_NOT_OPEN`. Returns `200` with `LoanOut`. |
@@ -824,7 +827,7 @@ API representation (`FeeOut`): all fields, plus `outstanding` = `amount` − `pa
 | LIB-FEE-04 | **Lost book.** At report-lost (LIB-LOAN-13), up to three fees are created: `late_fee` per LIB-FEE-02 for the late days until the report date (only if > 0); `lost_book` = the copy's `price`; `lost_processing` = 25.00 TL. Example: student loan due 2026-11-16, reported lost 2026-11-18, copy price 180.00 → late fee 4.00 (2 working days), lost book 180.00, processing 25.00. |
 | LIB-FEE-05 | **Payment.** `POST /api/v1/members/{member_id}/payments` with `{"amount", "method"}` records a payment and returns `201` with the payment including `allocations`. `amount` MUST be > 0.00 (`422 VALIDATION_ERROR`) and ≤ the member's `outstanding_fees` (LIB-FEE-10); otherwise `409 PAYMENT_EXCEEDS_BALANCE` with `details.outstanding_fees`. Accrued late fees of open loans cannot be paid before the loan is closed. |
 | LIB-FEE-06 | **Allocation.** A payment is applied to the member's `open` fees in order of `created_on`, then `id`: each fee receives as much as it still owes until the payment is used up. A fee whose `paid_amount` reaches `amount` becomes `paid`. Partial payment is allowed. Example: open fees A 6.00 (older) and B 20.00; payment 10.00 → A 6.00 paid (status `paid`), B 4.00 paid (status `open`, outstanding 16.00). |
-| LIB-FEE-07 | **Waive.** `POST /api/v1/fees/{fee_id}/waive` with `{"reason"}` (5–500 characters) sets an `open` fee to `waived` and returns `200` with `FeeOut`. Only `admin` may waive (`403 FORBIDDEN` for librarians). A fee that is not `open` returns `409 FEE_NOT_OPEN`. Amounts already paid stay paid; only the outstanding part is waived. Automatic waivers of events: LIB-EVT-38. |
+| LIB-FEE-07 | **Waive.** `POST /api/v1/fees/{fee_id}/waive` with `{"reason"}` (5–500 characters) sets an `open` fee to `waived` and returns `200` with `FeeOut`. Only `admin` may waive (`403 FORBIDDEN` for librarians). A fee that is not `open` returns `409 FEE_NOT_OPEN`. Amounts already paid stay paid; only the outstanding part is waived. Automatic waivers of events: LIB-EVT-38. Program rewards: LIB-RDP-32, LIB-RDP-46. |
 | LIB-FEE-08 | **Fee lists.** `GET /api/v1/members/{member_id}/fees` and `GET /api/v1/fees` are paginated, ordered by `created_on`, then `id`. Filters: `status`, `kind`, `loan_id`; `GET /api/v1/fees` also `member_id`. |
 | LIB-FEE-09 | **Total debt.** A member's total debt = the sum of `outstanding` of all `open` fees + the sum of `accrued_late_fee` of all open overdue loans. This value is used by LIB-LOAN-05 step 4. Equipment loans: LIB-EQ-14. Interlibrary requests: LIB-ILL-19. Reserve loans: LIB-CRS-36. |
 | LIB-FEE-10 | **Balance.** `GET /api/v1/members/{member_id}/balance` returns `200` with `BalanceOut`: `{"outstanding_fees": "<amount>", "accrued_late_fees": "<amount>", "total_debt": "<amount>", "blocked": <bool>}`, where `blocked` is `total_debt` ≥ 50.00. |
@@ -894,7 +897,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id`, `suggestion_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id`, `suggestion_id`, `program_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -913,7 +916,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41, `reservation_delayed` (LIB-INV-30) and the suggestion events of LIB-SUG-42. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41, `reservation_delayed` (LIB-INV-30) the suggestion events of LIB-SUG-42 and the program events of LIB-RDP-42. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -950,7 +953,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32; the suggestions report is LIB-SUG-44.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32; the suggestions report is LIB-SUG-44; the programs report is LIB-RDP-44.
 
 ### 16.1 Endpoints and requirements
 
@@ -1001,7 +1004,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. Purchase suggestions: LIB-SUG-47. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. Purchase suggestions: LIB-SUG-47. Reading programs: LIB-RDP-40. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. Copies in a count: LIB-INV-13. |
@@ -1142,7 +1145,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7, those of module 25 in 33.8.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7, those of module 25 in 33.8, those of module 26 in 34.9.
 
 ---
 
@@ -2355,7 +2358,7 @@ A registration is **active** while it is `registered` or `waitlisted`.
 | LIB-EVT-29 | **Late cancellation.** A `registered` registration cancelled later than that sets `late_cancellation` `true`; its fee stays. Cancelling a `waitlisted` registration is never late. |
 | LIB-EVT-30 | **Cancellation boundary.** Event Thu 18:00: cancelled Wed 18:00 → in time; Wed 18:00:01 → late. |
 | LIB-EVT-31 | **Promotion.** When a `registered` place becomes free (cancellation, LIB-EVT-06, LIB-EVT-41) while now < start − 1 hour, the waitlisted registration with position 1 becomes `registered` with `promoted_at` = now (LIB-EVT-21 applies; notification `event_promoted`); this repeats while places are free. After start − 1 hour nobody is promoted. |
-| LIB-EVT-32 | **Check-in.** `POST /api/v1/event-registrations/{registration_id}/check-in` on a `registered` registration from start − 30 minutes until end sets `attended` and `attended_at` = now, and returns `200` (event `event_attended`). Earlier → `409 CHECK_IN_NOT_OPEN`; at or after end → `409 EVENT_OVER`; not `registered` → `409 REGISTRATION_NOT_ACTIVE`. |
+| LIB-EVT-32 | **Check-in.** `POST /api/v1/event-registrations/{registration_id}/check-in` on a `registered` registration from start − 30 minutes until end sets `attended` and `attended_at` = now, and returns `200` (event `event_attended`). Earlier → `409 CHECK_IN_NOT_OPEN`; at or after end → `409 EVENT_OVER`; not `registered` → `409 REGISTRATION_NOT_ACTIVE`. Reading programs: LIB-RDP-21. |
 | LIB-EVT-33 | **Process.** `POST /api/v1/events/process` (1) marks every `published` event whose end is before now as `completed` and its `registered` registrations as `no_show` (event `event_no_show`), in order of start, then `id`; (2) applies LIB-EVT-34 to each member with a new no-show; (3) creates one `event_reminder` notification for every `registered` registration of an event starting within the next 24 hours (now < start ≤ now + 24 hours), at most one per registration. It returns `200` with `{"completed_events", "no_shows", "bans", "reminders"}` (counts of this call). Waitlisted registrations of a completed event become `cancelled` with reason `event_cancelled` without notification. |
 | LIB-EVT-34 | **Event ban.** After a no-show, if the member has 3 or more `no_show` registrations for events whose `date` is in the 90 days ending today and no event ban in force today, a ban from today to today + 29 days is created (notification `event_ban_started`). Only no-shows of events after the start of the member's latest ban count again. |
 | LIB-EVT-35 | **Effect of a ban.** When a ban starts, every active registration of the member for an upcoming event whose `date` is within the ban becomes `cancelled` with reason `member_banned` (fees as in LIB-EVT-28 regardless of time); places free up (LIB-EVT-31). |
@@ -3183,6 +3186,161 @@ A suggestion is **open** while it is `submitted`, `approved` or `ordered`.
 
 ---
 
+## 34. Module 26: Reading programs
+
+The library runs reading programs with a goal, for example "read 5 books in December". Members join, and books they return during the program count automatically; attended events (module 20) give extra points. Members who reach the goal complete the program, get a level and may get late fees waived as a reward. Package `lms.programs`. Times are local (LIB-COM-01).
+
+### 34.1 Data
+
+**Program**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `name` | text | LIB-COM-16; unique among programs that are not `cancelled` (case-insensitive) |
+| `description` | text | 0–1000 characters; default `""` |
+| `branch_id` | integer or null | null: all branches |
+| `audience` | `all` \| `students` \| `academics` | Default `all` (as LIB-EVT-24) |
+| `starts_on`, `ends_on` | date | `ends_on` − `starts_on` is 13–120 days |
+| `goal_books` | integer | 1–50 |
+| `max_participants` | integer or null | 1–1000; null: no limit |
+| `reward_waiver` | amount | 0.00–50.00; default 0.00 (LIB-RDP-32) |
+| `status` | `draft` \| `published` \| `closed` \| `cancelled` | Initially `draft` |
+| `published_at`, `closed_at` | date-time or null | |
+
+A program is **running** on a date `d` when it is `published` and `starts_on` ≤ `d` ≤ `ends_on`.
+
+**Participation:** `id`, `program_id`, `member_id`, `status` (`active` \| `left` \| `completed`), `joined_at`, `left_at`, `leave_reason` (`member_request` \| `member_deactivated` \| `program_cancelled` \| null), `public` (boolean, default `true`: shown by name on the leaderboard), `points`, `books`, `level` (`none` \| `bronze` \| `silver` \| `gold`), `completed_at`, `reward_waived` (amount, default 0.00).
+
+**Entry:** `id`, `participation_id`, `source` (`loan` \| `manual` \| `event` \| `bonus`), `book_id` (null for `event`), `loan_id`, `event_id`, `points`, `on` (date the entry counts for), `note`, `created_at`.
+
+### 34.2 Points and levels
+
+| Source | Points | Counts as a book |
+| --- | --- | --- |
+| Loan returned on or before `due_date` | 10 | yes |
+| Loan returned after `due_date` | 5 | yes |
+| Manual entry (LIB-RDP-19) | 10 | yes |
+| Attended event (LIB-RDP-21) | 15 | no |
+
+`books` is the number of distinct books of the `loan` and `manual` entries; `points` is the sum of the entries' points. **Level** by `books`: below `goal_books` → `none`; ≥ `goal_books` → `bronze`; ≥ 2 × `goal_books` → `silver`; ≥ 3 × `goal_books` → `gold`.
+
+### 34.3 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/programs`, `PATCH /api/v1/programs/{program_id}` | librarian, admin | Create, change |
+| `POST /api/v1/programs/{program_id}/publish`, `/cancel`, `/copy` | librarian, admin | Publish, cancel, copy |
+| `PUT`, `GET /api/v1/programs/{program_id}/books` | write: librarian, admin; read: all authenticated users | Featured books |
+| `GET /api/v1/programs`, `GET /api/v1/programs/{program_id}` | all authenticated users (members: LIB-RDP-07) | Read |
+| `POST /api/v1/programs/{program_id}/join`, `/leave` | member (own); librarian, admin (with `member_id`) | Join, leave |
+| `PATCH /api/v1/participations/{participation_id}` | member (own) | Change `public` |
+| `GET /api/v1/programs/{program_id}/participants` | librarian, admin | Participants |
+| `GET /api/v1/programs/{program_id}/leaderboard` | all authenticated users | Leaderboard |
+| `GET /api/v1/participations/{participation_id}/entries` | librarian, admin; member (own) | Entries |
+| `POST /api/v1/participations/{participation_id}/entries` | librarian, admin | Manual entry |
+| `DELETE /api/v1/program-entries/{entry_id}` | librarian, admin | Remove a manual entry |
+| `GET /api/v1/participations/{participation_id}/certificate` | librarian, admin; member (own) | Certificate |
+| `GET /api/v1/members/{member_id}/programs` | librarian, admin; member (own) | Programs of a member |
+| `POST /api/v1/programs/process` | librarian, admin | Close ended programs |
+| `GET /api/v1/reports/programs` | librarian, admin | Report (section 16) |
+
+### 34.4 Programs
+
+| ID | Requirement |
+| --- | --- |
+| LIB-RDP-01 | **Create.** `POST /api/v1/programs` with `{"name", "description", "branch_id", "audience", "starts_on", "ends_on", "goal_books", "max_participants", "reward_waiver"}` returns `201` with a `draft` (event `program_created`). Values outside 34.1 → `422`; an unknown branch → `422` with `details.fields`; a duplicate name → `409 CONFLICT` with `details.field` `"name"`; an inactive branch → `409 BRANCH_INACTIVE`. |
+| LIB-RDP-02 | **Change.** `PATCH` accepts any subset of the fields of LIB-RDP-01 on a `draft` and returns `200` (event `program_updated`). On a `published` program only `description`, `ends_on` (not earlier than today and not before the current `ends_on`) and `max_participants` (not below the number of `active` and `completed` participations: `409 PARTICIPANTS_ABOVE_LIMIT` with `details.participants`) may change; other fields → `409 PROGRAM_PUBLISHED`. `closed` and `cancelled` programs → `409 INVALID_PROGRAM_STATUS` with `details.status`. |
+| LIB-RDP-03 | **Publish.** `POST …/publish` on a `draft` sets `published` with `published_at` = now and returns `200` (event `program_published`). Checks in order (all `409`): not `draft` → `INVALID_PROGRAM_STATUS`; `ends_on` before today → `PROGRAM_ENDED`. |
+| LIB-RDP-04 | **Cancel.** `POST …/cancel` on a `draft` or `published` program sets `cancelled` and returns `200` (event `program_cancelled`). Every `active` participation becomes `left` with `leave_reason` `program_cancelled` and the member is notified (`program_cancelled`); `completed` participations stay, and rewards already given stay. Otherwise `409 INVALID_PROGRAM_STATUS`. |
+| LIB-RDP-05 | **Close.** `POST /api/v1/programs/process` sets every `published` program with `ends_on` before today to `closed` with `closed_at` = now, and returns `200` with `{"closed", "participants_completed", "participants_not_completed"}` counted over the programs closed by the call (event `programs_processed`). Participations of a closed program no longer change. |
+| LIB-RDP-06 | **Close example.** Program 2026-11-02 – 2026-11-30: process on 2026-11-30 → `closed` 0; on 2026-12-01 → 1. |
+| LIB-RDP-07 | **Read.** `GET /api/v1/programs` is paginated, ordered by `starts_on`, then `id`, with filters `status`, `branch_id` and `running` (`true`/`false`, today). Each program contains `participants` (count of `active` and `completed`), `completed` (count) and `free_places` (null without a limit). Members see only `published` and `closed` programs; for them each program also contains `my_participation` (the member's participation or null). A member reading a `draft` or `cancelled` program → `404 NOT_FOUND`. |
+| LIB-RDP-08 | **Featured books.** `PUT /api/v1/programs/{program_id}/books` with `{"book_ids": [...]}` (0–30 distinct existing books, otherwise `422`) replaces the program's featured books on a `draft` or `published` program (otherwise `409 INVALID_PROGRAM_STATUS`) and returns `200` with the list (event `program_books_set`). `GET …/books` returns them ordered by `title`, then `id`. |
+| LIB-RDP-09 | **Copy.** `POST /api/v1/programs/{program_id}/copy` with `{"starts_on"}` creates a `draft` with the same fields and featured books, dates shifted so that the length stays the same, and the name followed by `" (copy)"` (with `" (copy 2)"`, `" (copy 3)"` … when taken), and returns `201` (event `program_created`). A `cancelled` program can be copied too. |
+
+### 34.5 Joining and leaving
+
+| ID | Requirement |
+| --- | --- |
+| LIB-RDP-10 | **Join.** `POST /api/v1/programs/{program_id}/join` with `{"public"}` (optional) creates an `active` participation with `joined_at` = now, `points` 0, `books` 0, `level` `none`, and returns `201` (event `program_joined`). A member joins for themself; staff send `member_id` (`422` when a member sends it or staff omit it). |
+| LIB-RDP-11 | **Join checks.** In order (all `409`): (1) the program is not `published` → `PROGRAM_NOT_OPEN`; (2) `ends_on` before today → `PROGRAM_ENDED`; (3) member `passive` → `MEMBER_PASSIVE`; (4) membership not valid today → `MEMBERSHIP_EXPIRED`; (5) the audience does not include the member's type (as LIB-EVT-24) → `PROGRAM_NOT_FOR_TYPE`; (6) the member has an `active` or `completed` participation → `ALREADY_JOINED`; (7) participations `active` and `completed` = `max_participants` → `PROGRAM_FULL`; (8) total debt (LIB-FEE-09) ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.total_debt`; (9) the member has 3 `active` participations in other programs → `PROGRAM_LIMIT_REACHED` with `details.limit` 3. |
+| LIB-RDP-12 | **Joining late and early.** A member may join before `starts_on` and at any day until `ends_on`; only activity on or after `joined_at` counts (LIB-RDP-16). |
+| LIB-RDP-13 | **Leave.** `POST …/leave` sets an `active` participation to `left` with `left_at` = now and `leave_reason` `member_request` and returns `200` (event `program_left`). Entries stay but no longer count on the leaderboard. A `completed` or `left` participation → `409 PARTICIPATION_NOT_ACTIVE`. A member who left may join again: the old participation, with its entries, becomes `active` again (`left_at` and `leave_reason` null). |
+| LIB-RDP-14 | **Visibility.** `PATCH /api/v1/participations/{participation_id}` with `{"public"}` changes how the member appears on the leaderboard (LIB-RDP-27) and returns `200`. Another member's participation → `403`. |
+| LIB-RDP-15 | **Programs of a member.** `GET /api/v1/members/{member_id}/programs` returns the member's participations ordered by `joined_at` descending, each with `program_id`, `program_name`, `status`, `points`, `books`, `level`, `goal_books` and `rank` (LIB-RDP-26, null when not ranked). |
+
+### 34.6 Entries
+
+| ID | Requirement |
+| --- | --- |
+| LIB-RDP-16 | **Loan entries.** When a loan of a member is returned (LIB-LOAN-10) on a date `d`, for every `active` participation of the member in a program running on `d`, with `joined_at` on or before the return and (for a program with `branch_id`) the loan's `branch_id` equal to it, an entry `{source loan, book_id, loan_id, points 10 or 5 (34.2), on d}` is created, unless the participation already has an entry for that book. |
+| LIB-RDP-17 | **Loan entry examples.** Program at branch A, 2026-11-02 – 2026-11-30, member joined Mon 09:00: a loan from A returned on time on 2026-11-05 → 10 points; a loan of the same book returned again later → no new entry; a late loan from A → 5 points; a loan from B → no entry; a loan returned on 2026-12-01 → no entry. Losing a book (LIB-LOAN-13) creates no entry. |
+| LIB-RDP-18 | **Loans before joining.** A loan made before `joined_at` and returned after it counts; the return time decides. |
+| LIB-RDP-19 | **Manual entries.** `POST /api/v1/participations/{participation_id}/entries` with `{"book_id", "note"}` (`note` 0–200 characters) on an `active` participation of a running program creates an entry `{source manual, points 10, on today}` and returns `201` (event `program_entry_added`). Checks (all `409`): participation not `active` → `PARTICIPATION_NOT_ACTIVE`; program not running → `PROGRAM_NOT_RUNNING`; the book already has an entry in the participation → `BOOK_ALREADY_COUNTED`; the participation already has 3 manual entries → `MANUAL_ENTRY_LIMIT` with `details.limit` 3. An unknown book → `422`. |
+| LIB-RDP-20 | **Remove a manual entry.** `DELETE /api/v1/program-entries/{entry_id}` removes a `manual` entry of an `active` participation and returns `204` (event `program_entry_removed`); points, books and level are recomputed, but a completion is not taken back (LIB-RDP-29). A `loan` or `event` entry → `409 ENTRY_NOT_MANUAL`; a participation that is not `active` → `409 PARTICIPATION_NOT_ACTIVE`. |
+| LIB-RDP-21 | **Event entries.** When an event registration (module 20) of a member becomes `attended` on a date `d`, for every `active` participation of the member in a program running on `d` (and, with `branch_id`, the event's branch equal to it) an entry `{source event, event_id, points 15, on d}` is created, unless the participation already has an entry for that event. |
+| LIB-RDP-22 | **Read entries.** `GET /api/v1/participations/{participation_id}/entries` is paginated, ordered by `created_at`, then `id`, with filter `source`; each entry contains `book_title` (null for events). |
+| LIB-RDP-23 | **Featured bonus.** A `loan` or `manual` entry for a featured book of the program gets 5 more points (15 or 10 for a late loan); the book counts once as usual. Changing the featured books later does not change existing entries. |
+| LIB-RDP-24 | **Weekly bonus.** When a participation gets book entries (`loan` or `manual`) with `on` in 3 different calendar weeks (Monday–Sunday), an entry `{source bonus, points 10}` is added once (event entries do not count for weeks). |
+| LIB-RDP-25 | **Bonus example.** Program from Mon 2026-11-02; book entries on 2026-11-03, 2026-11-05 (same week), 2026-11-10 and 2026-11-17 → the bonus is added with the entry of 2026-11-17, once. |
+
+### 34.7 Ranking, completion and rewards
+
+| ID | Requirement |
+| --- | --- |
+| LIB-RDP-26 | **Rank.** The `active` and `completed` participations of a program are ranked by `points` descending, then `completed_at` ascending (completed first; null last), then `joined_at`, then `id`. `rank` is the position from 1; participations with 0 points are not ranked (null). |
+| LIB-RDP-27 | **Leaderboard.** `GET /api/v1/programs/{program_id}/leaderboard` returns the ranked participations: `{"rank", "name", "points", "books", "level"}`. `name` is the member's first word of `full_name` and the initial of the last word (`"Ayşe Y."`); for a participation with `public` `false` it is `"Anonymous"`. Staff also get `member_id`. Members see the leaderboard of `published` and `closed` programs only (`404` otherwise). |
+| LIB-RDP-28 | **Completion.** When an entry makes `books` reach `goal_books`, the participation becomes `completed` with `completed_at` = now (event `program_completed`), the member is notified (`program_completed`) and the reward of LIB-RDP-32 is given. A completed participation keeps receiving entries while the program is running. |
+| LIB-RDP-29 | **No undo.** Removing a manual entry never takes back a completion or a reward; `level` is recomputed but not below `bronze` for a completed participation. |
+| LIB-RDP-30 | **Higher levels.** When an entry raises the `level` of a completed participation to `silver` or `gold`, the member is notified once per level (`program_level_reached`). |
+| LIB-RDP-31 | **Level example.** Goal 2: books 1 → `none`; 2 → `bronze` and `completed`; 4 → `silver`; 6 → `gold`. |
+| LIB-RDP-32 | **Reward.** At completion, the member's `open` fees of kind `late_fee` with no payment are waived in order of `created_on`, then `id`, while their `amount` fits into what is left of `reward_waiver` (a fee that does not fit is skipped and the next one is tried). `reward_waived` is the total waived. The waived fees get the reason `"Reading program reward"`. |
+| LIB-RDP-33 | **Reward example.** `reward_waiver` 20.00 and open late fees 8.00, 15.00 and 10.00 (in this order, none paid) → 8.00 and 10.00 waived, `reward_waived` 18.00; the 15.00 fee stays open. |
+| LIB-RDP-34 | **Certificate.** `GET /api/v1/participations/{participation_id}/certificate` (staff; member own) returns `{"certificate_no", "member_name", "program_name", "completed_at", "level", "books", "points"}` for a `completed` participation; `certificate_no` is `"RP-<program id>-<n>"`, `n` the order of completion in the program from 1. Not completed → `409 NOT_COMPLETED`. |
+| LIB-RDP-35 | **Ending reminder.** `POST /api/v1/programs/process` also notifies (`program_ending`) every `active` participation of a program that ends in exactly 3 days (`ends_on` = today + 3), once per participation; the response adds `reminders`. |
+| LIB-RDP-36 | **Reminder example.** Program ending 2026-11-30: process on 2026-11-26 → no reminder; on 2026-11-27 → one per active participant; again on 2026-11-27 or on 2026-11-28 → none. |
+| LIB-RDP-37 | **Leaving and rewards.** A member who leaves after completing cannot leave (`PARTICIPATION_NOT_ACTIVE`, LIB-RDP-13); a member who left before completing and joins again keeps the earlier entries, and completion and reward are checked at the next entry. |
+
+### 34.8 Effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-RDP-38 | **Member deactivation.** LIB-MEM-10 sets the member's `active` participations to `left` with `leave_reason` `member_deactivated`. |
+| LIB-RDP-39 | **Member summary.** LIB-MEM-12 also returns `"programs": {"active": <int>, "completed_this_year": <int>, "points_this_year": <int>}` (`completed_this_year` by `completed_at`; `points_this_year`: sum of entry points with `on` in the current year). |
+| LIB-RDP-40 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) when the branch has a `draft` or `published` program. |
+| LIB-RDP-41 | **Returns at another branch.** A loan returned at another branch counts by the loan's `branch_id`, not by `return_branch_id`. |
+| LIB-RDP-42 | **Notifications.** Added to LIB-NOT-01: `program_completed`, `program_level_reached`, `program_cancelled`, `program_ending`; messages contain the program name. Notifications get a nullable `program_id`. Joining, leaving and entries do not notify. |
+| LIB-RDP-43 | **Audit.** Module 26 reports: `program_created`, `program_updated`, `program_published`, `program_books_set`, `program_cancelled`, `program_joined`, `program_left`, `program_entry_added`, `program_entry_removed`, `program_completed`, `programs_processed`. |
+| LIB-RDP-44 | **Programs report.** `GET /api/v1/reports/programs?from=&to=` (at most 366 days, `from` ≤ `to`, otherwise `422`) returns the programs that are `published` or `closed` and overlap the range, ordered by `starts_on`, then `id`: `{"program_id", "name", "status", "participants", "completed", "completion_rate", "books_counted", "points", "rewards_waived", "top_books": [{"book_id", "title", "count"}]}`. `completion_rate` = `completed` / `participants` × 100 with 1 decimal (`"0.0"` without participants); `books_counted` counts book entries of all participations; `top_books` lists the 3 books with most entries (ties by `book_id`). |
+| LIB-RDP-45 | **Not exported.** Programs, participations and entries are not part of import and export (module 13). |
+| LIB-RDP-46 | **Fees.** Fees waived by LIB-RDP-32 count as waived everywhere (LIB-FEE-07 semantics), although no admin waived them. |
+| LIB-RDP-47 | **Participants list.** `GET /api/v1/programs/{program_id}/participants` is paginated, ordered as LIB-RDP-26 (unranked last, by `joined_at`), with filter `status`; each item contains `member_id`, `full_name`, `status`, `points`, `books`, `level`, `rank`, `public`, `reward_waived`. |
+
+### 34.9 Error codes of module 26
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `PARTICIPANTS_ABOVE_LIMIT` | LIB-RDP-02 |
+| 409 | `PROGRAM_PUBLISHED` | LIB-RDP-02 |
+| 409 | `INVALID_PROGRAM_STATUS` | LIB-RDP-02, LIB-RDP-03, LIB-RDP-04, LIB-RDP-08 |
+| 409 | `PROGRAM_ENDED` | LIB-RDP-03, LIB-RDP-11 |
+| 409 | `PROGRAM_NOT_OPEN` | LIB-RDP-11 |
+| 409 | `PROGRAM_NOT_FOR_TYPE` | LIB-RDP-11 |
+| 409 | `ALREADY_JOINED` | LIB-RDP-11 |
+| 409 | `PROGRAM_FULL` | LIB-RDP-11 |
+| 409 | `PROGRAM_LIMIT_REACHED` | LIB-RDP-11 |
+| 409 | `PARTICIPATION_NOT_ACTIVE` | LIB-RDP-13, LIB-RDP-19, LIB-RDP-20 |
+| 409 | `PROGRAM_NOT_RUNNING` | LIB-RDP-19 |
+| 409 | `BOOK_ALREADY_COUNTED` | LIB-RDP-19 |
+| 409 | `MANUAL_ENTRY_LIMIT` | LIB-RDP-19 |
+| 409 | `NOT_COMPLETED` | LIB-RDP-34 |
+| 409 | `ENTRY_NOT_MANUAL` | LIB-RDP-20 |
+
+`CONFLICT`, `BRANCH_INACTIVE`, `MEMBER_PASSIVE`, `MEMBERSHIP_EXPIRED`, `MEMBER_BLOCKED_BY_DEBT` and `BRANCH_IN_USE` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -3216,4 +3374,5 @@ A suggestion is **open** while it is `submitted`, `approved` or `ordered`.
 | Module 23: Preservation | LIB-PRE-01 – LIB-PRE-40 | 40 |
 | Module 24: Inventory counts | LIB-INV-01 – LIB-INV-34 | 34 |
 | Module 25: Purchase suggestions | LIB-SUG-01 – LIB-SUG-47 | 47 |
-| **Total** | | **704** |
+| Module 26: Reading programs | LIB-RDP-01 – LIB-RDP-47 | 47 |
+| **Total** | | **751** |
