@@ -6,7 +6,7 @@ Also holds the release procedure (LIB-RES-08) that other modules call when a cop
 from __future__ import annotations
 
 import datetime
-from collections.abc import Container
+from collections.abc import Collection, Container
 from typing import Any
 
 import sqlalchemy as sa
@@ -185,8 +185,10 @@ def create_reservation(
     member_id: int,
     book_id: int,
     pickup_branch_id: int,
+    ignore_copy_ids: Collection[int] = (),
 ) -> Reservation:
-    """LIB-RES-01, LIB-RES-02, LIB-RES-05."""
+    """LIB-RES-01, LIB-RES-02, LIB-RES-05. ``ignore_copy_ids``: copies that are not yet released (LIB-SUG-33); they
+    do not count for check 7 and are not assigned at once."""
     branch = db.get(Branch, pickup_branch_id)
     if branch is None:
         raise reference_not_found("pickup_branch_id", pickup_branch_id)
@@ -242,6 +244,7 @@ def create_reservation(
         Copy.status == "available",
         Copy.condition != "fragile",  # LIB-PRE-30
         Copy.current_branch_id == pickup_branch_id,
+        Copy.id.not_in(ignore_copy_ids),
     )
     if db.scalar(at_pickup.limit(1)) is not None:
         raise Conflict(
@@ -260,7 +263,12 @@ def create_reservation(
     # LIB-RES-05: a copy that is available at another branch is assigned at once.
     available = db.scalars(
         sa.select(Copy)
-        .where(Copy.book_id == book_id, Copy.status == "available", Copy.condition != "fragile")  # LIB-PRE-07
+        .where(
+            Copy.book_id == book_id,
+            Copy.status == "available",
+            Copy.condition != "fragile",  # LIB-PRE-07
+            Copy.id.not_in(ignore_copy_ids),
+        )
         .order_by(Copy.id)
     ).all()
     for copy in available:
