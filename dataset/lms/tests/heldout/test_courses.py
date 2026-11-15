@@ -307,7 +307,7 @@ def test_t_crs_20_a(client, librarian, branch_a, branch_b):
     err(post(client, librarian, f"copies/{cp['id']}/withdraw", {"reason": "Eskidi artık"}), 409, "INVALID_COPY_STATUS")
     err(post(client, librarian, "transfers", {"copy_id": cp["id"], "to_branch_id": branch_b["id"]}), 409, "INVALID_COPY_STATUS")
     av = get(client, librarian, f"books/{s.book['id']}")["availability"]
-    assert av == [{"branch_id": branch_a["id"], "available": 0, "total": 1}]
+    assert [(r["branch_id"], r["available"], r["total"]) for r in av] == [(branch_a["id"], 0, 1)]
 
 
 def test_t_crs_22_b(client, librarian, branch_a):

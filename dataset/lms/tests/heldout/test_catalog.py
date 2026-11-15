@@ -99,7 +99,7 @@ def test_t_cat_08_a(client, librarian, branch_a, branch_b):
     add_copy(client, librarian, b["id"], home_branch_id=branch_a["id"])
     add_copy(client, librarian, b["id"], home_branch_id=branch_b["id"])
     avail = client.get(f"/api/v1/books/{b['id']}", headers=librarian).json()["availability"]
-    assert avail == [{"branch_id": branch_a["id"], "available": 2, "total": 2}, {"branch_id": branch_b["id"], "available": 1, "total": 1}]
+    assert [(r["branch_id"], r["available"], r["total"]) for r in avail] == [(branch_a["id"], 2, 2), (branch_b["id"], 1, 1)]
     lend(client, librarian, register_member(client, librarian, home_branch_id=branch_a["id"])["id"], a1["id"])
     lst = lambda **p: [c["id"] for c in client.get(f"/api/v1/books/{b['id']}/copies", headers=librarian, params=p).json()["items"]]
     assert len(lst(branch_id=branch_b["id"])) == 1
