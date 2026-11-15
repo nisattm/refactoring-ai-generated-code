@@ -1,0 +1,19 @@
+{
+  "tests": 720,
+  "passed": 713,
+  "failed": 7,
+  "errors": 0,
+  "skipped": 0,
+  "failed_cases": [
+    "T-RDP-09-a",
+    "T-RDP-17-a",
+    "T-RDP-21-a",
+    "T-RDP-29-a",
+    "T-RDP-31-a",
+    "T-RDP-33-a",
+    "T-RDP-37-a"
+  ],
+  "set": "feedback",
+  "pytest_exit_code": 1,
+  "duration_s": 834.265
+}

@@ -1,0 +1,25 @@
+{
+  "tests": 630,
+  "passed": 617,
+  "failed": 13,
+  "errors": 0,
+  "skipped": 0,
+  "failed_cases": [
+    "T-INV-20-a",
+    "T-RDP-04-a",
+    "T-RDP-08-a",
+    "T-RDP-12-a",
+    "T-RDP-16-a",
+    "T-RDP-18-a",
+    "T-RDP-20-a",
+    "T-RDP-24-a",
+    "T-RDP-28-a",
+    "T-RDP-30-a",
+    "T-RDP-32-a",
+    "T-RDP-38-a",
+    "T-RDP-42-a"
+  ],
+  "set": "heldout",
+  "pytest_exit_code": 1,
+  "duration_s": 749.291
+}
