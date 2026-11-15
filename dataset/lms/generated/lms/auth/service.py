@@ -234,6 +234,9 @@ def update_user(db: Session, now: datetime.datetime, actor: User, user: User, fi
         from lms.staff.profiles import on_user_deactivated  # LIB-STF-06, LIB-STF-48
 
         on_user_deactivated(db, now, actor, user)
+        from lms.messaging.usage import on_user_deactivated as release_threads  # LIB-MSG-36
+
+        release_threads(db, user.id)
 
     descriptive = {k: v for k, v in fields.items() if k in ("full_name", "role")}
     diff = changes({k: getattr(user, k) for k in descriptive}, descriptive)

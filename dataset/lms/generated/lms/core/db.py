@@ -75,6 +75,7 @@ def create_schema(engine: sa.Engine) -> None:
     import lms.inventory.models  # noqa: F401
     import lms.loans.models  # noqa: F401
     import lms.members.models  # noqa: F401
+    import lms.messaging.models  # noqa: F401
     import lms.notifications.models  # noqa: F401
     import lms.preservation.models  # noqa: F401
     import lms.programs.models  # noqa: F401

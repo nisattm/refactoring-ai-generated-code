@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Query, Request, Response
 
 from lms.auth.deps import StaffOnly
+from lms.core.clock import local_now
 from lms.core.clock import today as clock_today
 from lms.core.db import SessionDep
 from lms.core.errors import ValidationFailed
@@ -31,6 +32,8 @@ from lms.ill import usage as ill_usage
 from lms.ill.schemas import IllActivityOut
 from lms.equipment.schemas import EquipmentUsageOut
 from lms.rooms import usage as room_usage
+from lms.messaging import reports as messaging_reports
+from lms.messaging.schemas import MessagingReportOut
 from lms.programs import usage as program_usage
 from lms.programs.schemas import ProgramReportOut
 from lms.suggestions import reports as suggestion_reports
@@ -371,3 +374,26 @@ def programs_report(
     if (end - start).days > 365:
         raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
     return paginate(db, program_usage.report_stmt(start, end), page, lambda program: program_usage.report_out(db, program))
+
+
+@router.get("/messaging", response_model=MessagingReportOut)
+def messaging_report(
+    request: Request,
+    db: SessionDep,
+    _: StaffOnly,
+    first: Annotated[str | None, Query(alias="from")] = None,
+    to: Annotated[str | None, Query()] = None,
+    branch_id: Annotated[int | None, Query()] = None,
+) -> MessagingReportOut:
+    problems: list[dict[str, str]] = []
+    start = _required_date("from", first, problems)
+    end = _required_date("to", to, problems)
+    if problems:
+        raise ValidationFailed(problems)
+    assert start is not None and end is not None
+    if start > end:
+        raise ValidationFailed.single("from", "from must not be after to")
+    if (end - start).days > 365:
+        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    now = local_now(request.app.state.settings.clock)
+    return messaging_reports.messaging_report(db, now, start, end, branch_id)

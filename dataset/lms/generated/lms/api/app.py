@@ -23,6 +23,7 @@ from lms.api import (
     inventory,
     loans,
     members,
+    messaging,
     notifications,
     preservation,
     programs,
@@ -98,5 +99,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api.include_router(inventory.router)
     api.include_router(suggestions.router)
     api.include_router(programs.router)
+    api.include_router(messaging.router)
     app.include_router(api)
     return app

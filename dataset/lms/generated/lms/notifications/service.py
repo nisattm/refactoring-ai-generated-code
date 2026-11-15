@@ -57,6 +57,8 @@ def _create(
     donation_id: int | None = None,
     suggestion_id: int | None = None,
     program_id: int | None = None,
+    announcement_id: int | None = None,
+    thread_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -79,6 +81,8 @@ def _create(
         donation_id=donation_id,
         suggestion_id=suggestion_id,
         program_id=program_id,
+        announcement_id=announcement_id,
+        thread_id=thread_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -459,3 +463,24 @@ def notify_program(
     composes the message, which contains the program name."""
     return _create(db, now, member_id, type_, message, program_id=program_id)
 
+
+
+# --- announcements and messages (LIB-MSG-37) -----------------------------------------
+
+
+def notify_announcement(
+    db: Session, now: datetime.datetime, member_id: int, title: str, *, announcement_id: int
+) -> Notification:
+    """``announcement`` for an important announcement that became live (LIB-MSG-06)."""
+    return _create(
+        db, now, member_id, "announcement", f'New important announcement: "{title}".', announcement_id=announcement_id
+    )
+
+
+def notify_message_reply(
+    db: Session, now: datetime.datetime, member_id: int, subject: str, *, thread_id: int
+) -> Notification:
+    """``message_reply`` for a staff reply that is not an internal note (LIB-MSG-18)."""
+    return _create(
+        db, now, member_id, "message_reply", f'The library replied to your message "{subject}".', thread_id=thread_id
+    )

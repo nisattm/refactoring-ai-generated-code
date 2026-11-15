@@ -1,0 +1,13 @@
+{
+  "tests": 656,
+  "passed": 655,
+  "failed": 1,
+  "errors": 0,
+  "skipped": 0,
+  "failed_cases": [
+    "T-INV-20-a"
+  ],
+  "set": "heldout",
+  "pytest_exit_code": 1,
+  "duration_s": 1147.606
+}
