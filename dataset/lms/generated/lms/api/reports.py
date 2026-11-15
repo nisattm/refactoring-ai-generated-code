@@ -22,6 +22,9 @@ from lms.donations import reports as donation_reports
 from lms.donations.schemas import DonationReportOut, DonorReportOut
 from lms.digital.schemas import DigitalUsageOut, ResourceKind
 from lms.equipment import usage as equipment_usage
+from lms.inventory import reports as inventory_reports
+from lms.inventory import schemas as inventory_schemas
+from lms.inventory.schemas import InventoryYearReportOut
 from lms.preservation import reports as preservation_reports
 from lms.preservation.schemas import MAX_YEAR, MIN_YEAR, PreservationReportOut, RecoveryPage
 from lms.ill import usage as ill_usage
@@ -128,8 +131,16 @@ def monthly_summary(
     return service.monthly_summary(db, year, month, branch_id)
 
 
-@router.get("/inventory", response_model=InventoryOut)
-def inventory(db: SessionDep, _: StaffOnly, branch_id: Annotated[int | None, Query()] = None) -> InventoryOut:
+@router.get("/inventory", response_model=InventoryOut | InventoryYearReportOut)
+def inventory(
+    db: SessionDep,
+    _: StaffOnly,
+    branch_id: Annotated[int | None, Query()] = None,
+    year: Annotated[int | None, Query(ge=inventory_schemas.MIN_YEAR, le=inventory_schemas.MAX_YEAR)] = None,
+) -> InventoryOut | InventoryYearReportOut:
+    """LIB-REP-04 (copies per branch and status); with ``year`` the count report of LIB-INV-32."""
+    if year is not None:
+        return InventoryYearReportOut(items=inventory_reports.inventory_report(db, year))
     return InventoryOut(items=service.inventory(db, branch_id))
 
 

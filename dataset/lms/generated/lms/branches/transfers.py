@@ -15,6 +15,7 @@ from lms.branches.service import start_transfer
 from lms.catalog.models import Copy
 from lms.catalog.status import invalid_status
 from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.inventory.usage import require_not_in_count
 from lms.reservations import service as reservations
 from lms.reservations.models import Reservation
 
@@ -48,6 +49,7 @@ def relocate(
             code="BRANCH_INACTIVE",
             details={"field": "to_branch_id", "id": to_branch_id},
         )
+    require_not_in_count(db, copy.id)  # LIB-INV-13
     if copy.status != "available":
         raise invalid_status(copy, "relocate")
     if copy.current_branch_id == to_branch_id:

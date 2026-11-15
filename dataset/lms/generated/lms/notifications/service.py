@@ -113,7 +113,8 @@ def notify_loan(db: Session, now: datetime.datetime, type_: str, loan: Loan) -> 
 
 
 def notify_reservation(db: Session, now: datetime.datetime, type_: str, reservation: Reservation) -> Notification:
-    """``reservation_ready``, ``reservation_in_transit``, ``reservation_expired`` and ``reservation_cancelled``."""
+    """``reservation_ready``, ``reservation_in_transit``, ``reservation_expired``, ``reservation_cancelled`` and
+    ``reservation_delayed``."""
     title = _title_of_book(db, reservation.book_id)
     hold = reservation.hold_until.isoformat() if reservation.hold_until is not None else None
     if type_ == "reservation_ready":
@@ -122,6 +123,8 @@ def notify_reservation(db: Session, now: datetime.datetime, type_: str, reservat
         message = f'A copy of "{title}" is on its way to your pickup branch.'
     elif type_ == "reservation_expired":
         message = f'Your reservation of "{title}" expired because it was not collected by {hold}.'
+    elif type_ == "reservation_delayed":  # LIB-INV-20
+        message = f'Your reservation of "{title}" is delayed: the copy held for you could not be found.'
     else:
         reason = reservation.cancel_reason
         message = f'Your reservation of "{title}" was cancelled ({reason}).'

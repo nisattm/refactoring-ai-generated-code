@@ -87,6 +87,10 @@ def _books(db: Session) -> list[dict[str, Any]]:
     ]
 
 
+# Statuses that the exchange format of 22.1 does not have.
+_EXPORT_STATUS = {"in_repair": "damaged", "missing": "lost"}
+
+
 def _copies(db: Session) -> list[dict[str, Any]]:
     return [
         {
@@ -96,7 +100,7 @@ def _copies(db: Session) -> list[dict[str, Any]]:
             "home_branch_id": c.home_branch_id,
             "current_branch_id": c.current_branch_id,
             "price": format_amount(c.price),
-            "status": "damaged" if c.status == "in_repair" else c.status,  # LIB-PRE-39
+            "status": _EXPORT_STATUS.get(c.status, c.status),  # LIB-PRE-39, LIB-INV-33
             "acquired_on": _date(c.acquired_on),
             "shelf_location": c.shelf_location,
         }

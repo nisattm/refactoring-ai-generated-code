@@ -29,6 +29,7 @@ from lms.courses.usage import book_has_items
 from lms.donations.rules import keep_until
 from lms.donations.usage import book_has_items as book_has_donation_items
 from lms.ill.models import IllOutgoing
+from lms.inventory.usage import require_not_in_count
 from lms.preservation.usage import expected_back, require_no_open_job
 
 
@@ -255,7 +256,7 @@ def is_lendable(db: Session, book_id: int) -> bool:
 
 
 def availability(db: Session, book_id: int) -> list[AvailabilityOut]:
-    """Per current branch: copies ``available`` and copies not ``lost`` or ``withdrawn`` (section 8.1)."""
+    """Per current branch: copies ``available`` and copies not ``lost``, ``withdrawn`` or ``missing`` (section 8.1)."""
     rows = db.execute(
         sa.select(
             Copy.current_branch_id,
@@ -403,7 +404,8 @@ def update_copy(db: Session, now: datetime.datetime, actor: User, copy: Copy, fi
 def withdraw_copy(db: Session, now: datetime.datetime, actor: User, copy: Copy, reason: str) -> Copy:
     """LIB-CAT-10."""
     require_no_open_job(db, copy.id)  # LIB-PRE-28: before the status check
-    if copy.status not in ("available", "damaged", "lost"):
+    require_not_in_count(db, copy.id)  # LIB-INV-13
+    if copy.status not in ("available", "damaged", "lost", "missing"):
         raise invalid_status(copy, "withdrawal")
     if copy.donation_id is not None and copy.status != "lost":  # LIB-DON-25
         until = keep_until(copy.acquired_on)
@@ -415,6 +417,7 @@ def withdraw_copy(db: Session, now: datetime.datetime, actor: User, copy: Copy, 
             )
     set_status(copy, "withdrawn")
     copy.withdrawn_reason = reason
+    copy.missing_since = None
     record(
         db,
         at=now,
