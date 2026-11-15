@@ -30,7 +30,7 @@ Generated from one case list; 52 cases for 47 requirements (feedback 26, held-ou
 | T-SUG-20-a | LIB-SUG-20 | Error | A librarian approves 4 × 100.00 (400.00) | `403`; the suggestion stays `submitted` | held-out |
 | T-SUG-21-a | LIB-SUG-21 | Boundary | Librarian approves 3 × 100.00; another 3 × 100.01 by a librarian, then by an admin | 200; `403`; 200 | feedback |
 | T-SUG-22-a | LIB-SUG-22 | Error | S1 merged into S2; merge into itself; into an unknown suggestion; an approved source; into a rejected target | 200 with S2, S1 `merged` with `merged_into_id`; `422`; `404`; `409 INVALID_SUGGESTION_STATUS` twice | held-out |
-| T-SUG-23-a | LIB-SUG-23 | Normal | S1 by A (supported by B), S2 by C (supported by B); S1 merged into S2 | S2's supporters B, A; `score` 3 | feedback |
+| T-SUG-23-a | LIB-SUG-23 | Normal | S1 by A (supported by B), S2 by C (supported by B at 09:00); S1 merged into S2 at 10:00 | S2's supporters B, A (A's support is created at the merge); `score` 3 | feedback |
 | T-SUG-24-a | LIB-SUG-24 | Error | Approved 1 × 40.00: change quantity to 3; a librarian changes the price to 120.00; change a submitted suggestion's approval | 200 `quantity` 3; `403`; `409 INVALID_SUGGESTION_STATUS` | held-out |
 | T-SUG-25-a | LIB-SUG-25 | Normal | Book X whose only copy is lost; a member suggests X's ISBN; approved for X | 201; 200 | feedback |
 | T-SUG-26-a | LIB-SUG-26 | Normal | Approved S1 (book X, 2 × 40.00) of member M at A; order with supplier P | 201 draft order of P at A with line X 2 × 40.00; S1 `ordered` with `purchase_order_id`, `ordered_at`; one `suggestion_ordered` notification | held-out |

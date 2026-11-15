@@ -418,13 +418,14 @@ def TEST(client, librarian, branch_a):
     s3, _, _ = by(client, librarian, branch_a)
     err(post(client, librarian, f"suggestions/{s3['id']}/merge", {"into_suggestion_id": r["id"]}), 409, "INVALID_SUGGESTION_STATUS")
 '''),
-    dict(id="T-SUG-23-a", req="LIB-SUG-23", type="Normal", input="S1 by A (supported by B), S2 by C (supported by B); S1 merged into S2", expected="S2's supporters B, A; `score` 3", code='''
-def TEST(client, librarian, branch_a):
+    dict(id="T-SUG-23-a", req="LIB-SUG-23", type="Normal", input="S1 by A (supported by B), S2 by C (supported by B at 09:00); S1 merged into S2 at 10:00", expected="S2's supporters B, A (A's support is created at the merge); `score` 3", code='''
+def TEST(client, clock, librarian, branch_a):
     s1, a, _ = by(client, librarian, branch_a)
     s2, _, _ = by(client, librarian, branch_a)
     b = member(client, librarian, branch_a)
     ok(support(client, mh(client, b), s1), 201)
     ok(support(client, mh(client, b), s2), 201)
+    at(clock, MON, 10)
     ok(post(client, librarian, f"suggestions/{s1['id']}/merge", {"into_suggestion_id": s2["id"]}))
     assert [r["member_id"] for r in items(get(client, librarian, f"suggestions/{s2['id']}/supporters"))] == [b["id"], a["id"]]
     assert sug_of(client, librarian, s2)["score"] == 3
@@ -594,7 +595,7 @@ def TEST(client, librarian, branch_a):
     dict(id="T-SUG-37-a", req="LIB-SUG-37", type="Normal", input="A student with an open suggestion is changed to `guest`; suggests again", expected="The open suggestion stays `submitted`; `409 MEMBERSHIP_TYPE_NOT_ALLOWED`", code='''
 def TEST(client, librarian, branch_a):
     s, m, h = by(client, librarian, branch_a)
-    ok(client.patch(f"/api/v1/members/{m['id']}", headers=librarian, json={"membership_type": "guest"}))
+    ok(client.patch(f"/api/v1/members/{m['id']}", headers=librarian, json={"membership_type": "guest", "phone": "+905551112233", "university_id": None}))
     assert sug_of(client, librarian, s)["status"] == "submitted"
     err(try_sug(client, h, branch_a), 409, "MEMBERSHIP_TYPE_NOT_ALLOWED")
 '''),
