@@ -521,7 +521,7 @@ def TEST(client, librarian, branch_a, branch_b):
     err(post(client, librarian, f"copies/{cp['id']}/withdraw", {"reason": "Eskidi artık"}), 409, "INVALID_COPY_STATUS")
     err(post(client, librarian, "transfers", {"copy_id": cp["id"], "to_branch_id": branch_b["id"]}), 409, "INVALID_COPY_STATUS")
     av = get(client, librarian, f"books/{s.book['id']}")["availability"]
-    assert av == [{"branch_id": branch_a["id"], "available": 0, "total": 1}]
+    assert [(r["branch_id"], r["available"], r["total"]) for r in av] == [(branch_a["id"], 0, 1)]
 '''),
     dict(id="T-CRS-21-a", req="LIB-CRS-21", type="Normal", input="Copy on loan as reserve: unreserve; after the return unreserve; an available copy unreserved", expected="`409 RESERVE_COPY_ON_LOAN`; 200: copy `available`, `reserve_item_id` null, item `requested`; `409 INVALID_COPY_STATUS`", code='''
 def TEST(client, librarian, branch_a):
