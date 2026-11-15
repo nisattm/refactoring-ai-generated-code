@@ -19,7 +19,6 @@ from lms.purchasing.schemas import (
     SupplierCreateIn,
     SupplierOut,
     SupplierPatchIn,
-    order_out,
     supplier_out,
 )
 
@@ -32,7 +31,7 @@ OrderStatus = Literal["draft", "ordered", "partially_received", "received", "can
 
 
 def _order(db, order) -> OrderOut:  # noqa: ANN001
-    return order_out(order, service.order_lines(db, order.id))
+    return service.order_response(db, order)
 
 
 # --- suppliers ----------------------------------------------------------------------

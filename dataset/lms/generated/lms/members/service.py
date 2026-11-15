@@ -36,6 +36,7 @@ from lms.members.types import MEMBERSHIP_TYPES, initial_valid_until
 from lms.notifications.service import notify_member_deactivated, notify_membership_renewed
 from lms.reservations import service as reservations
 from lms.rooms import lifecycle as room_lifecycle
+from lms.suggestions import usage as suggestion_usage
 
 
 def get_member_or_404(db: Session, member_id: int) -> Member:
@@ -289,6 +290,7 @@ def deactivate_member(
     event_lifecycle.on_member_deactivated(db, now, actor, member.id)  # LIB-EVT-40
     course_usage.on_member_deactivated(db, now, actor.id, member.id)  # LIB-CRS-39
     donation_usage.on_member_deactivated(db, now, actor.id, member.id)  # LIB-DON-37
+    suggestion_usage.on_member_deactivated(db, now, actor.id, member.id)  # LIB-SUG-36
     return member
 
 

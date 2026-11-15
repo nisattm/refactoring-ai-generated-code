@@ -55,6 +55,7 @@ def _create(
     course_id: int | None = None,
     reserve_loan_id: int | None = None,
     donation_id: int | None = None,
+    suggestion_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -75,6 +76,7 @@ def _create(
         course_id=course_id,
         reserve_loan_id=reserve_loan_id,
         donation_id=donation_id,
+        suggestion_id=suggestion_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -432,3 +434,14 @@ def notify_donation(
     """``donation_reviewed``, ``donation_received``, ``donation_expired`` and ``donor_level_reached``;
     the caller composes the message."""
     return _create(db, now, member_id, type_, message, donation_id=donation_id)
+
+
+# --- purchase suggestions (LIB-SUG-42) -----------------------------------------------
+
+
+def notify_suggestion(
+    db: Session, now: datetime.datetime, member_id: int, type_: str, message: str, *, suggestion_id: int
+) -> Notification:
+    """``suggestion_approved``, ``suggestion_rejected``, ``suggestion_ordered``, ``suggestion_available`` and
+    ``suggestion_expired``."""
+    return _create(db, now, member_id, type_, message, suggestion_id=suggestion_id)

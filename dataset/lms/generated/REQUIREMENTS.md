@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–28), revised after team review.
-**Version:** 0.17 · 2026-11-15 (adds section 32, module 24 Inventory counts)
+**Version:** 0.18 · 2026-11-15 (adds section 33, module 25 Purchase suggestions)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -43,6 +43,7 @@ The system consists of 20 modules:
 | 22 | Donations | `lms.donations` | 30 |
 | 23 | Preservation | `lms.preservation` | 31 |
 | 24 | Inventory counts | `lms.inventory` | 32 |
+| 25 | Purchase suggestions | `lms.suggestions` | 33 |
 
 ### 1.2 Out of scope
 
@@ -112,7 +113,8 @@ lms/
 ├── courses/             Module 21
 ├── donations/           Module 22
 ├── preservation/        Module 23
-└── inventory/           Module 24
+├── inventory/           Module 24
+└── suggestions/         Module 25
 ```
 
 | ID | Requirement |
@@ -482,6 +484,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Donations (module 22) | – | Offer, change and cancel own donation offers; read own donations and receipts; read the donor wall | Full, except merging donors | Full |
 | Preservation (module 23) | – | – | Full, except setting budgets and approving jobs above 500.00 | Full |
 | Inventory counts (module 24) | – | – | Full, except applying counts with more than 10 missing copies | Full |
+| Purchase suggestions (module 25) | – | Suggest, change and withdraw own suggestions; support; read open suggestions and own | Full, except approving above 300.00 | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -560,12 +563,12 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-04 | **Valid membership.** A membership is valid on a date `d` when `status` is `active` and `d` ≤ `valid_until`. `membership_valid` in `MemberOut` is this value for today. |
 | LIB-MEM-05 | **Uniqueness.** `email` MUST be unique among all users (LIB-AUTH-05) and `university_id` unique among members. A duplicate returns `409 CONFLICT` with `details.field`. |
 | LIB-MEM-06 | **List.** `GET /api/v1/members` is paginated (LIB-COM-18) and ordered by `id`. Filters: `q` (case-insensitive substring of `full_name`, `email`, `member_no` or `university_id`), `membership_type`, `status`, `home_branch_id`, `membership_valid` (`true`/`false`). |
-| LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. Course reserves: LIB-CRS-40. |
+| LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. Course reserves: LIB-CRS-40. Purchase suggestions: LIB-SUG-37. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. Purchase suggestions: LIB-SUG-36. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38) and `donations` (LIB-DON-38). |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38), `donations` (LIB-DON-38) and `suggestions` (LIB-SUG-38). |
 | LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
 
 ---
@@ -594,7 +597,7 @@ This module manages authors, publishers, books (titles) and copies (physical ite
 | `classification` | text | Dewey-style class: three digits, optionally a dot and 1–6 digits, e.g. `"005"`, `"005.133"` |
 | `created_at` | date-time | From the clock |
 
-API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]` in order instead of `author_ids`, `publisher` as `{"id", "name"}`, and `availability`: `[{"branch_id", "available", "total"}]` per branch that holds copies, ordered by `branch_id`, where `available` counts copies with status `available` at that branch (current branch) and `total` counts copies at that branch whose status is not `lost` or `withdrawn`. Copies in transfer (no current branch) are not counted. Module 23 adds `expected_back` to each row (LIB-PRE-33). `missing` copies are not counted (LIB-INV-27).
+API representation (`BookOut`): the fields above, `authors` as `[{"id", "name"}]` in order instead of `author_ids`, `publisher` as `{"id", "name"}`, and `availability`: `[{"branch_id", "available", "total"}]` per branch that holds copies, ordered by `branch_id`, where `available` counts copies with status `available` at that branch (current branch) and `total` counts copies at that branch whose status is not `lost` or `withdrawn`. Copies in transfer (no current branch) are not counted. Module 23 adds `expected_back` to each row (LIB-PRE-33). `missing` copies are not counted (LIB-INV-27). Module 25 adds `open_suggestions` (LIB-SUG-41).
 
 **Copy**
 
@@ -654,7 +657,7 @@ Allowed transitions: `available` → `on_loan`, `on_hold`, `in_transfer`, `withd
 | LIB-CAT-03 | **Create book.** `POST /api/v1/books` with `{"isbn", "title", "subtitle", "author_ids", "publisher_id", "publication_year", "language", "classification"}` returns `201` with `BookOut`. An ISBN that is already stored (after normalization) returns `409 CONFLICT`. |
 | LIB-CAT-04 | **List books.** `GET /api/v1/books` is paginated, ordered by `title` (case-insensitive) then `id`. Filters: `isbn` (normalized, exact), `author_id`, `publisher_id`, `language`, `classification_prefix`. Full-text search is module 9. |
 | LIB-CAT-05 | **Update book.** `PATCH /api/v1/books/{book_id}` accepts any subset of the create fields with the same rules. |
-| LIB-CAT-06 | **Delete.** `DELETE` returns `204`. A book that has any copy returns `409 BOOK_HAS_COPIES`. An author or publisher that is used by any book returns `409 IN_USE`. Books with interlibrary requests: LIB-ILL-40. Donation items: LIB-DON-39. |
+| LIB-CAT-06 | **Delete.** `DELETE` returns `204`. A book that has any copy returns `409 BOOK_HAS_COPIES`. An author or publisher that is used by any book returns `409 IN_USE`. Books with interlibrary requests: LIB-ILL-40. Donation items: LIB-DON-39. Suggestions: LIB-SUG-39. |
 | LIB-CAT-07 | **Add copy.** `POST /api/v1/books/{book_id}/copies` with `{"barcode", "home_branch_id", "price", "acquired_on", "shelf_location"}` returns `201` with the copy. `current_branch_id` = `home_branch_id`, `status` = `available`. A duplicate barcode returns `409 CONFLICT`. The new copy is then released (LIB-RES-08), so a waiting reservation can take it at once. |
 | LIB-CAT-08 | **List copies.** `GET /api/v1/books/{book_id}/copies` is paginated, ordered by `id`, with filters `status` and `branch_id` (current branch). Copies on reserve: LIB-CRS-43. Donated copies: LIB-DON-24. Repairs: LIB-PRE-29. Missing copies: LIB-INV-25. |
 | LIB-CAT-09 | **Update copy.** `PATCH /api/v1/copies/{copy_id}` accepts any subset of `{"price", "shelf_location", "home_branch_id"}`. `home_branch_id` can change only while the copy is `available` at its home branch; it then also changes `current_branch_id`. Otherwise `409 INVALID_COPY_STATUS`. |
@@ -756,7 +759,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 
 | ID | Requirement |
 | --- | --- |
-| LIB-RES-01 | **Create.** `POST /api/v1/reservations` with `{"book_id", "pickup_branch_id"}` returns `201` with `ReservationOut`. A librarian or admin MUST also send `member_id`; a member MUST NOT send it (`422 VALIDATION_ERROR`) and reserves for themselves. |
+| LIB-RES-01 | **Create.** `POST /api/v1/reservations` with `{"book_id", "pickup_branch_id"}` returns `201` with `ReservationOut`. A librarian or admin MUST also send `member_id`; a member MUST NOT send it (`422 VALIDATION_ERROR`) and reserves for themselves. Arrival reservations: LIB-SUG-33. |
 | LIB-RES-02 | **Creation checks.** In order (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) membership expired → `MEMBERSHIP_EXPIRED`; (3) the book is not lendable (LIB-CAT-12) → `BOOK_NOT_LENDABLE`; (4) the member already has an active reservation for this book → `DUPLICATE_RESERVATION`; (5) the member has an open loan of a copy of this book → `ALREADY_BORROWED`; (6) the member has 3 active reservations → `RESERVATION_LIMIT_REACHED`; (7) a copy of the book is `available` with `current_branch_id` = `pickup_branch_id` → `COPY_AVAILABLE_AT_BRANCH`. Copies on reserve: LIB-CRS-42. Fragile copies: LIB-PRE-30. |
 | LIB-RES-03 | **Limit boundary.** A member with 2 active reservations can create a third; with 3 they cannot. Fulfilled, cancelled and expired reservations do not count. |
 | LIB-RES-04 | **Queue.** Each book has one first-come, first-served queue across all pickup branches, ordered by `created_at`, then `id`. There is no priority by membership type. Holds of missing copies: LIB-INV-20. |
@@ -891,7 +894,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id`, `suggestion_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -910,7 +913,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41 and `reservation_delayed` (LIB-INV-30). No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41, `reservation_delayed` (LIB-INV-30) and the suggestion events of LIB-SUG-42. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -947,7 +950,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32; the suggestions report is LIB-SUG-44.
 
 ### 16.1 Endpoints and requirements
 
@@ -998,7 +1001,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. Purchase suggestions: LIB-SUG-47. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. Copies in a count: LIB-INV-13. |
@@ -1046,13 +1049,13 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-PUR-01 | **Suppliers.** `POST /api/v1/suppliers` with `{"name", "email", "phone"}` returns `201`; a duplicate name returns `409 CONFLICT`. Lists are paginated, ordered by `name`, then `id`, with filters `q` and `is_active`. `PATCH` changes any of `name`, `email`, `phone`, `is_active`. Open repair jobs: LIB-PRE-32. |
 | LIB-PUR-02 | **Create order.** `POST /api/v1/purchase-orders` with `{"supplier_id", "branch_id", "lines": [{"book_id", "quantity", "unit_price"}]}` (0–50 lines) returns `201` with the order (`status` `draft`, `total`). An inactive supplier returns `409 SUPPLIER_INACTIVE`. A book repeated in `lines` returns `422 VALIDATION_ERROR`. |
-| LIB-PUR-03 | **Edit draft.** `PATCH` accepts any subset of `{"supplier_id", "branch_id", "lines"}`; `lines` replaces all lines. Only a `draft` can be edited: otherwise `409 INVALID_ORDER_STATUS`. |
+| LIB-PUR-03 | **Edit draft.** `PATCH` accepts any subset of `{"supplier_id", "branch_id", "lines"}`; `lines` replaces all lines. Only a `draft` can be edited: otherwise `409 INVALID_ORDER_STATUS`. Suggestions: LIB-SUG-29. |
 | LIB-PUR-04 | **Submit.** `submit` changes `draft` to `ordered` and sets `ordered_on` = today. An order without lines returns `409 ORDER_EMPTY`; a non-draft returns `409 INVALID_ORDER_STATUS`. Pending donations: LIB-DON-35. |
-| LIB-PUR-05 | **Cancel.** `cancel` is allowed for `draft`, and for `ordered` when nothing has been received; then `status` becomes `cancelled`. Otherwise `409 INVALID_ORDER_STATUS`. An order referenced by a digital license: LIB-DIG-06. |
-| LIB-PUR-06 | **Receive.** `receive` with `{"lines": [{"line_id", "barcodes": ["...", ...]}]}` is allowed for `ordered` and `partially_received` (otherwise `409 INVALID_ORDER_STATUS`). An empty `lines` list, an empty `barcodes` list or a `line_id` repeated in the request returns `422 VALIDATION_ERROR`; a `line_id` that is not a line of this order returns `404 NOT_FOUND` (LIB-COM-29). For each barcode a copy is created (LIB-CAT-07) with `home_branch_id` = order branch, `price` = line `unit_price`, `acquired_on` = today; each new copy is released (LIB-RES-08). `received_quantity` increases by the number of barcodes. |
+| LIB-PUR-05 | **Cancel.** `cancel` is allowed for `draft`, and for `ordered` when nothing has been received; then `status` becomes `cancelled`. Otherwise `409 INVALID_ORDER_STATUS`. An order referenced by a digital license: LIB-DIG-06. Suggestions: LIB-SUG-29. |
+| LIB-PUR-06 | **Receive.** `receive` with `{"lines": [{"line_id", "barcodes": ["...", ...]}]}` is allowed for `ordered` and `partially_received` (otherwise `409 INVALID_ORDER_STATUS`). An empty `lines` list, an empty `barcodes` list or a `line_id` repeated in the request returns `422 VALIDATION_ERROR`; a `line_id` that is not a line of this order returns `404 NOT_FOUND` (LIB-COM-29). For each barcode a copy is created (LIB-CAT-07) with `home_branch_id` = order branch, `price` = line `unit_price`, `acquired_on` = today; each new copy is released (LIB-RES-08). `received_quantity` increases by the number of barcodes. Suggestions: LIB-SUG-30. |
 | LIB-PUR-07 | **Receive limits.** If any line would exceed its `quantity`, the whole request is rejected with `409 RECEIVE_EXCEEDS_ORDERED` and nothing is created. A duplicate or existing barcode rejects the whole request with `409 CONFLICT`. |
 | LIB-PUR-08 | **Order status after receiving.** When every line has `received_quantity` = `quantity`, the status becomes `received`; otherwise, after at least one copy is received, `partially_received`. |
-| LIB-PUR-09 | **List orders.** Paginated, ordered by `id` descending, with filters `status`, `supplier_id`, `branch_id`. |
+| LIB-PUR-09 | **List orders.** Paginated, ordered by `id` descending, with filters `status`, `supplier_id`, `branch_id`. Orders show `suggestion_ids` (LIB-SUG-40). |
 
 ---
 
@@ -1139,7 +1142,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7, those of module 25 in 33.8.
 
 ---
 
@@ -3031,6 +3034,155 @@ Members have no access to this module (`403 FORBIDDEN`).
 
 ---
 
+## 33. Module 25: Purchase suggestions
+
+Members suggest books for the library to buy and support each other's suggestions. Librarians review the suggestions in order of support, approve them for a catalog book or reject them, and turn approved suggestions into purchase orders (module 12). When the copies arrive, the members who asked are first in line for them. Package `lms.suggestions`. Times are local (LIB-COM-01).
+
+### 33.1 Data
+
+**Suggestion**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `member_id` | integer | The member who suggested |
+| `title` | text | 1–300 characters |
+| `author_text` | text | 0–200 characters; default `""` |
+| `isbn` | text or null | Normalized as LIB-CAT-02 |
+| `publication_year` | integer or null | 1450 – current year |
+| `reason` | text | 0–500 characters; default `""` |
+| `branch_id` | integer | Where the member wants to collect the book |
+| `status` | `submitted` \| `approved` \| `ordered` \| `available` \| `rejected` \| `withdrawn` \| `merged` \| `expired` | Initially `submitted` |
+| `reject_reason` | `already_owned` \| `out_of_scope` \| `too_expensive` \| `not_available` \| `other` \| null | Only for `rejected` |
+| `review_note` | text | 0–500 characters; default `""` |
+| `book_id` | integer or null | Set at approval |
+| `quantity` | integer or null | 1–10; set at approval |
+| `estimated_price` | amount or null | Per copy, 0.01–5000.00; set at approval |
+| `purchase_order_id` | integer or null | Set when ordered (LIB-SUG-29) |
+| `merged_into_id` | integer or null | LIB-SUG-22 |
+| `withdraw_reason` | `member_request` \| `member_deactivated` \| null | |
+| `submitted_at`, `reviewed_at`, `ordered_at`, `available_at` | date-time or null | |
+
+A suggestion is **open** while it is `submitted`, `approved` or `ordered`.
+
+**Support:** `suggestion_id`, `member_id`, `reserve_on_arrival` (boolean, default `true`), `created_at`. A member supports a suggestion at most once.
+
+**Score** of a suggestion: the sum of the weights of its member and its supporters by membership type: `academic` 2, `student` 1, `staff` 1 (guests cannot take part, LIB-SUG-03).
+
+### 33.2 Rules by membership type
+
+| Type | May suggest and support | Open suggestions at a time | Weight |
+| --- | --- | --- | --- |
+| `student` | yes | 3 | 1 |
+| `academic` | yes | 10 | 2 |
+| `staff` | yes | 5 | 1 |
+| `guest` | no | 0 | – |
+
+### 33.3 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/suggestions` | member (own); librarian, admin (for a member) | Suggest |
+| `GET /api/v1/suggestions` | all authenticated users (members: LIB-SUG-12) | List |
+| `GET /api/v1/suggestions/{suggestion_id}` | all authenticated users (members: LIB-SUG-12) | Read |
+| `PATCH /api/v1/suggestions/{suggestion_id}` | member (own) | Change a `submitted` suggestion |
+| `POST /api/v1/suggestions/{suggestion_id}/withdraw` | member (own); librarian, admin | Withdraw |
+| `POST`, `DELETE /api/v1/suggestions/{suggestion_id}/support` | member | Support, stop supporting |
+| `GET /api/v1/suggestions/{suggestion_id}/supporters` | librarian, admin | Supporters |
+| `GET /api/v1/members/{member_id}/suggestions` | librarian, admin; member (own) | A member's suggestions and supports |
+| `POST /api/v1/suggestions/{suggestion_id}/approve`, `/reject`, `/merge` | librarian, admin (approve: LIB-SUG-20) | Review |
+| `PATCH /api/v1/suggestions/{suggestion_id}/approval` | librarian, admin | Change quantity or price of an approval |
+| `POST /api/v1/suggestions/order` | librarian, admin | Turn approved suggestions into a purchase order |
+| `POST /api/v1/suggestions/process` | librarian, admin | Expire old suggestions |
+| `GET /api/v1/reports/suggestions` | librarian, admin | Report (section 16) |
+
+### 33.4 Suggesting and supporting
+
+| ID | Requirement |
+| --- | --- |
+| LIB-SUG-01 | **Suggest.** `POST /api/v1/suggestions` with `{"title", "author_text", "isbn", "publication_year", "reason", "branch_id"}` returns `201` with the suggestion, status `submitted`, `submitted_at` = now (event `suggestion_submitted`). A member suggests for themself; staff send `member_id` as well (`422` when a member sends it or staff omit it). Values outside 33.1 → `422`; an unknown branch → `422` with `details.fields`. |
+| LIB-SUG-02 | **Suggestion representation.** Every suggestion contains `score`, `supporters` (count) and, for a member reader, `supported_by_me` (boolean) and `mine` (boolean). |
+| LIB-SUG-03 | **Suggest checks.** In order (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) membership type `guest` → `MEMBERSHIP_TYPE_NOT_ALLOWED`; (3) branch inactive → `BRANCH_INACTIVE`; (4) open suggestions of the member ≥ the limit of 33.2 → `SUGGESTION_LIMIT_REACHED` with `details.limit`; (5) an `isbn` matching a lendable book (LIB-CAT-12) → `BOOK_ALREADY_OWNED` with `details.book_id`; (6) an `isbn` matching an open suggestion → `DUPLICATE_SUGGESTION` with `details.suggestion_id`; (7) the member's own suggestion with the same `isbn` was `rejected` within the last 180 days (by `reviewed_at`) → `SUGGESTION_RECENTLY_REJECTED` with `details.until` (the date from which it is allowed). |
+| LIB-SUG-04 | **Suggest examples.** A student with 3 open suggestions → `SUGGESTION_LIMIT_REACHED` (`limit` 3); after one is withdrawn → allowed. Rejected on 2026-11-02: the same ISBN again on 2027-04-30 → `SUGGESTION_RECENTLY_REJECTED` (`until` 2027-05-01); on 2027-05-01 → allowed. |
+| LIB-SUG-05 | **Change.** `PATCH` accepts any subset of `{"title", "author_text", "isbn", "publication_year", "reason", "branch_id"}` while the suggestion is `submitted` (otherwise `409 INVALID_SUGGESTION_STATUS` with `details.status`) and returns `200` (event `suggestion_updated`). A new `isbn` or `branch_id` is checked as in LIB-SUG-03 steps 3, 5 and 6. |
+| LIB-SUG-06 | **Withdraw.** `POST /api/v1/suggestions/{suggestion_id}/withdraw` sets `withdrawn` with `withdraw_reason` `member_request` and returns `200` (event `suggestion_withdrawn`). A member may withdraw only own `submitted` suggestions; staff may also withdraw `approved` ones. Otherwise `409 INVALID_SUGGESTION_STATUS`. |
+| LIB-SUG-07 | **Support.** `POST /api/v1/suggestions/{suggestion_id}/support` with `{"reserve_on_arrival"}` (optional) returns `201` with the suggestion (event `suggestion_supported`). Checks in order (all `409`): member `passive` → `MEMBER_PASSIVE`; type `guest` → `MEMBERSHIP_TYPE_NOT_ALLOWED`; the suggestion is not `submitted`, `approved` or `ordered` → `INVALID_SUGGESTION_STATUS`; own suggestion → `CANNOT_SUPPORT_OWN`; already supported → `ALREADY_SUPPORTED`. Staff calling it → `403`. |
+| LIB-SUG-08 | **Stop supporting.** `DELETE /api/v1/suggestions/{suggestion_id}/support` removes the member's support and returns `204` (event `suggestion_support_removed`). No support → `404 NOT_FOUND`; a suggestion that is no longer open → `409 INVALID_SUGGESTION_STATUS`. |
+| LIB-SUG-09 | **Score example.** A student's suggestion supported by an academic and a staff member: `score` 1 + 2 + 1 = 4, `supporters` 2. When the academic stops supporting: `score` 2. |
+| LIB-SUG-10 | **Supporters.** `GET /api/v1/suggestions/{suggestion_id}/supporters` is paginated, ordered by `created_at`, then `member_id`: `{"member_id", "full_name", "membership_type", "reserve_on_arrival", "created_at"}`. |
+| LIB-SUG-11 | **A member's suggestions.** `GET /api/v1/members/{member_id}/suggestions` returns `{"own": [...], "supported": [...]}`: the member's own suggestions ordered by `id` descending, and the open suggestions the member supports ordered by `id` descending. |
+| LIB-SUG-12 | **List.** `GET /api/v1/suggestions` is paginated. Staff see all suggestions, ordered by `score` descending, then `submitted_at`, then `id`, with filters `status`, `branch_id`, `member_id`, `q` (case-insensitive substring of `title` or `author_text`) and `isbn`. Members see only open suggestions, in the same order and with the same filters except `member_id`, and without `member_id` in the items (suggestions are anonymous to other members); a member reading a suggestion that is not open and not own → `404 NOT_FOUND`. |
+| LIB-SUG-13 | **Support limit.** A member supports at most 20 open suggestions at a time: `409 SUPPORT_LIMIT_REACHED` with `details.limit` 20 (LIB-SUG-07, checked last). |
+| LIB-SUG-14 | **Withdrawing a supported suggestion.** A member cannot withdraw an own suggestion that has 3 or more supporters: `409 SUGGESTION_HAS_SUPPORTERS`; staff can (LIB-SUG-06). |
+
+### 33.5 Review
+
+| ID | Requirement |
+| --- | --- |
+| LIB-SUG-15 | **Approve.** `POST /api/v1/suggestions/{suggestion_id}/approve` with `{"book_id", "quantity", "estimated_price", "review_note"}` sets `approved` with `reviewed_at` = now and returns `200` (event `suggestion_approved`); the member is notified (`suggestion_approved`). `review_note` MAY be omitted. Values outside 33.1 → `422`; an unknown book → `422` with `details.fields`. |
+| LIB-SUG-16 | **Approve checks.** In order (all `409`): not `submitted` → `INVALID_SUGGESTION_STATUS`; the suggestion has an `isbn` that differs from the book's ISBN → `ISBN_MISMATCH`. Several suggestions may be approved for the same book; they are combined when ordered (LIB-SUG-26). |
+| LIB-SUG-17 | **Reject.** `POST …/reject` with `{"reject_reason", "review_note"}` on a `submitted` or `approved` suggestion sets `rejected` with `reviewed_at` = now and returns `200` (event `suggestion_rejected`); the member is notified (`suggestion_rejected`, naming the reason). Otherwise `409 INVALID_SUGGESTION_STATUS`. |
+| LIB-SUG-18 | **Already owned.** `reject_reason` `already_owned` needs `book_id` (the owned book, `422` otherwise); the member and every supporter with `reserve_on_arrival` get a reservation of that book for pickup at the suggestion's branch as in LIB-SUG-33. |
+| LIB-SUG-19 | **Review order.** Staff review in list order (LIB-SUG-12); the order is not enforced. |
+| LIB-SUG-20 | **Who approves.** Approval with `quantity` × `estimated_price` above 300.00 is allowed only for admins; a librarian receives `403 FORBIDDEN`. |
+| LIB-SUG-21 | **Approve examples.** 3 × 100.00 = 300.00 by a librarian → `200`; 3 × 100.01 by a librarian → `403`; by an admin → `200`. |
+| LIB-SUG-22 | **Merge.** `POST …/merge` with `{"into_suggestion_id"}` on a `submitted` suggestion sets `merged` with `merged_into_id` and returns `200` with the target (event `suggestion_merged`). The member of the merged suggestion becomes a supporter of the target (with `reserve_on_arrival` `true`) unless they are its member or already a supporter; the supporters move the same way. Checks: the same id → `422`; unknown target → `404`; source or target not `submitted` or `approved` (source: only `submitted`) → `409 INVALID_SUGGESTION_STATUS`. |
+| LIB-SUG-23 | **Merge example.** S1 by A (supported by B), merged into S2 by C (supported by B): S2's supporters become B and A; `score` of S2 changes accordingly. |
+| LIB-SUG-24 | **Change an approval.** `PATCH /api/v1/suggestions/{suggestion_id}/approval` with any subset of `{"quantity", "estimated_price", "review_note"}` on an `approved` suggestion (otherwise `409 INVALID_SUGGESTION_STATUS`) returns `200` (event `suggestion_approval_changed`); LIB-SUG-20 applies to the new total. |
+| LIB-SUG-25 | **Books without copies.** An `isbn` matching a book that is not lendable (all copies `lost`, `withdrawn` or `missing`, or none) does not stop a suggestion (LIB-SUG-03 step 5); the suggestion can be approved for that book. |
+
+### 33.6 Ordering and arrival
+
+| ID | Requirement |
+| --- | --- |
+| LIB-SUG-26 | **Order.** `POST /api/v1/suggestions/order` with `{"supplier_id", "branch_id", "suggestion_ids": [...]}` (1–50 distinct ids, otherwise `422`) creates a `draft` purchase order (LIB-PUR-02) with one line per distinct book (`quantity` the sum of the suggestions' quantities, at most 100; `unit_price` the highest `estimated_price` of them), sets each suggestion `ordered` with `ordered_at` = now and `purchase_order_id`, and returns `201` with the order (event `suggestions_ordered`). The member is notified (`suggestion_ordered`). |
+| LIB-SUG-27 | **Order checks.** All or nothing, in order (all `409`): the supplier is inactive → `SUPPLIER_INACTIVE`; a suggestion is not `approved` → `INVALID_SUGGESTION_STATUS` with `details.suggestion_id`; a suggestion of another branch → `SUGGESTION_BRANCH_MISMATCH` with `details.suggestion_id`. |
+| LIB-SUG-28 | **Order example.** Approved S1 (book X, 2 × 40.00), S2 (book X, 1 × 45.00), S3 (book Y, 1 × 20.00) at branch A → one order with lines X (3 × 45.00) and Y (1 × 20.00), `total` 155.00. |
+| LIB-SUG-29 | **Order changes.** When a `draft` order's lines are replaced (LIB-PUR-03) and a book of the suggestions is no longer in the lines, or the order is cancelled (LIB-PUR-05), those suggestions go back to `approved` with `purchase_order_id` and `ordered_at` null. |
+| LIB-SUG-30 | **Arrival.** When copies of a line are received (LIB-PUR-06) for an order with suggestions, every `ordered` suggestion of that order for the line's book becomes `available` with `available_at` = now, before the new copies are released; reservations are created as in LIB-SUG-33; the member and every supporter are notified (`suggestion_available`). |
+| LIB-SUG-31 | **Partial arrival.** Suggestions become `available` with the first copy of their book; later receivings do not change them. |
+| LIB-SUG-32 | **Arrival example.** S1 (member A, supporter B with `reserve_on_arrival`, supporter C without) ordered for book X at branch A; 1 copy received: S1 `available`; A has a `ready` reservation with the copy, B a `waiting` one, C none; A, B and C are notified. |
+| LIB-SUG-33 | **Arrival reservations.** For the member and then each supporter with `reserve_on_arrival` (in support order), a reservation of the book for pickup at the suggestion's branch is created as in LIB-RES-01 without notifying `reservation_created`; a person for whom LIB-RES-02 fails (for example an existing reservation, a loan of the book, a limit, or passive) is skipped. The new copies are then released (LIB-RES-08), so the first reservations get them. |
+| LIB-SUG-34 | **Process.** `POST /api/v1/suggestions/process` sets every `submitted` suggestion with `submitted_at` more than 120 days before now, and every `approved` suggestion with `reviewed_at` more than 90 days before now, to `expired`. Returns `200` with `{"expired_submitted", "expired_approved"}` (event `suggestions_processed`). The member is notified (`suggestion_expired`). |
+| LIB-SUG-35 | **Process example.** Submitted Mon 2026-11-02 09:00: process on 2027-03-02 09:00 → stays; 09:00:01 → `expired`. |
+
+### 33.7 Effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-SUG-36 | **Member deactivation.** LIB-MEM-10 withdraws the member's `submitted` suggestions (`withdraw_reason` `member_deactivated`) and removes the member's supports of open suggestions. `approved` and `ordered` suggestions stay. |
+| LIB-SUG-37 | **Type change.** A member changed to `guest` (LIB-MEM-07) keeps open suggestions and supports; the limits of 33.2 apply only to new suggestions. |
+| LIB-SUG-38 | **Member summary.** LIB-MEM-12 also returns `"suggestions": {"open": <int>, "supported": <int>, "available_this_year": <int>}` (`supported`: open suggestions the member supports; `available_this_year`: own suggestions with `available_at` in the current year). |
+| LIB-SUG-39 | **Book deletion.** A book that is the `book_id` of an `approved`, `ordered` or `available` suggestion cannot be deleted: LIB-CAT-06 returns `409 IN_USE`. |
+| LIB-SUG-40 | **Purchase orders.** `GET /api/v1/purchase-orders/{order_id}` adds `suggestion_ids` (ascending; empty for orders not created by LIB-SUG-26). |
+| LIB-SUG-41 | **Books.** `BookOut` adds `open_suggestions`: the number of `approved` and `ordered` suggestions for the book. |
+| LIB-SUG-42 | **Notifications.** Added to LIB-NOT-01: `suggestion_approved`, `suggestion_rejected`, `suggestion_ordered`, `suggestion_available`, `suggestion_expired`; messages contain the suggestion title. Notifications get a nullable `suggestion_id`. Arrival reservations (LIB-SUG-33) do not notify as reservations; a later `reservation_ready` does. |
+| LIB-SUG-43 | **Audit.** Module 25 reports: `suggestion_submitted`, `suggestion_updated`, `suggestion_withdrawn`, `suggestion_supported`, `suggestion_support_removed`, `suggestion_approved`, `suggestion_rejected`, `suggestion_merged`, `suggestion_approval_changed`, `suggestions_ordered`, `suggestion_available`, `suggestions_processed`. |
+| LIB-SUG-44 | **Suggestions report.** `GET /api/v1/reports/suggestions?from=&to=` (at most 366 days, `from` ≤ `to`, otherwise `422`) returns, over the suggestions submitted in the range, `{"submitted", "approved", "rejected": {"already_owned", "out_of_scope", "too_expensive", "not_available", "other"}, "ordered", "available", "withdrawn", "merged", "expired", "average_days_to_available", "top": [{"suggestion_id", "title", "score"}]}`. `approved` counts those that were ever approved (status `approved`, `ordered` or `available`); `average_days_to_available` is the mean of whole days from `submitted_at` to `available_at` with 1 decimal, or null; `top` lists the 5 highest scores, ties by `submitted_at`, then `id`. Filter `branch_id`. |
+| LIB-SUG-45 | **Not exported.** Suggestions and supports are not part of import and export (module 13). |
+| LIB-SUG-46 | **Statuses are final.** `available`, `rejected`, `withdrawn`, `merged` and `expired` suggestions cannot be changed, supported, withdrawn, reviewed or ordered: `409 INVALID_SUGGESTION_STATUS`. |
+| LIB-SUG-47 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) when the branch has an open suggestion. |
+
+### 33.8 Error codes of module 25
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `MEMBERSHIP_TYPE_NOT_ALLOWED` | LIB-SUG-03, LIB-SUG-07 |
+| 409 | `SUGGESTION_LIMIT_REACHED` | LIB-SUG-03 |
+| 409 | `BOOK_ALREADY_OWNED` | LIB-SUG-03 |
+| 409 | `DUPLICATE_SUGGESTION` | LIB-SUG-03 |
+| 409 | `SUGGESTION_RECENTLY_REJECTED` | LIB-SUG-03 |
+| 409 | `INVALID_SUGGESTION_STATUS` | LIB-SUG-05 – LIB-SUG-08, LIB-SUG-16, LIB-SUG-17, LIB-SUG-22, LIB-SUG-27, LIB-SUG-46, LIB-SUG-24 |
+| 409 | `CANNOT_SUPPORT_OWN` | LIB-SUG-07 |
+| 409 | `ALREADY_SUPPORTED` | LIB-SUG-07 |
+| 409 | `SUPPORT_LIMIT_REACHED` | LIB-SUG-13 |
+| 409 | `SUGGESTION_HAS_SUPPORTERS` | LIB-SUG-14 |
+| 409 | `SUGGESTION_BRANCH_MISMATCH` | LIB-SUG-27 |
+
+`MEMBER_PASSIVE`, `BRANCH_INACTIVE`, `ISBN_MISMATCH`, `SUPPLIER_INACTIVE`, `IN_USE` and `BRANCH_IN_USE` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -3063,4 +3215,5 @@ Members have no access to this module (`403 FORBIDDEN`).
 | Module 22: Donations | LIB-DON-01 – LIB-DON-47 | 47 |
 | Module 23: Preservation | LIB-PRE-01 – LIB-PRE-40 | 40 |
 | Module 24: Inventory counts | LIB-INV-01 – LIB-INV-34 | 34 |
-| **Total** | | **657** |
+| Module 25: Purchase suggestions | LIB-SUG-01 – LIB-SUG-47 | 47 |
+| **Total** | | **704** |

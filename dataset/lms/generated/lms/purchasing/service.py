@@ -21,7 +21,10 @@ from lms.digital.models import DigitalLicense
 from lms.donations.usage import pending_book_ids
 from lms.preservation.usage import open_job_ids_of_supplier
 from lms.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier
-from lms.purchasing.schemas import LineIn, ReceiveLineIn
+from lms.purchasing.schemas import LineIn, OrderOut, ReceiveLineIn, order_out
+from lms.suggestions import arrival as suggestion_arrival
+from lms.suggestions import usage as suggestion_usage
+from lms.catalog.release import release_copy
 
 # --- suppliers ------------------------------------------------------------------
 
@@ -119,6 +122,11 @@ def order_lines(db: Session, order_id: int) -> list[PurchaseOrderLine]:
             sa.select(PurchaseOrderLine).where(PurchaseOrderLine.order_id == order_id).order_by(PurchaseOrderLine.id)
         )
     )
+
+
+def order_response(db: Session, order: PurchaseOrder) -> OrderOut:
+    """The API representation of an order, with ``suggestion_ids`` (LIB-SUG-40)."""
+    return order_out(order, order_lines(db, order.id), suggestion_usage.order_suggestion_ids(db, order.id))
 
 
 def _invalid_status(order: PurchaseOrder, action: str) -> Conflict:
@@ -242,6 +250,7 @@ def update_order(
         db.execute(sa.delete(PurchaseOrderLine).where(PurchaseOrderLine.order_id == order.id))
         db.flush()
         _add_lines(db, order, fields["lines"])
+        suggestion_usage.on_order_lines_replaced(db, order.id, {ln.book_id for ln in fields["lines"]})  # LIB-SUG-29
     if diff:
         record(
             db,
@@ -298,6 +307,7 @@ def cancel_order(db: Session, now: datetime.datetime, actor: User, order: Purcha
         )
     old = order.status
     order.status = "cancelled"
+    suggestion_usage.on_order_cancelled(db, order.id)  # LIB-SUG-29
     record(
         db,
         at=now,
@@ -358,6 +368,9 @@ def receive_order(
         line = lines[received.line_id]
         book = db.get(Book, line.book_id)
         assert book is not None
+        # LIB-SUG-30: the suggestions of the order become available before the new copies are released.
+        arriving = suggestion_usage.has_ordered(db, order.id, line.book_id)
+        line_copies = []
         for barcode in received.barcodes:
             copy = add_copy(
                 db,
@@ -370,8 +383,16 @@ def receive_order(
                 acquired_on=today,
                 shelf_location=None,
                 holidays=holidays,
+                release=not arriving,
             )
+            line_copies.append(copy)
             new_copies.append({"line_id": line.id, "copy_id": copy.id, "barcode": barcode})
+        if arriving:
+            suggestion_arrival.make_available(
+                db, now, actor, holidays, order.id, line.book_id, [c.id for c in line_copies]
+            )
+            for copy in line_copies:
+                release_copy(db, copy, now, holidays, actor.id)
         line.received_quantity += len(received.barcodes)
 
     old = order.status

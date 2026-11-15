@@ -148,6 +148,7 @@ class OrderOut(BaseModel):
     created_at: str
     ordered_on: str | None
     total: str
+    suggestion_ids: list[int] = []
 
 
 def line_out(line: PurchaseOrderLine) -> LineOut:
@@ -160,7 +161,7 @@ def line_out(line: PurchaseOrderLine) -> LineOut:
     )
 
 
-def order_out(order: PurchaseOrder, lines: list[PurchaseOrderLine]) -> OrderOut:
+def order_out(order: PurchaseOrder, lines: list[PurchaseOrderLine], suggestion_ids: list[int] | None = None) -> OrderOut:
     total = sum((line.quantity * line.unit_price for line in lines), Decimal("0"))
     return OrderOut(
         id=order.id,
@@ -172,4 +173,5 @@ def order_out(order: PurchaseOrder, lines: list[PurchaseOrderLine]) -> OrderOut:
         created_at=format_datetime(order.created_at),
         ordered_on=order.ordered_on.isoformat() if order.ordered_on is not None else None,
         total=format_amount(total),
+        suggestion_ids=suggestion_ids or [],
     )

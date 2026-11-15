@@ -81,6 +81,7 @@ def create_schema(engine: sa.Engine) -> None:
     import lms.reservations.models  # noqa: F401
     import lms.rooms.models  # noqa: F401
     import lms.staff.models  # noqa: F401
+    import lms.suggestions.models  # noqa: F401
 
     Base.metadata.create_all(engine)
 

@@ -159,6 +159,7 @@ class BookOut(BaseModel):
     classification: str
     created_at: str
     availability: list[AvailabilityOut]
+    open_suggestions: int = 0
 
 
 # --- copies -----------------------------------------------------------------------

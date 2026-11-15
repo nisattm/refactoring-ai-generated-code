@@ -31,6 +31,7 @@ from lms.donations.usage import book_has_items as book_has_donation_items
 from lms.ill.models import IllOutgoing
 from lms.inventory.usage import require_not_in_count
 from lms.preservation.usage import expected_back, require_no_open_job
+from lms.suggestions import usage as suggestion_usage
 
 
 def _not_found(resource: str, resource_id: int) -> NotFound:
@@ -242,6 +243,8 @@ def delete_book(db: Session, now: datetime.datetime, actor: User, book: Book) ->
         raise Conflict("The book is on a reading list", code="IN_USE", details={"id": book.id})
     if book_has_donation_items(db, book.id):  # LIB-DON-39
         raise Conflict("The book is part of a donation", code="IN_USE", details={"id": book.id})
+    if suggestion_usage.book_in_use(db, book.id):  # LIB-SUG-39
+        raise Conflict("The book is used by a purchase suggestion", code="IN_USE", details={"id": book.id})
     details = {"isbn": book.isbn, "title": book.title}
     db.execute(sa.delete(BookAuthor).where(BookAuthor.book_id == book.id))
     db.delete(book)
@@ -302,6 +305,7 @@ def book_out(db: Session, book: Book) -> BookOut:
         classification=book.classification,
         created_at=format_datetime(book.created_at),
         availability=availability(db, book.id),
+        open_suggestions=suggestion_usage.book_open_count(db, book.id),
     )
 
 
@@ -341,8 +345,10 @@ def add_copy(
     shelf_location: str | None,
     holidays: Container[datetime.date],
     donation_id: int | None = None,
+    release: bool = True,
 ) -> Copy:
-    """LIB-CAT-07. Also used for received purchase-order lines (LIB-PUR-06) and donations (LIB-DON-19)."""
+    """LIB-CAT-07. Also used for received purchase-order lines (LIB-PUR-06) and donations (LIB-DON-19).
+    ``release=False``: the caller releases the copy itself (LIB-SUG-30)."""
     require_active_branch(db, "home_branch_id", home_branch_id)
     if db.scalar(sa.select(Copy.id).where(Copy.barcode == barcode)) is not None:
         raise Conflict("A copy with this barcode already exists", details={"field": "barcode"})
@@ -375,7 +381,8 @@ def add_copy(
             "shelf_location": shelf_location,
         },
     )
-    release_copy(db, copy, now, holidays, actor.id)
+    if release:
+        release_copy(db, copy, now, holidays, actor.id)
     return copy
 
 

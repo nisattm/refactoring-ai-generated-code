@@ -31,6 +31,8 @@ from lms.ill import usage as ill_usage
 from lms.ill.schemas import IllActivityOut
 from lms.equipment.schemas import EquipmentUsageOut
 from lms.rooms import usage as room_usage
+from lms.suggestions import reports as suggestion_reports
+from lms.suggestions.schemas import SuggestionReportOut
 from lms.rooms.schemas import RoomKind, RoomUsageOut
 from lms.reports.schemas import (
     InventoryOut,
@@ -325,3 +327,24 @@ def damage_recovery_report(
     items, totals = preservation_reports.damage_recovery(db, start, end)
     chunk = paginate_sequence(items, page)
     return RecoveryPage(items=chunk.items, page=chunk.page, page_size=chunk.page_size, total=chunk.total, totals=totals)
+
+
+@router.get("/suggestions", response_model=SuggestionReportOut)
+def suggestions_report(
+    db: SessionDep,
+    _: StaffOnly,
+    first: Annotated[str | None, Query(alias="from")] = None,
+    to: Annotated[str | None, Query()] = None,
+    branch_id: Annotated[int | None, Query()] = None,
+) -> SuggestionReportOut:
+    problems: list[dict[str, str]] = []
+    start = _required_date("from", first, problems)
+    end = _required_date("to", to, problems)
+    if problems:
+        raise ValidationFailed(problems)
+    assert start is not None and end is not None
+    if start > end:
+        raise ValidationFailed.single("from", "from must not be after to")
+    if (end - start).days > 365:
+        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    return suggestion_reports.suggestion_report(db, start, end, branch_id)

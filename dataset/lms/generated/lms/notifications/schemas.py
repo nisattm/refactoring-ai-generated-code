@@ -59,6 +59,11 @@ NotificationType = Literal[
     "donation_received",
     "donation_expired",
     "donor_level_reached",
+    "suggestion_approved",
+    "suggestion_rejected",
+    "suggestion_ordered",
+    "suggestion_available",
+    "suggestion_expired",
 ]
 
 
@@ -79,6 +84,7 @@ class NotificationOut(BaseModel):
     event_id: int | None
     course_id: int | None
     donation_id: int | None
+    suggestion_id: int | None
     created_at: str
     read_at: str | None
 
@@ -114,6 +120,7 @@ def notification_out(n: Notification) -> NotificationOut:
         event_id=n.event_id,
         course_id=n.course_id,
         donation_id=n.donation_id,
+        suggestion_id=n.suggestion_id,
         created_at=format_datetime(n.created_at),
         read_at=format_datetime(n.read_at) if n.read_at is not None else None,
     )
