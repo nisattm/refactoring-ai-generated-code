@@ -22,6 +22,7 @@ from lms.courses.usage import member_summary as course_summary
 from lms.donations.usage import member_summary as donation_summary
 from lms.events.usage import member_summary as event_summary
 from lms.ill.usage import member_summary as ill_summary
+from lms.programs.usage import member_summary as program_summary
 from lms.rooms.usage import member_summary as room_summary
 from lms.suggestions.usage import member_summary as suggestion_summary
 from lms.members.schemas import (
@@ -167,4 +168,5 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
         course_reserves=course_summary(db, now, member.id),
         donations=donation_summary(db, now, member.id),
         suggestions=suggestion_summary(db, now, member.id),
+        programs=program_summary(db, now, member.id),
     )
