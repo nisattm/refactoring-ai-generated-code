@@ -13,13 +13,15 @@ from sqlalchemy.orm import Session
 
 from lms.catalog.models import Author, Book, BookAuthor, Copy, Publisher
 from lms.catalog.service import book_out
-from lms.catalog.status import GONE_STATUSES
 from lms.core.pagination import Page, PageParams
 from lms.core.text import normalize
 from lms.loans.models import Loan
 from lms.search.schemas import SearchItemOut
 
 SortKey = Literal["relevance", "title", "year_desc", "year_asc", "popularity"]
+
+# LIB-SRCH-04: copies that do not make a book show up for a branch.
+_NO_SHELF_STATUSES = ("lost", "withdrawn")
 
 
 def _contains(column: sa.ColumnElement[str | None], needle: str) -> sa.ColumnElement[bool]:
@@ -112,7 +114,7 @@ def search_books(
     elif branch_id is not None:
         conditions.append(
             sa.exists().where(
-                Copy.book_id == Book.id, Copy.current_branch_id == branch_id, Copy.status.not_in(GONE_STATUSES)
+                Copy.book_id == Book.id, Copy.current_branch_id == branch_id, Copy.status.not_in(_NO_SHELF_STATUSES)
             )
         )
 

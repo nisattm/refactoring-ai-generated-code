@@ -83,3 +83,5 @@ class Copy(Base):
     donation_id: Mapped[int | None] = mapped_column(sa.ForeignKey("donations.id"), index=True, default=None)
     # Module 23 (LIB-PRE-04): set by inspections.
     condition: Mapped[str] = mapped_column(sa.String(10), default="good", server_default="good")
+    # Module 24 (LIB-INV-18): set while the copy is ``missing``.
+    missing_since: Mapped[datetime.date | None] = mapped_column(sa.Date, default=None)

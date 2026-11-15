@@ -222,6 +222,7 @@ class CopyOut(BaseModel):
     donation_id: int | None
     condition: str
     open_job_id: int | None
+    missing_since: str | None
 
 
 def copy_out(copy: Copy) -> CopyOut:
@@ -242,6 +243,7 @@ def copy_out(copy: Copy) -> CopyOut:
         donation_id=copy.donation_id,
         condition=copy.condition,
         open_job_id=open_job_id(session, copy.id) if session is not None else None,
+        missing_since=copy.missing_since.isoformat() if copy.missing_since is not None else None,
     )
 
 
