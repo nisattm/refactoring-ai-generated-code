@@ -154,7 +154,8 @@ def release_copy(
     first (LIB-CRS-22), except for a copy that LIB-CRS-06, LIB-CRS-16 or LIB-CRS-21 take off reserve."""
     if course_reserves and place_on_release(db, copy, now, actor_user_id):
         return
-    reservation = _first_waiting(db, copy.book_id)
+    # LIB-PRE-07: a fragile copy is not given to a reservation.
+    reservation = None if copy.condition == "fragile" else _first_waiting(db, copy.book_id)
     if reservation is None:
         if copy.current_branch_id == copy.home_branch_id:
             if copy.status != "available":
@@ -237,7 +238,10 @@ def create_reservation(
             details={"limit": RESERVATION_LIMIT},
         )
     at_pickup = sa.select(Copy.id).where(
-        Copy.book_id == book_id, Copy.status == "available", Copy.current_branch_id == pickup_branch_id
+        Copy.book_id == book_id,
+        Copy.status == "available",
+        Copy.condition != "fragile",  # LIB-PRE-30
+        Copy.current_branch_id == pickup_branch_id,
     )
     if db.scalar(at_pickup.limit(1)) is not None:
         raise Conflict(
@@ -255,7 +259,9 @@ def create_reservation(
 
     # LIB-RES-05: a copy that is available at another branch is assigned at once.
     available = db.scalars(
-        sa.select(Copy).where(Copy.book_id == book_id, Copy.status == "available").order_by(Copy.id)
+        sa.select(Copy)
+        .where(Copy.book_id == book_id, Copy.status == "available", Copy.condition != "fragile")  # LIB-PRE-07
+        .order_by(Copy.id)
     ).all()
     for copy in available:
         if _first_waiting(db, book_id) is None:

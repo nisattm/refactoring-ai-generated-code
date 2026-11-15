@@ -29,6 +29,7 @@ from lms.courses.usage import book_has_items
 from lms.donations.rules import keep_until
 from lms.donations.usage import book_has_items as book_has_donation_items
 from lms.ill.models import IllOutgoing
+from lms.preservation.usage import expected_back, require_no_open_job
 
 
 def _not_found(resource: str, resource_id: int) -> NotFound:
@@ -265,7 +266,18 @@ def availability(db: Session, book_id: int) -> list[AvailabilityOut]:
         .group_by(Copy.current_branch_id)
         .order_by(Copy.current_branch_id)
     )
-    return [AvailabilityOut(branch_id=b, available=int(a), total=int(t)) for b, a, t in rows]
+    result = []
+    for branch_id, available_count, total in rows.all():
+        back = expected_back(db, book_id, branch_id)  # LIB-PRE-33
+        result.append(
+            AvailabilityOut(
+                branch_id=branch_id,
+                available=int(available_count),
+                total=int(total),
+                expected_back=back.isoformat() if back is not None else None,
+            )
+        )
+    return result
 
 
 def book_out(db: Session, book: Book) -> BookOut:
@@ -390,6 +402,7 @@ def update_copy(db: Session, now: datetime.datetime, actor: User, copy: Copy, fi
 
 def withdraw_copy(db: Session, now: datetime.datetime, actor: User, copy: Copy, reason: str) -> Copy:
     """LIB-CAT-10."""
+    require_no_open_job(db, copy.id)  # LIB-PRE-28: before the status check
     if copy.status not in ("available", "damaged", "lost"):
         raise invalid_status(copy, "withdrawal")
     if copy.donation_id is not None and copy.status != "lost":  # LIB-DON-25
@@ -418,6 +431,7 @@ def repair_copy(
     db: Session, now: datetime.datetime, actor: User, copy: Copy, holidays: Container[datetime.date]
 ) -> Copy:
     """LIB-CAT-11."""
+    require_no_open_job(db, copy.id)  # LIB-PRE-28: before the status check
     if copy.status != "damaged":
         raise invalid_status(copy, "repair")
     record(db, at=now, event="copy_repaired", actor_user_id=actor.id, entity_type="copy", entity_id=copy.id, details={})

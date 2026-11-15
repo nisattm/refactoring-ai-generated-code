@@ -94,6 +94,8 @@ def lend(
         raise Conflict(
             f"The copy has status {copy.status}", code="COPY_NOT_AVAILABLE", details={"status": copy.status}
         )
+    if copy.condition == "fragile":  # LIB-PRE-06
+        raise Conflict("The copy is fragile", code="COPY_FRAGILE", details={"condition": copy.condition})
     assert copy.current_branch_id is not None
 
     terms = MEMBERSHIP_TYPES[member.membership_type]

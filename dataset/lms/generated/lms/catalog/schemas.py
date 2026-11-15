@@ -8,12 +8,14 @@ from decimal import Decimal
 from typing import Annotated
 
 from pydantic import BaseModel, BeforeValidator, Field, StrictInt, field_validator
+from sqlalchemy.orm import object_session
 
 from lms.catalog.isbn import normalize_isbn
 from lms.catalog.models import Copy
 from lms.core.money import Money, format_amount
 from lms.core.schemas import RequestModel
 from lms.core.timeutil import format_datetime, parse_date
+from lms.preservation.usage import open_job_id
 
 _LANGUAGE_RE = re.compile(r"^[a-z]{2}$")
 _CLASSIFICATION_RE = re.compile(r"^[0-9]{3}(\.[0-9]{1,6})?$")
@@ -142,6 +144,7 @@ class AvailabilityOut(BaseModel):
     branch_id: int
     available: int
     total: int
+    expected_back: str | None = None
 
 
 class BookOut(BaseModel):
@@ -217,9 +220,12 @@ class CopyOut(BaseModel):
     reserve_item_id: int | None
     reserve_course_id: int | None
     donation_id: int | None
+    condition: str
+    open_job_id: int | None
 
 
 def copy_out(copy: Copy) -> CopyOut:
+    session = object_session(copy)
     return CopyOut(
         id=copy.id,
         book_id=copy.book_id,
@@ -234,6 +240,8 @@ def copy_out(copy: Copy) -> CopyOut:
         reserve_item_id=copy.reserve_item_id,
         reserve_course_id=copy.reserve_course_id,
         donation_id=copy.donation_id,
+        condition=copy.condition,
+        open_job_id=open_job_id(session, copy.id) if session is not None else None,
     )
 
 

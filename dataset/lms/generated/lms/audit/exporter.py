@@ -96,7 +96,7 @@ def _copies(db: Session) -> list[dict[str, Any]]:
             "home_branch_id": c.home_branch_id,
             "current_branch_id": c.current_branch_id,
             "price": format_amount(c.price),
-            "status": c.status,
+            "status": "damaged" if c.status == "in_repair" else c.status,  # LIB-PRE-39
             "acquired_on": _date(c.acquired_on),
             "shelf_location": c.shelf_location,
         }
