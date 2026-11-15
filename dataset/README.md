@@ -51,6 +51,7 @@ Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain a
 | 23 | Preservation (added 2026-11-15) | 40 | 2 | 8 | 2 | job 6 statuses; copy condition 3 | 2 | 6 | Complex |
 | 24 | Inventory counts (added 2026-11-15) | 34 | 2 | 8 | 2 | count 4 statuses; scan 8 results | 2 | 6 | Complex |
 | 25 | Purchase suggestions (added 2026-11-15) | 47 | 2 | 8 | 2 | suggestion 8 statuses | 2 | 6 | Complex |
+| 26 | Reading programs (added 2026-11-15) | 47 | 2 | 8 | 2 | program 4 statuses; participation 3 | 2 | 6 | Complex |
 
 Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 5, 6, 7, 13.
 
@@ -81,7 +82,8 @@ Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 
 | 23 | Preservation | Yearly preservation budgets, copy inspections and condition, repair jobs in-house or at a bindery with approval, shipments, turnaround and overdue jobs, cost overruns, suggestions, reports | Complex | 1,800 | Long check sequences (high CC), duplicated budget and date arithmetic, Feature Envy (catalog, loans, reservations, purchasing) |
 | 24 | Inventory counts | Shelf counts of a branch or shelf prefix with a snapshot, barcode scans with eight results, closing with found, missing and moved copies, applying the results, found copies, expiry and long missing copies, report | Complex | 1,500 | Long check sequences (high CC), duplicated status and scope checks, Feature Envy (catalog, reservations, transfers, course reserves) |
 | 25 | Purchase suggestions | Member suggestions with limits and duplicate checks, support and weighted scores, review with approval limits, merging, turning approved suggestions into purchase orders, arrival with reservations for the members who asked, expiry, report | Complex | 2,000 | Long check sequences (high CC), duplicated limit and date arithmetic, Feature Envy (catalog, purchasing, reservations, members) |
-| | **Total** | | | **~50,800** | |
+| 26 | Reading programs | Reading programs with goals, featured books and copies, joining with nine checks, automatic entries from returns and attended events, manual entries, bonuses, ranking and leaderboard, completion levels, fee waivers as rewards, certificates, reminders, report | Complex | 2,000 | Long check sequences (high CC), duplicated point and level arithmetic, Feature Envy (loans, events, fees, members) |
+| | **Total** | | | **~52,800** | |
 
 Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in prompts; which ones actually appear is measured after generation and recorded in [`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation).
 

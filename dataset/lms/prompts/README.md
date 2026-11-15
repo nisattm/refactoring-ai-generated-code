@@ -44,7 +44,8 @@ Modules are generated in dependency order. Each step implements whole sections o
 | 18 | 31 (Preservation) with its effects on earlier modules (31.6) | 23 | 1,800 |
 | 19 | 32 (Inventory counts) with its effects on earlier modules (32.6) | 24 | 1,500 |
 | 20 | 33 (Purchase suggestions) with its effects on earlier modules (33.7) | 25 | 2,000 |
-| 21+ | One step per new module (sections 34 and later), added to this table when the module's requirements are approved | 26+ | |
+| 21 | 34 (Reading programs) with its effects on earlier modules (34.8) | 26 | 2,000 |
+| 22+ | One step per new module (sections 35 and later), added to this table when the module's requirements are approved | 27+ | |
 
 Line estimates come from the module table in [`../../README.md`](../../README.md); they are not given to the model. The model is never asked for more code. The instructor requires at least 30,000 SLOC (Radon, `lms/`, tests excluded); steps 0–9 gave 6,449 (`v0-ai-baseline`), so new modules are specified and generated as steps 10 and later on top of that code (ADR 002, 2026-11-05). Each new module's requirements and tests are approved before its step.
 
@@ -111,7 +112,7 @@ Steps follow the dependency order, but some rules of an earlier step depend on a
 
 ## Prompt template
 
-Every step prompt has the same three parts; only the section list changes. Files: `step-00.md` … `step-20.md`.
+Every step prompt has the same three parts; only the section list changes. Files: `step-00.md` … `step-21.md`.
 
 ```text
 REQUIREMENTS.md in this folder specifies a Library Management System.

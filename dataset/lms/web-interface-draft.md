@@ -149,3 +149,16 @@ Same conventions as modules 15–24.
 | LIB-UI-SUG-04 | **Review queue.** Librarian and admin. Submitted suggestions by score; approve (catalog search for the book, quantity, price), reject with a reason, merge duplicates. |
 | LIB-UI-SUG-05 | **Ordering.** Librarian and admin. Pick approved suggestions of a branch and a supplier; preview the order lines and total; create the draft order. |
 | LIB-UI-SUG-06 | **Suggestions report.** Librarian and admin. Date range and branch; LIB-SUG-44 with the top list. |
+
+## Module 26: Reading programs
+
+Same conventions as modules 15–25.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-RDP-01 | **Programs.** Librarian and admin. Create, change, publish and cancel programs; see participants and completion. |
+| LIB-UI-RDP-02 | **Join.** Member. Running and upcoming programs with goal, dates and free places; join with "show my name" choice; leave. |
+| LIB-UI-RDP-03 | **My progress.** Member. Points, books, level and rank per program, with the entries that counted and the reward received. |
+| LIB-UI-RDP-04 | **Leaderboard.** All users. Ranked list with short names, points, books and level. |
+| LIB-UI-RDP-05 | **Manual entries.** Librarian and admin. Add or remove a book read elsewhere for a participant (at most 3). |
+| LIB-UI-RDP-06 | **Programs report.** Librarian and admin. LIB-RDP-44 as a table with top books. |
