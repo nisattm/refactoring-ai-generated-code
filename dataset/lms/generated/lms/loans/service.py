@@ -29,6 +29,7 @@ from lms.members import service as members
 from lms.members.models import Member
 from lms.members.types import MEMBERSHIP_TYPES
 from lms.notifications.service import notify_loan
+from lms.programs import entries as program_entries
 from lms.reservations import service as reservations
 from lms.staff.schedule import has_closure_on
 
@@ -250,6 +251,7 @@ def return_loan(
             amount=late_fee_amount(loan.late_days, loan.daily_fee),
         )
     copy.current_branch_id = branch_id
+    program_entries.on_loan_returned(db, now, actor, loan)  # LIB-RDP-16
     if condition == "damaged":
         assert damage_fee is not None
         create_fee(db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="damage_fee", amount=damage_fee)

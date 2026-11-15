@@ -21,6 +21,7 @@ from lms.equipment.schemas import EquipmentSummaryOut
 from lms.events.schemas import EventSummaryOut
 from lms.ill.schemas import IllSummaryOut
 from lms.rooms.schemas import RoomSummaryOut
+from lms.programs.schemas import ProgramSummaryOut
 from lms.suggestions.schemas import SuggestionSummaryOut
 
 MembershipTypeName = Literal["student", "academic", "staff", "guest"]
@@ -158,3 +159,4 @@ class MemberSummaryOut(BaseModel):
     course_reserves: CourseReservesSummaryOut
     donations: DonationSummaryOut
     suggestions: SuggestionSummaryOut
+    programs: ProgramSummaryOut

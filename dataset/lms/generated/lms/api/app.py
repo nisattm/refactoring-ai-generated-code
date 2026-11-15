@@ -25,6 +25,7 @@ from lms.api import (
     members,
     notifications,
     preservation,
+    programs,
     purchasing,
     reports,
     reservations,
@@ -58,7 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     with session_factory.begin() as session:
         ensure_bootstrap_admin(session, settings)
 
-    app = FastAPI(title="Library Management System", version="0.18", docs_url=None, redoc_url=None)
+    app = FastAPI(title="Library Management System", version="0.19", docs_url=None, redoc_url=None)
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = session_factory
@@ -96,5 +97,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api.include_router(preservation.router)
     api.include_router(inventory.router)
     api.include_router(suggestions.router)
+    api.include_router(programs.router)
     app.include_router(api)
     return app

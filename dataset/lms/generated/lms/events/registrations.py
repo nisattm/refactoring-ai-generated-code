@@ -25,6 +25,7 @@ from lms.events.rules import (
     WAIVE_TIMELY,
 )
 from lms.events.schemas import RegistrationOut, registration_out
+from lms.programs import entries as program_entries
 from lms.fines import service as fines
 from lms.members.models import Member
 
@@ -195,6 +196,7 @@ def check_in(db: Session, now: datetime.datetime, actor: User, reg: EventRegistr
         entity_id=reg.id,
         details={"event_id": event.id, "member_id": reg.member_id},
     )
+    program_entries.on_event_attended(db, now, actor, reg.member_id, event.id, event.branch_id)  # LIB-RDP-21
     return reg
 
 

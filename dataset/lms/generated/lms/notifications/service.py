@@ -56,6 +56,7 @@ def _create(
     reserve_loan_id: int | None = None,
     donation_id: int | None = None,
     suggestion_id: int | None = None,
+    program_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -77,6 +78,7 @@ def _create(
         reserve_loan_id=reserve_loan_id,
         donation_id=donation_id,
         suggestion_id=suggestion_id,
+        program_id=program_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -445,3 +447,15 @@ def notify_suggestion(
     """``suggestion_approved``, ``suggestion_rejected``, ``suggestion_ordered``, ``suggestion_available`` and
     ``suggestion_expired``."""
     return _create(db, now, member_id, type_, message, suggestion_id=suggestion_id)
+
+
+# --- reading programs (LIB-RDP-42) ---------------------------------------------------
+
+
+def notify_program(
+    db: Session, now: datetime.datetime, member_id: int, type_: str, message: str, *, program_id: int
+) -> Notification:
+    """``program_completed``, ``program_level_reached``, ``program_cancelled`` and ``program_ending``; the caller
+    composes the message, which contains the program name."""
+    return _create(db, now, member_id, type_, message, program_id=program_id)
+

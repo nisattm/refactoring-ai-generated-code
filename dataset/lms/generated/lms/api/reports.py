@@ -31,6 +31,8 @@ from lms.ill import usage as ill_usage
 from lms.ill.schemas import IllActivityOut
 from lms.equipment.schemas import EquipmentUsageOut
 from lms.rooms import usage as room_usage
+from lms.programs import usage as program_usage
+from lms.programs.schemas import ProgramReportOut
 from lms.suggestions import reports as suggestion_reports
 from lms.suggestions.schemas import SuggestionReportOut
 from lms.rooms.schemas import RoomKind, RoomUsageOut
@@ -348,3 +350,24 @@ def suggestions_report(
     if (end - start).days > 365:
         raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
     return suggestion_reports.suggestion_report(db, start, end, branch_id)
+
+
+@router.get("/programs", response_model=Page[ProgramReportOut])
+def programs_report(
+    db: SessionDep,
+    _: StaffOnly,
+    page: PageDep,
+    first: Annotated[str | None, Query(alias="from")] = None,
+    to: Annotated[str | None, Query()] = None,
+) -> Page[ProgramReportOut]:
+    problems: list[dict[str, str]] = []
+    start = _required_date("from", first, problems)
+    end = _required_date("to", to, problems)
+    if problems:
+        raise ValidationFailed(problems)
+    assert start is not None and end is not None
+    if start > end:
+        raise ValidationFailed.single("from", "from must not be after to")
+    if (end - start).days > 365:
+        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    return paginate(db, program_usage.report_stmt(start, end), page, lambda program: program_usage.report_out(db, program))
