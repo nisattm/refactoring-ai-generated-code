@@ -68,6 +68,8 @@ NotificationType = Literal[
     "program_level_reached",
     "program_cancelled",
     "program_ending",
+    "announcement",
+    "message_reply",
 ]
 
 
@@ -90,6 +92,8 @@ class NotificationOut(BaseModel):
     donation_id: int | None
     suggestion_id: int | None
     program_id: int | None
+    announcement_id: int | None
+    thread_id: int | None
     created_at: str
     read_at: str | None
 
@@ -127,6 +131,8 @@ def notification_out(n: Notification) -> NotificationOut:
         donation_id=n.donation_id,
         suggestion_id=n.suggestion_id,
         program_id=n.program_id,
+        announcement_id=n.announcement_id,
+        thread_id=n.thread_id,
         created_at=format_datetime(n.created_at),
         read_at=format_datetime(n.read_at) if n.read_at is not None else None,
     )

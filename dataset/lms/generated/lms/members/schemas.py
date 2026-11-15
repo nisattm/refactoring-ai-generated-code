@@ -21,6 +21,7 @@ from lms.equipment.schemas import EquipmentSummaryOut
 from lms.events.schemas import EventSummaryOut
 from lms.ill.schemas import IllSummaryOut
 from lms.rooms.schemas import RoomSummaryOut
+from lms.messaging.schemas import MessagesSummaryOut
 from lms.programs.schemas import ProgramSummaryOut
 from lms.suggestions.schemas import SuggestionSummaryOut
 
@@ -160,3 +161,4 @@ class MemberSummaryOut(BaseModel):
     donations: DonationSummaryOut
     suggestions: SuggestionSummaryOut
     programs: ProgramSummaryOut
+    messages: MessagesSummaryOut

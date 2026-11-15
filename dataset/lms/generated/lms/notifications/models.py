@@ -39,6 +39,8 @@ class Notification(Base):
     donation_id: Mapped[int | None] = mapped_column(sa.ForeignKey("donations.id"), default=None, index=True)
     suggestion_id: Mapped[int | None] = mapped_column(sa.ForeignKey("suggestions.id"), default=None, index=True)
     program_id: Mapped[int | None] = mapped_column(sa.ForeignKey("programs.id"), default=None, index=True)
+    announcement_id: Mapped[int | None] = mapped_column(sa.ForeignKey("announcements.id"), default=None, index=True)
+    thread_id: Mapped[int | None] = mapped_column(sa.ForeignKey("threads.id"), default=None, index=True)
     created_at: Mapped[datetime.datetime] = mapped_column(TZDateTime)
     read_at: Mapped[datetime.datetime | None] = mapped_column(TZDateTime, default=None)
     # Not part of the API: the date a reminder is about (due date or day of notice), for LIB-NOT-06.
