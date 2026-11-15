@@ -1,14 +1,11 @@
 {
   "tests": 561,
-  "passed": 559,
-  "failed": 2,
+  "passed": 561,
+  "failed": 0,
   "errors": 0,
   "skipped": 0,
-  "failed_cases": [
-    "T-CAT-08-a",
-    "T-CRS-20-a"
-  ],
+  "failed_cases": [],
   "set": "heldout",
-  "pytest_exit_code": 1,
-  "duration_s": 471.235
+  "pytest_exit_code": 0,
+  "duration_s": 485.036
 }
