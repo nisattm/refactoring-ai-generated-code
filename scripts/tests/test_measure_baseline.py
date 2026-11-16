@@ -246,12 +246,13 @@ def test_dry_run_shows_the_docker_command_and_takes_no_lock(tmp_path):
 
 @needs_bash
 def test_dry_run_with_a_git_ref_resolves_the_commit():
-    if not (REPO / ".git").exists():
-        pytest.skip("not a git checkout")
+    known = subprocess.run(["git", "-c", "safe.directory=*", "-C", str(REPO), "cat-file", "-e", "ce03f54^{commit}"],
+                           capture_output=True, check=False)
+    if known.returncode != 0:
+        pytest.skip("the commit ce03f54 (pilot code) is not in this checkout")
     done = sh("--label", "pilot", "--code-ref", "ce03f54", "--dry-run")
-    if done.returncode == 2 and "unknown git ref" in done.stderr:
-        pytest.skip("the ref ce03f54 is not in this checkout")
-    assert done.returncode == 0 and "ce03f54" in done.stdout and "--code-sha ce03f54" in done.stdout
+    assert done.returncode == 0, done.stderr
+    assert "ce03f54" in done.stdout and "--code-sha ce03f54" in done.stdout
 
 
 @needs_bash

@@ -79,7 +79,7 @@ fi
 
 # --- code: a folder, or the code of a git ref exported to a temporary folder -------------------------------
 TMP=""; CODE_SHA=""; MOUNT_CODE=""; CODE_ARG=""
-git_repo() { git -c safe.directory='*' -C "$REPO" "$@"; }
+git_repo() { (cd "$REPO" && git -c safe.directory='*' "$@"); }
 if [ -n "$CODE_REF" ]; then
   CODE_SHA="$(git_repo rev-parse --verify "$CODE_REF^{commit}" 2>/dev/null)" || die "unknown git ref: $CODE_REF"
   if [ "$DRY" = 1 ]; then TMP="<temporary folder>"; else
