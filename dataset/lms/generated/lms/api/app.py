@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import sessionmaker
 
@@ -45,6 +48,8 @@ from lms.core.db import create_schema, get_engine
 from lms.core.settings import Settings
 
 API_PREFIX = "/api/v1"
+WEB_DIR = Path(__file__).resolve().parents[2] / "web"
+UI_PREFIX = "/ui"
 
 
 class HealthOut(BaseModel):
@@ -103,4 +108,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api.include_router(messaging.router)
     api.include_router(access.router)
     app.include_router(api)
+    if WEB_DIR.is_dir():  # LIB-UI-GEN-02: the web interface is optional
+        app.mount(UI_PREFIX, StaticFiles(directory=WEB_DIR, html=True), name="ui")
     return app
