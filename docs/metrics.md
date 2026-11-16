@@ -4,6 +4,10 @@ Extended after the instructor's feedback (26 October 2026) and completed on 29 O
 
 The subject code is one Library Management System (LMS), refactored as a whole ([`decisions/002`](decisions/002-single-lms-claude-code.md)). Metrics are computed on the whole project and also reported per module and per complexity level.
 
+**Scope (16 November 2026):** only the Python code of the application package `lms/`. The web interface (`web/`, HTML, CSS and JavaScript) and the tests the model wrote (`tests/`) are excluded from every metric.
+
+**Tool status:** DPy is not in the Docker image and PyExamine is not yet verified on Python 3.14; both are checked first in Week 4. A metric whose tool does not run is reported as missing, never silently replaced by another tool.
+
 ## 1. Code quality: five layers
 
 | Layer | Metric | What it shows | Tool |
@@ -81,7 +85,7 @@ Smell counts depend on thresholds, and tools disagree: Long Method is 30 lines i
 | --- | --- |
 | Function / method | Raw values (CC, Cognitive Complexity, length, parameters) |
 | Class | Raw design values (WMC, NOM, CBO, LCOM, RFC, DIT, NOC) |
-| Module (14 LMS modules) | Mean, maximum and share of units above the threshold; smell count; duplication % |
+| Module (29 LMS modules) | Mean, maximum and share of units above the threshold; smell count; duplication % |
 | Complexity level (simple / medium / complex) | Same as module, over all modules of that level |
 | Project | Same as module, over the whole code; architecture metrics; change size |
 
@@ -121,7 +125,7 @@ Test results are additionally reported per case type (Normal, Boundary, Error, P
 
 ### Workloads (added 29 October)
 
-Each workload runs against the service layer (and once through the REST API for end-to-end timing) with fixed, generated input data in three sizes. Inputs are loaded with the LMS import function (module 13) and are identical before and after refactoring.
+Each workload runs against the service layer (and once through the REST API for end-to-end timing) with fixed, generated input data in three sizes. Inputs are loaded with the LMS import function (module 13) and are identical before and after refactoring. The workloads cover the core modules 5, 7, 9 and 10 on purpose; the modules added in November (15–29) have no resource workload.
 
 | ID | Workload | Sizes (books) | Mainly stresses |
 | --- | --- | --- | --- |
