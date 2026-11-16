@@ -26,9 +26,11 @@ from lms.messaging.usage import member_summary as message_summary
 from lms.programs.usage import member_summary as program_summary
 from lms.rooms.usage import member_summary as room_summary
 from lms.suggestions.usage import member_summary as suggestion_summary
+from lms.access import usage as access_usage
 from lms.members.schemas import (
     BorrowingOut,
     MemberCreateIn,
+    MemberMeOut,
     MemberOut,
     MemberPatchIn,
     MemberStatus,
@@ -98,13 +100,15 @@ def list_members(
     return paginate_sequence(matches, page)
 
 
-@router.get("/me", response_model=MemberOut)
-def get_own_member(request: Request, db: SessionDep, principal: CurrentPrincipal) -> MemberOut:
+@router.get("/me", response_model=MemberMeOut)
+def get_own_member(request: Request, db: SessionDep, principal: CurrentPrincipal) -> MemberMeOut:
     member_id = principal.user.member_id
     member = db.get(Member, member_id) if member_id is not None else None
     if member is None:
         raise NotFound("The authenticated user has no member record", details={"resource": "member"})
-    return member_out(member, _today(request))
+    card = access_usage.active_card(db, member.id)  # LIB-ACC-48
+    base = member_out(member, _today(request))
+    return MemberMeOut(**base.model_dump(), card_no=card.card_no if card is not None else None)
 
 
 @router.get("/{member_id}", response_model=MemberOut)
@@ -171,4 +175,5 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
         suggestions=suggestion_summary(db, now, member.id),
         programs=program_summary(db, now, member.id),
         messages=message_summary(db, now, member.id),
+        access=access_usage.member_summary(db, now, member.id),
     )

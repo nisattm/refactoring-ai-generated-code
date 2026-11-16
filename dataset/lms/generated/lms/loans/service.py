@@ -9,6 +9,7 @@ from decimal import Decimal
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
+from lms.access.usage import find_card
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
@@ -68,15 +69,25 @@ def lend(
     actor: User,
     holidays: Container[datetime.date],
     *,
-    member_id: int,
+    member_id: int | None,
+    card_no: str | None = None,
     copy_id: int | None,
     barcode: str | None,
 ) -> Loan:
-    """LIB-LOAN-01, LIB-LOAN-03 to LIB-LOAN-06."""
+    """LIB-LOAN-01, LIB-LOAN-03 to LIB-LOAN-06, LIB-ACC-35."""
+    card = None
+    if card_no is not None:
+        card = find_card(db, card_no)
+        if card is None:
+            raise NotFound(f"No card has number {card_no}", details={"field": "card_no", "value": card_no})
+        member_id = card.member_id
+    assert member_id is not None
     member = db.get(Member, member_id)
     if member is None:
         raise reference_not_found("member_id", member_id)
     copy = _find_copy(db, copy_id, barcode)
+    if card is not None and card.status != "active":
+        raise Conflict("The card is not active", code="CARD_NOT_ACTIVE", details={"status": card.status})
 
     today = now.date()
     activity = members.member_activity(db, member, now, holidays)

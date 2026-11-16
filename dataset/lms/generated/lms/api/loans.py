@@ -44,7 +44,7 @@ def lend(body: LoanCreateIn, request: Request, db: SessionDep, staff: StaffOnly)
     settings = request.app.state.settings
     now = local_now(settings.clock)
     loan = service.lend(
-        db, now, staff.user, settings.holidays, member_id=body.member_id, copy_id=body.copy_id, barcode=body.barcode
+        db, now, staff.user, settings.holidays, member_id=body.member_id, card_no=body.card_no, copy_id=body.copy_id, barcode=body.barcode
     )
     return loan_out(loan, now.date(), settings.holidays)
 

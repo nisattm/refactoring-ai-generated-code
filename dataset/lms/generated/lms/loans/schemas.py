@@ -20,12 +20,16 @@ ReturnCondition = Literal["good", "damaged"]
 
 
 class LoanCreateIn(RequestModel):
-    member_id: StrictInt
+    member_id: StrictInt | None = None
+    card_no: str | None = None
     copy_id: StrictInt | None = None
     barcode: str | None = None
 
     def check(self) -> None:
-        """LIB-LOAN-01: exactly one of ``copy_id`` and ``barcode``."""
+        """LIB-LOAN-01: exactly one of ``copy_id`` and ``barcode``; LIB-ACC-35: exactly one of ``member_id`` and
+        ``card_no``."""
+        if (self.member_id is None) == (self.card_no is None):
+            raise ValidationFailed.single("member_id", "exactly one of member_id and card_no is required")
         if (self.copy_id is None) == (self.barcode is None):
             raise ValidationFailed.single("copy_id", "exactly one of copy_id and barcode is required")
         if self.barcode is not None and not self.barcode:

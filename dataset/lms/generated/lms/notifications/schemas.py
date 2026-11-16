@@ -70,6 +70,9 @@ NotificationType = Literal[
     "program_ending",
     "announcement",
     "message_reply",
+    "card_issued",
+    "access_banned",
+    "lost_card_used",
 ]
 
 
@@ -94,6 +97,7 @@ class NotificationOut(BaseModel):
     program_id: int | None
     announcement_id: int | None
     thread_id: int | None
+    card_id: int | None
     created_at: str
     read_at: str | None
 
@@ -133,6 +137,7 @@ def notification_out(n: Notification) -> NotificationOut:
         program_id=n.program_id,
         announcement_id=n.announcement_id,
         thread_id=n.thread_id,
+        card_id=n.card_id,
         created_at=format_datetime(n.created_at),
         read_at=format_datetime(n.read_at) if n.read_at is not None else None,
     )
