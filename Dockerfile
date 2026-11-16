@@ -56,6 +56,9 @@ RUN if grep -qE '^[A-Za-z0-9]' /tmp/req/requirements.lock; then \
     fi \
  && rm -rf /tmp/req
 
+# Chromium for the web interface tests (Playwright, decision of 16 November 2026), with its system libraries
+RUN playwright install --with-deps chromium
+
 COPY docker/check-tools.sh /usr/local/bin/check-tools
 COPY docker/check-claude.sh /usr/local/bin/check-claude
 RUN chmod +x /usr/local/bin/check-tools /usr/local/bin/check-claude

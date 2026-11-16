@@ -18,7 +18,7 @@ dataset/lms/tests/
 └── heldout/test_<module>.py    Tests used only for evaluation
 ```
 
-Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access`.
+Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access`; web interface: `ui_core`, `ui_services`, `ui_community`.
 
 ## Ownership (30 October 2026)
 
@@ -26,7 +26,7 @@ Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`
 | --- | --- |
 | `conftest.py`, `support/` | Fatima |
 | `core`, `auth`, `reservations`, `members`, `catalog`, `branches`, `e2e`, `search`, `reports`, `audit_io`, `api` | Nisa |
-| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access` | Fatima |
+| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access`, `ui_core`, `ui_services`, `ui_community` | Fatima |
 
 Only the owner edits a file. A missing helper is requested from the owner of `support/`; until it exists, a test calls the API through `client` directly.
 
@@ -65,13 +65,19 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 | Reading programs (module 26, from 15 November) | `programs` | 27 | 25 | 0 | 52 |
 | Announcements and messages (module 27, from 16 November) | `messaging` | 26 | 26 | 0 | 52 |
 | Member cards and building access (module 28, from 16 November) | `access` | 28 | 28 | 0 | 56 |
-| **Total** | | **774** | **684** | **13** | **1471** |
+| Web interface: general rules, modules 1–14 (step 24, from 16 November) | `ui_core` | 25 | 20 | 0 | 45 |
+| Web interface: modules 15–21 (step 25, from 16 November) | `ui_services` | 25 | 20 | 0 | 45 |
+| Web interface: modules 22–28 (step 26, from 16 November) | `ui_community` | 22 | 18 | 0 | 40 |
+| **Total** | | **846** | **742** | **13** | **1601** |
 
-`pytest --import-mode=importlib --collect-only` collects 774 feedback and 684 held-out tests without the code; every test fails until `lms` exists.
+`pytest --import-mode=importlib --collect-only` collects 846 feedback and 742 held-out tests without the code; every test fails until `lms` exists.
+
+The web interface tests (`ui_*`, ADR 002, 16 November) open each screen of `../web-interface.md` in Chromium through Playwright and check a few flows. They use the fixtures `live_url` (a uvicorn server for the same app, database and clock as `client`), `browser` and `page` of `conftest.py`, and need the image with Playwright (`docs/environment.md`). They fail until the interface of their step exists.
 
 ## Test case IDs and names
 
 - Case ID: `T-<AREA>-<NN>-<letter>`, where `<AREA>-<NN>` is the requirement it checks: `LIB-LOAN-05` → `T-LOAN-05-a`, `T-LOAN-05-b`, …; scenarios: `T-E2E-01`; properties: `T-P-<NN>`.
+- Web interface: `LIB-UI-<AREA>-<NN>` → `T-UI<AREA>-<NN>-<letter>` (`LIB-UI-ROOM-01` → `T-UIROOM-01-a`). Not every web interface requirement has a case: screens marked "Part of …" are checked through the screen they belong to, and LIB-UI-GEN-01, -07, -10, -11, -14 to -16 are checked by every screen test.
 - Test function name: the case ID in lower case with `_`: `test_t_loan_05_a`.
 - The first line of the test's docstring starts with the case ID (generated tests continue with the requirement ID and the expected result).
 - Every requirement has at least one case. Requirements that only constrain the implementation and cannot be observed through the API or the fixed interface (for example LIB-TECH-02 allowed packages) are listed in the case table with Set `static` and checked by script, not by pytest.

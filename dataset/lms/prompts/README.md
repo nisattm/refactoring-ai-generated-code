@@ -47,7 +47,10 @@ Modules are generated in dependency order. Each step implements whole sections o
 | 21 | 34 (Reading programs) with its effects on earlier modules (34.8) | 26 | 2,000 |
 | 22 | 35 (Announcements and messages) with its effects on earlier modules (35.6) | 27 | 2,000 |
 | 23 | 36 (Member cards and building access) with its effects on earlier modules (36.8) | 28 | 2,400 |
-| 24+ | One step per new module (sections 37 and later), added to this table when the module's requirements are approved | 29+ | |
+| 24 | Web interface: sections 1–2 of `WEB_INTERFACE.md` (general rules, screens of modules 1–14) | UI | – |
+| 25 | Web interface: sections 3.1–3.7 of `WEB_INTERFACE.md` (screens of modules 15–21) | UI | – |
+| 26 | Web interface: sections 3.8–3.14 of `WEB_INTERFACE.md` (screens of modules 22–28) | UI | – |
+| 27+ | One step per new backend module (sections 37 and later), if needed, added to this table when the module's requirements are approved | 29+ | |
 
 Line estimates come from the module table in [`../../README.md`](../../README.md); they are not given to the model. The model is never asked for more code. The instructor requires at least 30,000 SLOC (Radon, `lms/`, tests excluded); steps 0–9 gave 6,449 (`v0-ai-baseline`), so new modules are specified and generated as steps 10 and later on top of that code (ADR 002, 2026-11-05). Each new module's requirements and tests are approved before its step.
 
@@ -114,7 +117,7 @@ Steps follow the dependency order, but some rules of an earlier step depend on a
 
 ## Prompt template
 
-Every step prompt has the same three parts; only the section list changes. Files: `step-00.md` … `step-23.md`.
+Every step prompt has the same three parts; only the section list changes. Files: `step-00.md` … `step-26.md`. The web interface steps 24–26 use the same pattern with `WEB_INTERFACE.md` (see below).
 
 ```text
 REQUIREMENTS.md in this folder specifies a Library Management System.
@@ -123,6 +126,18 @@ Implement step <N>: sections <list> of REQUIREMENTS.md.
 <Steps 1 and later:> The code of the earlier steps is already in this folder. Keep all behavior required by earlier sections.
 
 Follow REQUIREMENTS.md exactly, including names, paths, fields, status codes and error codes. Where a later section is needed by this step, implement only what this step needs; it will be completed in its own step.
+```
+
+## Web interface steps (24–26)
+
+Decision of 16 November 2026 (ADR 002): plain HTML, CSS and JavaScript without a build step in `generated/web/`, served by `create_app` at `/ui/`; generated in three steps so that each run stays within the usage window. Before step 24, `../web-interface.md` is copied into the working copy as `WEB_INTERFACE.md` (in the same way as `REQUIREMENTS.md`). The files under `web/` are not counted in the SLOC (Radon measures `lms/` only) and are not refactored. The web interface tests (`ui_core`, `ui_services`, `ui_community`) use Playwright with Chromium, which is in the image from 16 November; they are measured like the API tests and are never shown to the model.
+
+```text
+REQUIREMENTS.md in this folder specifies a Library Management System; its code is already in this folder. WEB_INTERFACE.md specifies its web interface.
+
+Implement step <N>: sections <list> of WEB_INTERFACE.md (<content>). <Steps 25 and 26:> The interface of the earlier step(s) is already in this folder. Keep all behavior required by REQUIREMENTS.md<, and the earlier sections of WEB_INTERFACE.md>.
+
+Follow WEB_INTERFACE.md and REQUIREMENTS.md exactly, including names, routes, fields, buttons and API paths. Where a later section is needed by this step, implement only what this step needs; it will be completed in its own step.
 ```
 
 ## Generation log format (`../generation-log.md`)

@@ -24,6 +24,7 @@ pytest
 hypothesis
 coverage
 mutmut
+playwright                 # web interface tests (Chromium installed in the Dockerfile, 16 November)
 
 # Resource consumption
 pyperf
