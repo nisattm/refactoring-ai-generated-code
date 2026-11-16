@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–28), revised after team review.
-**Version:** 0.21 · 2026-11-16 (adds section 36, module 28 Member cards and building access)
+**Version:** 0.22 · 2026-11-16 (adds section 37, module 29 Printing and copying)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -47,6 +47,7 @@ The system consists of 20 modules:
 | 26 | Reading programs | `lms.programs` | 34 |
 | 27 | Announcements and messages | `lms.messaging` | 35 |
 | 28 | Member cards and building access | `lms.access` | 36 |
+| 29 | Printing and copying | `lms.printing` | 37 |
 
 ### 1.2 Out of scope
 
@@ -120,7 +121,8 @@ lms/
 ├── suggestions/         Module 25
 ├── programs/            Module 26
 ├── messaging/           Module 27
-└── access/              Module 28
+├── access/              Module 28
+└── printing/            Module 29
 ```
 
 | ID | Requirement |
@@ -494,6 +496,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Reading programs (module 26) | – | Read published programs and leaderboards; join and leave; own progress and certificates | Full | Full |
 | Announcements and messages (module 27) | – | Read live announcements for them; write, read, close, reopen and rate own threads | Full | Full |
 | Cards and building access (module 28) | – | Own cards (report lost or damaged), own visits and bans, branch occupancy | Full, except access settings | Full |
+| Printing (module 29) | – | Read printers; send, release, cancel and read own print jobs; read own quota and page packs | Full, except creating and changing printers | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -575,10 +578,10 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. Course reserves: LIB-CRS-40. Purchase suggestions: LIB-SUG-37. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
 | LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. Cards: LIB-ACC-07. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. Purchase suggestions: LIB-SUG-36. Reading programs: LIB-RDP-38. Messages: LIB-MSG-32. Cards and visits: LIB-ACC-36. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. Purchase suggestions: LIB-SUG-36. Reading programs: LIB-RDP-38. Messages: LIB-MSG-32. Cards and visits: LIB-ACC-36. Print jobs: LIB-PRT-35. |
 | LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. Cards: LIB-ACC-37. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38), `donations` (LIB-DON-38), `suggestions` (LIB-SUG-38), `programs` (LIB-RDP-39), `messages` (LIB-MSG-33) and `access` (LIB-ACC-38). |
-| LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. Card number: LIB-ACC-48. |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38), `donations` (LIB-DON-38), `suggestions` (LIB-SUG-38), `programs` (LIB-RDP-39), `messages` (LIB-MSG-33) `access` (LIB-ACC-38) and `printing` (LIB-PRT-36). |
+| LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. Card number: LIB-ACC-48. Free pages: LIB-PRT-47. |
 
 ---
 
@@ -796,13 +799,14 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | `id` | integer | LIB-COM-14 |
 | `member_id` | integer | |
 | `loan_id` | integer or null | The loan the fee comes from |
-| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` \| `event_fee` \| `reserve_late_fee` \| `reserve_lost` \| `card_replacement` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25; `ill_request_fee`, `ill_late_fee`, `ill_lost`: LIB-ILL-35; `event_fee`: LIB-EVT-38; `reserve_*`: LIB-CRS-35 |
+| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` \| `event_fee` \| `reserve_late_fee` \| `reserve_lost` \| `card_replacement` \| `printing` \| `print_pack` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25; `ill_request_fee`, `ill_late_fee`, `ill_lost`: LIB-ILL-35; `event_fee`: LIB-EVT-38; `reserve_*`: LIB-CRS-35; `printing`, `print_pack`: LIB-PRT-34 |
 | `room_booking_id` | integer or null | The room booking a `no_show_fee` comes from |
 | `equipment_loan_id` | integer or null | The equipment loan an `equipment_*` fee comes from |
 | `ill_request_id` | integer or null | The incoming interlibrary request an `ill_*` fee comes from |
 | `event_registration_id` | integer or null | The event registration an `event_fee` comes from |
 | `reserve_loan_id` | integer or null | The reserve loan a `reserve_*` fee comes from |
 | `card_id` | integer or null | The card a `card_replacement` fee comes from (LIB-ACC-39) |
+| `print_job_id` | integer or null | The print job a `printing` fee comes from (LIB-PRT-34) |
 | `amount` | amount | > 0.00 |
 | `paid_amount` | amount | 0.00 ≤ `paid_amount` ≤ `amount` |
 | `status` | `open` \| `paid` \| `waived` | `paid` when `paid_amount` = `amount` |
@@ -904,7 +908,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id`, `suggestion_id`, `program_id`, `announcement_id`, `thread_id`, `card_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id`, `suggestion_id`, `program_id`, `announcement_id`, `thread_id`, `card_id`, `print_job_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -923,7 +927,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41, `reservation_delayed` (LIB-INV-30) the suggestion events of LIB-SUG-42, the program events of LIB-RDP-42 the messaging events of LIB-MSG-37 and the access events of LIB-ACC-42. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41, `reservation_delayed` (LIB-INV-30) the suggestion events of LIB-SUG-42, the program events of LIB-RDP-42 the messaging events of LIB-MSG-37 the access events of LIB-ACC-42 and the printing events of LIB-PRT-42. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -960,7 +964,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32; the suggestions report is LIB-SUG-44; the programs report is LIB-RDP-44; the messaging report is LIB-MSG-39; the visits report is LIB-ACC-44.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32; the suggestions report is LIB-SUG-44; the programs report is LIB-RDP-44; the messaging report is LIB-MSG-39; the visits report is LIB-ACC-44; the printing report is LIB-PRT-44.
 
 ### 16.1 Endpoints and requirements
 
@@ -1011,7 +1015,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. Purchase suggestions: LIB-SUG-47. Reading programs: LIB-RDP-40. Messages: LIB-MSG-34. Building access: LIB-ACC-40. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. Purchase suggestions: LIB-SUG-47. Reading programs: LIB-RDP-40. Messages: LIB-MSG-34. Building access: LIB-ACC-40. Printers: LIB-PRT-37. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. Copies in a count: LIB-INV-13. |
@@ -1152,7 +1156,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7, those of module 25 in 33.8, those of module 26 in 34.9, those of module 27 in 35.7, those of module 28 in 36.9.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7, those of module 25 in 33.8, those of module 26 in 34.9, those of module 27 in 35.7, those of module 28 in 36.9, those of module 29 in 37.9.
 
 ---
 
@@ -2141,7 +2145,7 @@ A shift **counts** while its status is `planned` or `completed`. Shift hours = (
 | LIB-STF-07 | **Read hours.** `GET /api/v1/branches/{branch_id}/hours` returns `200` with `{"branch_id", "opens_at", "closes_at", "min_staff"}`; a branch without a record returns the defaults. Unknown branch → `404`. |
 | LIB-STF-08 | **Set hours.** `PUT /api/v1/branches/{branch_id}/hours` with `{"opens_at", "closes_at", "min_staff"}` returns `200` (event `branch_hours_updated`). Values outside 27.1 → `422`. A change that would leave a counting shift with a date after today outside the new hours → `409 SHIFTS_OUTSIDE_HOURS` with `details.shift_ids` (ascending); nothing is changed. |
 | LIB-STF-09 | **Hours and the equipment desk.** The equipment desk of a branch (LIB-EQ-01) is open at `t` when the branch is open on the date of `t` and `opens_at` ≤ local time of `t` < `closes_at`. With the default hours this is LIB-EQ-01 unchanged. LIB-EQ-02 uses the branch's hours and open dates. |
-| LIB-STF-10 | **Add closure.** `POST /api/v1/branches/{branch_id}/closures` with `{"date", "reason"}` returns `201` (event `branch_closure_added`). Checks (all `409` unless stated): branch inactive → `BRANCH_INACTIVE`; `date` not after today → `422`; `date` not a working day → `NOT_A_WORKING_DAY`; a closure of the branch on that date exists → `CONFLICT`. Building access: LIB-ACC-52. |
+| LIB-STF-10 | **Add closure.** `POST /api/v1/branches/{branch_id}/closures` with `{"date", "reason"}` returns `201` (event `branch_closure_added`). Checks (all `409` unless stated): branch inactive → `BRANCH_INACTIVE`; `date` not after today → `422`; `date` not a working day → `NOT_A_WORKING_DAY`; a closure of the branch on that date exists → `CONFLICT`. Building access: LIB-ACC-52. Printing: LIB-PRT-38. |
 | LIB-STF-11 | **Effects of a closure.** On creation, in this order: (1) counting `planned` shifts of the branch on that date are cancelled with reason `branch_closed`; (2) `booked` room bookings in rooms of the branch on that date are cancelled with reason `branch_closed` (LIB-ROOM-26, notifies the persons); (3) `booked` equipment reservations of the branch with `starts_at` on that date are cancelled with reason `branch_closed` (notifies the member). The `201` response is the closure (`id`, `branch_id`, `date`, `reason`, `created_by`) plus the counts `cancelled_shifts`, `cancelled_room_bookings` and `cancelled_equipment_reservations`. Events: LIB-EVT-12. |
 | LIB-STF-12 | **Remove closure.** `DELETE /api/v1/closures/{closure_id}` returns `204` (event `branch_closure_removed`) when the date is after today; otherwise `409 CLOSURE_IN_PAST`. Cancelled shifts and bookings are not restored. |
 | LIB-STF-13 | **Read closures.** `GET /api/v1/closures` is paginated, ordered by `date`, then `branch_id`, with filters `branch_id`, `from`, `to` (inclusive). |
@@ -3589,7 +3593,7 @@ A person is **inside** a branch while they have a visit there with `left_at` nul
 | LIB-ACC-14 | **Scan.** `POST /api/v1/access/scan` with `{"branch_id", "direction", "card_no"}` or `{"branch_id", "direction", "pass_code"}` (exactly one of the last two, otherwise `422`; `direction` `in` \| `out`) returns `200` with `{"result": "entered" \| "left", "visit_id", "member_id", "day_pass_id"}` (event `access_scanned` for results only). An unknown card or pass → `404 NOT_FOUND`. |
 | LIB-ACC-15 | **Entry checks (card).** In order (all `409`): (1) the card is not `active` → `CARD_NOT_ACTIVE` with `details.status` (a `lost` card also creates an alert, LIB-ACC-21); (2) member `passive` → `MEMBER_PASSIVE`; (3) membership not valid today → `MEMBERSHIP_EXPIRED`; (4) the branch is inactive → `BRANCH_INACTIVE`; (5) the branch is not open now (LIB-STF-09 rule) → `BRANCH_NOT_OPEN`; (6) a ban in force today → `ACCESS_BANNED` with `details.ends_on`; (7) type `guest` and `guest_entry` `false` → `GUEST_ENTRY_NOT_ALLOWED`; (8) the member is inside a branch → `ALREADY_INSIDE` with `details.branch_id`; (9) occupancy ≥ `capacity` → `BRANCH_FULL` with `details.capacity`. |
 | LIB-ACC-16 | **Entry.** Passing the checks creates a visit with `entered_at` = now. |
-| LIB-ACC-17 | **Exit.** A scan with `direction` `out` closes the member's open visit (`left_at` = now, `closed_by` `exit`). Checks (all `409`): not inside → `NOT_INSIDE`; inside another branch → `WRONG_BRANCH` with `details.branch_id`. Exit works with a card that is no longer `active` and for passive members. |
+| LIB-ACC-17 | **Exit.** A scan with `direction` `out` closes the member's open visit (`left_at` = now, `closed_by` `exit`). Checks (all `409`): not inside → `NOT_INSIDE`; inside another branch → `WRONG_BRANCH` with `details.branch_id`. Exit works with a card that is no longer `active` and for passive members. Print jobs: LIB-PRT-39. |
 | LIB-ACC-18 | **Gate examples.** Hours 08:00–20:00: entry at 07:59 → `BRANCH_NOT_OPEN`; at 08:00 → entered; again at 08:05 → `ALREADY_INSIDE`; exit at 09:00 → left (visit of 60 minutes). |
 | LIB-ACC-19 | **Day pass entry.** A `pass_code` scan with `in` is allowed for an `unused` pass of that branch with `valid_on` today; it sets the pass `used` and creates the visit. Checks (all `409`): pass of another branch → `WRONG_BRANCH`; `valid_on` not today → `PASS_NOT_VALID_TODAY`; `used` or `cancelled` → `PASS_NOT_USABLE` with `details.status`; branch not open → `BRANCH_NOT_OPEN`; occupancy ≥ `capacity` → `BRANCH_FULL`. `out` closes its visit as in LIB-ACC-17. |
 | LIB-ACC-20 | **Close by hand.** `POST /api/v1/visits/{visit_id}/close` ends an open visit (`closed_by` `staff`) and returns `200` (event `visit_closed`). Already ended → `409 VISIT_NOT_OPEN`. |
@@ -3661,6 +3665,172 @@ A person is **inside** a branch while they have a visit there with `left_at` nul
 
 ---
 
+## 37. Module 29: Printing and copying
+
+Branches have printers. Members send print jobs to a printer and release them at the printer while they are inside the branch (module 28). Every member type has a monthly number of free black-and-white pages; members can buy page packs, and pages beyond the free quota and the packs are charged as fees. Staff refill paper, take printers out of service and refund failed jobs. Package `lms.printing`. Times are local (LIB-COM-01).
+
+### 37.1 Data
+
+**Printer**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `branch_id` | integer | Existing branch |
+| `code` | text | `"PR-"` + 3 digits, unique |
+| `name` | text | LIB-COM-16 |
+| `color` | boolean | Can print in color |
+| `duplex` | boolean | Can print on both sides |
+| `paper_left` | integer | 0–5000 sheets, initially 0 |
+| `status` | `active` \| `out_of_service` \| `retired` | Initially `active`; `retired` is final |
+
+**Print job**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `member_id` | integer | |
+| `printer_id` | integer | |
+| `title` | text | 1–100 characters |
+| `pages` | integer | 1–500 pages of the document |
+| `copies` | integer | 1–20 |
+| `color` | boolean | |
+| `duplex` | boolean | |
+| `status` | `queued` \| `printed` \| `cancelled` \| `expired` \| `failed` | Initially `queued` |
+| `submitted_at` | date-time | |
+| `released_at` | date-time or null | |
+| `sheets` | integer | 37.2 |
+| `free_pages` | integer | Pages paid from the free quota, set at release |
+| `pack_pages` | integer | Pages paid from page packs, set at release |
+| `charged_pages` | integer | Pages charged as a fee, set at release |
+| `fee_id` | integer or null | Its `printing` fee |
+| `failed_reason` | text or null | 5–200 characters |
+
+**Page pack:** `id`, `member_id`, `pages` (always 50), `pages_left`, `bought_on` (date), `fee_id` (its `print_pack` fee). Packs never expire.
+
+### 37.2 Counting and prices
+
+| Value | Rule |
+| --- | --- |
+| Printed pages | `pages × copies` |
+| Sheets | `pages × copies` without duplex; `ceil(pages / 2) × copies` with duplex |
+| Free pages per calendar month | `student` 100, `academic` 300, `staff` 300, `guest` 0 |
+| Price per page | Black and white 0.50, color 2.00 |
+| Page pack | 50 black-and-white pages for 20.00 |
+
+Free pages and packs pay only black-and-white pages; color pages are always charged. The month of a job is the month of its `released_at`.
+
+### 37.3 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST`, `GET /api/v1/printers`; `GET`, `PATCH /api/v1/printers/{printer_id}` | write: admin; read: all authenticated users | Printers |
+| `POST /api/v1/printers/{printer_id}/refill` | librarian, admin | Add paper |
+| `POST /api/v1/print-jobs` | member (own), librarian, admin | Send a job |
+| `GET /api/v1/print-jobs` | librarian, admin | All jobs |
+| `GET /api/v1/print-jobs/{job_id}` | librarian, admin; member (own) | One job |
+| `GET /api/v1/members/{member_id}/print-jobs` | librarian, admin; member (own) | Jobs of a member |
+| `POST /api/v1/print-jobs/{job_id}/release` | member (own), librarian, admin | Print a queued job |
+| `POST /api/v1/print-jobs/release-by-card` | librarian, admin | Release a member's jobs at a printer by card |
+| `POST /api/v1/print-jobs/{job_id}/cancel` | member (own), librarian, admin | Cancel a queued job |
+| `POST /api/v1/print-jobs/{job_id}/fail` | librarian, admin | Record a failed print and refund it |
+| `GET /api/v1/members/{member_id}/print-quota` | librarian, admin; member (own) | Free pages and packs |
+| `POST`, `GET /api/v1/members/{member_id}/print-packs` | librarian, admin (GET also member own) | Page packs |
+| `POST /api/v1/printing/process` | librarian, admin | Expire old jobs |
+| `GET /api/v1/reports/printing` | librarian, admin | Report (section 16) |
+
+### 37.4 Printers
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PRT-01 | **Create.** `POST /api/v1/printers` with `{"branch_id", "code", "name", "color", "duplex"}` returns `201` with an `active` printer with `paper_left` 0 (event `printer_created`). A duplicate `code` → `409 CONFLICT`; an inactive branch → `409 BRANCH_INACTIVE`. |
+| LIB-PRT-02 | **Read.** `GET /api/v1/printers` is paginated, ordered by `code`, with filters `branch_id`, `status`, `color`. |
+| LIB-PRT-03 | **Change.** `PATCH /api/v1/printers/{printer_id}` accepts any subset of `{"name", "color", "duplex", "status"}` (event `printer_changed`). `status` may change between `active` and `out_of_service` and from either to `retired`; any change of a `retired` printer → `409 PRINTER_RETIRED`. |
+| LIB-PRT-04 | **Queued jobs on status change.** When a printer becomes `out_of_service` or `retired`, its `queued` jobs become `cancelled` and each member is notified (`print_job_cancelled`). When `color` or `duplex` becomes `false`, queued jobs that need it are cancelled the same way. |
+| LIB-PRT-05 | **Refill.** `POST /api/v1/printers/{printer_id}/refill` with `{"sheets"}` (1–5000) adds the sheets and returns `200` with the printer (event `printer_refilled`). A result above 5000 → `409 PAPER_CAPACITY_EXCEEDED` with `details.paper_left`. A `retired` printer → `409 PRINTER_RETIRED`. |
+| LIB-PRT-06 | **Refill example.** `paper_left` 4900: refill 100 → 5000; refill 101 → `PAPER_CAPACITY_EXCEEDED` (`paper_left` 4900). |
+
+### 37.5 Print jobs
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PRT-07 | **Send.** `POST /api/v1/print-jobs` with `{"printer_id", "title", "pages", "copies", "color", "duplex"}` returns `201` with a `queued` job and its `sheets` (event `print_job_submitted`). A member sends for themselves; a librarian or admin MUST also send `member_id` (otherwise `422`); a member who sends `member_id` → `422`. `copies` defaults to 1, `color` and `duplex` to `false`. |
+| LIB-PRT-08 | **Send checks.** In order (all `409`): (1) member `passive` → `MEMBER_PASSIVE`; (2) membership not valid today → `MEMBERSHIP_EXPIRED`; (3) printer not `active` → `PRINTER_UNAVAILABLE` with `details.status`; (4) `color` on a printer without color → `PRINTER_NO_COLOR`; (5) `duplex` on a printer without duplex → `PRINTER_NO_DUPLEX`; (6) the member has 3 `queued` jobs → `PRINT_QUEUE_FULL`; (7) the member's printed pages today plus the queued pages plus this job's printed pages > 200 → `DAILY_PAGE_LIMIT` with `details.remaining`. |
+| LIB-PRT-09 | **Sheets example.** 5 pages, 2 copies: without duplex 10 sheets; with duplex 6 sheets. 1 page with duplex: 1 sheet per copy. |
+| LIB-PRT-10 | **Daily limit example.** A member printed 150 pages today and has a queued job of 30 pages: a job of 20 pages is accepted; a job of 21 pages → `DAILY_PAGE_LIMIT` with `details.remaining` 20. Jobs printed yesterday do not count. |
+| LIB-PRT-11 | **Read jobs.** `GET /api/v1/print-jobs` and `GET /api/v1/members/{member_id}/print-jobs` are paginated, ordered by `submitted_at` descending, then `id` descending, with filters `status`, `printer_id`, `from`, `to` (dates of `submitted_at`); the first also with `member_id` and `branch_id` (of the printer). A job contains `printer` (`{"id", "code", "branch_id"}`) and `amount` (the fee amount or `"0.00"`). |
+| LIB-PRT-12 | **Cancel.** `POST /api/v1/print-jobs/{job_id}/cancel` sets a `queued` job to `cancelled` and returns `200` (event `print_job_cancelled`). Not `queued` → `409 PRINT_JOB_NOT_QUEUED` with `details.status`. A member may cancel only own jobs (`403`). |
+
+### 37.6 Release and charging
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PRT-13 | **Release.** `POST /api/v1/print-jobs/{job_id}/release` prints a `queued` job: status `printed`, `released_at` now, the printer's `paper_left` decreases by `sheets`, the pages are paid (LIB-PRT-17) and the job is returned with `200` (event `print_job_released`). |
+| LIB-PRT-14 | **Release checks.** In order (all `409`): (1) job not `queued` → `PRINT_JOB_NOT_QUEUED` with `details.status`; (2) member `passive` → `MEMBER_PASSIVE`; (3) printer not `active` → `PRINTER_UNAVAILABLE`; (4) the printer's branch is not open now (LIB-STF-09 rule) → `BRANCH_NOT_OPEN`; (5) a member releasing their own job is not inside the printer's branch (module 28) → `NOT_IN_BRANCH` with `details.branch_id`; (6) `sheets` > `paper_left` → `OUT_OF_PAPER` with `details.paper_left`; (7) the member's total debt (LIB-FEE-09) plus the amount of this job ≥ 50.00 → `MEMBER_BLOCKED_BY_DEBT` with `details.amount`. |
+| LIB-PRT-15 | **Staff release.** A librarian or admin may release any member's job; check (5) does not apply. |
+| LIB-PRT-16 | **Paper example.** `paper_left` 10: a job of 10 sheets is printed (`paper_left` 0); a job of 11 sheets → `OUT_OF_PAPER` (`paper_left` 10). |
+| LIB-PRT-17 | **Payment order.** Black-and-white printed pages are paid first from the free pages left this month, then from the member's packs (oldest `bought_on`, then `id`, first), and the rest is charged at 0.50 per page. Color pages are charged at 2.00 per page. The counts are stored in `free_pages`, `pack_pages` and `charged_pages`. |
+| LIB-PRT-18 | **Printing fee.** When `charged_pages` > 0, one fee of kind `printing` with `print_job_id` is created for the amount and stored in `fee_id`; a member notification `fee_created` follows LIB-NOT-01. No fee for 0 charged pages. |
+| LIB-PRT-19 | **Charging example.** Student with 100 free pages, 95 used this month, one pack with 50 pages left: a black-and-white job of 30 pages → `free_pages` 5, `pack_pages` 25, `charged_pages` 0, no fee; the pack has 25 pages left. |
+| LIB-PRT-20 | **Charging example 2.** Guest (0 free pages, no pack): a color job of 3 pages, 2 copies → `charged_pages` 6, fee 12.00. A black-and-white job of 7 pages → fee 3.50. |
+| LIB-PRT-21 | **New month.** Free pages start again on the first day of each month: a student who used 100 free pages on 2026-11-30 has 100 free pages on 2026-12-01. |
+| LIB-PRT-22 | **Debt example.** Total debt 46.50: a job of 7 charged black-and-white pages (3.50) → `MEMBER_BLOCKED_BY_DEBT` with `details.amount` 3.50; a job of 6 pages (3.00) is printed. A job paid entirely from free pages or packs is printed with any debt. |
+
+### 37.7 Failed jobs, packs, quota and processing
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PRT-23 | **Failed print.** `POST /api/v1/print-jobs/{job_id}/fail` with `{"reason"}` (5–200 characters) on a `printed` job released at most 24 hours ago sets `failed` and `failed_reason` and returns `200` (event `print_job_failed`). Not `printed` → `409 PRINT_JOB_NOT_PRINTED`; later than 24 hours → `409 FAIL_WINDOW_CLOSED`. |
+| LIB-PRT-24 | **Refund.** For a failed job the `printing` fee, if still `open`, is waived (`waived_reason` "Failed print"); if it is already paid in full or in part, the fee stays as it is and its paid amount is counted as `refunds_pending` in LIB-PRT-44 (the money is returned outside the system). The free pages of the job return to its month and the pack pages to their packs. The member is notified (`print_job_failed`). Paper is not returned. |
+| LIB-PRT-25 | **Refund example.** A job with `free_pages` 5, `pack_pages` 25 and an open fee of 1.50 fails: the fee becomes `waived`, the month's used free pages decrease by 5 and the pack gets 25 pages back. |
+| LIB-PRT-26 | **Fail window example.** Released Mon 10:00: fail on Tue 10:00 → `failed`; on Tue 10:01 → `FAIL_WINDOW_CLOSED`. |
+| LIB-PRT-27 | **Buy a pack.** `POST /api/v1/members/{member_id}/print-packs` returns `201` with a pack of 50 pages and an open fee of kind `print_pack` (20.00, `fee_id`) (event `print_pack_bought`). Checks (all `409`): member `passive` → `MEMBER_PASSIVE`; membership not valid → `MEMBERSHIP_EXPIRED`; the member has 4 packs with pages left → `PACK_LIMIT_REACHED`. |
+| LIB-PRT-28 | **Read packs.** `GET /api/v1/members/{member_id}/print-packs` lists packs ordered by `bought_on`, then `id`; filter `with_pages_left` (`true`/`false`). |
+| LIB-PRT-29 | **Quota.** `GET /api/v1/members/{member_id}/print-quota?month=YYYY-MM` (default: the current month) returns `{"month", "membership_type", "free_pages", "free_pages_used", "free_pages_left", "pack_pages_left", "pages_printed", "amount_charged"}` for that month; `pack_pages_left` is always the current value. A month after the current month → `422`. |
+| LIB-PRT-30 | **Quota by type.** The free pages of a month follow the member's type on the day of each release; a change of type during the month changes `free_pages` for later releases, and `free_pages_left` is never below 0. |
+| LIB-PRT-31 | **Expiry.** `POST /api/v1/printing/process` sets every `queued` job with `submitted_at` + 24 hours ≤ now to `expired` and notifies the member (`print_job_expired`); returns `200` with `{"jobs_expired"}` (event `printing_processed`). |
+| LIB-PRT-32 | **Expiry example.** Submitted Mon 10:00: process on Tue 09:59 → still `queued`; on Tue 10:00 → `expired`. |
+| LIB-PRT-33 | **Low paper.** A printer contains `low_paper` (`true` while `paper_left` < 100); LIB-PRT-02 accepts the filter `low_paper` (`true`/`false`). Example: 100 sheets → `false`; after a release of 1 sheet → `true`. |
+
+### 37.8 Effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-PRT-34 | **Fees.** Fee `kind` adds `printing` and `print_pack`; Fee gets a nullable `print_job_id`. They are paid and waived like other fees and count for the total debt. |
+| LIB-PRT-35 | **Member deactivation.** LIB-MEM-10 cancels the member's `queued` jobs (no notification); packs keep their pages. |
+| LIB-PRT-36 | **Member summary.** LIB-MEM-12 also returns `"printing": {"free_pages_left": <int>, "pack_pages_left": <int>, "queued_jobs": <int>}` for the current month. |
+| LIB-PRT-37 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) while the branch has a printer that is not `retired`. |
+| LIB-PRT-38 | **Closures.** A branch closure (LIB-STF-10) for today makes releases at its printers fail with `BRANCH_NOT_OPEN`; sending jobs is still allowed. |
+| LIB-PRT-39 | **Building access.** Leaving the branch (LIB-ACC-17) does not cancel queued jobs. A member who is not inside can still send and cancel jobs. |
+| LIB-PRT-40 | **Card release.** `POST /api/v1/print-jobs/release-by-card` with `{"printer_id", "card_no"}` (librarian, admin; the printer's own terminal) releases all `queued` jobs of the card's member for that printer in `submitted_at` order as in LIB-PRT-13 with check (5); returns `200` with `{"released": [ids], "refused": [{"job_id", "code"}]}`. A card that is not `active` → `409 CARD_NOT_ACTIVE`; an unknown card → `404`. |
+| LIB-PRT-41 | **Card release example.** Three queued jobs of 10, 10 and 10 sheets and `paper_left` 25: the first two are released, the third is refused with `OUT_OF_PAPER`. |
+| LIB-PRT-42 | **Notifications.** Added to LIB-NOT-01: `print_job_cancelled` (only by LIB-PRT-04), `print_job_expired`, `print_job_failed`; messages contain the job title. Notifications get a nullable `print_job_id`. Sending and releasing do not notify. |
+| LIB-PRT-43 | **Audit.** Module 29 reports: `printer_created`, `printer_changed`, `printer_refilled`, `print_job_submitted`, `print_job_released`, `print_job_cancelled`, `print_job_failed`, `print_pack_bought`, `printing_processed`. |
+| LIB-PRT-44 | **Printing report.** `GET /api/v1/reports/printing?from=&to=` (at most 366 days, `from` ≤ `to`, otherwise `422`) returns one row per branch with printers, ordered by branch `code`: `{"branch_id", "jobs_printed", "pages", "color_pages", "sheets", "free_pages", "pack_pages", "charged_pages", "revenue", "packs_sold", "jobs_failed", "refunds_pending"}` for jobs released in the range, including jobs that failed later (packs by `bought_on`, of members whose home branch it is). `revenue` sums printing fees that are not waived. Filter `branch_id`. |
+| LIB-PRT-45 | **Report example.** At A: a black-and-white job of 10 pages (all free), a color job of 2 pages (fee 4.00) and a failed job of 3 charged pages (fee waived) → `jobs_printed` 3, `pages` 15, `color_pages` 2, `charged_pages` 5, `revenue` 4.00, `jobs_failed` 1. |
+| LIB-PRT-46 | **Not exported.** Printers, jobs and packs are not part of import and export (module 13). |
+| LIB-PRT-47 | **Members/me.** `GET /api/v1/members/me` adds `free_pages_left` for the current month. |
+
+### 37.9 Error codes of module 29
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `PRINTER_RETIRED` | LIB-PRT-03, LIB-PRT-05 |
+| 409 | `PAPER_CAPACITY_EXCEEDED` | LIB-PRT-05 |
+| 409 | `PRINTER_UNAVAILABLE` | LIB-PRT-08, LIB-PRT-14 |
+| 409 | `PRINTER_NO_COLOR` | LIB-PRT-08 |
+| 409 | `PRINTER_NO_DUPLEX` | LIB-PRT-08 |
+| 409 | `PRINT_QUEUE_FULL` | LIB-PRT-08 |
+| 409 | `DAILY_PAGE_LIMIT` | LIB-PRT-08 |
+| 409 | `PRINT_JOB_NOT_QUEUED` | LIB-PRT-12, LIB-PRT-14 |
+| 409 | `NOT_IN_BRANCH` | LIB-PRT-14 |
+| 409 | `OUT_OF_PAPER` | LIB-PRT-14 |
+| 409 | `PRINT_JOB_NOT_PRINTED` | LIB-PRT-23 |
+| 409 | `FAIL_WINDOW_CLOSED` | LIB-PRT-23 |
+| 409 | `PACK_LIMIT_REACHED` | LIB-PRT-27 |
+
+`MEMBER_PASSIVE`, `MEMBERSHIP_EXPIRED`, `MEMBER_BLOCKED_BY_DEBT`, `BRANCH_INACTIVE`, `BRANCH_NOT_OPEN`, `BRANCH_IN_USE`, `CARD_NOT_ACTIVE` and `CONFLICT` keep their meaning from earlier sections.
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -3697,4 +3867,5 @@ A person is **inside** a branch while they have a visit there with `left_at` nul
 | Module 26: Reading programs | LIB-RDP-01 – LIB-RDP-47 | 47 |
 | Module 27: Announcements and messages | LIB-MSG-01 – LIB-MSG-47 | 47 |
 | Module 28: Member cards and building access | LIB-ACC-01 – LIB-ACC-52 | 52 |
-| **Total** | | **850** |
+| Module 29: Printing and copying | LIB-PRT-01 – LIB-PRT-47 | 47 |
+| **Total** | | **897** |
