@@ -1,6 +1,6 @@
 # Web interface requirements
 
-> Version 1.0 · 2026-11-16. The web interface (frontend) of the Library Management System specified in `REQUIREMENTS.md`. It is generated in three steps after all backend modules (step 24: sections 1 and 2; step 25: section 3, modules 15–21; step 26: section 3, modules 22–28). It only calls the REST API, is not part of the measured code and is not refactored (ADR 002); it lets the instructor and the team use the system. Section and requirement numbers without a prefix (6.6, LIB-MEM-01) refer to `REQUIREMENTS.md`.
+> Version 1.0 · 2026-11-16. The web interface (frontend) of the Library Management System specified in `REQUIREMENTS.md`. It is generated in three steps after all backend modules (step 24: sections 1 and 2; step 25: section 3, modules 15–21; step 26: section 3, modules 22–28). The screens of module 29 (section 3.15) are generated with the module itself in step 27. It only calls the REST API, is not part of the measured code and is not refactored (ADR 002); it lets the instructor and the team use the system. Section and requirement numbers without a prefix (6.6, LIB-MEM-01) refer to `REQUIREMENTS.md`.
 
 ## 1. General rules
 
@@ -61,7 +61,7 @@ Every action calls the endpoint named in brackets and shows the result as in LIB
 | LIB-UI-AUD-01 | **Audit log.** Admin. The audit log with the filters of LIB-AUD-03. |
 | LIB-UI-AUD-02 | **Import and export.** Admin. Choose a JSON file and "Import" (LIB-IO-01) shows the counts or the validation errors; "Export" downloads the JSON of LIB-IO-07; one download link per CSV entity (LIB-IO-08). |
 
-## 3. Screens of modules 15–28
+## 3. Screens of modules 15–29
 
 Same conventions as section 2.
 
@@ -223,3 +223,13 @@ Same conventions as section 2.
 | LIB-UI-ACC-04 | **Day passes.** Librarian and admin. Sell, print and cancel passes; today's passes of a branch. |
 | LIB-UI-ACC-05 | **Bans and alerts.** Librarian and admin. Create and lift bans; lost-card alerts. |
 | LIB-UI-ACC-06 | **Visits report.** Librarian and admin. LIB-ACC-44 as a table; members see their own visit history. |
+
+### 3.15 Module 29: Printing and copying
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-PRT-01 | **Print.** Member. Fields `printer_id`, `title`, `pages`, `copies`, `color`, `duplex` and the button "Send" (LIB-PRT-07), with sheets and expected cost shown before sending; own queued jobs with "Release" and "Cancel"; free pages and pack pages left. |
+| LIB-UI-PRT-02 | **My printing.** Member. Own jobs with status, pages and amount; own packs; quota of a chosen month. |
+| LIB-UI-PRT-03 | **Printers.** All roles see printers with branch, color, duplex and status; admin creates and changes them; librarian and admin "Refill" with `sheets`; printers with low paper are marked. |
+| LIB-UI-PRT-04 | **Print desk.** Librarian and admin. Jobs with filters; send a job for a member; "Release", "Cancel", "Fail" with `reason`; "Release by card" with `printer_id` and `card_no`; sell a pack ("Buy pack"); "Process" shows the count. |
+| LIB-UI-PRT-05 | **Printing report.** Librarian and admin. LIB-PRT-44 as a table. |
