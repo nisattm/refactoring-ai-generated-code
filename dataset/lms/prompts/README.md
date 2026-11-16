@@ -14,7 +14,7 @@ How the LMS is generated with Claude Code from [`../requirements.md`](../require
 | Hands off | Generated code is never edited by hand ([`../../README.md`](../../README.md#generation-rules)) |
 | Integration errors | If a step breaks earlier behavior or the app does not start, the fix is an additional prompt (`step-NN-fix-M.md`), logged and counted in the generation cost |
 | Logging | Every call: JSON result through `scripts/cost.py`, plus a row in `../generation-log.md` |
-| Baseline | After the last step the code is committed and tagged `v0-ai-baseline`; this is the starting code of every experiment |
+| Baseline | After the last step the code is committed and the tag `v0-ai-baseline` is moved to that commit (`git tag -f`, `git push -f origin v0-ai-baseline`); this is the starting code of every experiment. The tag first pointed to the 6,449-SLOC code of steps 00–09 (commit `ce03f54`), which stays in the history and is the code of the Week 5 refactoring pilot |
 
 ## Steps
 

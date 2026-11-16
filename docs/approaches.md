@@ -6,7 +6,7 @@ Defined in Weeks 1–2 (area B), updated on 29 October 2026 for Claude Code ([`d
 
 - **Tool and model:** Claude Code with a Claude Pro subscription, no API. The same model in every run: Claude Sonnet 5.5, selected by its full model ID; the Claude Code version, thinking setting and effort level are fixed and recorded. Output is not deterministic, so every experiment is repeated (Xu et al. 2025, Section 5; Ouyang et al. 2025).
 - **Scope:** the **whole LMS project is refactored in one run**, not module by module, because the modules depend on each other (instructor's feedback).
-- **Same input:** the same starting code (`v0-ai-baseline`) and the same tests for every run.
+- **Same input:** the same starting code (`v0-ai-baseline`, moved to the final generated code when generation ends) and the same tests for every run. Only the Python code under `lms/` is refactored and measured; `web/` and the tests the model wrote are left as they are. The Week 5 pilot uses the earlier 6,449-SLOC code (commit `ce03f54`).
 - **Tests are fixed by us:** the model can run at most the one fixed feedback test command where its approach allows it (see "Tools allowed per approach"); held-out tests are run only by our runner. Test files are protected ([`testing.md`](testing.md#test-protection)).
 - **The same behavior instruction** in every approach: *"Do not change the externally visible behavior of the code (REST API and the fixed service interface); only improve its structure. Do not modify tests."* No other quality hints are given.
 - **Same fix budget:** at most 3 code-changing rounds for Iterative and Multi-Agent; 1 for Single.
@@ -75,11 +75,11 @@ Claude Code loads `CLAUDE.md`, hooks, skills, settings and auto memory automatic
 ## Model and thinking settings
 
 - **Model check:** the JSON result of every run lists usage per model. A run in which any model other than Claude Sonnet 5.5 appears is invalid and repeated.
-- **Thinking:** on Sonnet 5.5 thinking cannot be turned off completely; `disabled` is rejected and the lowest setting is `between_tools` (works only at low, medium and high effort). Thinking tokens count as output tokens. The thinking setting and the effort level are chosen in the pilot and kept the same in all three approaches.
+- **Thinking:** on Sonnet 5.5 thinking cannot be turned off completely; `disabled` is rejected and the lowest setting is `between_tools` (works only at low, medium and high effort). Thinking tokens count as output tokens. As in the generation: Claude Sonnet 5.5 with `--effort high`, thinking at the default of the pinned Claude Code version (decision of 16 November 2026), the same in all three approaches.
 
 ## Usage limits
 
-Pro has a 5-hour usage window and a weekly limit; exact values are not published. The team considers the limit sufficient because the window resets every 5 hours. The pilot still records how much of the window one run uses, so that runs can be scheduled.
+Pro has a 5-hour usage window and a weekly limit; exact values are not published. The team considers the limit sufficient because the window resets every 5 hours. The pilot still records how much of the window one run uses, so that runs can be scheduled. The team has several Pro accounts; if the limit cuts a run, the run continues from where it stopped with another account, and the switch is logged. How a cut run is continued (resuming the session or a new call on the partly changed code) is decided and checked in the pilot (not verified).
 
 ## Open questions (pilot)
 
@@ -88,7 +88,7 @@ Pro has a 5-hour usage window and a weekly limit; exact values are not published
 | How are token counts collected per run? | `claude -p --output-format json`: it contains `total_cost_usd`, a per-model breakdown, usage and `session_id`; cost figures are client-side estimates (Claude Code documentation). OpenTelemetry as an alternative. |
 | Does the Pro login work in a fresh container without other state? | Test in the pilot |
 | Subagent definition fields (model, tools) | Verify against the Claude Code subagent documentation in the pilot |
-| Is static analysis output given to the LLM? | If yes, identically to all three |
+| Is static analysis output given to the LLM? | **Decided (16 November 2026): no**, in none of the three approaches. Between rounds the model only gets the IDs of the failing feedback tests, so the three approaches stay equal and the study measures what the model finds itself |
 | Does the Reviewer see the original code? | To decide in the pilot |
 
 ## Flow
