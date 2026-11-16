@@ -13,6 +13,13 @@ import { interlibraryScreens } from "./ill.js";
 import { staffScreens } from "./staff.js";
 import { eventScreens } from "./events.js";
 import { courseScreens } from "./courses.js";
+import { donationScreens } from "./donations.js";
+import { preservationScreens } from "./preservation.js";
+import { inventoryScreens } from "./inventory.js";
+import { suggestionScreens } from "./suggestions.js";
+import { programScreens } from "./programs.js";
+import { messagingScreens } from "./messaging.js";
+import { accessScreens } from "./access.js";
 
 export const allScreens = [
   ...coreScreens,
@@ -28,6 +35,13 @@ export const allScreens = [
   ...staffScreens,
   ...eventScreens,
   ...courseScreens,
+  ...donationScreens,
+  ...preservationScreens,
+  ...inventoryScreens,
+  ...suggestionScreens,
+  ...programScreens,
+  ...messagingScreens,
+  ...accessScreens,
 ];
 
 // Menu groups in the order of the modules; the group of a screen is its `module`.
@@ -52,6 +66,13 @@ const ORDER = [
   "Staff and shifts",
   "Events",
   "Course reserves",
+  "Donations",
+  "Preservation",
+  "Inventory counts",
+  "Purchase suggestions",
+  "Reading programs",
+  "Announcements and messages",
+  "Member cards and building access",
 ];
 
 export const menuGroups = ORDER.map((title) => ({ title, screens: allScreens.filter((s) => s.module === title) }));

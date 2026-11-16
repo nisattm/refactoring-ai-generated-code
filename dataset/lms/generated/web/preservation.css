@@ -1,0 +1,13 @@
+/* Screens of module: Preservation. */
+
+.budget-set-form { margin: 0; flex-wrap: nowrap; align-items: flex-end; gap: 0.4rem; }
+.budget-set-form .field { min-width: 8rem; flex: 0 1 10rem; }
+.budget-set-form .actions { flex: 0 0 auto; margin: 0; }
+.approve-budget .facts { margin-bottom: 0.5rem; }
+.job-editor:empty { display: none; }
+.overrun-warning { font-weight: 600; }
+label.pick { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; white-space: nowrap; }
+td .row-actions a { align-self: center; }
+@media (max-width: 800px) {
+  .budget-set-form { flex-wrap: wrap; }
+}

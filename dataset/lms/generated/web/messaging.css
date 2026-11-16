@@ -1,0 +1,31 @@
+/* Screens of module 27: announcements and messages. */
+.badge { display: inline-block; margin-left: 0.35rem; padding: 0 0.45rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--line); background: #f1f1f1; }
+.badge-important { background: #fde8e8; color: #8a1c1c; border-color: #e5a0a0; }
+.badge-pinned { background: #e8f0fd; color: #1c3f8a; border-color: #a0b8e5; }
+.badge-internal { background: #fff3cd; color: #6b4e00; border-color: #e3c36a; }
+
+.announcement .announcement-body { margin: 0.25rem 0 0; white-space: pre-wrap; font-weight: normal; }
+.unread-counter { margin: 0 0 0.5rem; }
+
+.check { display: inline-flex; align-items: center; gap: 0.4rem; margin-right: 1rem; }
+.check input { width: auto; }
+.check-field { min-width: 0; }
+fieldset.audience-group { border: 1px solid var(--line); border-radius: 4px; flex: 0 1 24rem; min-width: 12rem; }
+fieldset.audience-group legend { padding: 0 0.3rem; }
+
+.thread-messages { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.thread-message { border: 1px solid var(--line); border-radius: 6px; padding: 0.5rem 0.75rem; background: #fff; max-width: 48rem; }
+.thread-message.from-staff { background: #f3f8ff; }
+.thread-message.internal { background: #fffbe6; border-style: dashed; border-color: #e3c36a; }
+.thread-message-head { display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; align-items: baseline; }
+.thread-message-body { margin: 0.25rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.thread-view, .announcement-form, .announcement-stats, .thread-form { margin: 0 0 1rem; }
+.reply-form textarea, .form textarea { width: 100%; }
+.reply-form .field { flex: 1 1 100%; }
+
+.user-box .badge-link { white-space: nowrap; }
+.user-box .badge-link:empty { display: none; }
+@media (max-width: 600px) {
+  .thread-message { max-width: none; }
+  fieldset.audience-group { flex: 1 1 100%; }
+}

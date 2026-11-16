@@ -1,0 +1,34 @@
+/* Screens of module: Member cards and building access. */
+
+.member-line { font-weight: 600; margin: 0 0 0.75rem; }
+
+.gate-result-box { margin: 0.75rem 0; }
+.gate-result {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border-radius: 6px;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.gate-result.ok { background: #1f8a3b; color: #fff; }
+.gate-result.bad { background: #b42318; color: #fff; }
+.gate-result.bad p { margin: 0 0 0.25rem; }
+.gate-result.bad .error-code { font-size: 2.2rem; }
+.gate-result.bad .error-details { margin: 0.25rem 0 0; font-size: 1.1rem; font-weight: 400; }
+.gate-occupancy { color: var(--muted); }
+
+.pass-slip { border: 2px dashed var(--text); border-radius: 6px; padding: 0.75rem 1rem; margin: 0 0 1rem; background: #fff; max-width: 28rem; }
+.pass-code { font-size: 1.5rem; font-weight: 700; font-family: ui-monospace, Menlo, Consolas, monospace; margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+
+@media (max-width: 600px) {
+  .gate-result { font-size: 1.5rem; padding: 0.75rem; }
+  .gate-result.bad .error-code { font-size: 1.7rem; }
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .pass-slip, .pass-slip * { visibility: visible; }
+  .pass-slip { position: absolute; left: 0; top: 0; border-color: #000; }
+}
