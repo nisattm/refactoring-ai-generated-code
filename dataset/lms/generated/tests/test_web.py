@@ -100,3 +100,37 @@ def test_every_screen_of_section_2_has_its_route_and_heading():
         route = requirement.removeprefix("LIB-UI-").lower()
         assert f'id: "{route}"' in sources, requirement
         assert f'title: "{name}"' in sources, requirement
+
+
+def _section3_screens(first, last):
+    """Screens of the sections 3.<first> to 3.<last> of WEB_INTERFACE.md."""
+    spec = ROOT / "WEB_INTERFACE.md"
+    if not spec.exists():
+        pytest.skip("WEB_INTERFACE.md is not in the repository")
+    text = spec.read_text(encoding="utf-8")
+    section = text.split("## 3. Screens of modules 15–29", 1)[1]
+    parts = re.split(r"^### 3\.(\d+) ", section, flags=re.MULTILINE)
+    rows = []
+    for number, body in zip(parts[1::2], parts[2::2]):
+        if first <= int(number) <= last:
+            rows += re.findall(r"^\| (LIB-UI-[A-Z]+-\d\d) \| \*\*(.+?)\.?\*\*", body, flags=re.MULTILINE)
+    return rows
+
+
+def test_every_screen_of_sections_3_1_to_3_7_has_its_route_and_heading():
+    rows = _section3_screens(1, 7)
+    assert len(rows) == 47
+    sources = "\n".join(p.read_text(encoding="utf-8") for p in (WEB / "screens").glob("*.js"))
+    for requirement, name in rows:
+        route = requirement.removeprefix("LIB-UI-").lower()
+        assert f'id: "{route}"' in sources, requirement
+        assert f'title: "{name}"' in sources, requirement
+
+
+def test_screens_of_modules_15_to_21_are_registered_in_the_menu():
+    index = (WEB / "screens" / "index.js").read_text(encoding="utf-8")
+    for module in ("Study rooms", "Equipment loans", "Digital resources", "Interlibrary loans", "Staff and shifts", "Events", "Course reserves"):
+        assert f'"{module}"' in index
+    for name in ("rooms", "equipment", "digital", "ill", "staff", "events", "courses"):
+        assert (WEB / "screens" / f"{name}.js").is_file()
+        assert (WEB / f"{name}.css").is_file()

@@ -26,7 +26,8 @@ function allowed(screen, user) {
 
 function screenById(id) {
   if (id === "home") return homeScreen;
-  return allScreens.find((s) => s.id === id) || null;
+  // screens marked "Part of …" have no route (LIB-UI-GEN-03)
+  return allScreens.find((s) => s.id === id && !s.part) || null;
 }
 
 // ---- header and menu -------------------------------------------------------------

@@ -1,0 +1,9 @@
+/* Screens of module 19: staff and shifts. */
+.shift-list { list-style: none; margin: 0; padding: 0; }
+.shift-list .shift { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; align-items: center; padding: 0.15rem 0; }
+.shift-cancelled, .shift-missed { color: var(--muted); text-decoration: line-through; }
+.shift-completed { color: var(--ok-text); }
+tr.missing-slot td { background: var(--err-bg); }
+.missing { color: var(--err-text); }
+.leave-days { font-weight: 600; margin: 0; align-self: center; }
+.cancelled-shifts ul { margin: 0 0 0.5rem; padding-left: 1.2rem; }
