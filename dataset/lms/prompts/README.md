@@ -50,7 +50,8 @@ Modules are generated in dependency order. Each step implements whole sections o
 | 24 | Web interface: sections 1–2 of `WEB_INTERFACE.md` (general rules, screens of modules 1–14) | UI | – |
 | 25 | Web interface: sections 3.1–3.7 of `WEB_INTERFACE.md` (screens of modules 15–21) | UI | – |
 | 26 | Web interface: sections 3.8–3.14 of `WEB_INTERFACE.md` (screens of modules 22–28) | UI | – |
-| 27+ | One step per new backend module (sections 37 and later), if needed, added to this table when the module's requirements are approved | 29+ | |
+| 27 | 37 (Printing and copying) with its effects on earlier modules (37.8) and its screens (section 3.15 of `WEB_INTERFACE.md`) | 29 | 2,000 |
+| 28+ | One step per new backend module (sections 38 and later), if needed, added to this table when the module's requirements are approved | 30+ | |
 
 Line estimates come from the module table in [`../../README.md`](../../README.md); they are not given to the model. The model is never asked for more code. The instructor requires at least 30,000 SLOC (Radon, `lms/`, tests excluded); steps 0–9 gave 6,449 (`v0-ai-baseline`), so new modules are specified and generated as steps 10 and later on top of that code (ADR 002, 2026-11-05). Each new module's requirements and tests are approved before its step.
 
@@ -117,7 +118,7 @@ Steps follow the dependency order, but some rules of an earlier step depend on a
 
 ## Prompt template
 
-Every step prompt has the same three parts; only the section list changes. Files: `step-00.md` … `step-26.md`. The web interface steps 24–26 use the same pattern with `WEB_INTERFACE.md` (see below).
+Every step prompt has the same three parts; only the section list changes. Files: `step-00.md` … `step-27.md`. The web interface steps 24–26 use the same pattern with `WEB_INTERFACE.md` (see below).
 
 ```text
 REQUIREMENTS.md in this folder specifies a Library Management System.

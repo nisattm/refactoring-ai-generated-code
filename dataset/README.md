@@ -54,6 +54,7 @@ Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain a
 | 26 | Reading programs (added 2026-11-15) | 47 | 2 | 8 | 2 | program 4 statuses; participation 3 | 2 | 6 | Complex |
 | 27 | Announcements and messages (added 2026-11-16) | 47 | 2 | 8 | 2 | announcement 3 statuses; thread 3 | 2 | 6 | Complex |
 | 28 | Member cards and building access (added 2026-11-16) | 52 | 2 | 8 | 2 | card 5 statuses; day pass 3 | 2 | 6 | Complex |
+| 29 | Printing and copying (added 2026-11-16) | 47 | 2 | 8 | 2 | print job 5 statuses; printer 3 | 2 | 6 | Complex |
 
 Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 5, 6, 7, 13.
 
@@ -87,7 +88,8 @@ Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 
 | 26 | Reading programs | Reading programs with goals, featured books and copies, joining with nine checks, automatic entries from returns and attended events, manual entries, bonuses, ranking and leaderboard, completion levels, fee waivers as rewards, certificates, reminders, report | Complex | 2,000 | Long check sequences (high CC), duplicated point and level arithmetic, Feature Envy (loans, events, fees, members) |
 | 27 | Announcements and messages | Announcements for branches and membership types with scheduling, pinning, important notices and read tracking; member threads with staff replies, internal notes, response times, assignment, closing, reopening and rating; report | Complex | 2,000 | Long check sequences (high CC), duplicated audience and working-day arithmetic, Feature Envy (members, notifications, branches, users) |
 | 28 | Member cards and building access | Library cards with replacement fees and expiry, gate scans with nine entry checks, occupancy and capacity per branch, day passes for visitors, access bans, closing-time processing, lost-card alerts, lending by card, visit history, report | Complex | 2,400 | Long check sequences (high CC), duplicated date and occupancy checks, Feature Envy (members, branches, fees, loans) |
-| | **Total** | | | **~57,200** | |
+| 29 | Printing and copying | Printers with paper stock, print jobs with seven send and seven release checks, release inside the branch or by card, monthly free pages per membership type, page packs, charging as fees, failed prints with refunds, expiry, report | Complex | 2,000 | Long check sequences (high CC), duplicated page and price arithmetic, Feature Envy (members, fees, access, branches) |
+| | **Total** | | | **~59,200** | |
 
 Lines are estimates (Radon SLOC, tests excluded). Smells are not requested in prompts; which ones actually appear is measured after generation and recorded in [`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation).
 

@@ -18,7 +18,7 @@ dataset/lms/tests/
 └── heldout/test_<module>.py    Tests used only for evaluation
 ```
 
-Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access`; web interface: `ui_core`, `ui_services`, `ui_community`.
+Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access`, `printing`; web interface: `ui_core`, `ui_services`, `ui_community`, `ui_printing`.
 
 ## Ownership (30 October 2026)
 
@@ -26,7 +26,7 @@ Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`
 | --- | --- |
 | `conftest.py`, `support/` | Fatima |
 | `core`, `auth`, `reservations`, `members`, `catalog`, `branches`, `e2e`, `search`, `reports`, `audit_io`, `api` | Nisa |
-| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access`, `ui_core`, `ui_services`, `ui_community` | Fatima |
+| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access`, `printing`, `ui_core`, `ui_services`, `ui_community`, `ui_printing` | Fatima |
 
 Only the owner edits a file. A missing helper is requested from the owner of `support/`; until it exists, a test calls the API through `client` directly.
 
@@ -68,9 +68,11 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 | Web interface: general rules, modules 1–14 (step 24, from 16 November) | `ui_core` | 25 | 20 | 0 | 45 |
 | Web interface: modules 15–21 (step 25, from 16 November) | `ui_services` | 25 | 20 | 0 | 45 |
 | Web interface: modules 22–28 (step 26, from 16 November) | `ui_community` | 22 | 18 | 0 | 40 |
-| **Total** | | **846** | **742** | **13** | **1601** |
+| Printing and copying (module 29, from 16 November) | `printing` | 26 | 23 | 0 | 49 |
+| Web interface: module 29 (step 27, from 16 November) | `ui_printing` | 3 | 2 | 0 | 5 |
+| **Total** | | **875** | **767** | **13** | **1655** |
 
-`pytest --import-mode=importlib --collect-only` collects 846 feedback and 742 held-out tests without the code; every test fails until `lms` exists.
+`pytest --import-mode=importlib --collect-only` collects 875 feedback and 767 held-out tests without the code; every test fails until `lms` exists.
 
 The web interface tests (`ui_*`, ADR 002, 16 November) open each screen of `../web-interface.md` in Chromium through Playwright and check a few flows. They use the fixtures `live_url` (a uvicorn server for the same app, database and clock as `client`), `browser` and `page` of `conftest.py`, and need the image with Playwright (`docs/environment.md`). They fail until the interface of their step exists.
 
