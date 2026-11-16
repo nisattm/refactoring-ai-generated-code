@@ -66,7 +66,8 @@ Details: [`docs/plan.md`](docs/plan.md)
 │   ├── testing.md        Test case strategy
 │   ├── decisions/        Decision records
 │   └── literature/       Paper cards and survey notes
-├── metrics/              Measurement results (CSV)
+├── metrics/              Cost log of the Claude Code calls (CSV)
+├── results/              Results: baseline measurements (results/baseline/<trial|final>/<label>/), generation, pilots
 └── scripts/              Code Quality Analyzer and experiment scripts
 ```
 

@@ -18,35 +18,37 @@ Smells we look for in Claude-generated Python code, how we detect them, and wher
 | andreeaneacsu33/long-parameter-list, rudra496/codevista, gitstq/CodeRefactor-Pilot (Python); huanweide/litdoctor (JavaScript) | Small single-purpose or AI-assisted detectors (0–6 stars) | No peer-reviewed evaluation; not used |
 | Others (C#, T-SQL, PHP, notes, translations) | Not Python detectors | Not used |
 
-**Decision.** Primary detectors are the peer-reviewed PyExamine and DPy (MSR 2025) plus Ruff and Pylint rules. The topic gives us definitions, categories, evidence that thresholds vary, and the group of AI-specific smells below.
+**Decision.** Primary detectors are Ruff and Pylint rules and our own AST and import-graph scripts, one tool per smell ([`decisions/003`](decisions/003-analyzer-and-success-rule.md)). PyExamine (MSR 2025) is kept as a secondary source because it crashes silently on some files and its output order is unstable; DPy is not in the image. The topic gives us definitions, categories, evidence that thresholds vary, and the group of AI-specific smells below.
 
 ## Catalog
 
-| ID | Smell | Category (Jerzyk & Madeyski) | Level | AI-specific | Detection |
+The **total smell count** (primary metric) counts only the frozen list of [`decisions/003`](decisions/003-analyzer-and-success-rule.md): S01, S02, S03, S07, S09, S10, S11, S18, S19, S20, S21, S22, S23, each by exactly **one primary tool or rule** (first in the Detection column). Other tools in the column are **secondary**: reported, never added to the total. The same smell at the same place is counted once (key: S-ID, file, enclosing function or class). S04, S05, S08 and S12–S17 are **not measured** (no reliable tool: PyExamine is secondary, DPy is not in the image); S06 is not in the total because duplication is a primary metric of its own.
+
+| ID | Smell | Category (Jerzyk & Madeyski) | Level | AI-specific | Detection (primary · secondary) |
 | --- | --- | --- | --- | --- | --- |
-| S01 | Long Method | Bloaters | Code | | PyExamine (line threshold); Ruff PLR0915 |
-| S02 | Large Class / God Class | Bloaters | Design | | PyExamine (NOM, WMC); DPy |
-| S03 | Long Parameter List | Bloaters | Code | | PyExamine; Ruff PLR0913 |
-| S04 | Data Clumps | Bloaters | Code | | PyExamine |
-| S05 | Primitive Obsession | Bloaters | Code | | PyExamine |
-| S06 | Duplicate Code | Dispensables | Code | | jscpd; PyExamine |
-| S07 | Dead Code (unused imports, variables, functions) | Dispensables | Code | ✓ | Vulture; PyExamine; Ruff F401, F841 |
-| S08 | Speculative Generality (needless abstraction) | Dispensables | Design | ✓ | PyExamine |
-| S09 | Complex Conditional | Obfuscators | Code | | PyExamine; Ruff PLR0916, SIM |
-| S10 | Deep Nesting | Obfuscators | Code | | Pylint R1702; complexipy |
-| S11 | Magic Number | Lexical Abusers | Code | | Ruff PLR2004 |
-| S12 | Feature Envy | Couplers | Design | | PyExamine |
-| S13 | Message Chains | Couplers | Design | | PyExamine |
-| S14 | Shotgun Surgery | Change Preventers | Design | | PyExamine |
-| S15 | Divergent Change | Change Preventers | Design | | PyExamine |
-| S16 | Temporary Field | Object-Oriented Abusers | Design | | PyExamine |
-| S17 | Deficient Encapsulation | Object-Oriented Abusers | Design | | DPy |
-| S18 | Cyclic / Hub-like Dependency | Couplers | Architecture | | PyExamine; DPy |
-| S19 | Swallowed / broad exception | Functional Abusers* | Logic | ✓ | Ruff S110, BLE001; Pylint W0718 |
-| S20 | Mutable default argument | Functional Abusers* | Logic (Python) | | Ruff B006 |
-| S21 | Inconsistent / redundant return | Obfuscators* | Logic | | Pylint R1710; Ruff RET |
-| S22 | Disallowed dependency (import of a package not in `requirements.txt`, including non-existent packages) | Couplers* | Architecture | ✓ | Our script: imports compared with the allowed package list |
-| S23 | Bypassed type safety (`Any`, `cast`, blanket `# type: ignore`) | Obfuscators* | Code | ✓ | Ruff ANN401, PGH003; count of `cast(` calls (rule codes verified during setup) |
+| S01 | Long Method | Bloaters | Code | | **Own AST script** (function over 45 lines, docstring excluded) · secondary: PyExamine, Ruff PLR0915 |
+| S02 | Large Class / God Class | Bloaters | Design | | **Own AST script** (over 15 methods, `plain` classes only) · secondary: PyExamine |
+| S03 | Long Parameter List | Bloaters | Code | | **Ruff PLR0913** (FastAPI route handlers also reported separately) · secondary: PyExamine |
+| S04 | Data Clumps | Bloaters | Code | | Not measured · PyExamine (secondary) |
+| S05 | Primitive Obsession | Bloaters | Code | | Not measured · PyExamine (secondary) |
+| S06 | Duplicate Code | Dispensables | Code | | jscpd (primary metric, not in the smell total) · PyExamine (secondary) |
+| S07 | Dead Code (unused imports, variables, functions) | Dispensables | Code | ✓ | **Ruff F401 + F841** (stable run, `--ignore-noqa`) · secondary: Vulture (80 %), Ruff F401 under `--preview`, PyExamine |
+| S08 | Speculative Generality (needless abstraction) | Dispensables | Design | ✓ | Not measured · PyExamine (secondary) |
+| S09 | Complex Conditional | Obfuscators | Code | | **Ruff PLR0916** (`--preview`, separate run) **+ SIM** · secondary: PyExamine |
+| S10 | Deep Nesting | Obfuscators | Code | | **Pylint R1702** · secondary: complexipy (cognitive complexity) |
+| S11 | Magic Number | Lexical Abusers | Code | | **Ruff PLR2004** (only numbers in comparisons) |
+| S12 | Feature Envy | Couplers | Design | | Not measured · PyExamine (secondary) |
+| S13 | Message Chains | Couplers | Design | | Not measured · PyExamine (secondary) |
+| S14 | Shotgun Surgery | Change Preventers | Design | | Not measured · PyExamine (secondary) |
+| S15 | Divergent Change | Change Preventers | Design | | Not measured · PyExamine (secondary) |
+| S16 | Temporary Field | Object-Oriented Abusers | Design | | Not measured · PyExamine (secondary) |
+| S17 | Deficient Encapsulation | Object-Oriented Abusers | Design | | Not measured (DPy is not in the image) |
+| S18 | Cyclic / Hub-like Dependency | Couplers | Architecture | | **Own import graph** (strongly connected components of size > 1 at file level; primary value includes the function-level model-registration imports of `core/db.py`, the value without them is reported next to it) · secondary: files inside cycles, Pylint R0401, PyExamine |
+| S19 | Swallowed / broad exception | Functional Abusers* | Logic | ✓ | **Ruff S110 + BLE001** · secondary: Pylint W0718 |
+| S20 | Mutable default argument | Functional Abusers* | Logic (Python) | | **Ruff B006** |
+| S21 | Inconsistent / redundant return | Obfuscators* | Logic | | **Ruff RET** · secondary: Pylint R1710 |
+| S22 | Disallowed dependency (import of a package outside the fixed library list of LIB-TECH-02, including non-existent packages) | Couplers* | Architecture | ✓ | **Own script** (real `import` nodes by AST; allowed: standard library, `fastapi`, `starlette`, `pydantic_core`, `uvicorn`, `pydantic`, `sqlalchemy`, `lms`) |
+| S23 | Bypassed type safety (`Any`, `cast`, blanket `# type: ignore`) | Obfuscators* | Code | ✓ | **Ruff ANN401 + PGH003 + count of `cast(` calls** · secondary: suppression-comment counts |
 
 \* Not in the catalog directly; the category is our assignment.
 
@@ -67,7 +69,7 @@ Trivial assertions and empty tests (vibecop) are not counted as smells: tests ar
 
 ## Logic smells
 
-Code that compiles and may pass the tests but is illogical. Detectable by tools: unreachable code (Pylint W0101), unused variables and imports (Ruff F841, F401), simplifiable conditions (Ruff SIM), repeated checks of the same condition, inconsistent return values (Pylint R1710), swallowed exceptions (Ruff S110), mutable default arguments (Ruff B006). Their total is the "logic smell count" metric. Logic problems the tools miss are captured by the rubric in [`metrics.md`](metrics.md#design-and-logic-rubric).
+Code that compiles and may pass the tests but is illogical. Detectable by tools: unreachable code (Pylint W0101), unused variables and imports (Ruff F841, F401), simplifiable conditions (Ruff SIM), repeated checks of the same condition, inconsistent return values (Pylint R1710), swallowed exceptions (Ruff S110), mutable default arguments (Ruff B006). The logic smells in the frozen list (S19, S20, S21) are counted in the total smell count; the Pylint messages W0101, R1710 and W0718 are reported as secondary information. Logic problems the tools miss are captured by the rubric in [`metrics.md`](metrics.md#design-and-logic-rubric).
 
 ## Observed smells (after generation)
 

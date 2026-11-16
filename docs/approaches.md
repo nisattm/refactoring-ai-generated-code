@@ -10,8 +10,8 @@ Defined in Weeks 1–2 (area B), updated on 29 October 2026 for Claude Code ([`d
 - **Tests are fixed by us:** the model can run at most the one fixed feedback test command where its approach allows it (see "Tools allowed per approach"); held-out tests are run only by our runner. Test files are protected ([`testing.md`](testing.md#test-protection)).
 - **The same behavior instruction** in every approach: *"Do not change the externally visible behavior of the code (REST API and the fixed service interface); only improve its structure. Do not modify tests."* No other quality hints are given.
 - **Same fix budget:** at most 3 code-changing rounds for Iterative and Multi-Agent; 1 for Single.
-- **Acceptance rule** (Blyth et al. 2025, Algorithm 1): a round's output is accepted only if all feedback tests pass and the primary metrics are not worse ([`metrics.md`](metrics.md#3-success-definition)); otherwise the previous best version is kept.
-- **Final gate:** output that fails the held-out tests at the end counts as a failure and is reported; the starting code is used in the analysis.
+- **Acceptance rule** (Blyth et al. 2025, Algorithm 1): a round's output is accepted (`round_accepted`) only if no feedback test that passed at the start fails now, no primary metric is worse than in the previous best version, and the OpenAPI schema hash is unchanged ([`metrics.md`](metrics.md#3-success-definition), [`decisions/003`](decisions/003-analyzer-and-success-rule.md), D17, D20, D21); otherwise the previous best version is kept. A "changed" metric needs the difference to reach its threshold (mean CC 0.01, mean Cognitive 0.01, MI 0.1, duplication 0.05 percentage points, smell count 1).
+- **Final gate:** the run is successful (`run_successful`) only if no test that passed at the start fails now (feedback and held-out separately; flaky tests are left out; a regression must fail in two repetitions), no primary metric is worse and at least one improved. A run with a regression, a changed OpenAPI schema, a missing test case, a timed-out test set or a `null` primary metric counts as a failure and is reported; the starting code is used in the analysis. Tests that already fail at the start are reported separately, not as regressions. A SLOC drop above 15 % is only a warning.
 - **Logging:** tokens, time, round number, accepted or rejected, for every run ([`metrics.md`](metrics.md#8-cost-of-the-refactoring-llm-side)).
 
 ## Rules per approach
@@ -22,7 +22,7 @@ Defined in Weeks 1–2 (area B), updated on 29 October 2026 for Claude Code ([`d
 | Roles | — | — | Analyzer (does not change code), Refactoring, Reviewer (approve or reject with reasons) |
 | Steps | One message: "find and fix the problems" | Find → fix → check → fix again if needed | Analyzer → Refactoring → Reviewer → (if rejected) Refactoring → Reviewer … |
 | Max rounds | 1 | 3 fix rounds | 1 refactoring + at most 2 Reviewer returns = 3 fixes |
-| Stopping | — | Tests pass **and** the model reports no remaining problems, or 3 rounds used | Tests pass **and** the Reviewer approves, or 2 returns used |
+| Stopping | — | No feedback test that passed at the start fails **and** the model reports no remaining problems, or 3 rounds used | No such regression **and** the Reviewer approves, or 2 returns used |
 | Test feedback | No (baseline) | Yes | Yes |
 | Output | Refactored project | Refactored project | Refactored project |
 
