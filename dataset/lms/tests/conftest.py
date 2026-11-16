@@ -129,3 +129,55 @@ def branch_a(client, admin) -> dict:
 @pytest.fixture
 def branch_b(client, admin) -> dict:
     return api.create_branch(client, admin, "BB")
+
+
+# --- Web interface (web-interface.md) ---------------------------------------------------
+# Used only by the ui_* tests. Playwright and uvicorn are imported inside the fixtures, so the
+# API tests do not need them.
+
+
+@pytest.fixture
+def live_url(app):
+    """Base URL of a real HTTP server for ``app`` (the same app, database and clock as ``client``)."""
+    import socket
+    import threading
+    import time
+
+    import uvicorn
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning", lifespan="off"))
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + 15
+    while not server.started:
+        if time.monotonic() > deadline or not thread.is_alive():
+            raise RuntimeError("the test server did not start")
+        time.sleep(0.05)
+    yield f"http://127.0.0.1:{port}"
+    server.should_exit = True
+    thread.join(timeout=10)
+
+
+@pytest.fixture(scope="session")
+def browser():
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as pw:
+        chromium = pw.chromium.launch()
+        yield chromium
+        chromium.close()
+
+
+@pytest.fixture
+def page(browser, live_url):
+    """A new browser page on ``live_url``; uncaught JavaScript errors are collected in ``page.js_errors``."""
+    context = browser.new_context(base_url=live_url, viewport={"width": 1280, "height": 800})
+    pg = context.new_page()
+    pg.set_default_timeout(5000)
+    pg.js_errors = []
+    pg.on("pageerror", lambda exc: pg.js_errors.append(str(exc)))
+    yield pg
+    context.close()

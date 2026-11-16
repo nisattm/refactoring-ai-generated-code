@@ -39,6 +39,8 @@ Before–after comparisons are only valid if every tool has the same version for
 
 **Status (30 October 2026):** done. `docker/requirements.lock` holds the exact versions from the first Python 3.14 build, and the `Dockerfile` pins Python 3.14.10, jscpd 5.4.2 and Claude Code 2.1.308. Everyone builds with `docker build -t refactoring-env .` and gets the same versions.
 
+**16 November 2026:** Playwright 1.63.0 (with greenlet 3.5.6 and pyee 13.0.1) was added to the lock file and Chromium to the `Dockerfile` (`playwright install --with-deps chromium`) for the web interface tests (ADR 002). Everyone rebuilds once with `docker build -t refactoring-env .` and checks `docker run --rm refactoring-env python -c "from playwright.sync_api import sync_playwright as s; p = s().start(); b = p.chromium.launch(); print(b.version); b.close(); p.stop()"`.
+
 To pin again (only after a decision to change versions):
 1. Empty `docker/requirements.lock`, build, then write the exact versions:
    ```bash
