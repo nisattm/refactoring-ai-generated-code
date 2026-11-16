@@ -1,7 +1,7 @@
 # Library Management System – Requirements
 
 **Status:** Complete draft (sections 1–28), revised after team review.
-**Version:** 0.20 · 2026-11-16 (adds section 35, module 27 Announcements and messages)
+**Version:** 0.21 · 2026-11-16 (adds section 36, module 28 Member cards and building access)
 
 This document specifies a Library Management System (LMS) for a university library with several branches. It is the only specification used to build the system. Tests are written from this document before the code exists, so every name, path, field, status code and error code given here is binding.
 
@@ -46,6 +46,7 @@ The system consists of 20 modules:
 | 25 | Purchase suggestions | `lms.suggestions` | 33 |
 | 26 | Reading programs | `lms.programs` | 34 |
 | 27 | Announcements and messages | `lms.messaging` | 35 |
+| 28 | Member cards and building access | `lms.access` | 36 |
 
 ### 1.2 Out of scope
 
@@ -118,7 +119,8 @@ lms/
 ├── inventory/           Module 24
 ├── suggestions/         Module 25
 ├── programs/            Module 26
-└── messaging/           Module 27
+├── messaging/           Module 27
+└── access/              Module 28
 ```
 
 | ID | Requirement |
@@ -491,6 +493,7 @@ Every endpoint MUST follow this matrix. "Own" means the resource belongs to the 
 | Purchase suggestions (module 25) | – | Suggest, change and withdraw own suggestions; support; read open suggestions and own | Full, except approving above 300.00 | Full |
 | Reading programs (module 26) | – | Read published programs and leaderboards; join and leave; own progress and certificates | Full | Full |
 | Announcements and messages (module 27) | – | Read live announcements for them; write, read, close, reopen and rate own threads | Full | Full |
+| Cards and building access (module 28) | – | Own cards (report lost or damaged), own visits and bans, branch occupancy | Full, except access settings | Full |
 | Audit log (module 13) | – | – | – | Read |
 | Import/export (module 13) | – | – | – | Full |
 
@@ -571,11 +574,11 @@ API representation (`MemberOut`): all fields above except `user_id`, plus `membe
 | LIB-MEM-06 | **List.** `GET /api/v1/members` is paginated (LIB-COM-18) and ordered by `id`. Filters: `q` (case-insensitive substring of `full_name`, `email`, `member_no` or `university_id`), `membership_type`, `status`, `home_branch_id`, `membership_valid` (`true`/`false`). |
 | LIB-MEM-07 | **Update.** `PATCH /api/v1/members/{member_id}` accepts any subset of `{"full_name", "email", "phone", "membership_type", "university_id", "home_branch_id"}`. If the resulting member breaks LIB-MEM-02, the response is `409 MEMBER_FIELDS_INVALID` with `details.fields`; LIB-MEM-05 applies as well. A changed `email` or `full_name` is also changed on the user account. `membership_start` and `valid_until` do not change. Course reserves: LIB-CRS-40. Purchase suggestions: LIB-SUG-37. |
 | LIB-MEM-08 | **Type change.** A change of `membership_type` applies only to loans created after the change. Open loans keep their due date, renewal limit and daily fee (LIB-LOAN-04). A change to `guest` requires `phone` and sets `university_id` to null; a change from `guest` requires `university_id` in the same request. |
-| LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. |
-| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. Purchase suggestions: LIB-SUG-36. Reading programs: LIB-RDP-38. Messages: LIB-MSG-32. |
-| LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. |
-| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38), `donations` (LIB-DON-38), `suggestions` (LIB-SUG-38), `programs` (LIB-RDP-39) and `messages` (LIB-MSG-33). |
-| LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. |
+| LIB-MEM-09 | **Renew membership.** `POST /api/v1/members/{member_id}/renew-membership` returns `200` with `MemberOut`. If `valid_until` ≥ today, `valid_until` increases by 365 days (guest: 90 days). If `valid_until` < today, `valid_until` = today + 364 days (guest: today + 89 days). A `passive` member returns `409 MEMBER_PASSIVE`. Cards: LIB-ACC-07. |
+| LIB-MEM-10 | **Deactivate.** `POST /api/v1/members/{member_id}/deactivate` sets `status` to `passive` and returns `200` with `MemberOut`. A member with at least one open loan returns `409 MEMBER_HAS_OPEN_LOANS`. Unpaid fees do not prevent deactivation. All active reservations of the member are cancelled with reason `member_deactivated` (LIB-RES-13). The user account stays active, so the member can still log in, read own data and see fees. Deactivating a `passive` member returns `409 MEMBER_PASSIVE`. Room bookings: LIB-ROOM-37. Equipment: LIB-EQ-35. Digital resources: LIB-DIG-37. Interlibrary loans: LIB-ILL-32. Events: LIB-EVT-40. Course reserves: LIB-CRS-39. Donations: LIB-DON-37. Purchase suggestions: LIB-SUG-36. Reading programs: LIB-RDP-38. Messages: LIB-MSG-32. Cards and visits: LIB-ACC-36. |
+| LIB-MEM-11 | **Activate.** `POST /api/v1/members/{member_id}/activate` sets `status` to `active` and returns `200`. `valid_until` does not change. Activating an `active` member returns `409 MEMBER_ALREADY_ACTIVE`. Cards: LIB-ACC-37. |
+| LIB-MEM-12 | **Summary.** `GET /api/v1/members/{member_id}/summary` returns `200` with `{"member": MemberOut, "open_loans": <int>, "overdue_loans": <int>, "active_reservations": <int>, "balance": BalanceOut, "borrowing": {"eligible": <bool>, "reasons": [<error codes>]}}`. `BalanceOut` is defined in LIB-FEE-10. `reasons` lists every code from LIB-LOAN-05 steps 1–5 that currently applies, in that order; it is empty when `eligible` is `true`. The summary also contains `rooms` (LIB-ROOM-40), `equipment` (LIB-EQ-37), `digital` (LIB-DIG-36), `ill` (LIB-ILL-34), `events` (LIB-EVT-39), `course_reserves` (LIB-CRS-38), `donations` (LIB-DON-38), `suggestions` (LIB-SUG-38), `programs` (LIB-RDP-39), `messages` (LIB-MSG-33) and `access` (LIB-ACC-38). |
+| LIB-MEM-13 | **Own record.** `GET /api/v1/members/me` returns the member linked to the authenticated user. A user without a linked member returns `404 NOT_FOUND`. Card number: LIB-ACC-48. |
 
 ---
 
@@ -713,7 +716,7 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 
 | ID | Requirement |
 | --- | --- |
-| LIB-LOAN-01 | **Lend.** `POST /api/v1/loans` with `{"member_id"}` and exactly one of `{"copy_id"}` or `{"barcode"}` returns `201` with `LoanOut`. Both or neither returns `422 VALIDATION_ERROR`. The copy's status becomes `on_loan`; its `current_branch_id` does not change until the return (LIB-LOAN-11, LIB-LOAN-12) or report-lost (LIB-LOAN-13). An unknown `barcode` returns `404 NOT_FOUND` with `details` `{"field": "barcode", "value": "<barcode>"}`. |
+| LIB-LOAN-01 | **Lend.** `POST /api/v1/loans` with `{"member_id"}` and exactly one of `{"copy_id"}` or `{"barcode"}` returns `201` with `LoanOut`. Both or neither returns `422 VALIDATION_ERROR`. The copy's status becomes `on_loan`; its `current_branch_id` does not change until the return (LIB-LOAN-11, LIB-LOAN-12) or report-lost (LIB-LOAN-13). An unknown `barcode` returns `404 NOT_FOUND` with `details` `{"field": "barcode", "value": "<barcode>"}`. Lending by card: LIB-ACC-35. |
 | LIB-LOAN-02 | **Overdue.** An open loan is overdue when today > `due_date`. |
 | LIB-LOAN-03 | **Due date.** `due_date` = the next working day on or after `loan_date` + `loan_period_days` calendar days (LIB-COM-08). Examples: student, lent 2026-11-02 → due 2026-11-16; academic, lent 2026-12-02 → 2027-01-01 is a holiday → due 2027-01-04. |
 | LIB-LOAN-04 | **Terms are fixed per loan.** `loan_period_days`, `max_renewals` and `daily_fee` are copied from the member's type (7.1) when the loan is created and are used for that loan until it closes, even if the member's type changes. |
@@ -793,12 +796,13 @@ API representation (`LoanOut`): all fields, plus `is_overdue` (LIB-LOAN-02) and 
 | `id` | integer | LIB-COM-14 |
 | `member_id` | integer | |
 | `loan_id` | integer or null | The loan the fee comes from |
-| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` \| `event_fee` \| `reserve_late_fee` \| `reserve_lost` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25; `ill_request_fee`, `ill_late_fee`, `ill_lost`: LIB-ILL-35; `event_fee`: LIB-EVT-38; `reserve_*`: LIB-CRS-35 |
+| `kind` | `late_fee` \| `damage_fee` \| `lost_book` \| `lost_processing` \| `no_show_fee` \| `equipment_late_fee` \| `equipment_damage_fee` \| `equipment_lost` \| `event_fee` \| `reserve_late_fee` \| `reserve_lost` \| `card_replacement` | `no_show_fee`: LIB-ROOM-30; `equipment_*`: LIB-EQ-25; `ill_request_fee`, `ill_late_fee`, `ill_lost`: LIB-ILL-35; `event_fee`: LIB-EVT-38; `reserve_*`: LIB-CRS-35 |
 | `room_booking_id` | integer or null | The room booking a `no_show_fee` comes from |
 | `equipment_loan_id` | integer or null | The equipment loan an `equipment_*` fee comes from |
 | `ill_request_id` | integer or null | The incoming interlibrary request an `ill_*` fee comes from |
 | `event_registration_id` | integer or null | The event registration an `event_fee` comes from |
 | `reserve_loan_id` | integer or null | The reserve loan a `reserve_*` fee comes from |
+| `card_id` | integer or null | The card a `card_replacement` fee comes from (LIB-ACC-39) |
 | `amount` | amount | > 0.00 |
 | `paid_amount` | amount | 0.00 ≤ `paid_amount` ≤ `amount` |
 | `status` | `open` \| `paid` \| `waived` | `paid` when `paid_amount` = `amount` |
@@ -900,7 +904,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 | `member_id` | integer | Recipient |
 | `type` | text | One of the types in LIB-NOT-01 |
 | `message` | text | Human-readable text in English; content is not prescribed beyond LIB-NOT-02 |
-| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id`, `suggestion_id`, `program_id`, `announcement_id`, `thread_id` | integer or null | Related entity, where applicable |
+| `loan_id`, `reservation_id`, `fee_id`, `room_booking_id`, `equipment_loan_id`, `equipment_reservation_id`, `digital_loan_id`, `digital_hold_id`, `ill_request_id`, `event_id`, `course_id`, `donation_id`, `suggestion_id`, `program_id`, `announcement_id`, `thread_id`, `card_id` | integer or null | Related entity, where applicable |
 | `created_at` | date-time | From the clock |
 | `read_at` | date-time or null | Set when the member marks it read |
 
@@ -919,7 +923,7 @@ Notifications are stored messages for members. Nothing is sent outside the syste
 
 | ID | Requirement |
 | --- | --- |
-| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41, `reservation_delayed` (LIB-INV-30) the suggestion events of LIB-SUG-42, the program events of LIB-RDP-42 and the messaging events of LIB-MSG-37. No other event creates a notification. |
+| LIB-NOT-01 | **Which events notify the member.** Exactly these events create one notification for the affected member, in the same transaction as the event: `reservation_ready` (type `reservation_ready`), `reservation_in_transit` (`reservation_in_transit`), `reservation_expired` (`reservation_expired`), `reservation_cancelled` with reason `staff_request` or `member_deactivated` (`reservation_cancelled`), `loan_created` (`loan_created`), `loan_renewed` (`loan_renewed`), `loan_returned` (`loan_returned`), `loan_lost` (`loan_lost`), `fee_created` (`fee_created`, one per fee), `payment_received` (`payment_received`), `fee_waived` (`fee_waived`), `membership_renewed` (`membership_renewed`), `member_deactivated` (`member_deactivated`), plus the reminders of LIB-NOT-05, the room events of LIB-ROOM-41, the room reminders of LIB-ROOM-42 the equipment events of LIB-EQ-38 the digital events of LIB-DIG-33 the interlibrary events of LIB-ILL-36 the events of LIB-EVT-44, the course reserve events of LIB-CRS-44, the donation events of LIB-DON-41, `reservation_delayed` (LIB-INV-30) the suggestion events of LIB-SUG-42, the program events of LIB-RDP-42 the messaging events of LIB-MSG-37 and the access events of LIB-ACC-42. No other event creates a notification. |
 | LIB-NOT-02 | The `message` MUST contain the book title for loan and reservation notifications, the amount (as in LIB-COM-13) for fee and payment notifications, and the relevant date (`due_date`, `hold_until` or `valid_until`) where one exists. |
 | LIB-NOT-03 | **Lists.** Notification lists are paginated and ordered by `created_at` descending, then `id` descending. Filters: `unread` (`true` selects `read_at` null, `false` selects `read_at` not null), `type`; `GET /api/v1/notifications` also `member_id`. |
 | LIB-NOT-04 | **Read.** `POST /api/v1/notifications/{notification_id}/read` sets `read_at` (if still null) and returns `200` with the notification; marking an already read notification again does not change `read_at`. `read-all` sets `read_at` on all unread notifications of the member and returns `200` with `{"updated": <count>}`. Only the member who owns the notification may mark it (`403 FORBIDDEN` for others, including staff). |
@@ -956,7 +960,7 @@ Query parameters: `q` (text, 0–200 characters), `author` (text), `publisher` (
 
 ## 16. Module 10: Reports
 
-All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32; the suggestions report is LIB-SUG-44; the programs report is LIB-RDP-44; the messaging report is LIB-MSG-39.
+All report endpoints are for `librarian` and `admin`. Dates are inclusive. The room usage report is LIB-ROOM-44; the equipment usage report is LIB-EQ-40; the digital usage report is LIB-DIG-39; the interlibrary activity report is LIB-ILL-38; the staff reports are LIB-STF-43 and LIB-STF-44; the event attendance report is LIB-EVT-46; the course reserves report is LIB-CRS-46; the donation reports are LIB-DON-43 and LIB-DON-44; the preservation reports are LIB-PRE-37 and LIB-PRE-38; the inventory report is LIB-INV-32; the suggestions report is LIB-SUG-44; the programs report is LIB-RDP-44; the messaging report is LIB-MSG-39; the visits report is LIB-ACC-44.
 
 ### 16.1 Endpoints and requirements
 
@@ -1007,7 +1011,7 @@ All report endpoints are for `librarian` and `admin`. Dates are inclusive. The r
 | --- | --- |
 | LIB-BR-01 | **Create branch.** `POST /api/v1/branches` with `{"code", "name", "address"}` returns `201`. `code` is stored in upper case; a duplicate returns `409 CONFLICT`. |
 | LIB-BR-02 | **List branches.** `GET /api/v1/branches` is paginated, ordered by `code`, with filter `is_active`. |
-| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. Purchase suggestions: LIB-SUG-47. Reading programs: LIB-RDP-40. Messages: LIB-MSG-34. |
+| LIB-BR-03 | **Deactivate branch.** `PATCH` with `{"is_active": false}` is rejected with `409 BRANCH_IN_USE` if any copy that is not `withdrawn` has the branch as home or current branch, any member has it as home branch, or any active reservation has it as pickup branch. Rooms: LIB-ROOM-39. Equipment: LIB-EQ-36. Interlibrary loans: LIB-ILL-33. Staff: LIB-STF-47. Events: LIB-EVT-42. Course reserves: LIB-CRS-41. Donations: LIB-DON-36. Purchase suggestions: LIB-SUG-47. Reading programs: LIB-RDP-40. Messages: LIB-MSG-34. Building access: LIB-ACC-40. |
 | LIB-BR-04 | **Inactive branch.** An inactive branch MUST NOT be used as `home_branch_id`, `pickup_branch_id`, return `branch_id`, transfer target or purchase-order branch: `409 BRANCH_INACTIVE`. In every check sequence of this document, `BRANCH_INACTIVE` is checked before all other `409` checks of the same request, unless the sequence places it explicitly (LIB-LOAN-09). |
 | LIB-BR-05 | **Start of a transfer.** A transfer starts with `started_on` = today and `expected_on` = today + 2 working days. The copy's status becomes `in_transfer` and `current_branch_id` becomes null. Example: started Friday 2026-11-06 → expected Tuesday 2026-11-10. Transfers start in three ways: `return_home` (LIB-RES-08 a), `reservation` (LIB-RES-08 c), `relocation` (LIB-BR-06). |
 | LIB-BR-06 | **Relocation.** `POST /api/v1/transfers` with `{"copy_id", "to_branch_id"}` starts a `relocation` transfer for an `available` copy and returns `201` with the transfer. Business checks in order: target branch inactive → `409 BRANCH_INACTIVE`; copy not `available` → `409 INVALID_COPY_STATUS`; `to_branch_id` equal to the copy's current branch → `409 SAME_BRANCH`. Copies in a count: LIB-INV-13. |
@@ -1148,7 +1152,7 @@ def export_dataset(settings: Settings) -> dict: ...
 | 409 | `RECEIVE_EXCEEDS_ORDERED` | LIB-PUR-07 |
 | 409 | `DATABASE_NOT_EMPTY` | LIB-IO-02 |
 
-The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7, those of module 25 in 33.8, those of module 26 in 34.9, those of module 27 in 35.7.
+The error codes of module 15 are listed in 23.9, those of module 16 in 24.10, those of module 17 in 25.9, those of module 18 in 26.9, those of module 19 in 27.9, those of module 20 in 28.9, those of module 21 in 29.10, those of module 22 in 30.9, those of module 23 in 31.7, those of module 24 in 32.7, those of module 25 in 33.8, those of module 26 in 34.9, those of module 27 in 35.7, those of module 28 in 36.9.
 
 ---
 
@@ -2137,7 +2141,7 @@ A shift **counts** while its status is `planned` or `completed`. Shift hours = (
 | LIB-STF-07 | **Read hours.** `GET /api/v1/branches/{branch_id}/hours` returns `200` with `{"branch_id", "opens_at", "closes_at", "min_staff"}`; a branch without a record returns the defaults. Unknown branch → `404`. |
 | LIB-STF-08 | **Set hours.** `PUT /api/v1/branches/{branch_id}/hours` with `{"opens_at", "closes_at", "min_staff"}` returns `200` (event `branch_hours_updated`). Values outside 27.1 → `422`. A change that would leave a counting shift with a date after today outside the new hours → `409 SHIFTS_OUTSIDE_HOURS` with `details.shift_ids` (ascending); nothing is changed. |
 | LIB-STF-09 | **Hours and the equipment desk.** The equipment desk of a branch (LIB-EQ-01) is open at `t` when the branch is open on the date of `t` and `opens_at` ≤ local time of `t` < `closes_at`. With the default hours this is LIB-EQ-01 unchanged. LIB-EQ-02 uses the branch's hours and open dates. |
-| LIB-STF-10 | **Add closure.** `POST /api/v1/branches/{branch_id}/closures` with `{"date", "reason"}` returns `201` (event `branch_closure_added`). Checks (all `409` unless stated): branch inactive → `BRANCH_INACTIVE`; `date` not after today → `422`; `date` not a working day → `NOT_A_WORKING_DAY`; a closure of the branch on that date exists → `CONFLICT`. |
+| LIB-STF-10 | **Add closure.** `POST /api/v1/branches/{branch_id}/closures` with `{"date", "reason"}` returns `201` (event `branch_closure_added`). Checks (all `409` unless stated): branch inactive → `BRANCH_INACTIVE`; `date` not after today → `422`; `date` not a working day → `NOT_A_WORKING_DAY`; a closure of the branch on that date exists → `CONFLICT`. Building access: LIB-ACC-52. |
 | LIB-STF-11 | **Effects of a closure.** On creation, in this order: (1) counting `planned` shifts of the branch on that date are cancelled with reason `branch_closed`; (2) `booked` room bookings in rooms of the branch on that date are cancelled with reason `branch_closed` (LIB-ROOM-26, notifies the persons); (3) `booked` equipment reservations of the branch with `starts_at` on that date are cancelled with reason `branch_closed` (notifies the member). The `201` response is the closure (`id`, `branch_id`, `date`, `reason`, `created_by`) plus the counts `cancelled_shifts`, `cancelled_room_bookings` and `cancelled_equipment_reservations`. Events: LIB-EVT-12. |
 | LIB-STF-12 | **Remove closure.** `DELETE /api/v1/closures/{closure_id}` returns `204` (event `branch_closure_removed`) when the date is after today; otherwise `409 CLOSURE_IN_PAST`. Cancelled shifts and bookings are not restored. |
 | LIB-STF-13 | **Read closures.** `GET /api/v1/closures` is paginated, ordered by `date`, then `branch_id`, with filters `branch_id`, `from`, `to` (inclusive). |
@@ -3493,6 +3497,170 @@ A `published` announcement is **live** at time `t` when `publish_at` ≤ `t` and
 
 ---
 
+## 36. Module 28: Member cards and building access
+
+Every member gets a library card. Members enter and leave a branch by scanning their card at the gate; the library knows who is inside, keeps branches under their visitor capacity and counts visits. Visitors without membership buy a day pass. Lost and damaged cards are replaced for a fee, and staff can ban a member from entering. Package `lms.access`. Times are local (LIB-COM-01).
+
+### 36.1 Data
+
+**Card**
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `id` | integer | LIB-COM-14 |
+| `card_no` | text | `"LC"` + 8 digits, given in order from `"LC00000001"` |
+| `member_id` | integer | |
+| `status` | `active` \| `lost` \| `damaged` \| `expired` \| `revoked` | Initially `active` |
+| `issued_on` | date | |
+| `expires_on` | date | The member's `valid_until` when issued; follows renewals (LIB-ACC-07) |
+| `replaces_id` | integer or null | The card it replaced |
+| `fee_id` | integer or null | Its replacement fee |
+| `ended_on` | date or null | When it stopped being `active` |
+
+A member has at most one `active` card.
+
+**Access settings** (per branch): `capacity` (integer 1–5000 or null: no limit), `guest_entry` (boolean, default `true`), `day_passes` (boolean, default `true`), `day_pass_price` (amount 0.00–100.00, default 5.00).
+
+**Visit:** `id`, `branch_id`, `member_id` or `day_pass_id` (exactly one), `card_id` (null for day passes), `entered_at`, `left_at` (null while inside), `closed_by` (`exit` \| `closing` \| `staff` \| null).
+
+A person is **inside** a branch while they have a visit there with `left_at` null. **Occupancy** of a branch = its visits with `left_at` null.
+
+**Day pass:** `id`, `code` (`"DP-<branch code>-<yyyymmdd>-<n>"`, `n` from 1 per branch and day), `branch_id`, `visitor_name` (LIB-COM-16), `valid_on` (date), `price` (amount), `status` (`unused` \| `used` \| `cancelled`), `sold_at`, `sold_by`.
+
+**Access ban:** `id`, `member_id`, `reason` (1–200 characters), `starts_on`, `ends_on` (date), `lifted_at` (date-time or null), `created_by`. A ban is **in force** on `d` when not lifted and `starts_on` ≤ `d` ≤ `ends_on`.
+
+### 36.2 Fees
+
+| Reason for a new card | Fee kind | Amount |
+| --- | --- | --- |
+| First card | – | none |
+| Old card `lost` | `card_replacement` | 25.00 |
+| Old card `damaged` | `card_replacement` | 10.00 |
+| Third or later replacement within 365 days (by `issued_on`) | `card_replacement` | 50.00 instead |
+| Old card `expired` (renewed membership) | – | none |
+
+### 36.3 Endpoints
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/v1/members/{member_id}/cards` | librarian, admin | Issue a card |
+| `GET /api/v1/members/{member_id}/cards` | librarian, admin; member (own) | Cards of a member |
+| `GET /api/v1/cards/{card_no}` | librarian, admin | Look up a card |
+| `POST /api/v1/cards/{card_no}/report` | librarian, admin; member (own) | Report a card lost or damaged |
+| `PUT`, `GET /api/v1/access-settings/{branch_id}` | write: admin; read: librarian, admin | Access settings |
+| `POST /api/v1/access/scan` | librarian, admin | Gate scan (entry or exit) |
+| `GET /api/v1/access/alerts` | librarian, admin | Lost card alerts |
+| `GET /api/v1/branches/{branch_id}/occupancy` | all authenticated users | Who is inside (count) |
+| `GET /api/v1/branches/{branch_id}/inside` | librarian, admin | Who is inside (list) |
+| `POST /api/v1/visits/{visit_id}/close` | librarian, admin | End a visit by hand |
+| `POST`, `GET /api/v1/day-passes`; `POST /api/v1/day-passes/{pass_id}/cancel` | librarian, admin | Day passes |
+| `POST`, `GET /api/v1/members/{member_id}/access-bans`; `POST /api/v1/access-bans/{ban_id}/lift` | librarian, admin (GET also member own) | Bans |
+| `GET /api/v1/members/{member_id}/visits` | librarian, admin; member (own) | Visit history |
+| `POST /api/v1/access/process` | librarian, admin | Close visits after hours, expire cards |
+| `GET /api/v1/reports/visits` | librarian, admin | Report (section 16) |
+
+### 36.4 Cards
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ACC-01 | **Issue.** `POST /api/v1/members/{member_id}/cards` returns `201` with a new `active` card, `issued_on` today and `expires_on` = the member's `valid_until` (event `card_issued`). The member is notified (`card_issued`, with the card number). |
+| LIB-ACC-02 | **Issue checks.** In order (all `409`): member `passive` → `MEMBER_PASSIVE`; membership not valid today → `MEMBERSHIP_EXPIRED`; the member has an `active` card → `CARD_ALREADY_ACTIVE` with `details.card_no`. |
+| LIB-ACC-03 | **Replacement fee.** When the member's latest card is `lost` or `damaged`, the new card has `replaces_id` (the latest card) and a fee of kind `card_replacement` (36.2) whose `card_id` is the new card; the fee's `id` is stored in the card's `fee_id`. The fee is created with the card. |
+| LIB-ACC-04 | **Fee examples.** First card → no fee. Card reported lost, new card → 25.00. That one damaged → 10.00. A third replacement within 365 days of the first replacement → 50.00. A replacement after an `expired` card → no fee. |
+| LIB-ACC-05 | **Report.** `POST /api/v1/cards/{card_no}/report` with `{"reason"}` (`lost` \| `damaged`) on an `active` card sets that status and `ended_on` today and returns `200` (event `card_reported`). Not `active` → `409 CARD_NOT_ACTIVE` with `details.status`. A member may report only own cards (`403`). |
+| LIB-ACC-06 | **Read cards.** `GET /api/v1/members/{member_id}/cards` lists the member's cards ordered by `issued_on` descending, then `id` descending. `GET /api/v1/cards/{card_no}` returns one card with `member` (`{"id", "member_no", "full_name", "membership_type", "status"}`); an unknown number → `404`. |
+| LIB-ACC-07 | **Renewal.** When a membership is renewed (LIB-MEM-09), the `expires_on` of the member's `active` card becomes the new `valid_until`. |
+| LIB-ACC-08 | **Expiry.** `POST /api/v1/access/process` sets every `active` card with `expires_on` before today to `expired` with `ended_on` today; the response contains `cards_expired`. |
+| LIB-ACC-09 | **Expiry example.** Card expiring 2027-11-01: process on 2027-11-01 → stays `active`; on 2027-11-02 → `expired`. |
+
+### 36.5 Settings and occupancy
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ACC-10 | **Settings.** `PUT /api/v1/access-settings/{branch_id}` with any subset of `{"capacity", "guest_entry", "day_passes", "day_pass_price"}` stores them and returns `200` with all settings (event `access_settings_changed`). `GET` returns them; a branch without settings returns the defaults of 36.1. Values outside 36.1 → `422`; an unknown branch → `404`. |
+| LIB-ACC-11 | **Capacity below occupancy.** A `capacity` below the current occupancy → `409 CAPACITY_BELOW_OCCUPANCY` with `details.occupancy`. |
+| LIB-ACC-12 | **Occupancy.** `GET /api/v1/branches/{branch_id}/occupancy` returns `{"branch_id", "inside", "members", "visitors", "capacity", "free"}` (`free` null without a capacity). |
+| LIB-ACC-13 | **Inside list.** `GET /api/v1/branches/{branch_id}/inside` returns the open visits of the branch ordered by `entered_at`, then `id`: `{"visit_id", "member_id", "full_name", "day_pass_code", "entered_at"}` (member fields null for day passes). |
+
+### 36.6 Gate
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ACC-14 | **Scan.** `POST /api/v1/access/scan` with `{"branch_id", "direction", "card_no"}` or `{"branch_id", "direction", "pass_code"}` (exactly one of the last two, otherwise `422`; `direction` `in` \| `out`) returns `200` with `{"result": "entered" \| "left", "visit_id", "member_id", "day_pass_id"}` (event `access_scanned` for results only). An unknown card or pass → `404 NOT_FOUND`. |
+| LIB-ACC-15 | **Entry checks (card).** In order (all `409`): (1) the card is not `active` → `CARD_NOT_ACTIVE` with `details.status` (a `lost` card also creates an alert, LIB-ACC-21); (2) member `passive` → `MEMBER_PASSIVE`; (3) membership not valid today → `MEMBERSHIP_EXPIRED`; (4) the branch is inactive → `BRANCH_INACTIVE`; (5) the branch is not open now (LIB-STF-09 rule) → `BRANCH_NOT_OPEN`; (6) a ban in force today → `ACCESS_BANNED` with `details.ends_on`; (7) type `guest` and `guest_entry` `false` → `GUEST_ENTRY_NOT_ALLOWED`; (8) the member is inside a branch → `ALREADY_INSIDE` with `details.branch_id`; (9) occupancy ≥ `capacity` → `BRANCH_FULL` with `details.capacity`. |
+| LIB-ACC-16 | **Entry.** Passing the checks creates a visit with `entered_at` = now. |
+| LIB-ACC-17 | **Exit.** A scan with `direction` `out` closes the member's open visit (`left_at` = now, `closed_by` `exit`). Checks (all `409`): not inside → `NOT_INSIDE`; inside another branch → `WRONG_BRANCH` with `details.branch_id`. Exit works with a card that is no longer `active` and for passive members. |
+| LIB-ACC-18 | **Gate examples.** Hours 08:00–20:00: entry at 07:59 → `BRANCH_NOT_OPEN`; at 08:00 → entered; again at 08:05 → `ALREADY_INSIDE`; exit at 09:00 → left (visit of 60 minutes). |
+| LIB-ACC-19 | **Day pass entry.** A `pass_code` scan with `in` is allowed for an `unused` pass of that branch with `valid_on` today; it sets the pass `used` and creates the visit. Checks (all `409`): pass of another branch → `WRONG_BRANCH`; `valid_on` not today → `PASS_NOT_VALID_TODAY`; `used` or `cancelled` → `PASS_NOT_USABLE` with `details.status`; branch not open → `BRANCH_NOT_OPEN`; occupancy ≥ `capacity` → `BRANCH_FULL`. `out` closes its visit as in LIB-ACC-17. |
+| LIB-ACC-20 | **Close by hand.** `POST /api/v1/visits/{visit_id}/close` ends an open visit (`closed_by` `staff`) and returns `200` (event `visit_closed`). Already ended → `409 VISIT_NOT_OPEN`. |
+| LIB-ACC-21 | **Lost card alert.** A scan with a `lost` card is refused (LIB-ACC-15) and stored as an alert `{card_no, branch_id, at}`; `GET /api/v1/access/alerts` (librarian, admin) lists alerts ordered by `at` descending; the member is notified (`lost_card_used`). |
+| LIB-ACC-22 | **Closing time.** `POST /api/v1/access/process` also ends every open visit of a branch that is not open now (`left_at` = the branch's `closes_at` on the date of `entered_at` when that is not later than now, otherwise now; `closed_by` `closing`); the response contains `visits_closed`. |
+| LIB-ACC-23 | **Closing example.** Member entered at 19:30 with hours 08:00–20:00: process at 19:59 → still inside; at 20:30 → visit closed with `left_at` 20:00. |
+| LIB-ACC-24 | **Process response.** `POST /api/v1/access/process` returns `200` with `{"visits_closed", "cards_expired", "passes_expired"}` (event `access_processed`); `passes_expired` counts `unused` passes with `valid_on` before today, which become `cancelled`. |
+
+### 36.7 Day passes and bans
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ACC-25 | **Sell a day pass.** `POST /api/v1/day-passes` with `{"branch_id", "visitor_name"}` creates an `unused` pass for today at the branch's `day_pass_price` and returns `201` (event `day_pass_sold`). Checks (all `409`): branch inactive → `BRANCH_INACTIVE`; `day_passes` `false` → `DAY_PASSES_DISABLED`; 50 passes already sold at the branch today → `DAY_PASS_LIMIT_REACHED` with `details.limit` 50. |
+| LIB-ACC-26 | **Pass code example.** The third pass of branch `AA` on 2026-11-02 has code `"DP-AA-20261102-3"`. |
+| LIB-ACC-27 | **Cancel a pass.** `POST /api/v1/day-passes/{pass_id}/cancel` on an `unused` pass sets `cancelled` and returns `200` (event `day_pass_cancelled`); otherwise `409 PASS_NOT_USABLE`. Cancelled passes count for the limit but not for revenue. |
+| LIB-ACC-28 | **List passes.** `GET /api/v1/day-passes` is paginated, ordered by `id` descending, with filters `branch_id`, `valid_on`, `status`. |
+| LIB-ACC-29 | **Ban.** `POST /api/v1/members/{member_id}/access-bans` with `{"reason", "starts_on", "ends_on"}` (`starts_on` default today, not in the past; `ends_on` ≥ `starts_on`, at most 365 days after it; otherwise `422`) creates a ban and returns `201` (event `access_ban_created`); the member is notified (`access_banned`, with the end date). If the member is inside a branch when a ban starting today is created, the visit is ended (`closed_by` `staff`). |
+| LIB-ACC-30 | **Lift.** `POST /api/v1/access-bans/{ban_id}/lift` sets `lifted_at` and returns `200` (event `access_ban_lifted`). Already lifted → `409 BAN_ALREADY_LIFTED`. |
+| LIB-ACC-31 | **Read bans.** `GET /api/v1/members/{member_id}/access-bans` lists the member's bans ordered by `starts_on` descending, each with `in_force` (today). |
+| LIB-ACC-32 | **Ban example.** Ban 2026-11-02 – 2026-11-05: entry on 2026-11-05 → `ACCESS_BANNED` (`ends_on` 2026-11-05); on 2026-11-06 → entered. |
+| LIB-ACC-33 | **Overlapping bans.** A new ban that overlaps a ban not lifted → `409 BAN_OVERLAPS` with `details.ban_id`. |
+
+### 36.8 Visits, effects on other modules and reports
+
+| ID | Requirement |
+| --- | --- |
+| LIB-ACC-34 | **Visit history.** `GET /api/v1/members/{member_id}/visits` is paginated, ordered by `entered_at` descending, with filters `from`, `to` (dates of `entered_at`) and `branch_id`; each visit has `minutes` (whole minutes from `entered_at` to `left_at`, null while inside). |
+| LIB-ACC-35 | **Lending by card.** LIB-LOAN-01 also accepts `{"card_no"}` instead of `member_id`: an `active` card gives its member; a card that is not `active` → `409 CARD_NOT_ACTIVE` with `details.status`; an unknown card → `404`. Both `member_id` and `card_no` → `422`. |
+| LIB-ACC-36 | **Member deactivation.** LIB-MEM-10 sets the member's `active` card to `revoked` (`ended_on` today) and ends an open visit (`closed_by` `staff`). |
+| LIB-ACC-37 | **Member activation.** LIB-MEM-11 does not issue a card; a new card is issued by LIB-ACC-01 (no fee after `revoked`). |
+| LIB-ACC-38 | **Member summary.** LIB-MEM-12 also returns `"access": {"card_no": <text or null>, "card_status": <text or null>, "inside_branch_id": <int or null>, "visits_this_month": <int>}` for the member's latest card and current visit. |
+| LIB-ACC-39 | **Fees.** Fee `kind` adds `card_replacement`; Fee gets a nullable `card_id`. They are paid and waived like other fees and count for the total debt. |
+| LIB-ACC-40 | **Branch deactivation.** LIB-BR-03 also rejects deactivation (`409 BRANCH_IN_USE`) while someone is inside the branch or the branch has an `unused` day pass for today or later. |
+| LIB-ACC-41 | **Room bookings.** Checking in a room booking (module 15) does not require the member to be inside the branch. |
+| LIB-ACC-42 | **Notifications.** Added to LIB-NOT-01: `card_issued`, `access_banned`, `lost_card_used`; messages contain the card number or the ban end date. Notifications get a nullable `card_id`. Entries and exits do not notify. |
+| LIB-ACC-43 | **Audit.** Module 28 reports: `card_issued`, `card_reported`, `access_settings_changed`, `access_scanned`, `visit_closed`, `day_pass_sold`, `day_pass_cancelled`, `access_ban_created`, `access_ban_lifted`, `access_processed`. |
+| LIB-ACC-44 | **Visits report.** `GET /api/v1/reports/visits?from=&to=` (at most 366 days, `from` ≤ `to`, otherwise `422`) returns one row per branch with visits in the range, ordered by branch `code`: `{"branch_id", "visits", "member_visits", "unique_members", "pass_visits", "average_minutes", "peak_occupancy", "pass_revenue", "denied"}`. `average_minutes` is the mean of ended visits with 1 decimal or null; `peak_occupancy` the highest number of visits open at the same time; `pass_revenue` sums the price of `used` and `unused` passes sold in the range; `denied` counts refused entry scans (any `409` of LIB-ACC-15 or LIB-ACC-19). Filter `branch_id`. |
+| LIB-ACC-45 | **Denied scans.** Every refused entry scan is stored with its error code for LIB-ACC-44; refused scans do not create audit entries. |
+| LIB-ACC-46 | **Peak example.** Visits 09:00–10:00, 09:30–11:00 and 10:00–10:30 → `peak_occupancy` 2 (a visit ending at 10:00 is not open at 10:00). |
+| LIB-ACC-47 | **Not exported.** Cards, visits, passes and bans are not part of import and export (module 13). |
+| LIB-ACC-48 | **Card lookup for members.** `GET /api/v1/members/me` adds `card_no` (the `active` card's number or null). |
+| LIB-ACC-49 | **Guests by day pass.** Day pass visitors are counted in occupancy and capacity like members. |
+| LIB-ACC-50 | **Type changes.** A member changed to `guest` (LIB-MEM-07) who is inside stays inside; `guest_entry` is checked at the next entry. |
+| LIB-ACC-51 | **Capacity example.** Capacity 2 with a member and a day pass visitor inside: a member's entry → `BRANCH_FULL` (`capacity` 2); after one exit → entered. |
+| LIB-ACC-52 | **Closures.** A branch closure (LIB-STF-10) for today makes entry scans fail with `BRANCH_NOT_OPEN`; visits open before it are ended by LIB-ACC-22. |
+
+### 36.9 Error codes of module 28
+
+| HTTP status | Code | Requirement |
+| --- | --- | --- |
+| 409 | `CARD_ALREADY_ACTIVE` | LIB-ACC-02 |
+| 409 | `CARD_NOT_ACTIVE` | LIB-ACC-05, LIB-ACC-15, LIB-ACC-35 |
+| 409 | `CAPACITY_BELOW_OCCUPANCY` | LIB-ACC-11 |
+| 409 | `ACCESS_BANNED` | LIB-ACC-15 |
+| 409 | `GUEST_ENTRY_NOT_ALLOWED` | LIB-ACC-15 |
+| 409 | `ALREADY_INSIDE` | LIB-ACC-15 |
+| 409 | `BRANCH_FULL` | LIB-ACC-15, LIB-ACC-19 |
+| 409 | `NOT_INSIDE` | LIB-ACC-17 |
+| 409 | `WRONG_BRANCH` | LIB-ACC-17, LIB-ACC-19 |
+| 409 | `PASS_NOT_VALID_TODAY` | LIB-ACC-19 |
+| 409 | `PASS_NOT_USABLE` | LIB-ACC-19, LIB-ACC-27 |
+| 409 | `VISIT_NOT_OPEN` | LIB-ACC-20 |
+| 409 | `DAY_PASSES_DISABLED` | LIB-ACC-25 |
+| 409 | `DAY_PASS_LIMIT_REACHED` | LIB-ACC-25 |
+| 409 | `BAN_ALREADY_LIFTED` | LIB-ACC-30 |
+| 409 | `BAN_OVERLAPS` | LIB-ACC-33 |
+
+`MEMBER_PASSIVE`, `MEMBERSHIP_EXPIRED`, `BRANCH_INACTIVE`, `BRANCH_NOT_OPEN` and `BRANCH_IN_USE` keep their meaning from earlier sections.
+
+---
+
 ## Appendix A: Requirement index
 
 | Area | IDs | Count |
@@ -3528,4 +3696,5 @@ A `published` announcement is **live** at time `t` when `publish_at` ≤ `t` and
 | Module 25: Purchase suggestions | LIB-SUG-01 – LIB-SUG-47 | 47 |
 | Module 26: Reading programs | LIB-RDP-01 – LIB-RDP-47 | 47 |
 | Module 27: Announcements and messages | LIB-MSG-01 – LIB-MSG-47 | 47 |
-| **Total** | | **798** |
+| Module 28: Member cards and building access | LIB-ACC-01 – LIB-ACC-52 | 52 |
+| **Total** | | **850** |

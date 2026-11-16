@@ -175,3 +175,16 @@ Same conventions as modules 15–26.
 | LIB-UI-MSG-04 | **My messages.** Member. Own threads with unread replies; write to a branch about a loan or a fee; close, reopen and rate. |
 | LIB-UI-MSG-05 | **Messaging report.** Librarian and admin. LIB-MSG-39 as a table. |
 | LIB-UI-MSG-06 | **Header badges.** All users. Unread announcement and reply counters in the page header. |
+
+## Module 28: Member cards and building access
+
+Same conventions as modules 15–27.
+
+| ID | Requirement |
+| --- | --- |
+| LIB-UI-ACC-01 | **Cards.** Librarian and admin. Issue a card, report it lost or damaged, see the replacement fee; card history of a member. |
+| LIB-UI-ACC-02 | **Gate.** Librarian and admin. A scan field for cards and day passes with in/out; large green or red result with the reason. |
+| LIB-UI-ACC-03 | **Occupancy.** All users see how full a branch is; staff see who is inside and can end a visit. |
+| LIB-UI-ACC-04 | **Day passes.** Librarian and admin. Sell, print and cancel passes; today's passes of a branch. |
+| LIB-UI-ACC-05 | **Bans and alerts.** Librarian and admin. Create and lift bans; lost-card alerts. |
+| LIB-UI-ACC-06 | **Visits report.** Librarian and admin. LIB-ACC-44 as a table; members see their own visit history. |
