@@ -1,0 +1,7 @@
+/* Screens of the equipment module. */
+
+.slot-free { background: #fff; color: var(--accent); border-color: var(--accent); }
+.slot-free[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+.slot-full { background: #eef1f5; color: var(--muted); border-color: var(--line); }
+.slot-closed { font-weight: 700; font-size: 1.2rem; color: var(--muted); }
+.ends-line { font-weight: 600; margin: 0.25rem 0 0.5rem; }

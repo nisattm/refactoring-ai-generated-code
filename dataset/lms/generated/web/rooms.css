@@ -1,0 +1,17 @@
+/* Screens of the rooms module. */
+
+.slot-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+.slot { display: inline-block; padding: 0.35rem 0.6rem; border-radius: 4px; border: 1px solid var(--line); }
+.slot.free { background: #fff; color: var(--accent); border-color: var(--accent); }
+.slot.free.selected, .slot.free[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+.slot.booked { background: #eef1f5; color: var(--muted); text-decoration: line-through; }
+.closed { font-weight: 700; font-size: 1.2rem; color: var(--muted); }
+.participants-box { flex: 1 0 100%; border: 1px solid var(--line); border-radius: 4px; padding: 0.5rem 0.75rem; }
+.participants-box h3 { margin: 0 0 0.3rem; font-size: 1rem; }
+.chosen-participants { padding-left: 1.2rem; margin: 0.2rem 0 0.5rem; }
+.chosen-participants li { margin: 0.2rem 0; }
+.chosen-participants li.none { list-style: none; color: var(--muted); margin-left: -1.2rem; }
+.chosen-participants button { margin-left: 0.25rem; }
+tr.closed-row td { color: var(--muted); }
+p.warning { font-weight: 600; }
+select[multiple] { min-height: 5.5rem; }
