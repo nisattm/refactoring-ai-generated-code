@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import ast
+import csv
 import json
+import re
 import tokenize
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -246,3 +248,68 @@ def collect_jscpd(ws: Workspace, raw: Path, timings: dict) -> JscpdData:
               for d in data["duplicates"]]
     clones.sort(key=lambda c: (c.file_a, c.start_a, c.file_b, c.start_b))
     return JscpdData(data["statistics"]["total"], clones, read, warnings)
+
+
+# --- Vulture (secondary) -------------------------------------------------------------------------------------
+
+_VULTURE_LINE = re.compile(r"^(?P<path>.+?):(?P<line>\d+): (?P<message>.+) \((?P<confidence>\d+)% confidence\)$")
+
+
+def collect_vulture(ws: Workspace, raw: Path, timings: dict) -> list[dict]:
+    """Dead-code findings at 80 % confidence; Vulture lists no files, so only "it ran" can be checked."""
+    proc = run("vulture", ["--min-confidence", "80", str(ws.pkg)], ws.run_dir, raw, "vulture", timings, ok_codes={0, 3})
+    rows = []
+    for line in proc.stdout.splitlines():
+        match = _VULTURE_LINE.match(line.strip())
+        if not match:
+            if line.strip():
+                raise ToolFailure("vulture", f"cannot read the line {line.strip()!r}")
+            continue
+        message = match["message"]
+        rows.append({"path": _rel(match["path"], ws), "line": int(match["line"]), "kind": " ".join(message.split()[:2]),
+                     "message": message, "confidence": int(match["confidence"])})
+    return sorted(rows, key=lambda r: (r["path"], r["line"], r["message"]))
+
+
+# --- PyExamine (secondary) -----------------------------------------------------------------------------------
+
+PYEXAMINE_CONFIG = Path(__file__).resolve().parent / "pyexamine.yaml"
+_CRASH = re.compile(r"Unexpected error analyzing (?P<path>\S+?): (?P<reason>.*)")
+_UNORDERED = re.compile(r"(unused (?:parameters|fields):? |different method prefixes: )(?P<items>.+?)( in )")
+_ACROSS_FILES = re.compile(r"(across files in: )(?P<items>.+)$")
+
+
+def _normalize(text: str, ws: Workspace) -> str:
+    """No temporary paths, and the word lists whose order changes between runs sorted."""
+    text = text.replace(f"{ws.pkg}/", "").replace(str(ws.pkg), "lms")
+    text = _UNORDERED.sub(lambda m: m[1] + ", ".join(sorted(i.strip() for i in m["items"].split(","))) + m[3], text)
+    return _ACROSS_FILES.sub(lambda m: m[1] + ", ".join(sorted(re.split(r"(?<=\)), ", m["items"]))), text)
+
+
+def _files_cell(text: str, ws: Workspace) -> str:
+    """The File column: one path, or several separated by commas in a changing order; relative and sorted."""
+    paths = [part.strip() for part in text.split(", ") if part.strip()]
+    return ", ".join(sorted(_rel(part, ws) if Path(part).is_absolute() else part for part in paths))
+
+
+@dataclass
+class PyExamineData:
+    rows: list[dict]
+    crashed: dict[str, str]       # file -> reason: the detector crashed there although the exit code was 0
+
+
+def collect_pyexamine(ws: Workspace, raw: Path, timings: dict) -> PyExamineData:
+    """PyExamine with our thresholds file; it exits 0 after a crash, so stderr is read for ``Unexpected error``."""
+    target = raw / "pyexamine.csv"
+    proc = run("analyze_code_quality", [str(ws.pkg), "--config", str(PYEXAMINE_CONFIG), "--output", str(target)], ws.run_dir,
+               raw, "pyexamine", timings, ok_codes={0})
+    if not target.exists():
+        raise ToolFailure("pyexamine", "no CSV report written")
+    crashed = {_rel(m["path"], ws): m["reason"].strip() for m in _CRASH.finditer(proc.stderr)}
+    with target.open(newline="", encoding="utf-8") as handle:
+        rows = [{"type": r["Type"], "name": r["Name"], "description": _normalize(r["Description"], ws),
+                 "path": _files_cell(r["File"], ws), "unit": _normalize(r["Module/Class"], ws),
+                 "line": int(r["Line Number"]) if (r["Line Number"] or "").isdigit() else None, "severity": r["Severity"]}
+                for r in csv.DictReader(handle)]
+    rows.sort(key=lambda r: (r["type"], r["name"], r["path"], r["line"] or 0, r["unit"], r["description"], r["severity"]))
+    return PyExamineData(rows, dict(sorted(crashed.items())))

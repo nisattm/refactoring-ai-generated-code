@@ -41,6 +41,7 @@ class Unit:
     doc_lines: int
     sloc: int
     route_handler: bool
+    is_async: bool = False
 
     @property
     def id(self) -> str:
@@ -201,7 +202,7 @@ class _Scanner(ast.NodeVisitor):
                       for d in node.decorator_list)
         unit = Unit(self.path, qualname, node.name, kind, self._ordinal(qualname, kind), node.lineno, node.end_lineno,
                     any(k == "function" for k, _ in self.stack), count, _nesting_depth(node.body), doc_lines, sloc,
-                    handler)
+                    handler, isinstance(node, ast.AsyncFunctionDef))
         self.result.units.append(unit)
         self.scan.spans.append((*self._span(node), qualname))
         self.stack.append(("function", qualname))

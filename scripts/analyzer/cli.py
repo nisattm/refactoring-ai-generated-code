@@ -14,7 +14,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import SCHEMA_VERSION, aggregate, build, collect, config, graph as graph_mod, report, workspace
+from . import SCHEMA_VERSION, aggregate, build, collect, config, graph as graph_mod, report, secondary as secondary_mod, workspace
 from .astscan import resolve_class_relations, scan_files
 from .mapping import UNASSIGNED, Mapping
 from .tools import ToolFailure, versions
@@ -99,6 +99,21 @@ def _run(args, ws, mapping: Mapping, schema: dict, out: Path, raw: Path, started
     project = aggregate.stats(units, files, smells, dup_lines, read_lines, complete)
     architecture = aggregate.architecture_rows(graph, mapping)
 
+    # Secondary results (ADR 003): a problem here is reported but does not change the exit code
+    secondary_failures: list[ToolFailure] = []
+    vulture_rows = pyexamine = None
+    if args.with_secondary and not unparsable:
+        vulture_rows = _attempt(secondary_failures, lambda: collect.collect_vulture(ws, raw, timings))
+        pyexamine = _attempt(secondary_failures, lambda: collect.collect_pyexamine(ws, raw, timings))
+        if pyexamine and pyexamine.crashed:
+            secondary_failures.append(ToolFailure("pyexamine", f"a detector crashed on {len(pyexamine.crashed)} file(s) "
+                                                  "although the exit code was 0", "fileset", list(pyexamine.crashed)))
+    layer = secondary_mod.layer_violations(scan) if not unparsable else []
+    layer_counts = collections.Counter(v["rule"] for v in layer)
+    architecture += [{"kind": f"layer_violation:{v['rule']}", "source": v["path"], "target": v["target"], "value": v["line"],
+                      "note": secondary_mod.LAYER_RULES[v["rule"]]} for v in layer]
+    r0401 = secondary_mod.r0401_check(g.pylint, graph)
+
     per_id = collections.Counter(s["s_id"] for s in counted)
     smell_counts = {s: (per_id.get(s, 0) if available[s] else None) for s in config.FROZEN_IDS}
     primary = {
@@ -109,6 +124,8 @@ def _run(args, ws, mapping: Mapping, schema: dict, out: Path, raw: Path, started
     if unparsable:
         primary = dict.fromkeys(primary)
         smell_counts = dict.fromkeys(smell_counts)
+
+    static = secondary_mod.static_cases(args.code.resolve(), ws, scan, mapping, smell_counts.get("S22"), not unparsable)
 
     raw_by_rule = collections.Counter(f"{s['tool']}:{s['rule']}" for s in smells if s["s_id"] not in ("S01", "S02", "S18", "S22"))
     plain_classes = collections.Counter(c["class_kind"] for c in classes)
@@ -137,6 +154,16 @@ def _run(args, ws, mapping: Mapping, schema: dict, out: Path, raw: Path, started
         "not_measured": config.NOT_MEASURED,
         "modules_not_generated": [m["module_no"] for m in modules if m["status"] == "not generated"],
         "module_stats_valid": valid, "with_secondary": bool(args.with_secondary),
+        "layer_violations": {"api_persistence": layer_counts["api_persistence"],
+                             "domain_imports_api": layer_counts["domain_imports_api"],
+                             "core_imports_domain": layer_counts["core_imports_domain"], "total": len(layer)},
+        "r0401_check": r0401, "static_cases": {r["case"]: r["result"] for r in static},
+        "vulture": None if vulture_rows is None else {
+            "findings": len(vulture_rows), "by_kind": dict(sorted(collections.Counter(r["kind"] for r in vulture_rows).items()))},
+        "pyexamine": None if pyexamine is None else {
+            "rows": len(pyexamine.rows), "by_type": dict(sorted(collections.Counter(r["type"] for r in pyexamine.rows).items())),
+            "by_name": dict(sorted(collections.Counter(r["name"] for r in pyexamine.rows).items())),
+            "crashed_files": sorted(pyexamine.crashed)},
     }
 
     code_git = workspace.git_info(args.code.resolve())
@@ -153,6 +180,8 @@ def _run(args, ws, mapping: Mapping, schema: dict, out: Path, raw: Path, started
         "image_id": args.image_id, "tool_versions": tool_versions, "schema_version": SCHEMA_VERSION,
         "started_at": started_at.isoformat(timespec="seconds"), "duration_s": duration, "tool_seconds": timings,
         "failures": [{"tool": f.tool, "kind": f.kind, "reason": f.reason, "files": f.files[:50]} for f in failures],
+        "secondary_failures": [{"tool": f.tool, "kind": f.kind, "reason": f.reason, "files": f.files[:50]}
+                               for f in secondary_failures],
     }
 
     project_rows = [{"metric": k, "value": v, "kind": "primary", "note": ""} for k, v in primary.items()]
@@ -181,6 +210,11 @@ def _run(args, ws, mapping: Mapping, schema: dict, out: Path, raw: Path, started
                        ("duplication.csv", clones), ("modules.csv", modules), ("levels.csv", levels),
                        ("project.csv", project_rows), ("architecture.csv", architecture), ("metrics_long.csv", long_rows)):
         report.write_csv(out, name, rows, label, schema)
+    report.write_csv(out, "static_cases.csv", static, label, schema)
+    if vulture_rows is not None:
+        report.write_csv(out, "vulture.csv", vulture_rows, label, schema)
+    if pyexamine is not None:
+        report.write_csv(out, "pyexamine.csv", pyexamine.rows, label, schema)
     if args.with_secondary:
         router_groups = [("api/reports.py", "API router reports (module 10 and 15-28 reports)", "medium")]
 
@@ -195,4 +229,6 @@ def _run(args, ws, mapping: Mapping, schema: dict, out: Path, raw: Path, started
     print(f"{label}: " + ", ".join(f"{k}={'null' if v is None else round(v, 4)}" for k, v in primary.items()))
     for f in failures:
         print(f"FAILED {f.tool} ({f.kind}): {f.reason} {f.files[:5] if f.files else ''}", file=sys.stderr)
+    for f in secondary_failures:
+        print(f"secondary problem {f.tool} ({f.kind}): {f.reason} {f.files[:5] if f.files else ''}", file=sys.stderr)
     return 4 if failures else 0

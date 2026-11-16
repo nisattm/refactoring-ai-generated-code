@@ -990,7 +990,7 @@
      "name": "kind",
      "type": "string",
      "unit": "",
-     "definition": "module_edge, module_fan_in, module_fan_out, file_cycle_all_imports, file_cycle_module_level, module_cycle"
+     "definition": "module_edge, module_fan_in, module_fan_out, file_cycle_all_imports, file_cycle_module_level, module_cycle, layer_violation:<rule> (api_persistence, domain_imports_api, core_imports_domain; source = file, target = import, value = line)"
     },
     {
      "name": "source",
@@ -1056,6 +1056,153 @@
      "type": "number",
      "unit": "",
      "definition": "Value, integer or float with 4 decimals"
+    }
+   ]
+  },
+  "static_cases.csv": {
+   "description": "The static cases of the case tables that a script can check (ADR 003, D22)",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "case",
+     "type": "string",
+     "unit": "",
+     "definition": "Case ID, T-TECH-02-a ... T-TECH-12-a"
+    },
+    {
+     "name": "requirement",
+     "type": "string",
+     "unit": "",
+     "definition": "LIB-TECH requirement"
+    },
+    {
+     "name": "result",
+     "type": "string",
+     "unit": "",
+     "definition": "passed, failed, partial (only the scripted part is checked) or not checked"
+    },
+    {
+     "name": "detail",
+     "type": "string",
+     "unit": "",
+     "definition": "What was found"
+    }
+   ]
+  },
+  "vulture.csv": {
+   "description": "Dead-code findings of Vulture at 80 % confidence (secondary, --with-secondary)",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "path",
+     "type": "string",
+     "unit": "",
+     "definition": "File relative to lms/"
+    },
+    {
+     "name": "line",
+     "type": "int",
+     "unit": "line",
+     "definition": "Line"
+    },
+    {
+     "name": "kind",
+     "type": "string",
+     "unit": "",
+     "definition": "First two words of the message"
+    },
+    {
+     "name": "message",
+     "type": "string",
+     "unit": "",
+     "definition": "Vulture message"
+    },
+    {
+     "name": "confidence",
+     "type": "int",
+     "unit": "percent",
+     "definition": "Vulture confidence"
+    }
+   ]
+  },
+  "pyexamine.csv": {
+   "description": "PyExamine findings, sorted and normalized (secondary, --with-secondary)",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "type",
+     "type": "string",
+     "unit": "",
+     "definition": "Code, Structural or Architectural"
+    },
+    {
+     "name": "name",
+     "type": "string",
+     "unit": "",
+     "definition": "Smell name"
+    },
+    {
+     "name": "description",
+     "type": "string",
+     "unit": "",
+     "definition": "Description without temporary paths; word lists sorted"
+    },
+    {
+     "name": "path",
+     "type": "string",
+     "unit": "",
+     "definition": "File relative to lms/"
+    },
+    {
+     "name": "unit",
+     "type": "string",
+     "unit": "",
+     "definition": "Module or class"
+    },
+    {
+     "name": "line",
+     "type": "int",
+     "unit": "line",
+     "definition": "Line"
+    },
+    {
+     "name": "severity",
+     "type": "string",
+     "unit": "",
+     "definition": "PyExamine severity"
     }
    ]
   }

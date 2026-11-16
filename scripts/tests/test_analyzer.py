@@ -238,7 +238,7 @@ def test_same_code_gives_identical_files(run, tmp_path):
 def test_crlf_checkout_gives_the_same_result(run, tmp_path):
     code = copy_sample(tmp_path)
     for path in code.rglob("*.py"):
-        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+        path.write_bytes(path.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))   # also if the checkout is CRLF
     out = tmp_path / "crlf"
     assert analyze(code, out).returncode == 0
     assert summary(out)["code_content_hash"] == run["summary"]["code_content_hash"]
