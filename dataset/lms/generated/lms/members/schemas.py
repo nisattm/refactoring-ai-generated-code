@@ -23,6 +23,7 @@ from lms.events.schemas import EventSummaryOut
 from lms.ill.schemas import IllSummaryOut
 from lms.rooms.schemas import RoomSummaryOut
 from lms.messaging.schemas import MessagesSummaryOut
+from lms.printing.schemas import PrintingSummaryOut
 from lms.programs.schemas import ProgramSummaryOut
 from lms.suggestions.schemas import SuggestionSummaryOut
 
@@ -125,6 +126,7 @@ class MemberOut(BaseModel):
 
 class MemberMeOut(MemberOut):
     card_no: str | None
+    free_pages_left: int
 
 
 def member_out(member: Member, today) -> MemberOut:  # noqa: ANN001
@@ -168,3 +170,4 @@ class MemberSummaryOut(BaseModel):
     programs: ProgramSummaryOut
     messages: MessagesSummaryOut
     access: AccessSummaryOut
+    printing: PrintingSummaryOut

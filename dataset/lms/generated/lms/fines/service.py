@@ -93,6 +93,7 @@ def create_fee(
     event_registration_id: int | None = None,
     reserve_loan_id: int | None = None,
     card_id: int | None = None,
+    print_job_id: int | None = None,
 ) -> Fee:
     """Create an open fee (LIB-FEE-02 to LIB-FEE-04). ``amount`` is already rounded."""
     fee = Fee(
@@ -105,6 +106,7 @@ def create_fee(
         event_registration_id=event_registration_id,
         reserve_loan_id=reserve_loan_id,
         card_id=card_id,
+        print_job_id=print_job_id,
         amount=amount,
         paid_amount=ZERO,
         status="open",
@@ -128,6 +130,8 @@ def create_fee(
         details["reserve_loan_id"] = reserve_loan_id
     if card_id is not None:
         details["card_id"] = card_id
+    if print_job_id is not None:
+        details["print_job_id"] = print_job_id
     record(
         db,
         at=now,

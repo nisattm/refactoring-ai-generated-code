@@ -161,3 +161,21 @@ def test_screens_of_modules_22_to_28_are_registered_in_the_menu():
         assert f'"{module}"' in index
         assert (WEB / "screens" / f"{name}.js").is_file()
         assert (WEB / f"{name}.css").is_file()
+
+
+def test_every_screen_of_section_3_15_has_its_route_and_heading():
+    rows = _section3_screens(15, 15)
+    assert len(rows) == 5
+    sources = "\n".join(p.read_text(encoding="utf-8") for p in (WEB / "screens").glob("*.js"))
+    for requirement, name in rows:
+        route = requirement.removeprefix("LIB-UI-").lower()
+        assert f'id: "{route}"' in sources, requirement
+        assert f'title: "{name}"' in sources, requirement
+
+
+def test_screens_of_module_29_are_registered_in_the_menu():
+    index = (WEB / "screens" / "index.js").read_text(encoding="utf-8")
+    assert '"Printing and copying"' in index and "printingScreens" in index
+    assert (WEB / "screens" / "printing.js").is_file()
+    assert (WEB / "printing.css").is_file()
+    assert "printing.css" in (WEB / "index.html").read_text(encoding="utf-8")
