@@ -1,0 +1,11 @@
+run_label,schema_version,level,aggregation,modules,files,sloc,smells,mean_cc,mean_cognitive,mi_weighted,smells_per_ksloc,duplication_pct,note
+main-465b44f,1.0,simple,module mean,2,16,541,12,3.3571,2.7143,58.7940,19.7227,0.0000,descriptive only (2 modules)
+main-465b44f,1.0,simple,pooled units,2,16,541,12,2.3725,1.5918,62.3588,22.1811,0.0000,descriptive only (2 modules)
+main-465b44f,1.0,medium,module mean,5,49,7059,94,2.7815,2.0002,43.9214,13.4370,3.2972,
+main-465b44f,1.0,medium,pooled units,5,49,7059,94,2.0897,1.1635,41.5579,13.3163,7.5250,
+main-465b44f,1.0,complex,module mean,21,181,21419,239,3.5753,2.7120,37.5738,11.4549,2.1796,
+main-465b44f,1.0,complex,pooled units,21,181,21419,239,3.5223,2.6617,36.4165,11.1583,2.4780,
+main-465b44f,1.0,complex 2-7 and 13,module mean,7,39,3484,46,3.6016,2.8175,40.8113,13.2588,1.1744,sensitivity row
+main-465b44f,1.0,complex 2-7 and 13,pooled units,7,39,3484,46,3.4301,2.7337,40.6923,13.2032,1.2427,sensitivity row
+main-465b44f,1.0,complex 15-29,module mean,14,142,17935,193,3.5622,2.6592,35.9550,10.5529,2.6822,sensitivity row
+main-465b44f,1.0,complex 15-29,pooled units,14,142,17935,193,3.5401,2.6477,35.5859,10.7611,2.7233,sensitivity row
