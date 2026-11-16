@@ -1,0 +1,31 @@
+run_label,schema_version,module_no,module_name,level,status,valid,files,sloc,units,mean_cc,max_cc,share_cc_high,mean_cognitive,max_cognitive,share_cognitive_high,mi_weighted,mi_mean,smells,smells_per_ksloc,duplication_pct,duplicated_lines
+main-465b44f,1.0,1,Core,simple,generated,1,13,406,44,2.0000,5,0.0000,1.1429,5,0.0000,65.9104,70.2019,10,24.6305,0.0000,0
+main-465b44f,1.0,2,Identity and access,complex,generated,1,7,434,28,3.0000,22,0.0357,2.0370,23,0.0370,48.6281,61.2082,6,13.8249,0.0000,0
+main-465b44f,1.0,3,Members,complex,generated,1,5,506,22,3.8182,21,0.0455,2.9545,25,0.0455,40.1902,60.5587,6,11.8577,0.0000,0
+main-465b44f,1.0,4,Catalog,complex,generated,1,7,653,49,2.6735,16,0.0612,1.8367,18,0.0204,41.2514,68.5214,8,12.2511,2.7555,24
+main-465b44f,1.0,5,Loans and returns,complex,generated,1,4,406,12,5.9167,14,0.1667,4.9167,14,0.0000,35.5105,57.6626,5,12.3153,4.3750,21
+main-465b44f,1.0,6,Reservations,complex,generated,1,4,400,22,3.2727,14,0.0455,2.3182,14,0.0000,37.7812,59.4705,7,17.5000,0.0000,0
+main-465b44f,1.0,7,Fines and payments,complex,generated,1,4,348,15,2.2667,6,0.0000,1.2000,6,0.0000,43.1973,57.2066,4,11.4943,0.0000,0
+main-465b44f,1.0,8,Notifications,medium,generated,1,4,507,35,1.6000,7,0.0000,0.7143,8,0.0000,47.8505,63.2477,13,25.6410,0.0000,0
+main-465b44f,1.0,9,Search,simple,generated,1,3,135,7,4.7143,25,0.1429,4.2857,29,0.1429,51.6776,83.0117,2,14.8148,0.0000,0
+main-465b44f,1.0,10,Reports,medium,generated,1,3,245,14,2.6429,6,0.0000,2.0833,5,0.0000,43.9804,64.0664,2,8.1633,0.0000,0
+main-465b44f,1.0,11,Branches and transfers,medium,generated,1,5,370,13,4.3077,16,0.0769,3.3846,15,0.0000,50.8796,62.1899,4,10.8108,1.3304,6
+main-465b44f,1.0,12,Purchasing,medium,generated,1,4,518,31,3.3871,19,0.0645,2.8065,27,0.0645,36.1572,59.4961,5,9.6525,5.9633,39
+main-465b44f,1.0,13,"Audit log, import, export",complex,generated,1,8,737,38,4.2632,36,0.0789,4.4595,63,0.0811,39.1201,58.1406,10,13.5685,1.0905,10
+main-465b44f,1.0,14,API layer,medium,generated,1,33,5419,498,1.9699,12,0.0040,1.0121,13,0.0000,40.7395,51.1943,70,12.9175,9.1926,633
+main-465b44f,1.0,15,Study rooms,complex,generated,1,10,1482,86,3.9419,18,0.0930,3.3882,19,0.0118,30.3583,44.7771,26,17.5439,2.3575,43
+main-465b44f,1.0,16,Equipment loans,complex,generated,1,10,1696,82,3.6098,20,0.0732,2.8395,29,0.0370,32.2974,47.4945,25,14.7406,1.9893,41
+main-465b44f,1.0,17,Digital resources,complex,generated,1,12,1396,88,3.3068,23,0.0455,2.4828,24,0.0345,35.2016,48.4371,12,8.5960,3.2740,57
+main-465b44f,1.0,18,Interlibrary loans,complex,generated,1,9,1091,65,3.2154,17,0.0154,2.3016,20,0.0159,34.8375,54.1819,11,10.0825,4.1185,57
+main-465b44f,1.0,19,Staff and shifts,complex,generated,1,9,1526,82,3.4878,19,0.0732,2.4878,20,0.0122,30.1337,41.8873,23,15.0721,3.3457,63
+main-465b44f,1.0,20,Events,complex,generated,1,11,1393,70,3.7000,18,0.0857,2.8286,23,0.0429,38.9829,53.3847,15,10.7681,3.5530,62
+main-465b44f,1.0,21,Course reserves,complex,generated,1,12,1560,94,3.0106,16,0.0319,2.0532,15,0.0000,39.5049,50.6925,11,7.0513,3.5551,70
+main-465b44f,1.0,22,Donations,complex,generated,1,11,1365,60,4.7333,28,0.1333,3.9333,36,0.0667,34.2679,50.4308,8,5.8608,4.3584,72
+main-465b44f,1.0,23,Preservation,complex,generated,1,9,978,54,3.4259,17,0.0556,2.1667,11,0.0000,33.7403,51.7777,9,9.2025,3.0995,38
+main-465b44f,1.0,24,Inventory counts,complex,generated,1,9,754,35,3.7714,19,0.0571,3.0286,22,0.0571,43.4732,58.9616,7,9.2838,2.2059,21
+main-465b44f,1.0,25,Purchase suggestions,complex,generated,1,10,1148,54,3.5556,21,0.0370,2.6604,23,0.0189,38.1665,56.2129,16,13.9373,2.1262,30
+main-465b44f,1.0,26,Reading programs,complex,generated,1,10,1360,73,3.3288,19,0.0411,2.3889,23,0.0278,37.7478,53.6356,10,7.3529,1.2911,22
+main-465b44f,1.0,27,Announcements and messages,complex,generated,1,9,1077,62,3.7097,21,0.0645,2.7258,18,0.0161,34.3762,54.2536,8,7.4280,2.2761,31
+main-465b44f,1.0,28,Member cards and building access,complex,generated,1,11,1109,54,3.0741,11,0.0370,1.9434,9,0.0000,40.2822,52.6419,12,10.8206,0.0000,0
+main-465b44f,1.0,29,Printing and copying,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+main-465b44f,1.0,unassigned,unassigned,,unassigned,1,0,0,0,,,,,,,,,0,,,0

@@ -1,0 +1,31 @@
+prefix,module_no,module_name,level,note
+__init__.py,1,Core,simple,"lms/__init__.py holds the fixed service interface (requirements section 4), not Core code; assigned to module 1 by ADR 003 D2"
+core/,1,Core,simple
+auth/,2,Identity and access,complex
+members/,3,Members,complex
+catalog/,4,Catalog,complex
+loans/,5,Loans and returns,complex
+reservations/,6,Reservations,complex
+fines/,7,Fines and payments,complex
+notifications/,8,Notifications,medium
+search/,9,Search,simple
+reports/,10,Reports,medium
+branches/,11,Branches and transfers,medium
+purchasing/,12,Purchasing,medium
+audit/,13,"Audit log, import, export",complex
+api/,14,API layer,medium
+rooms/,15,Study rooms,complex
+equipment/,16,Equipment loans,complex
+digital/,17,Digital resources,complex
+ill/,18,Interlibrary loans,complex
+staff/,19,Staff and shifts,complex
+events/,20,Events,complex
+courses/,21,Course reserves,complex
+donations/,22,Donations,complex
+preservation/,23,Preservation,complex
+inventory/,24,Inventory counts,complex
+suggestions/,25,Purchase suggestions,complex
+programs/,26,Reading programs,complex
+messaging/,27,Announcements and messages,complex
+access/,28,Member cards and building access,complex
+printing/,29,Printing and copying,complex
