@@ -11,6 +11,7 @@ from collections.abc import Container
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
+from lms.access.usage import branch_in_use as branch_has_access_use
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch, Transfer
@@ -118,7 +119,9 @@ def is_branch_in_use(db: Session, branch_id: int, now: datetime.datetime) -> boo
         return True
     if branch_has_open_programs(db, branch_id):  # LIB-RDP-40
         return True
-    return branch_has_open_messages(db, branch_id, now)  # LIB-MSG-34
+    if branch_has_open_messages(db, branch_id, now):  # LIB-MSG-34
+        return True
+    return branch_has_access_use(db, branch_id, today)  # LIB-ACC-40
 
 
 def update_branch(db: Session, now: datetime.datetime, actor: User, branch: Branch, fields: dict[str, object]) -> Branch:

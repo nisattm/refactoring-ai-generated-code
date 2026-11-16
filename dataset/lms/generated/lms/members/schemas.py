@@ -7,6 +7,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from lms.access.schemas import AccessSummaryOut
 from lms.auth.passwords import password_problem
 from lms.auth.schemas import RawPassword
 from lms.core.schemas import RequestModel
@@ -122,6 +123,10 @@ class MemberOut(BaseModel):
     membership_valid: bool
 
 
+class MemberMeOut(MemberOut):
+    card_no: str | None
+
+
 def member_out(member: Member, today) -> MemberOut:  # noqa: ANN001
     return MemberOut(
         id=member.id,
@@ -162,3 +167,4 @@ class MemberSummaryOut(BaseModel):
     suggestions: SuggestionSummaryOut
     programs: ProgramSummaryOut
     messages: MessagesSummaryOut
+    access: AccessSummaryOut

@@ -59,6 +59,7 @@ def _create(
     program_id: int | None = None,
     announcement_id: int | None = None,
     thread_id: int | None = None,
+    card_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -83,6 +84,7 @@ def _create(
         program_id=program_id,
         announcement_id=announcement_id,
         thread_id=thread_id,
+        card_id=card_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -149,7 +151,7 @@ def notify_fee_created(db: Session, now: datetime.datetime, fee: Fee) -> Notific
     return _create(
         db, now, fee.member_id, "fee_created", message,
         loan_id=fee.loan_id, fee_id=fee.id, equipment_loan_id=fee.equipment_loan_id,
-        ill_request_id=fee.ill_request_id,
+        ill_request_id=fee.ill_request_id, card_id=fee.card_id,
     )
 
 
@@ -484,3 +486,14 @@ def notify_message_reply(
     return _create(
         db, now, member_id, "message_reply", f'The library replied to your message "{subject}".', thread_id=thread_id
     )
+
+
+# --- member cards and building access (LIB-ACC-42) -----------------------------------
+
+
+def notify_access(
+    db: Session, now: datetime.datetime, member_id: int, type_: str, message: str, *, card_id: int | None = None
+) -> Notification:
+    """``card_issued``, ``access_banned`` and ``lost_card_used``; the caller composes the message, which
+    contains the card number or the end date of the ban."""
+    return _create(db, now, member_id, type_, message, card_id=card_id)

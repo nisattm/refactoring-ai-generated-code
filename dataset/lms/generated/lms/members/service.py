@@ -11,6 +11,7 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
+from lms.access import usage as access_usage
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.auth.passwords import hash_password
@@ -246,6 +247,7 @@ def renew_membership(db: Session, now: datetime.datetime, actor: User, member: M
         entity_id=member.id,
         details={"valid_until": {"old": old_valid_until.isoformat(), "new": member.valid_until.isoformat()}},
     )
+    access_usage.on_membership_renewed(db, member.id, member.valid_until)  # LIB-ACC-07
     notify_membership_renewed(db, now, member.id, member.valid_until)
     return member
 
@@ -295,6 +297,7 @@ def deactivate_member(
     suggestion_usage.on_member_deactivated(db, now, actor.id, member.id)  # LIB-SUG-36
     program_usage.on_member_deactivated(db, now, actor.id, member.id)  # LIB-RDP-38
     message_usage.on_member_deactivated(db, now, actor.id, member.id)  # LIB-MSG-32
+    access_usage.on_member_deactivated(db, now, member.id)  # LIB-ACC-36
     return member
 
 
