@@ -16,9 +16,9 @@ Her araç, `lms/`'in temiz bir kopyası üzerinde (`__pycache__` yok), proje dı
 | Radon hal | 6.0.1 | `-j -f` JSON (dosya + fonksiyon) | 0,8 sn | 0 | 246 → 246 |
 | complexipy | 8.3.0 | Python API `file_complexity()`; `FileComplexity.functions[]` (`name`, `complexity`, `line_start`, `line_end`) | 0,4 sn | – | 246 → 246 |
 | Ruff | 0.17.3 | `--output-format json` | 0,1 sn | 1 (bulgu var) | 246 → 246 (`--show-files`) |
-| Pylint | 4.1.3 | `--output-format=json2` | **22,7 sn** (`-j 1`) | 8 (bit maskesi: refactor mesajı) | 249 → 249 (= dosya + 3, bkz. §4.3) |
+| Pylint | 4.1.3 | `--output-format=json2` | **22,7 sn** (`-j 1`) | 8 (bit maskesi: refactor mesajı) | liste yok; fatal/parse kontrolü (bkz. §4.3) |
 | Vulture | 2.16 | metin satırları | 1,1 sn | 3 (bulgu var) | doğrulanamaz (dosya listesi yok) |
-| jscpd | 5.4.2 | `json` raporu (`statistics`, `duplicates`) | 0,14 sn | 0 | 214–215 → 215 (bkz. §4.2) |
+| jscpd | 5.4.2 | `json` raporu (`statistics`, `duplicates`) | 0,14 sn | 0 | 215 okundu; >60 token tahmini olan 214 dosyanın hepsi listede (bkz. §4.2) |
 | PyExamine | 0.2.3 | `--output x.csv` (+ aynı klasöre `.txt`) | 10,8 sn | **0 (11 dosyada çökmeye rağmen)** | CSV yalnızca bulgusu olan dosyaları listeler |
 
 Toplam: birincil araçlar (Radon, complexipy, Ruff, Pylint, jscpd) ≈ 29 sn; Vulture + PyExamine ile ≈ 40 sn. D16 ("~30 sn") birincil kümede tutuyor; ikincil araçlar dahil ~40 sn.
@@ -66,10 +66,10 @@ Vulture %80: LMS'te 7 bulgu (hepsi `core/money.py` ve `core/timeutil.py`'de SQLA
 246 dosyanın 34'ünde (ör. `__init__.py` dosyaları) fonksiyon/sınıf yok; `radon cc` bunları çıktıya koymaz. D13 kontrolü "beklenen" kümesini bu yüzden **en az bir `def`/`class` içeren dosyalar** (AST ile, 212) olarak tanımlar.
 
 ### 4.2 jscpd 50 token altındaki dosyaları okumaz
-215 dosya okundu. Python tokenizer ile (isim, sayı, string, işleç **+ NEWLINE**) ≥ 50 token olan dosya sayısı da 215; NEWLINE'sız 214 (`core/schemas.py`: 44 anlamlı token, NEWLINE ile 50+). Sınıra yakın başka dosya yok (56 ve 60 token). D13'te jscpd'nin beklenen kümesi bu tokenizer kuralıyla hesaplanır (yaklaşık, "doğrulanmadı": jscpd dosya listesi vermiyor).
+215 dosya okundu. **Düzeltme (ADR 003, D13):** bu raporun ilk sürümü, Python tokenizer tahmininin (+ NEWLINE) 215 vermesini tahminin doğru olduğu diye yorumlamıştı; tesadüfmiş. jscpd dosya listesini ve kendi token sayısını `--reporters json,console --summary --summary-top 100000 --no-colors` ile veriyor (en küçük okunan dosya 58 token). Tahminle fark iki yönde onlarca token: `catalog/release.py` tahmin 17, jscpd 77; `core/schemas.py` tahmin 52 ama okunmadı, `search/schemas.py` tahmin 40, okunmadı. Kural: tahmini **> 60 token** olan her dosya jscpd listesinde olmalı (zorunlu, yoksa exit 4; LMS'te 214 dosyanın 214'ü listede); 40–60 token arası yalnızca uyarı (LMS'te 2 dosya, ikisi de okunmamış).
 
-### 4.3 Pylint `modulesLinted` = dosya + 3
-1, 3, 6 ve 246 dosyalık paketlerde sabit +3 (4, 6, 9, 249). Pylint dosya listesi vermediği için D13 kontrolü `dosya + 3` ile yapılır (deneysel sabit, sürüm değişirse yeniden doğrulanmalı).
+### 4.3 Pylint modül listesi vermiyor
+`modulesLinted` dosya + 3 (1, 3, 6 ve 246 dosyalık paketlerde 4, 6, 9, 249) ama refactoring yeni paket açınca değişir; D13'te kullanılmaz. `json2` ve `--verbose` işlenen modül listesi vermiyor. Kontrol: `F…` veya `E0001` (parse) mesajı yok ve çıkış kodunda fatal biti (1) yok. Sözdizimi hatalı dosyada Pylint `E0001` veriyor ve çıkış kodu 2 oluyor (denendi); bu durumda analizci exit 4 verir.
 
 ### 4.4 İç içe fonksiyonlar: D4 ile D5 aynı birim kümesini vermiyor (**karar gerekli**)
 - Radon, closure'ları ayrı blok olarak verir ve ebeveynin CC'sine **eklemez** (denendi: ebeveyn 2, iç fonksiyon 2). LMS'te 16 closure → 1.787 birim.
@@ -137,7 +137,7 @@ Tek sayı raporlanır (1+2+3), kural başına kırılımla. Bu bir öneri: kural
 - FastAPI handler sayısının 52 olması (PR 3, AST).
 - S01, S02, S18, S22, `cast(` değerleri (PR 3).
 - PyExamine'in `core` içeren döngüleri atlaması ve `--config`'siz davranışı (PR 6).
-- Pylint `+3` sabiti ve jscpd NEWLINE kuralı yalnızca bu sürümler için doğrulandı.
+- jscpd'nin dosya başına token sayısı yalnızca `--summary` metin çıktısından ayrıştırılıyor (JSON'da yok); sürüm değişirse çıktı biçimi yeniden doğrulanmalı.
 - Vulture için dosya kapsama kontrolü yapılamıyor (araç dosya listesi vermiyor); ikincil olduğu için sadece "çalıştı, çıkış 0/3" kontrol edilir.
 - jscpd şu bayraklarla çalıştırıldı: `--min-lines 5 --min-tokens 50 --pattern '**/*.py' --no-gitignore --reporters json,silent`. Varsayılan `--mode` değeri yardım metninde yazmıyor; açıkça yazmak gerekip gerekmediği PR 2'de ADR'ye girmeden önce bakılacak (doğrulanmadı).
 

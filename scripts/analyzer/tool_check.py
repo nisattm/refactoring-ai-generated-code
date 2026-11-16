@@ -33,11 +33,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 RUFF_STABLE = "PLR0913,F401,F841,SIM,PLR2004,S110,BLE001,B006,RET,ANN401,PGH003"
 RUFF_PREVIEW = "PLR0916"
-# jscpd reads a file only from --min-tokens tokens; the Python tokenizer reproduces its file count
-# (215 of 246 on the LMS) when the NEWLINE tokens are counted as well.
+# jscpd reads a file only from --min-tokens (50) tokens, and counts them in its own way. Our estimate
+# with the Python tokenizer (names, numbers, strings, operators, NEWLINE) can be a few tokens off, so
+# a file above JSCPD_MUST_READ tokens must be in jscpd's list of read files (ADR 003, D13), and a
+# file between JSCPD_MAY_READ and JSCPD_MUST_READ tokens only gives a warning.
 SIGNIFICANT = {tokenize.NAME, tokenize.NUMBER, tokenize.STRING, tokenize.OP, tokenize.NEWLINE}
-# Pylint's ``modulesLinted`` is the number of files + 3 (checked on 1, 3, 6 and 246 files).
-PYLINT_EXTRA_MODULES = 3
+JSCPD_MUST_READ = 60
+JSCPD_MAY_READ = 40
 
 
 def run(name: str, cmd: list[str], cwd: Path, raw: Path, results: dict) -> subprocess.CompletedProcess:
@@ -190,7 +192,12 @@ def main(argv: list[str] | None = None) -> int:
             run_dir, raw, res)
     pyl = json.loads(p.stdout)
     check["findings"]["pylint_by_message"] = count_by(pyl["messages"], lambda m: f'{m["messageId"]} {m["symbol"]}')
-    check["files"]["pylint_modules_linted"] = [pyl["statistics"]["modulesLinted"], len(expected) + PYLINT_EXTRA_MODULES]
+    # Pylint gives no list of the modules it processed (json2 and --verbose were tried), and
+    # ``modulesLinted`` is files + 3 (it changes with new packages), so the check is: no fatal
+    # message, no parse error (E0001) and no fatal bit in the exit code.
+    broken = [m for m in pyl["messages"] if m["messageId"] == "E0001" or m["messageId"].startswith("F")]
+    check["files"]["pylint_fatal_or_parse_errors"] = [len(broken) + (1 if p.returncode & 1 else 0), 0]
+    check["findings"]["pylint_modules_linted_info"] = pyl["statistics"]["modulesLinted"]
     check["findings"]["pylint_modules_with_messages"] = len({m["path"] for m in pyl["messages"]})
 
     # Vulture
@@ -198,12 +205,21 @@ def main(argv: list[str] | None = None) -> int:
     check["findings"]["vulture_80"] = len([ln for ln in (raw / "vulture.out").read_text().splitlines() if ln.strip()])
 
     # jscpd: files of fewer than 50 tokens are not read
+    # ``--summary`` with the console reporter lists every file jscpd read, with its own token count
     p = run("jscpd", ["jscpd", "--min-lines", "5", "--min-tokens", "50", "--pattern", "**/*.py", "--no-gitignore",
-                      "--reporters", "json,silent", "--output", str(raw / "jscpd"), str(pkg)], run_dir, raw, res)
+                      "--reporters", "json,console", "--summary", "--summary-top", "100000", "--no-colors",
+                      "--output", str(raw / "jscpd"), str(pkg)], run_dir, raw, res)
     report = json.loads((raw / "jscpd" / "jscpd-report.json").read_text(encoding="utf-8"))
     total = report["statistics"]["total"]
-    big = {f.relative_to(pkg).as_posix() for f in files if token_count(f) >= 50}
-    check["files"]["jscpd"] = [total["sources"], len(big)]
+    listing = p.stdout.split("Top files:", 1)[-1].split("Top folders:", 1)[0].splitlines()[2:]
+    read = {line.split()[-1]: int(line.split()[0]) for line in listing if line.strip()}
+    counts = {f.relative_to(pkg).as_posix(): token_count(f) for f in files}
+    must = {f for f, n in counts.items() if n > JSCPD_MUST_READ}
+    check["files"]["jscpd"] = [len(must & set(read)), len(must)]
+    check["findings"]["jscpd_files_read"] = [len(read), total["sources"]]
+    check["findings"]["jscpd_warnings"] = {
+        f: {"estimated_tokens": n, "read_by_jscpd": f in read, "jscpd_tokens": read.get(f)}
+        for f, n in sorted(counts.items()) if JSCPD_MAY_READ <= n <= JSCPD_MUST_READ}
     check["findings"]["jscpd"] = {"clones": total["clones"], "duplicated_lines": total["duplicatedLines"],
                                   "lines": total["lines"], "percentage": round(total["percentage"], 4)}
 

@@ -31,3 +31,9 @@ memray-*.bin
 # Test runner output: only the JSON summaries are kept (feedback.json, heldout.json, run.json)
 results/**/*.junit.xml
 results/**/*.log
+
+# Analyzer: raw tool output of a measurement is not committed (docs/decisions/003)
+results/baseline/**/raw/
+
+# Run lock: exists while a test or measurement run is in progress (docs/environment.md)
+.run.lock

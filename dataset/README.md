@@ -56,7 +56,7 @@ Total 0–1 = simple, 2–3 = medium, 4–6 = complex. Each level must contain a
 | 28 | Member cards and building access (added 2026-11-16) | 52 | 2 | 8 | 2 | card 5 statuses; day pass 3 | 2 | 6 | Complex |
 | 29 | Printing and copying (added 2026-11-16) | 47 | 2 | 8 | 2 | print job 5 statuses; printer 3 | 2 | 6 | Complex |
 
-Result: **simple** 1, 9 · **medium** 8, 10, 11, 12, 14 · **complex** 2, 3, 4, 5, 6, 7, 13.
+Result: **simple** 1, 9 (2 modules) · **medium** 8, 10, 11, 12, 14 (5 modules) · **complex** 2, 3, 4, 5, 6, 7, 13 and 15–29 (22 modules). For reporting, the complex level is also split into modules 2–7 and 13 against modules 15–29 ([`../docs/decisions/003`](../docs/decisions/003-analyzer-and-success-rule.md), D3). Files are assigned to modules by `scripts/analyzer/modules.csv`; `api/` is entirely module 14.
 
 | # | Module | Content | Level | Est. lines | Expected smells / metrics (not guaranteed) |
 | --- | --- | --- | --- | --- | --- |
@@ -99,15 +99,15 @@ Every metric and smell must have at least one module whose **requirements** give
 
 | Metric / smell | Opportunity in the requirements | Modules |
 | --- | --- | --- |
-| Size, CC, Cognitive Complexity, nesting (S01, S09, S10) | Ordered check sequences with many outcomes (LIB-LOAN-05, LIB-LOAN-07, LIB-RES-02, LIB-AUTH-11) | 2, 5, 6 |
-| Halstead, MI | All modules | 1–14 |
+| Size, CC, Cognitive Complexity, nesting (S01, S09, S10) | Ordered check sequences with many outcomes (LIB-LOAN-05, LIB-LOAN-07, LIB-RES-02, LIB-AUTH-11); long check sequences and status machines of the added modules | 2, 5, 6, 15–29 |
+| Halstead, MI | All modules | 1–29 |
 | WMC, NOM, Large / God Class (S02) | Many operations on one entity (loans: lend, renew, return, lost; reservations: create, release, expire, cancel) | 4, 5, 6 |
-| CBO, fan-in / fan-out, Feature Envy (S12) | Rules that need data of other modules (debt from fees in lending, copy price in fees, release procedure) | 3, 5, 6, 7, 11 |
+| CBO, fan-in / fan-out, Feature Envy (S12) | Rules that need data of other modules (debt from fees in lending, copy price in fees, release procedure); every added module uses members, fees or the catalog | 3, 5, 6, 7, 11, 15–29 |
 | LCOM | Modules combining unrelated duties (audit log with import/export; members with summary and eligibility) | 3, 13 |
 | RFC | Release procedure triggered from five modules (LIB-RES-08) | 4, 5, 6, 11, 12 |
 | DIT, NOC (inheritance) | Families of similar variants: 4 membership types, 4 fee kinds, 3 transfer reasons, 15 notification types, 4 report types | 3, 7, 8, 10, 11 |
 | Cyclic / hub-like dependency (S18), architecture metrics | Mutual needs: loans ↔ reservations, reservations ↔ branches, members ↔ loans; API layer depends on all | 5, 6, 11, 14 |
-| Duplication (S06) | Same rules in several places: working days (5 modules), pagination (all lists), CSV formats (reports, export), error mapping | 1, 10, 13, 14 |
+| Duplication (S06) | Same rules in several places: working days (5 modules), pagination (all lists), CSV formats (reports, export), error mapping; time, date and fee arithmetic repeated in the added modules | 1, 10, 13, 14, 15–29 |
 | Magic Number (S11) | Many fixed numbers: periods, limits, fees, caps, lockout, hold days | 2, 3, 5, 6, 7 |
 | Long Parameter List (S03), Data Clumps (S04) | Entities with many fields created together (member registration, book, purchase order line) | 3, 4, 12 |
 | Primitive Obsession (S05) | Values with their own rules: ISBN, money, phone, barcode, branch code | 1, 3, 4, 11 |
@@ -118,7 +118,7 @@ Every metric and smell must have at least one module whose **requirements** give
 | Deficient Encapsulation (S17) | Status fields changed by several modules (copy status) | 4, 5, 6, 11 |
 | Logic smells, swallowed exceptions (S19), redundant returns (S21) | All-or-nothing import with error lists; many error paths | 13, all |
 | Mutable default argument (S20) | Optional list parameters (filters, author lists, order lines) | 4, 9, 12 |
-| Disallowed dependency (S22), bypassed type safety (S23) | Whole code base | 1–14 |
+| Disallowed dependency (S22), bypassed type safety (S23) | Whole code base | 1–29 |
 | Time, CPU, RAM, allocations | Workloads W1–W3 ([`../docs/metrics.md`](../docs/metrics.md#workloads-added-29-october)) | 5, 7, 9, 10 |
 
 ## Cross-module dependencies
@@ -184,6 +184,7 @@ dataset/
     │   ├── cases.md         Test case table (see docs/testing.md)
     │   ├── feedback/        Tests whose results the LLM sees
     │   └── heldout/         Tests used only for evaluation
-    ├── inputs/              Generator and seed for measurement data (100 / 10,000 / 100,000 books)
-    └── baseline.csv         Metrics before refactoring (Week 4)
+    └── inputs/              Generator and seed for measurement data (100 / 10,000 / 100,000 books)
 ```
+
+Measurement results of the starting code (analyzer output, test results) are not stored here but in `results/baseline/<trial|final>/<label>/` ([`../docs/decisions/003`](../docs/decisions/003-analyzer-and-success-rule.md), D23); the final baseline is `results/baseline/final/v0-ai-baseline/`.

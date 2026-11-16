@@ -6,7 +6,7 @@ The subject code is one Library Management System (LMS), refactored as a whole (
 
 **Scope (16 November 2026):** only the Python code of the application package `lms/`. The web interface (`web/`, HTML, CSS and JavaScript) and the tests the model wrote (`tests/`) are excluded from every metric.
 
-**Tool status:** DPy is not in the Docker image and PyExamine is not yet verified on Python 3.14; both are checked first in Week 4. A metric whose tool does not run is reported as missing, never silently replaced by another tool.
+**Tool status (17 November 2026):** the tools were checked on the Docker image (Python 3.14.10; [`../results/baseline/trial/tool-check.md`](../results/baseline/trial/tool-check.md)). The decisions on what is measured, with which tool and how the five primary metrics are computed are in [`decisions/003`](decisions/003-analyzer-and-success-rule.md). PyExamine runs but is **secondary** (it crashes silently on 11 files and its output order changes); DPy is not in the image and is not used. A metric whose tool does not run is reported as missing (`null`), never silently replaced by another tool.
 
 ## 1. Code quality: five layers
 
@@ -15,25 +15,25 @@ The subject code is one Library Management System (LMS), refactored as a whole (
 | A. Size | LOC, SLOC, comment ratio; number of functions and classes; function length | Size of the code; whether refactoring bloated it | Radon (raw) |
 | B. Complexity | Cyclomatic Complexity (CC) | Number of independent paths | Radon (cc) |
 | | Cognitive Complexity | Mental effort for a reader; penalizes nesting more | complexipy |
-| | Maximum nesting depth | Nested if/for levels | PyExamine; Pylint R1702 |
+| | Maximum nesting depth | Nested if/for levels | Pylint R1702 (smell S10) |
 | | Halstead volume, difficulty, effort | Operator/operand density | Radon (hal) |
-| | Maintainability Index (MI) | Composite maintainability indicator | Radon (mi) |
-| C. Design | WMC, NOM (methods per class) | Class size and responsibility load | PyExamine |
-| | CBO, fan-in / fan-out | Coupling between classes | PyExamine |
-| | LCOM | Cohesion inside a class; low cohesion means a class does several jobs | PyExamine |
-| | RFC, DIT, NOC | Methods a class can trigger; inheritance depth; number of subclasses | PyExamine |
-| | Design and architecture smells | God Class, Feature Envy, cyclic dependency, deficient encapsulation | PyExamine, DPy |
-| D. Duplication | Duplicated code (%), number of clone blocks | Copy-paste logic | jscpd |
-| E. Logic | Number of logic smells ([`smell-catalog.md`](smell-catalog.md#logic-smells)) | Code that compiles but is redundant, contradictory or in the wrong place | Ruff, Pylint, Vulture |
+| | Maintainability Index (MI) | Composite maintainability indicator; project and module value is the mean **weighted by SLOC** (the plain mean is secondary) | Radon (mi) |
+| C. Design | WMC, NOM (methods per class) | Class size and responsibility load | Our own AST script; primary class statistics use `plain` classes only (not ORM, Pydantic or enum classes) |
+| | CBO, fan-in / fan-out | Coupling between classes | Own AST script |
+| | LCOM (LCOM4) | Cohesion inside a class; low cohesion means a class does several jobs | Own AST script |
+| | RFC, DIT, NOC | Methods a class can trigger; inheritance depth; number of subclasses | Own AST script |
+| | Design and architecture smells | God Class (S02), cyclic dependency (S18); the others (Feature Envy, deficient encapsulation, …) are not measured | Own AST script / import graph; PyExamine as a secondary source |
+| D. Duplication | Duplicated code (%), number of clone blocks | Copy-paste logic | jscpd (`--min-lines 5 --min-tokens 50`) |
+| E. Logic | Number of logic smells ([`smell-catalog.md`](smell-catalog.md#logic-smells)) | Code that compiles but is redundant, contradictory or in the wrong place | Ruff and Pylint (Vulture secondary) |
 | | Design and logic rubric score (1–5) | Design and logic quality the tools cannot capture | Human raters (+ optional LLM judge) |
 
-**Why these tools.** PyExamine (Shivashankar & Martini, MSR 2025) uses 49 metrics at code, structural and architectural level for Python; recall in its evaluation is 0.914 (code), 0.893 (structural) and 0.806 (architectural) (Table V). DPy (Boloori & Sharma, MSR 2025 Data and Tool Showcase) detects 8 design and 11 implementation smells. Compatibility of PyExamine and DPy with Python 3.14 is **not yet verified** (checked during environment setup).
+**Why these tools.** PyExamine (Shivashankar & Martini, MSR 2025) uses 49 metrics at code, structural and architectural level for Python; recall in its evaluation is 0.914 (code), 0.893 (structural) and 0.806 (architectural) (Table V). DPy (Boloori & Sharma, MSR 2025 Data and Tool Showcase) detects 8 design and 11 implementation smells. In the tool check PyExamine 0.2.3 ran on Python 3.14.10 but exits with code 0 although one detector crashes on 11 files, and its output order is not stable; DPy is not in the image. Both therefore stay out of the primary metrics: class metrics and the design smells S02 and S18 come from our own AST script, and PyExamine is reported as a secondary source ([`decisions/003`](decisions/003-analyzer-and-success-rule.md), D10, D12).
 
 ### Additional metrics (added 29 October)
 
 | Layer | Metric | What it shows | Tool |
 | --- | --- | --- | --- |
-| F. Architecture | Module dependency graph; number of cycles between modules; layer violations (e.g. API layer importing the database layer directly) | Whether the project is well structured as a whole; relevant because the whole project is refactored at once | PyExamine `--type architectural` (cyclic and hub-like dependencies; documented in the PyExamine usage guide); DPy; layer-violation count from the import graph (tool chosen at setup) |
+| F. Architecture | Module dependency graph; number of cycles between modules; layer violations (e.g. API layer importing the database layer directly) | Whether the project is well structured as a whole; relevant because the whole project is refactored at once | Our own import graph (cycles: S18; layer violations: three rules in [`decisions/003`](decisions/003-analyzer-and-success-rule.md), **secondary**, not in the smell total); Pylint R0401 as a cross-check; PyExamine `--type architectural` as a secondary source |
 | G. Change size | Lines added/removed, files changed, files added/removed | How much code a refactoring touched; context for cost and risk | `git diff --stat` between baseline and result |
 
 ### Design and logic rubric
@@ -54,30 +54,32 @@ Some problems do not cause a compile error and still pass the tests, but the cod
 
 ## 2. Thresholds
 
-Smell counts depend on thresholds, and tools disagree: Long Method is 30 lines in one GitHub detector and 45 lines in the PyExamine example configuration ([`smell-catalog.md`](smell-catalog.md#survey-of-the-github-code-smell-topic)). We therefore fix one set. Values are the tools' documented defaults as we understand them; **each value is verified against the tool's documentation during setup** and the final set is recorded in `decisions/`. Thresholds do not change during the study.
+Smell counts depend on thresholds, and tools disagree: Long Method is 30 lines in one GitHub detector and 45 lines in the PyExamine example configuration ([`smell-catalog.md`](smell-catalog.md#survey-of-the-github-code-smell-topic)). We therefore fix one set. Values are the tools' documented defaults as we understand them; the final set is recorded in [`decisions/003`](decisions/003-analyzer-and-success-rule.md) and every result stores the tool versions. Thresholds do not change during the study. Only the rows marked "smell" enter the total smell count (the frozen list S01–S23 of the ADR); the others are reported as information.
 
 | Measure | Threshold / bands | Tool rule |
 | --- | --- | --- |
 | Cyclomatic Complexity | Radon ranks A 1–5, B 6–10, C 11–20, D 21–30, E 31–40, F 41+; "high" = rank C or worse | Radon |
 | Cognitive Complexity | 15 per function | complexipy |
-| Parameters per function | 5 | Ruff PLR0913 |
-| Statements per function | 50 | Ruff PLR0915 |
-| Branches per function | 12 | Ruff PLR0912 |
-| Boolean expressions in one condition | 5 | Ruff PLR0916 |
-| Nested blocks | 5 | Pylint R1702 |
-| Long Method | 45 lines | PyExamine |
-| Large Class | 15 methods | PyExamine |
-| Duplication | Minimum clone size: jscpd default | jscpd |
-| Magic number | Any literal other than the tool's allowed values | Ruff PLR2004 |
+| Parameters per function | 5 (smell S03) | Ruff PLR0913 |
+| Statements per function | 50 (information, secondary) | Ruff PLR0915 |
+| Branches per function | 12 (information, secondary) | Ruff PLR0912 |
+| Boolean expressions in one condition | 5 (smell S09; needs `--preview`, run separately) | Ruff PLR0916 |
+| Nested blocks | 5 (smell S10) | Pylint R1702 |
+| Long Method | 45 lines, docstring excluded (smell S01) | Own AST script |
+| Large Class | 15 methods, `plain` classes only (smell S02) | Own AST script |
+| Duplication | `--min-lines 5 --min-tokens 50`, written explicitly | jscpd |
+| Magic number | Only numbers in comparisons, other than the rule's allowed values (smell S11) | Ruff PLR2004 |
 
 ## 3. Success definition
 
 "At least one metric improves" is too weak with more than 20 metrics, so metrics are split into primary and secondary before the experiments.
 
-- **Primary metrics:** mean CC, mean Cognitive Complexity, mean MI, duplicated code (%), total smell count (S01–S23).
-- **Secondary metrics:** all other metrics in this document; reported, but not used for the success decision.
-- **Successful refactoring:** all held-out tests pass, **and** no primary metric gets worse, **and** at least one primary metric improves.
-- A result that fails held-out tests is a failure regardless of metrics (see [`approaches.md`](approaches.md)).
+- **Primary metrics (five):** mean CC (Radon, 1,787 units on the starting code), mean Cognitive Complexity (complexipy, 1,771 units; nested functions are part of their parent), Maintainability Index (mean of the files **weighted by SLOC**), duplicated code (%, jscpd) and total smell count (frozen list of S-IDs in [`decisions/003`](decisions/003-analyzer-and-success-rule.md); each smell has one tool or rule).
+- **Secondary metrics:** all other metrics in this document (including the architecture metrics, PyExamine and Vulture results and the suppression-comment counts); reported, but not used for the success decision.
+- **"Changed" thresholds** (values rounded to 4 decimals, a difference below the threshold is "same"): mean CC 0.01 · mean Cognitive 0.01 · MI 0.1 · duplication 0.05 percentage points · total smell count 1. A primary metric that is `null` after refactoring makes the run **invalid**.
+- **Successful refactoring (relative to the starting code):** **no test that passes at the start fails afterwards** (feedback and held-out sets separately), **and** no primary metric gets worse, **and** at least one primary metric improves. Tests that already fail at the start (for example T-INV-20-a, a code error) are reported separately; flaky tests are left out of the comparison; a test counts as a regression only if it fails in two repetitions ([`testing.md`](testing.md#success-relative-to-the-starting-code)).
+- **Acceptance of a result:** a changed OpenAPI schema, a missing test case, a timed-out test set or a `null` primary metric means the result is never accepted; a SLOC drop above 15 % is only a warning ([`approaches.md`](approaches.md#common-rules)).
+- A result with regressions is a failure regardless of metrics.
 
 ## 4. Aggregation and reporting levels
 
@@ -85,11 +87,11 @@ Smell counts depend on thresholds, and tools disagree: Long Method is 30 lines i
 | --- | --- |
 | Function / method | Raw values (CC, Cognitive Complexity, length, parameters) |
 | Class | Raw design values (WMC, NOM, CBO, LCOM, RFC, DIT, NOC) |
-| Module (29 LMS modules) | Mean, maximum and share of units above the threshold; smell count; duplication % |
-| Complexity level (simple / medium / complex) | Same as module, over all modules of that level |
+| Module (29 LMS modules) | Mean, maximum and share of units above the threshold; smell count per KSLOC; duplication %. Files are assigned to modules by the explicit file `scripts/analyzer/modules.csv` (path prefix; `api/` is entirely module 14); a module without code (`printing/` while it does not exist) is "not generated" and gets no mean. New folders after refactoring are "unassigned"; above 5 % SLOC the module-level statistics of that run are invalid |
+| Complexity level (simple / medium / complex) | **Mean of the module values** of that level (primary); pooled units are secondary. The complex level is also split into modules 2–7 and 13 against 15–29 as a sensitivity row; the simple level (2 modules) is descriptive only |
 | Project | Same as module, over the whole code; architecture metrics; change size |
 
-Level labels of the modules are defined in [`../dataset/README.md`](../dataset/README.md). Because the project is refactored as a whole, module and level results are a breakdown of one refactoring, not separate refactorings.
+Level labels of the modules are defined in [`../dataset/README.md`](../dataset/README.md): 2 simple, 5 medium and 22 complex modules. Because the project is refactored as a whole, module and level results are a breakdown of one refactoring, not separate refactorings. Results are written to `results/baseline/<trial|final>/<label>/` ([`decisions/003`](decisions/003-analyzer-and-success-rule.md), D23–D25).
 
 Test results are additionally reported per case type (Normal, Boundary, Error, Property, Scenario), taken from the `Type` column of the case tables ([`../dataset/lms/tests/README.md`](../dataset/lms/tests/README.md)). This complements, not replaces, the module levels. Common requirements (LIB-TECH, LIB-COM, LIB-IF) belong to no module; their tests are in the Core test files and are reported as "common".
 
@@ -109,7 +111,7 @@ Test results are additionally reported per case type (Normal, Boundary, Error, P
 | --- | --- |
 | Share of passing tests (feedback set and held-out set separately) | pytest |
 | Successful refactoring (Section 3) | pytest + analyzer |
-| Branch coverage of the test suite | coverage.py |
+| Branch coverage of the test suite (`lms/` only, separate run, reported without a target; never part of the success decision) | coverage.py |
 | Mutation score of the test suite (on sampled modules, see [`testing.md`](testing.md)) | mutmut (Linux / WSL only) |
 
 ## 7. Resource consumption of the code

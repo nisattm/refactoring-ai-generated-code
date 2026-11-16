@@ -90,7 +90,7 @@ You are now in `/work` (the repository). Examples:
 
 ```bash
 radon cc -s dataset/lms/generated
-analyze_code_quality dataset/lms/generated --format json --output pyexamine.json
+analyze_code_quality dataset/lms/generated/lms --config scripts/analyzer/pyexamine.yaml --output pyexamine.csv   # no JSON output; csv or txt
 python -m pytest dataset/lms/tests/feedback
 ```
 
@@ -107,13 +107,15 @@ Files you create in `/work` appear in your repository folder.
 - Close other heavy programs; laptops plugged in.
 - Timing/CPU runs and memory profiling (memray, tracemalloc) are separate runs ([`metrics.md`](metrics.md#resource-measurement-protocol)).
 - On Windows, Docker runs inside a WSL 2 virtual machine. Docker Desktop's resource limits (Settings → Resources) also apply; do not change them during the experiments.
+- **Run lock:** before starting a test or measurement run, check whether `.run.lock` exists in the repository root; if it does, wait. For the duration of a run create it (who, what, start time) and delete it afterwards. `.run.lock` is in `.gitignore`. All sessions that run tests or measurements follow this rule.
+- Measurements run with `--network none`; on Windows / Git Bash use `MSYS_NO_PATHCONV=1` and `$(pwd -W)` for the mount.
 
 ## 7. Tools
 
 | Tool | Purpose | Installed from | Status |
 | --- | --- | --- | --- |
 | radon, complexipy | Size, CC, MI, Halstead; cognitive complexity | PyPI | in image |
-| PyExamine | Code, structural and architectural smells; design metrics | PyPI package `code-quality-analyzer`, command `analyze_code_quality` (installation page of the [PyExamine documentation](https://python-smell.readthedocs.io/en/latest/installation.html); source: [GitHub](https://github.com/KarthikShivasankar/python_smells_detector)) | in image |
+| PyExamine | Code, structural and architectural smells (secondary source) | PyPI package `code-quality-analyzer`, command `analyze_code_quality` (installation page of the [PyExamine documentation](https://python-smell.readthedocs.io/en/latest/installation.html); source: [GitHub](https://github.com/KarthikShivasankar/python_smells_detector)) | in image; runs on Python 3.14.10 (tool check, 17 November 2026) |
 | ruff, pylint, vulture | Linters, logic smells, dead code | PyPI | in image |
 | jscpd | Duplication | npm | in image |
 | pytest, hypothesis, coverage, mutmut | Tests, property-based tests, branch coverage, mutation score | PyPI | in image |
@@ -124,8 +126,8 @@ Files you create in `/work` appear in your repository folder.
 
 ### PyExamine configuration
 
-Thresholds are set in a YAML file passed with `--config`; the paper's example uses 45 lines for Long Method and 15 methods for Large Class (Shivashankar & Martini, MSR 2025, Section IV.A). Our thresholds are decided in the metrics meeting and the file is stored in the repository.
+Thresholds are set in a YAML file passed with `--config`; the paper's example uses 45 lines for Long Method and 15 methods for Large Class (Shivashankar & Martini, MSR 2025, Section IV.A). PyExamine is a **secondary** tool ([`decisions/003`](decisions/003-analyzer-and-success-rule.md), D10): the analyzer always passes the file explicitly (`scripts/analyzer/pyexamine.yaml`, a copy of the bundled `code_quality_config.yaml`, added with the analyzer in PR 3) and runs the command from a neutral folder. Facts from the tool check on Python 3.14.10 ([`../results/baseline/trial/tool-check.md`](../results/baseline/trial/tool-check.md)): version 0.2.3, **no JSON output** (`--output` takes `.csv` or `.txt`; there is no `--format` option), exit code 0 even when a detector crashes (11 `schemas.py` files of the LMS), unstable row order, and the command writes `code_analysis.log` into the working folder.
 
 ### DPy (open item)
 
-DPy is not a PyPI package. The MSR 2025 paper says the replication package contains the tool and usage instructions, and a notebook by one of the authors downloads the tool automatically, but we could not verify the download address, the supported operating systems or the license terms. Next step: download it from the product page, check whether a Linux version and an academic license exist, and add it to the `Dockerfile` if so. Until then, the smells assigned to DPy in [`smell-catalog.md`](smell-catalog.md) (S02, S17, S18) are covered by PyExamine where possible.
+DPy is not a PyPI package. The MSR 2025 paper says the replication package contains the tool and usage instructions, and a notebook by one of the authors downloads the tool automatically, but we could not verify the download address, the supported operating systems or the license terms. Next step: download it from the product page, check whether a Linux version and an academic license exist, and add it to the `Dockerfile` if so. DPy is **not used** in the study: S02 and S18 are measured by our own AST scripts and S17 is not measured ([`smell-catalog.md`](smell-catalog.md)).

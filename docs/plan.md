@@ -51,6 +51,8 @@ Decisions of 29 October 2026: [`decisions/002`](decisions/002-single-lms-claude-
 - Run the tests
 - Save analysis results to CSV
 
+Decisions of 17 November 2026: [`decisions/003`](decisions/003-analyzer-and-success-rule.md) (what is measured, frozen smell list, success rule). The characterization tests and the 90 % coverage target are not part of Week 4 (issue #115); coverage is measured without a target.
+
 ## Week 5 – Single LLM and Iterative LLM
 
 > Weeks 5–8 below are the instructor's plan as given. We use Claude Code Pro instead of the API, so "API cost" is reported as tokens, time and equivalent cost ([`metrics.md`](metrics.md#8-cost-of-the-refactoring-llm-side)).
@@ -80,6 +82,8 @@ Decisions of 29 October 2026: [`decisions/002`](decisions/002-single-lms-claude-
 - Execution time and memory usage of the code
 - LLM token consumption, API cost and response times
 - Reproducibility and organized storage of results
+
+Moved here from Week 4 ([`decisions/003`](decisions/003-analyzer-and-success-rule.md)): the design and logic rubric with its sampling and human raters, the optional LLM judge, the statistical analysis plan, the resource workloads W1–W3 and the mutation testing of sampled modules. The characterization tests (issue #115) must exist before the first refactoring experiment.
 
 ## Week 8 – Statistical analysis and paper
 
