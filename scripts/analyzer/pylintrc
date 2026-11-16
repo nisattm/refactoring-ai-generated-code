@@ -1,0 +1,13 @@
+# Pylint settings of the Code Quality Analyzer (draft from the PR 1 tool check; fixed by ADR 003).
+# Only the rules below run; everything else is off. R1702 is the one that enters the smell count (S10);
+# W0718, R1710, W0101 are secondary (information only); R0401 cross-checks the import cycles of S18.
+# Run with: pylint --rcfile=scripts/analyzer/pylintrc --persistent=n --output-format=json2 <package>
+[MAIN]
+persistent=no
+
+[MESSAGES CONTROL]
+disable=all
+enable=R1702,W0718,R1710,W0101,R0401
+
+[DESIGN]
+max-nested-blocks=5
