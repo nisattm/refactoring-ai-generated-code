@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-16T20:24:41+00:00",
+  "code": "/work/dataset/lms/generated",
+  "tests": "/work/dataset/lms/tests",
+  "valid": true,
+  "test_file_changes": {
+    "changed": [],
+    "added": [],
+    "removed": []
+  },
+  "sets": {
+    "feedback": {
+      "tests": 875,
+      "passed": 846,
+      "failed": 29,
+      "errors": 0,
+      "skipped": 0
+    },
+    "heldout": {
+      "tests": 767,
+      "passed": 741,
+      "failed": 26,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "partial": "ui tests run; API results from step 25 (lms/ unchanged)",
+  "api_from": "results/generation/step-25-tests"
+}
