@@ -4,6 +4,7 @@ import { get, health, post, session } from "./api.js";
 import { createContext } from "./context.js";
 import { allScreens, menuGroups } from "./screens/index.js";
 import { homeScreen } from "./screens/home.js";
+import { headerCounts } from "./screens/messaging.js";
 import { loginScreen } from "./screens/login.js";
 import { alertContent, button, clear, h, link, replace, setErrorReporter } from "./ui.js";
 
@@ -33,14 +34,29 @@ function screenById(id) {
 // ---- header and menu -------------------------------------------------------------
 
 async function refreshUnread(user) {
-  const slot = header.querySelector(".unread");
-  if (!slot || user.role !== "member" || !user.member_id) return;
   const mine = (unreadTicket += 1);
+  const slot = header.querySelector(".unread");
+  if (slot && user.role === "member" && user.member_id) {
+    try {
+      const data = await get(`/members/${user.member_id}/notifications/unread-count`);
+      if (mine === unreadTicket) replace(slot, "Unread notifications: ", h("strong", {}, String(data.unread)));
+    } catch {
+      // the count is a convenience only; errors are shown by the screens themselves
+    }
+  }
+  // LIB-UI-MSG-06: unread announcements and replies for all users
   try {
-    const data = await get(`/members/${user.member_id}/notifications/unread-count`);
-    if (mine === unreadTicket) replace(slot, "Unread notifications: ", h("strong", {}, String(data.unread)));
+    const counts = await headerCounts(user);
+    const box = header.querySelector(".unread-announcements");
+    const replies = header.querySelector(".unread-replies");
+    if (counts && box && replies && mine === unreadTicket) {
+      box.href = counts.announcementsHref;
+      replies.href = counts.repliesHref;
+      replace(box, "Unread announcements: ", h("strong", {}, String(counts.announcements)));
+      replace(replies, "Unread replies: ", h("strong", {}, String(counts.replies)));
+    }
   } catch {
-    // the count is a convenience only; errors are shown by the screens themselves
+    // a convenience only, as above
   }
 }
 
@@ -55,6 +71,8 @@ function renderHeader(user) {
       h("span", { class: "user-name" }, user.full_name),
       h("span", { class: "user-role" }, user.role),
       user.role === "member" ? h("a", { class: "unread", href: "#/not-01" }) : null,
+      h("a", { class: "unread-announcements badge-link", href: "#/home" }),
+      h("a", { class: "unread-replies badge-link", href: "#/home" }),
       button("Log out", logout),
     ),
   );

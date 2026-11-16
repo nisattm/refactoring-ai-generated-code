@@ -1,6 +1,7 @@
 // LIB-UI-GEN-08: home screen.
 
 import { get } from "../api.js";
+import { memberAnnouncements } from "./messaging.js";
 import { definitionList, fmtAmount, fmtBool, fmtDate, h, replace, section } from "../ui.js";
 
 export function borrowingBlock(summary) {
@@ -37,6 +38,8 @@ export const homeScreen = {
       const member = await get("/members/me");
       const summary = await get(`/members/${member.id}/summary`);
       replace(ctx.body, section("My library account", summaryFacts(summary), borrowingBlock(summary)));
+      // LIB-UI-MSG-02: live announcements with the unread counter
+      ctx.body.append(await memberAnnouncements(ctx));
       return;
     }
     const desk = ctx.screens.filter((s) => s.desk);

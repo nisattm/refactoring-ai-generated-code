@@ -1,0 +1,27 @@
+/* Screens of module: Reading programs. */
+
+.join-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; min-width: 12rem; }
+.join-actions .participation-status { font-weight: 600; flex: 1 0 100%; }
+.show-name { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; white-space: nowrap; }
+.show-name input { width: 1.1rem; height: 1.1rem; }
+.top-books { margin: 0; padding-left: 1.2rem; }
+.top-books li { margin: 0.1rem 0; }
+.program-summary .facts { margin-bottom: 0.5rem; }
+.program-form .panel, .program-panel .panel, .progress-detail .panel { border-color: var(--accent); }
+.featured-books, .entries, .leaderboard, .manual-entries { margin-bottom: 0.75rem; }
+.leaderboard-info .facts { max-width: 36rem; }
+td .join-actions button { white-space: nowrap; }
+
+@media (max-width: 800px) {
+  .show-name { white-space: normal; }
+}
+
+/* Narrow screens: the rows of the program list become cards so that the buttons stay in view. */
+@media (max-width: 800px) {
+  .paged.cards table, .paged.cards tbody, .paged.cards tr, .paged.cards td { display: block; width: 100%; }
+  .paged.cards thead { position: absolute; left: -9999px; }
+  .paged.cards tr { border: 1px solid var(--line); border-radius: 6px; margin: 0 0 0.6rem; padding: 0.3rem 0.5rem; background: var(--panel); }
+  .paged.cards td { border: 0; padding: 0.15rem 0; }
+  .paged.cards td::before { content: attr(data-label) ": "; font-weight: 600; color: var(--muted); }
+  .paged.cards td[colspan]::before { content: ""; }
+}

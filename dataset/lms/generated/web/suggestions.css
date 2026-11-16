@@ -1,0 +1,16 @@
+/* Screens of module: Purchase suggestions. */
+.sug-title { display: inline-block; max-width: 28rem; }
+.support-cell { display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: center; }
+.check { display: inline-flex; gap: 0.3rem; align-items: center; font-weight: 400; white-space: nowrap; }
+.check input { margin: 0; }
+tr.focused td { background: #fff8d6; }
+.review-panel .panel { border-color: var(--accent); }
+.review-panel .catalog-search { margin-top: 0.75rem; }
+.chosen-book:empty { display: none; }
+.error-link { margin: 0.25rem 0 0; }
+.order-preview .total { margin: 0.5rem 0; }
+.report table { max-width: 40rem; }
+@media (max-width: 800px) {
+  .sug-title { max-width: 14rem; }
+  .check { white-space: normal; }
+}

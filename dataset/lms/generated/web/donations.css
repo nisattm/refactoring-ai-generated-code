@@ -1,0 +1,39 @@
+/* Screens of the donations module. */
+
+fieldset.offer-item, fieldset.review-item, fieldset.receive-item {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--panel);
+}
+fieldset.offer-item legend, fieldset.review-item legend, fieldset.receive-item legend { font-weight: 600; padding: 0 0.3rem; }
+.offer-form { flex-direction: column; align-items: stretch; }
+.offer-form > .field { max-width: 40rem; flex: none; }
+.offer-form textarea { width: 100%; }
+.offer-items, .offer-editor { width: 100%; }
+.offer-item .inline-form .field { min-width: 9rem; }
+.offer-total { margin: 0.25rem 0 0.75rem; }
+.donor-choice { border: 1px solid var(--line); border-radius: 4px; padding: 0.5rem 0.75rem; margin: 0 0 0.75rem; }
+.review-facts { margin: 0 0 0.5rem; }
+.review-form .accept-fields, .review-form .decline-fields { margin: 0.5rem 0 0; }
+.book-hint { flex: 1 0 100%; margin: 0; }
+.still-expected { font-weight: 600; margin: 0 0 0.5rem; }
+.pending-barcodes { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0; margin: 0.25rem 0 0; }
+.pending-barcodes li { border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.4rem; background: #eef1f5; }
+.pending-barcodes button { padding: 0.1rem 0.4rem; background: #fff; color: var(--accent); }
+.anonymous-count { color: var(--muted); }
+.receipt .total { font-size: 1.1rem; }
+
+@media (max-width: 800px) {
+  .offer-item .inline-form .field { flex: 1 1 100%; }
+}
+
+@media print {
+  body:has(.receipt) #app-header,
+  body:has(.receipt) #menu,
+  body:has(.receipt) .messages,
+  body:has(.receipt) .no-print { display: none !important; }
+  body:has(.receipt) .layout { display: block; padding: 0; }
+  .receipt { border: none; }
+}

@@ -1,0 +1,42 @@
+/* Screens of module: Inventory counts. */
+.inv-nav { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin: 0 0 1rem; }
+.inv-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; margin: 0 0 0.5rem; }
+.inv-progress progress { width: min(24rem, 100%); height: 1.1rem; accent-color: var(--accent); }
+.inv-progress-text { font-size: 0.9rem; }
+.inv-link { margin: 0.5rem 0 0; }
+.inv-note { background: var(--warn-bg); border: 1px solid #e3c36a; border-radius: 4px; padding: 0.5rem 0.75rem; }
+
+/* scan results: colour plus the result as text */
+.inv-result { display: inline-block; padding: 0.05rem 0.55rem; border-radius: 999px; border: 1px solid transparent; font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+.inv-expected { background: #d8f2dc; color: #14532d; border-color: #7fc590; }
+.inv-duplicate { background: #fff3d6; color: #6b4a00; border-color: #e3c36a; }
+.inv-unknown { background: #fde0e0; color: #8a1c1c; border-color: #e59a9a; }
+.inv-found_lost { background: #dbe9fb; color: #17407a; border-color: #8db4e8; }
+.inv-withdrawn { background: #e6e1f1; color: #3d2a73; border-color: #b3a5d8; }
+.inv-wrong_branch { background: #ffe3c7; color: #7a3a00; border-color: #eba868; }
+.inv-unexpected_status { background: #fbdcec; color: #7a1b4d; border-color: #e59cc0; }
+.inv-out_of_scope { background: #e8eaee; color: #3b4452; border-color: #b8bfca; }
+
+.inv-scan { align-items: flex-end; }
+.inv-scan input[name="barcode"] { font-size: 1.25rem; min-width: min(22rem, 100%); }
+.inv-scan-results { list-style: none; margin: 0.75rem 0; padding: 0; display: grid; gap: 0.4rem; }
+.inv-scan-result { padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--line); font-size: 1.05rem; }
+.inv-scan-result .inv-meaning { color: var(--muted); font-size: 0.9rem; }
+.inv-box-expected { background: #eaf8ec; border-color: #7fc590; }
+.inv-box-duplicate { background: #fff8e6; border-color: #e3c36a; }
+.inv-box-unknown { background: #fdeeee; border-color: #e59a9a; }
+.inv-box-found_lost { background: #eef4fd; border-color: #8db4e8; }
+.inv-box-withdrawn { background: #f1eef8; border-color: #b3a5d8; }
+.inv-box-wrong_branch { background: #fff1e2; border-color: #eba868; }
+.inv-box-unexpected_status { background: #fdeef6; border-color: #e59cc0; }
+.inv-box-out_of_scope { background: #f3f4f6; border-color: #b8bfca; }
+tr.inv-row-unknown td { background: #fdeeee; }
+tr.inv-row-expected td { background: #eaf8ec; }
+tr.inv-row-duplicate td { background: #fff8e6; }
+tr.inv-row-found_lost td { background: #eef4fd; }
+tr.inv-row-wrong_branch td { background: #fff1e2; }
+tr.inv-row-unexpected_status td { background: #fdeef6; }
+
+@media (max-width: 600px) {
+  .inv-scan input[name="barcode"] { min-width: 0; width: 100%; }
+}
