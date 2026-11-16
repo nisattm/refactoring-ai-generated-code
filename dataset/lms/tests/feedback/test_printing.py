@@ -265,8 +265,8 @@ def test_t_prt_25_a(client, admin, librarian, branch_a):
     m = member(client, librarian, branch_a)
     printed(client, librarian, p, m, 95)
     ok(buy_pack(client, librarian, m), 201)
-    j = printed(client, librarian, p, m, 33)
-    assert (j["free_pages"], j["pack_pages"], j["charged_pages"]) == (5, 25, 3)
+    j = printed(client, librarian, p, m, 58)
+    assert (j["free_pages"], j["pack_pages"], j["charged_pages"]) == (5, 50, 3)
     assert fee_of(client, librarian, m, j["fee_id"])["amount"] == "1.50"
     ok(post(client, librarian, f"print-jobs/{j['id']}/fail", {"reason": "Sayfalar boş çıktı"}))
     assert fee_of(client, librarian, m, j["fee_id"])["status"] == "waived"

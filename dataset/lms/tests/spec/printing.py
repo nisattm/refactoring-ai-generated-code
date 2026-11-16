@@ -388,14 +388,14 @@ def TEST(client, admin, librarian, branch_a):
         ns = notes(client, librarian, x["id"], "print_job_failed")
         assert len(ns) == 1 and ns[0]["print_job_id"] == j["id"]
 '''),
-    dict(id="T-PRT-25-a", req="LIB-PRT-25", type="Normal", input="Student with 95 free pages used and a pack: a job of 33 pages (5 free, 25 pack, 3 charged, fee 1.50) fails", expected="Fee `waived`; free pages used 95; the pack has 50 pages left", code='''
+    dict(id="T-PRT-25-a", req="LIB-PRT-25", type="Normal", input="Student with 95 free pages used and a new pack: a job of 58 pages (5 free, 50 pack, 3 charged, fee 1.50) fails", expected="Fee `waived`; free pages used 95; the pack has 50 pages left", code='''
 def TEST(client, admin, librarian, branch_a):
     p = printer(client, admin, branch_a)
     m = member(client, librarian, branch_a)
     printed(client, librarian, p, m, 95)
     ok(buy_pack(client, librarian, m), 201)
-    j = printed(client, librarian, p, m, 33)
-    assert (j["free_pages"], j["pack_pages"], j["charged_pages"]) == (5, 25, 3)
+    j = printed(client, librarian, p, m, 58)
+    assert (j["free_pages"], j["pack_pages"], j["charged_pages"]) == (5, 50, 3)
     assert fee_of(client, librarian, m, j["fee_id"])["amount"] == "1.50"
     ok(post(client, librarian, f"print-jobs/{j['id']}/fail", {"reason": "Sayfalar boş çıktı"}))
     assert fee_of(client, librarian, m, j["fee_id"])["status"] == "waived"
