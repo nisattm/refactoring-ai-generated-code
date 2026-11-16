@@ -18,7 +18,7 @@ dataset/lms/tests/
 └── heldout/test_<module>.py    Tests used only for evaluation
 ```
 
-Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`.
+Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`, `fees`, `notifications`, `search`, `reports`, `branches`, `purchasing`, `audit_io`, `api`, `e2e`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access`.
 
 ## Ownership (30 October 2026)
 
@@ -26,7 +26,7 @@ Module file names: `core`, `auth`, `members`, `catalog`, `loans`, `reservations`
 | --- | --- |
 | `conftest.py`, `support/` | Fatima |
 | `core`, `auth`, `reservations`, `members`, `catalog`, `branches`, `e2e`, `search`, `reports`, `audit_io`, `api` | Nisa |
-| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging` | Fatima |
+| `loans`, `fees`, `notifications`, `purchasing`, `rooms`, `equipment`, `digital`, `ill`, `staff`, `events`, `courses`, `donations`, `preservation`, `inventory`, `suggestions`, `programs`, `messaging`, `access` | Fatima |
 
 Only the owner edits a file. A missing helper is requested from the owner of `support/`; until it exists, a test calls the API through `client` directly.
 
@@ -64,9 +64,10 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 | Purchase suggestions (module 25, from 15 November) | `suggestions` | 26 | 26 | 0 | 52 |
 | Reading programs (module 26, from 15 November) | `programs` | 27 | 25 | 0 | 52 |
 | Announcements and messages (module 27, from 16 November) | `messaging` | 26 | 26 | 0 | 52 |
-| **Total** | | **746** | **656** | **13** | **1415** |
+| Member cards and building access (module 28, from 16 November) | `access` | 28 | 28 | 0 | 56 |
+| **Total** | | **774** | **684** | **13** | **1471** |
 
-`pytest --import-mode=importlib --collect-only` collects 746 feedback and 656 held-out tests without the code; every test fails until `lms` exists.
+`pytest --import-mode=importlib --collect-only` collects 774 feedback and 684 held-out tests without the code; every test fails until `lms` exists.
 
 ## Test case IDs and names
 
