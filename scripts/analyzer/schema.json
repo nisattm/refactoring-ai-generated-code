@@ -1,0 +1,1063 @@
+{
+ "schema_version": "1.0",
+ "notes": "Every CSV is UTF-8 with comma separator and decimal point; floats have 4 decimals; every row starts with run_label and schema_version; rows are sorted.",
+ "files": {
+  "functions.csv": {
+   "description": "One row per function or method (units of the AST script; identity = path, qualname, kind, ordinal)",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "unit_id",
+     "type": "string",
+     "unit": "",
+     "definition": "path::qualname::kind::ordinal; the line number is not part of it (D15)"
+    },
+    {
+     "name": "path",
+     "type": "string",
+     "unit": "",
+     "definition": "File relative to lms/"
+    },
+    {
+     "name": "qualname",
+     "type": "string",
+     "unit": "",
+     "definition": "Qualified name; nested functions as outer.<locals>.inner"
+    },
+    {
+     "name": "kind",
+     "type": "string",
+     "unit": "",
+     "definition": "function or method"
+    },
+    {
+     "name": "nested",
+     "type": "int",
+     "unit": "0/1",
+     "definition": "1 if defined inside another function"
+    },
+    {
+     "name": "module_no",
+     "type": "string",
+     "unit": "",
+     "definition": "Module number 1-29, or 'unassigned' (mapping file modules.csv)"
+    },
+    {
+     "name": "module_name",
+     "type": "string",
+     "unit": "",
+     "definition": "Module name"
+    },
+    {
+     "name": "level",
+     "type": "string",
+     "unit": "",
+     "definition": "simple, medium or complex of the module"
+    },
+    {
+     "name": "lineno",
+     "type": "int",
+     "unit": "line",
+     "definition": "Line of def"
+    },
+    {
+     "name": "end_lineno",
+     "type": "int",
+     "unit": "line",
+     "definition": "Last line"
+    },
+    {
+     "name": "lines",
+     "type": "int",
+     "unit": "lines",
+     "definition": "end_lineno - lineno + 1"
+    },
+    {
+     "name": "sloc",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Code lines (no blank, comment or docstring lines)"
+    },
+    {
+     "name": "params",
+     "type": "int",
+     "unit": "count",
+     "definition": "Parameters, self and cls of methods not counted"
+    },
+    {
+     "name": "nesting",
+     "type": "int",
+     "unit": "levels",
+     "definition": "Deepest nesting of if/for/while/try/with/match blocks (elif is not deeper)"
+    },
+    {
+     "name": "cc",
+     "type": "int",
+     "unit": "",
+     "definition": "Cyclomatic complexity (Radon); nested functions are separate units"
+    },
+    {
+     "name": "rank",
+     "type": "string",
+     "unit": "",
+     "definition": "Radon rank A-F"
+    },
+    {
+     "name": "cognitive",
+     "type": "int",
+     "unit": "",
+     "definition": "Cognitive complexity (complexipy); empty for nested functions, which complexipy adds to their parent"
+    },
+    {
+     "name": "halstead_volume",
+     "type": "float",
+     "unit": "",
+     "definition": "Radon Halstead volume (units that are not nested only)"
+    },
+    {
+     "name": "halstead_difficulty",
+     "type": "float",
+     "unit": "",
+     "definition": "Radon Halstead difficulty"
+    },
+    {
+     "name": "halstead_effort",
+     "type": "float",
+     "unit": "",
+     "definition": "Radon Halstead effort"
+    },
+    {
+     "name": "route_handler",
+     "type": "int",
+     "unit": "0/1",
+     "definition": "1 if decorated like a FastAPI route (router.get(...), ...)"
+    }
+   ]
+  },
+  "classes.csv": {
+   "description": "One row per class",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "unit_id",
+     "type": "string",
+     "unit": "",
+     "definition": "path::qualname::class::ordinal"
+    },
+    {
+     "name": "path",
+     "type": "string",
+     "unit": "",
+     "definition": "File relative to lms/"
+    },
+    {
+     "name": "qualname",
+     "type": "string",
+     "unit": "",
+     "definition": "Qualified class name"
+    },
+    {
+     "name": "class_kind",
+     "type": "string",
+     "unit": "",
+     "definition": "orm (SQLAlchemy), schema (Pydantic), enum or plain; resolved over the project's base classes"
+    },
+    {
+     "name": "module_no",
+     "type": "string",
+     "unit": "",
+     "definition": "Module number 1-29, or 'unassigned' (mapping file modules.csv)"
+    },
+    {
+     "name": "module_name",
+     "type": "string",
+     "unit": "",
+     "definition": "Module name"
+    },
+    {
+     "name": "level",
+     "type": "string",
+     "unit": "",
+     "definition": "simple, medium or complex of the module"
+    },
+    {
+     "name": "lineno",
+     "type": "int",
+     "unit": "line",
+     "definition": "Line of class"
+    },
+    {
+     "name": "end_lineno",
+     "type": "int",
+     "unit": "line",
+     "definition": "Last line"
+    },
+    {
+     "name": "wmc",
+     "type": "int",
+     "unit": "",
+     "definition": "Weighted methods per class: sum of the CC of the direct methods"
+    },
+    {
+     "name": "nom",
+     "type": "int",
+     "unit": "count",
+     "definition": "Number of methods"
+    },
+    {
+     "name": "cbo",
+     "type": "int",
+     "unit": "count",
+     "definition": "Distinct other project classes named in the class body (bases, annotations, calls)"
+    },
+    {
+     "name": "lcom4",
+     "type": "int",
+     "unit": "count",
+     "definition": "Connected components of the methods (shared self attributes or calls); 0 without methods"
+    },
+    {
+     "name": "rfc",
+     "type": "int",
+     "unit": "count",
+     "definition": "NOM + distinct names of functions and methods called by the methods"
+    },
+    {
+     "name": "dit",
+     "type": "int",
+     "unit": "levels",
+     "definition": "Depth of inheritance: 0 without base; an external base counts 1"
+    },
+    {
+     "name": "noc",
+     "type": "int",
+     "unit": "count",
+     "definition": "Direct subclasses in the project"
+    },
+    {
+     "name": "fan_in",
+     "type": "int",
+     "unit": "count",
+     "definition": "Other classes that name this class"
+    },
+    {
+     "name": "fan_out",
+     "type": "int",
+     "unit": "count",
+     "definition": "Same as cbo"
+    }
+   ]
+  },
+  "files.csv": {
+   "description": "One row per measured file",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "path",
+     "type": "string",
+     "unit": "",
+     "definition": "File relative to lms/"
+    },
+    {
+     "name": "module_no",
+     "type": "string",
+     "unit": "",
+     "definition": "Module number 1-29, or 'unassigned' (mapping file modules.csv)"
+    },
+    {
+     "name": "module_name",
+     "type": "string",
+     "unit": "",
+     "definition": "Module name"
+    },
+    {
+     "name": "level",
+     "type": "string",
+     "unit": "",
+     "definition": "simple, medium or complex of the module"
+    },
+    {
+     "name": "loc",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Radon LOC"
+    },
+    {
+     "name": "lloc",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Radon logical lines"
+    },
+    {
+     "name": "sloc",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Radon SLOC"
+    },
+    {
+     "name": "comments",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Radon comment lines"
+    },
+    {
+     "name": "multi",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Radon multi-line string lines"
+    },
+    {
+     "name": "blank",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Blank lines"
+    },
+    {
+     "name": "single_comments",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Single-line comments"
+    },
+    {
+     "name": "mi",
+     "type": "float",
+     "unit": "",
+     "definition": "Radon maintainability index"
+    },
+    {
+     "name": "halstead_volume",
+     "type": "float",
+     "unit": "",
+     "definition": "File Halstead volume"
+    },
+    {
+     "name": "halstead_effort",
+     "type": "float",
+     "unit": "",
+     "definition": "File Halstead effort"
+    },
+    {
+     "name": "fan_in",
+     "type": "int",
+     "unit": "files",
+     "definition": "Files that import this file (function-level imports included)"
+    },
+    {
+     "name": "fan_out",
+     "type": "int",
+     "unit": "files",
+     "definition": "Files this file imports"
+    },
+    {
+     "name": "noqa",
+     "type": "int",
+     "unit": "count",
+     "definition": "# noqa comments"
+    },
+    {
+     "name": "type_ignore",
+     "type": "int",
+     "unit": "count",
+     "definition": "# type: ignore comments"
+    },
+    {
+     "name": "pylint_disable",
+     "type": "int",
+     "unit": "count",
+     "definition": "# pylint: disable comments"
+    },
+    {
+     "name": "jscpd_ignore",
+     "type": "int",
+     "unit": "count",
+     "definition": "jscpd:ignore comments"
+    },
+    {
+     "name": "parse_error",
+     "type": "string",
+     "unit": "",
+     "definition": "Parse error of the file, if any"
+    }
+   ]
+  },
+  "smells.csv": {
+   "description": "Every finding of the frozen smell list; 'counted' is 1 once per (s_id, path, unit) (D9)",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "s_id",
+     "type": "string",
+     "unit": "",
+     "definition": "Smell id S01-S23"
+    },
+    {
+     "name": "tool",
+     "type": "string",
+     "unit": "",
+     "definition": "ast, ruff or pylint"
+    },
+    {
+     "name": "rule",
+     "type": "string",
+     "unit": "",
+     "definition": "Rule or description"
+    },
+    {
+     "name": "path",
+     "type": "string",
+     "unit": "",
+     "definition": "File relative to lms/"
+    },
+    {
+     "name": "unit",
+     "type": "string",
+     "unit": "",
+     "definition": "Enclosing function or class, or <module>"
+    },
+    {
+     "name": "line",
+     "type": "int",
+     "unit": "line",
+     "definition": "Line of the finding"
+    },
+    {
+     "name": "module_no",
+     "type": "string",
+     "unit": "",
+     "definition": "Module number 1-29, or 'unassigned' (mapping file modules.csv)"
+    },
+    {
+     "name": "module_name",
+     "type": "string",
+     "unit": "",
+     "definition": "Module name"
+    },
+    {
+     "name": "level",
+     "type": "string",
+     "unit": "",
+     "definition": "simple, medium or complex of the module"
+    },
+    {
+     "name": "counted",
+     "type": "int",
+     "unit": "0/1",
+     "definition": "1 if this row is the one that counts for its (s_id, path, unit)"
+    },
+    {
+     "name": "route_handler",
+     "type": "int",
+     "unit": "0/1",
+     "definition": "S03 only: the function is a FastAPI route handler"
+    }
+   ]
+  },
+  "duplication.csv": {
+   "description": "One row per clone found by jscpd",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "clone_id",
+     "type": "int",
+     "unit": "",
+     "definition": "Running number in file order"
+    },
+    {
+     "name": "file_a",
+     "type": "string",
+     "unit": "",
+     "definition": "First file"
+    },
+    {
+     "name": "start_a",
+     "type": "int",
+     "unit": "line",
+     "definition": "First line"
+    },
+    {
+     "name": "end_a",
+     "type": "int",
+     "unit": "line",
+     "definition": "Last line"
+    },
+    {
+     "name": "file_b",
+     "type": "string",
+     "unit": "",
+     "definition": "Second file"
+    },
+    {
+     "name": "start_b",
+     "type": "int",
+     "unit": "line",
+     "definition": "First line"
+    },
+    {
+     "name": "end_b",
+     "type": "int",
+     "unit": "line",
+     "definition": "Last line"
+    },
+    {
+     "name": "lines",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Lines of the clone"
+    },
+    {
+     "name": "tokens",
+     "type": "int",
+     "unit": "tokens",
+     "definition": "Tokens of the clone"
+    }
+   ]
+  },
+  "modules.csv": {
+   "description": "29 modules plus the unassigned row",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "module_no",
+     "type": "string",
+     "unit": "",
+     "definition": "Module number, 'unassigned', or the router row key"
+    },
+    {
+     "name": "module_name",
+     "type": "string",
+     "unit": "",
+     "definition": "Name"
+    },
+    {
+     "name": "level",
+     "type": "string",
+     "unit": "",
+     "definition": "Level"
+    },
+    {
+     "name": "status",
+     "type": "string",
+     "unit": "",
+     "definition": "generated, not generated (no file) or unassigned"
+    },
+    {
+     "name": "valid",
+     "type": "int",
+     "unit": "0/1",
+     "definition": "0 if more than 5 % of the SLOC is unassigned (module statistics invalid)"
+    },
+    {
+     "name": "files",
+     "type": "int",
+     "unit": "",
+     "definition": "Files"
+    },
+    {
+     "name": "sloc",
+     "type": "int",
+     "unit": "lines",
+     "definition": "SLOC"
+    },
+    {
+     "name": "units",
+     "type": "int",
+     "unit": "",
+     "definition": "Functions and methods"
+    },
+    {
+     "name": "mean_cc",
+     "type": "float",
+     "unit": "",
+     "definition": "Mean CC"
+    },
+    {
+     "name": "max_cc",
+     "type": "int",
+     "unit": "",
+     "definition": "Maximum CC"
+    },
+    {
+     "name": "share_cc_high",
+     "type": "float",
+     "unit": "ratio",
+     "definition": "Share of units with CC above 10 (rank C or worse)"
+    },
+    {
+     "name": "mean_cognitive",
+     "type": "float",
+     "unit": "",
+     "definition": "Mean cognitive complexity"
+    },
+    {
+     "name": "max_cognitive",
+     "type": "int",
+     "unit": "",
+     "definition": "Maximum cognitive complexity"
+    },
+    {
+     "name": "share_cognitive_high",
+     "type": "float",
+     "unit": "ratio",
+     "definition": "Share of units above 15"
+    },
+    {
+     "name": "mi_weighted",
+     "type": "float",
+     "unit": "",
+     "definition": "MI weighted by SLOC"
+    },
+    {
+     "name": "mi_mean",
+     "type": "float",
+     "unit": "",
+     "definition": "Plain mean MI (secondary)"
+    },
+    {
+     "name": "smells",
+     "type": "int",
+     "unit": "count",
+     "definition": "Counted smells of the frozen list"
+    },
+    {
+     "name": "smells_per_ksloc",
+     "type": "float",
+     "unit": "per 1000 SLOC",
+     "definition": "Smells per 1000 SLOC"
+    },
+    {
+     "name": "duplication_pct",
+     "type": "float",
+     "unit": "percent",
+     "definition": "Duplicated lines of the files jscpd read, in percent (union of clone ranges)"
+    },
+    {
+     "name": "duplicated_lines",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Duplicated lines"
+    }
+   ]
+  },
+  "modules_router.csv": {
+   "description": "Secondary view: module plus its own router (--with-secondary)",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "module_no",
+     "type": "string",
+     "unit": "",
+     "definition": "Module number, 'unassigned', or the router row key"
+    },
+    {
+     "name": "module_name",
+     "type": "string",
+     "unit": "",
+     "definition": "Name"
+    },
+    {
+     "name": "level",
+     "type": "string",
+     "unit": "",
+     "definition": "Level"
+    },
+    {
+     "name": "status",
+     "type": "string",
+     "unit": "",
+     "definition": "generated, not generated (no file) or unassigned"
+    },
+    {
+     "name": "valid",
+     "type": "int",
+     "unit": "0/1",
+     "definition": "0 if more than 5 % of the SLOC is unassigned (module statistics invalid)"
+    },
+    {
+     "name": "files",
+     "type": "int",
+     "unit": "",
+     "definition": "Files"
+    },
+    {
+     "name": "sloc",
+     "type": "int",
+     "unit": "lines",
+     "definition": "SLOC"
+    },
+    {
+     "name": "units",
+     "type": "int",
+     "unit": "",
+     "definition": "Functions and methods"
+    },
+    {
+     "name": "mean_cc",
+     "type": "float",
+     "unit": "",
+     "definition": "Mean CC"
+    },
+    {
+     "name": "max_cc",
+     "type": "int",
+     "unit": "",
+     "definition": "Maximum CC"
+    },
+    {
+     "name": "share_cc_high",
+     "type": "float",
+     "unit": "ratio",
+     "definition": "Share of units with CC above 10 (rank C or worse)"
+    },
+    {
+     "name": "mean_cognitive",
+     "type": "float",
+     "unit": "",
+     "definition": "Mean cognitive complexity"
+    },
+    {
+     "name": "max_cognitive",
+     "type": "int",
+     "unit": "",
+     "definition": "Maximum cognitive complexity"
+    },
+    {
+     "name": "share_cognitive_high",
+     "type": "float",
+     "unit": "ratio",
+     "definition": "Share of units above 15"
+    },
+    {
+     "name": "mi_weighted",
+     "type": "float",
+     "unit": "",
+     "definition": "MI weighted by SLOC"
+    },
+    {
+     "name": "mi_mean",
+     "type": "float",
+     "unit": "",
+     "definition": "Plain mean MI (secondary)"
+    },
+    {
+     "name": "smells",
+     "type": "int",
+     "unit": "count",
+     "definition": "Counted smells of the frozen list"
+    },
+    {
+     "name": "smells_per_ksloc",
+     "type": "float",
+     "unit": "per 1000 SLOC",
+     "definition": "Smells per 1000 SLOC"
+    },
+    {
+     "name": "duplication_pct",
+     "type": "float",
+     "unit": "percent",
+     "definition": "Duplicated lines of the files jscpd read, in percent (union of clone ranges)"
+    },
+    {
+     "name": "duplicated_lines",
+     "type": "int",
+     "unit": "lines",
+     "definition": "Duplicated lines"
+    }
+   ]
+  },
+  "levels.csv": {
+   "description": "Levels: mean of the module values (primary), pooled units (secondary), sensitivity rows",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "level",
+     "type": "string",
+     "unit": "",
+     "definition": "simple, medium, complex, 'complex 2-7 and 13', 'complex 15-29'"
+    },
+    {
+     "name": "aggregation",
+     "type": "string",
+     "unit": "",
+     "definition": "'module mean' or 'pooled units'"
+    },
+    {
+     "name": "modules",
+     "type": "int",
+     "unit": "",
+     "definition": "Generated modules in the set"
+    },
+    {
+     "name": "files",
+     "type": "int",
+     "unit": "",
+     "definition": "Files"
+    },
+    {
+     "name": "sloc",
+     "type": "int",
+     "unit": "lines",
+     "definition": "SLOC"
+    },
+    {
+     "name": "smells",
+     "type": "int",
+     "unit": "count",
+     "definition": "Counted smells"
+    },
+    {
+     "name": "mean_cc",
+     "type": "float",
+     "unit": "",
+     "definition": "Mean CC"
+    },
+    {
+     "name": "mean_cognitive",
+     "type": "float",
+     "unit": "",
+     "definition": "Mean cognitive complexity"
+    },
+    {
+     "name": "mi_weighted",
+     "type": "float",
+     "unit": "",
+     "definition": "MI weighted by SLOC"
+    },
+    {
+     "name": "smells_per_ksloc",
+     "type": "float",
+     "unit": "per 1000 SLOC",
+     "definition": "Smells per 1000 SLOC"
+    },
+    {
+     "name": "duplication_pct",
+     "type": "float",
+     "unit": "percent",
+     "definition": "Duplication"
+    },
+    {
+     "name": "note",
+     "type": "string",
+     "unit": "",
+     "definition": "Remark"
+    }
+   ]
+  },
+  "project.csv": {
+   "description": "Project values: the five primary metrics and the secondary ones, as metric/value rows",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "metric",
+     "type": "string",
+     "unit": "",
+     "definition": "Metric name"
+    },
+    {
+     "name": "value",
+     "type": "number",
+     "unit": "",
+     "definition": "Value, integer or float with 4 decimals (empty if not measured)"
+    },
+    {
+     "name": "kind",
+     "type": "string",
+     "unit": "",
+     "definition": "primary or secondary"
+    },
+    {
+     "name": "note",
+     "type": "string",
+     "unit": "",
+     "definition": "Remark"
+    }
+   ]
+  },
+  "architecture.csv": {
+   "description": "Module dependencies, fan-in/out per module and import cycles",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "kind",
+     "type": "string",
+     "unit": "",
+     "definition": "module_edge, module_fan_in, module_fan_out, file_cycle_all_imports, file_cycle_module_level, module_cycle"
+    },
+    {
+     "name": "source",
+     "type": "string",
+     "unit": "",
+     "definition": "Module number or cycle number"
+    },
+    {
+     "name": "target",
+     "type": "string",
+     "unit": "",
+     "definition": "Target module"
+    },
+    {
+     "name": "value",
+     "type": "int",
+     "unit": "",
+     "definition": "Imports, distinct modules or files in the cycle"
+    },
+    {
+     "name": "note",
+     "type": "string",
+     "unit": "",
+     "definition": "Cycle members or remark"
+    }
+   ]
+  },
+  "metrics_long.csv": {
+   "description": "Long format for charts: one value per unit and metric",
+   "columns": [
+    {
+     "name": "run_label",
+     "type": "string",
+     "unit": "",
+     "definition": "Label of the measurement run (--label)"
+    },
+    {
+     "name": "schema_version",
+     "type": "string",
+     "unit": "",
+     "definition": "Version of this schema"
+    },
+    {
+     "name": "scope",
+     "type": "string",
+     "unit": "",
+     "definition": "function, class or file"
+    },
+    {
+     "name": "unit",
+     "type": "string",
+     "unit": "",
+     "definition": "unit_id or path"
+    },
+    {
+     "name": "metric",
+     "type": "string",
+     "unit": "",
+     "definition": "Metric name"
+    },
+    {
+     "name": "value",
+     "type": "number",
+     "unit": "",
+     "definition": "Value, integer or float with 4 decimals"
+    }
+   ]
+  }
+ }
+}
