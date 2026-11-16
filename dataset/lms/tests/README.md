@@ -74,7 +74,7 @@ All requirement areas have case tables and tests. Counts are the rows of `cases/
 
 `pytest --import-mode=importlib --collect-only` collects 875 feedback and 767 held-out tests without the code; every test fails until `lms` exists.
 
-The web interface tests (`ui_*`, ADR 002, 16 November) open each screen of `../web-interface.md` in Chromium through Playwright and check a few flows. They use the fixtures `live_url` (a uvicorn server for the same app, database and clock as `client`), `browser` and `page` of `conftest.py`, and need the image with Playwright (`docs/environment.md`). They fail until the interface of their step exists.
+The web interface tests (`ui_*`, ADR 002, 16 November) open each screen of `../web-interface.md` in Chromium through Playwright and check a few flows. They use the fixtures `live_url` (a uvicorn server for the same app, database and clock as `client`; for these tests the database is a SQLite file in `tmp_path` instead of memory, because one in-memory connection used by several server threads at once can crash Python with a segmentation fault), `browser` and `page` of `conftest.py`, and need the image with Playwright (`docs/environment.md`). They fail until the interface of their step exists.
 
 ## Test case IDs and names
 

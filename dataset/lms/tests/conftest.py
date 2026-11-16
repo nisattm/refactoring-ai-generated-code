@@ -40,9 +40,15 @@ def clock(start):
 
 
 @pytest.fixture
-def settings(clock):
+def settings(clock, request, tmp_path):
+    """In-memory SQLite for the API tests. The web interface tests (``live_url``) serve the app from
+    a second thread, and the browser sends requests in parallel; one in-memory connection shared by
+    several threads can crash the interpreter (segmentation fault), so they use a database file in
+    ``tmp_path``: every thread gets its own connection and SQLite locks the file."""
     import lms
 
+    if "live_url" in request.fixturenames:
+        return lms.Settings(database_url=f"sqlite:///{tmp_path / 'lms.db'}", clock=clock)
     return lms.Settings(database_url="sqlite://", clock=clock)
 
 
@@ -138,7 +144,8 @@ def branch_b(client, admin) -> dict:
 
 @pytest.fixture
 def live_url(app):
-    """Base URL of a real HTTP server for ``app`` (the same app, database and clock as ``client``)."""
+    """Base URL of a real HTTP server for ``app`` (the same app, database and clock as ``client``; the
+    database is a file, see ``settings``)."""
     import socket
     import threading
     import time
