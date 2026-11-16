@@ -37,3 +37,13 @@ results/baseline/**/raw/
 
 # Run lock: exists while a test or measurement run is in progress (docs/environment.md)
 .run.lock
+
+# Trial measurements: the unit-level detail files are not committed (docs/decisions/003, addendum). They are
+# regenerated from the measured code (analysis is deterministic), so that code must stay reachable. The final
+# baseline results/baseline/final/ is committed in full.
+results/baseline/trial/**/functions.csv
+results/baseline/trial/**/classes.csv
+results/baseline/trial/**/files.csv
+results/baseline/trial/**/metrics_long.csv
+results/baseline/trial/**/duplication.csv
+results/baseline/trial/**/pyexamine.csv

@@ -1,0 +1,6 @@
+# Generated measurement files: GitHub collapses them in pull request diffs
+results/**/*.csv linguist-generated=true
+results/**/summary.json linguist-generated=true
+
+# Shell scripts run in Linux containers: always LF
+*.sh text eol=lf

@@ -426,17 +426,23 @@ def test_tool_version_difference_is_a_warning(tmp_path):
     assert "tool versions differ between before and after" in run(tmp_path, b, a)[1]["warnings"]
 
 
-def test_comparing_a_real_result_with_itself():
-    trial = REPO / "results" / "baseline" / "trial" / "main-465b44f"
-    if not trial.is_dir():
-        pytest.skip("trial result not present")
-    import tempfile
-    with tempfile.TemporaryDirectory() as out:
-        code = compare.main(["--before", str(trial), "--after", str(trial), "--out", out])
-        report = json.loads((Path(out) / "compare.json").read_text(encoding="utf-8"))
+def test_comparing_a_real_analysis_with_itself(tmp_path):
+    """A result of the analyzer itself (the sample project), not a hand-made folder. The detail files of trial
+    results are not committed, so the analysis is made here."""
+    import shutil
+    import subprocess
+    if shutil.which("ruff") is None or shutil.which("jscpd") is None:
+        pytest.skip("measurement tools are not installed (run inside the Docker image)")
+    sample = Path(__file__).resolve().parent / "fixtures" / "analyzer" / "sample"
+    analysis_dir = tmp_path / "analysis"
+    done = subprocess.run([sys.executable, str(Path(compare.__file__).resolve().parent / "analyze.py"), "--code", str(sample),
+                           "--out", str(analysis_dir), "--label", "sample"], capture_output=True, text=True, check=False)
+    assert done.returncode == 0, done.stderr
+    code, report = run(tmp_path, analysis_dir, analysis_dir)
     assert code == 0 and {v["status"] for v in report["primary"].values()} == {"same"}
     assert report["inventory"]["removed_by_name"] == 0 and report["sloc"]["drop_pct"] == 0.0
-    assert report["run_successful"]["value"] is None or report["run_successful"]["value"] is False
+    assert report["inventory"]["units_before"] > 0
+    assert report["run_successful"]["value"] is False                         # nothing improved
 
 
 def test_real_openapi_hash_is_stable():

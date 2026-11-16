@@ -29,6 +29,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--label", help="name of this measurement (written into every CSV row)")
     parser.add_argument("--with-secondary", action="store_true", help="also write the secondary views (modules_router.csv)")
     parser.add_argument("--image-id", default=os.environ.get("ANALYZER_IMAGE_ID"), help="Docker image ID to record")
+    parser.add_argument("--code-sha", help="commit of the measured code, for code that is an export (git archive) and "
+                                           "not a git checkout")
     return parser
 
 
@@ -166,7 +168,8 @@ def _run(args, ws, mapping: Mapping, schema: dict, out: Path, raw: Path, started
             "crashed_files": sorted(pyexamine.crashed)},
     }
 
-    code_git = workspace.git_info(args.code.resolve())
+    code_git = ({"sha": args.code_sha, "dirty": False, "last_change_sha": args.code_sha} if args.code_sha
+                else workspace.git_info(args.code.resolve()))
     tool_versions = versions()
     label = args.label or (f"run-{code_git['sha'][:7]}" if code_git["sha"] else "run")
     duration = round(time.perf_counter() - clock, 2)
