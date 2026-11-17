@@ -33,6 +33,9 @@ class Fee(Base):
         sa.ForeignKey("reserve_loans.id", use_alter=True), index=True, default=None
     )
     card_id: Mapped[int | None] = mapped_column(sa.ForeignKey("cards.id"), index=True, default=None)
+    print_job_id: Mapped[int | None] = mapped_column(
+        sa.ForeignKey("print_jobs.id", use_alter=True), index=True, default=None
+    )
     amount: Mapped[Decimal] = mapped_column(MoneyType)
     paid_amount: Mapped[Decimal] = mapped_column(MoneyType, default=Decimal("0.00"))
     status: Mapped[str] = mapped_column(sa.String(10), default="open", index=True)

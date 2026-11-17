@@ -60,6 +60,7 @@ def _create(
     announcement_id: int | None = None,
     thread_id: int | None = None,
     card_id: int | None = None,
+    print_job_id: int | None = None,
     reminder_date: datetime.date | None = None,
 ) -> Notification:
     notification = Notification(
@@ -85,6 +86,7 @@ def _create(
         announcement_id=announcement_id,
         thread_id=thread_id,
         card_id=card_id,
+        print_job_id=print_job_id,
         created_at=now,
         reminder_date=reminder_date,
     )
@@ -497,3 +499,14 @@ def notify_access(
     """``card_issued``, ``access_banned`` and ``lost_card_used``; the caller composes the message, which
     contains the card number or the end date of the ban."""
     return _create(db, now, member_id, type_, message, card_id=card_id)
+
+
+# --- printing and copying (LIB-PRT-42) -----------------------------------------------
+
+
+def notify_printing(
+    db: Session, now: datetime.datetime, member_id: int, type_: str, message: str, *, print_job_id: int
+) -> Notification:
+    """``print_job_cancelled``, ``print_job_expired`` and ``print_job_failed``; the caller composes the message,
+    which contains the job title."""
+    return _create(db, now, member_id, type_, message, print_job_id=print_job_id)

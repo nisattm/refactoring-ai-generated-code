@@ -30,6 +30,8 @@ FeeKind = Literal[
     "reserve_late_fee",
     "reserve_lost",
     "card_replacement",
+    "printing",
+    "print_pack",
 ]
 FeeStatus = Literal["open", "paid", "waived"]
 PaymentMethod = Literal["cash", "card"]
@@ -63,6 +65,7 @@ class FeeOut(BaseModel):
     event_registration_id: int | None
     reserve_loan_id: int | None
     card_id: int | None
+    print_job_id: int | None
     amount: str
     paid_amount: str
     status: str
@@ -85,6 +88,7 @@ def fee_out(fee: Fee) -> FeeOut:
         event_registration_id=fee.event_registration_id,
         reserve_loan_id=fee.reserve_loan_id,
         card_id=fee.card_id,
+        print_job_id=fee.print_job_id,
         amount=format_amount(fee.amount),
         paid_amount=format_amount(fee.paid_amount),
         status=fee.status,

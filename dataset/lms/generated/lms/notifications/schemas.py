@@ -73,6 +73,9 @@ NotificationType = Literal[
     "card_issued",
     "access_banned",
     "lost_card_used",
+    "print_job_cancelled",
+    "print_job_expired",
+    "print_job_failed",
 ]
 
 
@@ -98,6 +101,7 @@ class NotificationOut(BaseModel):
     announcement_id: int | None
     thread_id: int | None
     card_id: int | None
+    print_job_id: int | None
     created_at: str
     read_at: str | None
 
@@ -138,6 +142,7 @@ def notification_out(n: Notification) -> NotificationOut:
         announcement_id=n.announcement_id,
         thread_id=n.thread_id,
         card_id=n.card_id,
+        print_job_id=n.print_job_id,
         created_at=format_datetime(n.created_at),
         read_at=format_datetime(n.read_at) if n.read_at is not None else None,
     )

@@ -1,0 +1,11 @@
+/* Screens of module: Printing and copying. */
+
+.print-preview { margin: 0; font-weight: 600; align-self: center; }
+.check-field .check { display: inline-flex; align-items: center; gap: 0.4rem; }
+.check-field .check input { margin: 0; }
+
+tr.low-paper td { background: var(--warn-bg); }
+.low-paper-mark { color: #8a5a00; }
+
+.inline-fail { display: flex; flex-wrap: wrap; gap: 0.3rem 0.5rem; align-items: flex-end; }
+.card-release-result .refused { margin: 0.25rem 0 0.75rem; }

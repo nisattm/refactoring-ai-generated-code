@@ -27,6 +27,7 @@ from lms.programs.usage import member_summary as program_summary
 from lms.rooms.usage import member_summary as room_summary
 from lms.suggestions.usage import member_summary as suggestion_summary
 from lms.access import usage as access_usage
+from lms.printing import usage as printing_usage
 from lms.members.schemas import (
     BorrowingOut,
     MemberCreateIn,
@@ -108,7 +109,12 @@ def get_own_member(request: Request, db: SessionDep, principal: CurrentPrincipal
         raise NotFound("The authenticated user has no member record", details={"resource": "member"})
     card = access_usage.active_card(db, member.id)  # LIB-ACC-48
     base = member_out(member, _today(request))
-    return MemberMeOut(**base.model_dump(), card_no=card.card_no if card is not None else None)
+    free_pages_left = printing_usage.current_free_pages_left(db, local_now(request.app.state.settings.clock), member)
+    return MemberMeOut(
+        **base.model_dump(),
+        card_no=card.card_no if card is not None else None,  # LIB-ACC-48
+        free_pages_left=free_pages_left,  # LIB-PRT-47
+    )
 
 
 @router.get("/{member_id}", response_model=MemberOut)
@@ -176,4 +182,5 @@ def member_summary(member_id: MemberId, request: Request, db: SessionDep, princi
         programs=program_summary(db, now, member.id),
         messages=message_summary(db, now, member.id),
         access=access_usage.member_summary(db, now, member.id),
+        printing=printing_usage.member_summary(db, now, member),
     )

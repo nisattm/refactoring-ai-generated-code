@@ -20,6 +20,7 @@ import { suggestionScreens } from "./suggestions.js";
 import { programScreens } from "./programs.js";
 import { messagingScreens } from "./messaging.js";
 import { accessScreens } from "./access.js";
+import { printingScreens } from "./printing.js";
 
 export const allScreens = [
   ...coreScreens,
@@ -42,6 +43,7 @@ export const allScreens = [
   ...programScreens,
   ...messagingScreens,
   ...accessScreens,
+  ...printingScreens,
 ];
 
 // Menu groups in the order of the modules; the group of a screen is its `module`.
@@ -73,6 +75,7 @@ const ORDER = [
   "Reading programs",
   "Announcements and messages",
   "Member cards and building access",
+  "Printing and copying",
 ];
 
 export const menuGroups = ORDER.map((title) => ({ title, screens: allScreens.filter((s) => s.module === title) }));

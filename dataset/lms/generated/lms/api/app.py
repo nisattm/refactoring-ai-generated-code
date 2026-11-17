@@ -30,6 +30,7 @@ from lms.api import (
     messaging,
     notifications,
     preservation,
+    printing,
     programs,
     purchasing,
     reports,
@@ -107,6 +108,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api.include_router(programs.router)
     api.include_router(messaging.router)
     api.include_router(access.router)
+    api.include_router(printing.router)
     app.include_router(api)
     if WEB_DIR.is_dir():  # LIB-UI-GEN-02: the web interface is optional
         app.mount(UI_PREFIX, StaticFiles(directory=WEB_DIR, html=True), name="ui")
