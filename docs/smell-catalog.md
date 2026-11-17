@@ -73,11 +73,25 @@ Code that compiles and may pass the tests but is illogical. Detectable by tools:
 
 ## Observed smells (after generation)
 
-Filled after the LMS code is generated. This table shows that the generated code actually contains the smells the metrics measure; expected smells per module are listed in [`../dataset/README.md`](../dataset/README.md).
+Filled from the final baseline measurement ([`../results/baseline/final/v0-ai-baseline/`](../results/baseline/final/v0-ai-baseline/), code of the tag `v0-ai-baseline` = `3bd1412`: 30,260 SLOC, 257 files, 29 modules; 360 smells in total). This table shows that the generated code actually contains the smells the metrics measure; expected smells per module are listed in [`../dataset/README.md`](../dataset/README.md). One row per smell of the frozen list: **Module** is the module with most findings, **Location** is the worst instance (S01, S03) or an example (module number in brackets), **Value** gives the number of findings (counted once per place, D9) and the modules affected. Details: `smells.csv` of the result folder. "Approach that fixed it" stays empty until the experiments.
 
 | ID | Smell | Module | Location | Detected by | Value | Approach that fixed it |
 | --- | --- | --- | --- | --- | --- | --- |
-| | | | | | | |
+| S01 | Long Method | 19 Staff and shifts | `donations/receiving.py` `receive` (22) | Own AST script | 126 lines (worst); 80 findings in 28 modules, most in module 19 (7) | |
+| S02 | Large Class | – | – | Own AST script | **0**; the largest `plain` class has 4 methods | |
+| S03 | Long Parameter List | 14 API layer | `notifications/service.py` `_create` (8) | Ruff PLR0913 | 26 parameters (worst); 192 findings in 27 modules (54 route handlers, 138 other), most in module 14 (55) | |
+| S07 | Dead code | 14, 4, 1, 27 (one each) | `core/db.py` `create_schema` (1) | Ruff F401 + F841 | 4 findings (all F401), in 4 modules | |
+| S09 | Complex Conditional | 4 Catalog, 23 Preservation | `catalog/isbn.py` `normalize_isbn` (4) | Ruff PLR0916 + SIM | 2 findings (1 PLR0916, 1 SIM401) | |
+| S10 | Deep Nesting | – | – | Pylint R1702 | **0**; the deepest function (`audit/importer.py` `_parse`) has nesting level 5 | |
+| S11 | Magic Number | 14 API layer | `api/reports.py` (14) | Ruff PLR2004 | 34 findings in 12 modules, most in module 14 (15; 10 in `api/reports.py`) | |
+| S18 | Cyclic dependency | 1 Core | `core/db.py` (function-level model imports) | Own import graph | 1 cycle of 26 files; **0** without the function-level imports of `core/db.py` | |
+| S19 | Swallowed / broad exception | – | – | Ruff S110 + BLE001 | **0** | |
+| S20 | Mutable default argument | – | – | Ruff B006 | **0** | |
+| S21 | Inconsistent / redundant return | – | – | Ruff RET | **0** | |
+| S22 | Disallowed dependency | – | – | Own script | **0**; all imports are inside the allowed library list | |
+| S23 | Bypassed type safety | 1 Core | `audit/importer.py` `_parse` (13) | Ruff ANN401 + PGH003 + `cast(` | 47 findings in 19 modules (all ANN401), most in module 1 (7); no `cast(` call, no PGH003 | |
+
+**Not observed at the start.** S02, S10, S19, S20, S21 and S22 are 0 at the start. They stay in the frozen list so that a refactoring that introduces them is counted; the positive control (`scripts/tests/fixtures/analyzer/poscontrol/`) shows the rules fire. Only S01, S03, S07, S09, S11, S18 and S23 can decrease. Secondary findings (Vulture 7, PyExamine, suppression comments: 39 `noqa` and 104 `type: ignore`) are in `summary.json`.
 
 ## Sources
 

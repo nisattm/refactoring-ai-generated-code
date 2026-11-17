@@ -1,0 +1,192 @@
+{
+  "scope": "lms/ only, branch coverage, separate run; not part of the success decision",
+  "statements": 19567,
+  "covered_statements": 18993,
+  "statement_coverage_pct": 97.0665,
+  "branches": 4528,
+  "covered_branches": 3990,
+  "branch_coverage_pct": 88.1184,
+  "combined_coverage_pct": 95.3849,
+  "by_package": {
+    "(root)": {
+      "statements": 6,
+      "covered": 6,
+      "branches": 0,
+      "covered_branches": 0
+    },
+    "access": {
+      "statements": 701,
+      "covered": 691,
+      "branches": 140,
+      "covered_branches": 129
+    },
+    "api": {
+      "statements": 3834,
+      "covered": 3668,
+      "branches": 550,
+      "covered_branches": 455
+    },
+    "audit": {
+      "statements": 461,
+      "covered": 430,
+      "branches": 136,
+      "covered_branches": 107
+    },
+    "auth": {
+      "statements": 333,
+      "covered": 330,
+      "branches": 70,
+      "covered_branches": 66
+    },
+    "branches": {
+      "statements": 244,
+      "covered": 239,
+      "branches": 70,
+      "covered_branches": 64
+    },
+    "catalog": {
+      "statements": 464,
+      "covered": 437,
+      "branches": 108,
+      "covered_branches": 82
+    },
+    "core": {
+      "statements": 325,
+      "covered": 320,
+      "branches": 56,
+      "covered_branches": 51
+    },
+    "courses": {
+      "statements": 1012,
+      "covered": 985,
+      "branches": 266,
+      "covered_branches": 237
+    },
+    "digital": {
+      "statements": 931,
+      "covered": 910,
+      "branches": 272,
+      "covered_branches": 247
+    },
+    "donations": {
+      "statements": 907,
+      "covered": 876,
+      "branches": 256,
+      "covered_branches": 226
+    },
+    "equipment": {
+      "statements": 1007,
+      "covered": 984,
+      "branches": 290,
+      "covered_branches": 261
+    },
+    "events": {
+      "statements": 818,
+      "covered": 799,
+      "branches": 218,
+      "covered_branches": 192
+    },
+    "fines": {
+      "statements": 209,
+      "covered": 208,
+      "branches": 26,
+      "covered_branches": 25
+    },
+    "ill": {
+      "statements": 744,
+      "covered": 726,
+      "branches": 166,
+      "covered_branches": 145
+    },
+    "inventory": {
+      "statements": 504,
+      "covered": 498,
+      "branches": 114,
+      "covered_branches": 104
+    },
+    "loans": {
+      "statements": 260,
+      "covered": 258,
+      "branches": 86,
+      "covered_branches": 84
+    },
+    "members": {
+      "statements": 369,
+      "covered": 366,
+      "branches": 94,
+      "covered_branches": 89
+    },
+    "messaging": {
+      "statements": 693,
+      "covered": 675,
+      "branches": 170,
+      "covered_branches": 151
+    },
+    "notifications": {
+      "statements": 227,
+      "covered": 227,
+      "branches": 28,
+      "covered_branches": 28
+    },
+    "preservation": {
+      "statements": 669,
+      "covered": 648,
+      "branches": 130,
+      "covered_branches": 116
+    },
+    "printing": {
+      "statements": 606,
+      "covered": 594,
+      "branches": 136,
+      "covered_branches": 124
+    },
+    "programs": {
+      "statements": 827,
+      "covered": 798,
+      "branches": 194,
+      "covered_branches": 161
+    },
+    "purchasing": {
+      "statements": 357,
+      "covered": 351,
+      "branches": 108,
+      "covered_branches": 98
+    },
+    "reports": {
+      "statements": 166,
+      "covered": 155,
+      "branches": 28,
+      "covered_branches": 23
+    },
+    "reservations": {
+      "statements": 223,
+      "covered": 215,
+      "branches": 62,
+      "covered_branches": 54
+    },
+    "rooms": {
+      "statements": 933,
+      "covered": 905,
+      "branches": 280,
+      "covered_branches": 239
+    },
+    "search": {
+      "statements": 79,
+      "covered": 79,
+      "branches": 32,
+      "covered_branches": 32
+    },
+    "staff": {
+      "statements": 975,
+      "covered": 950,
+      "branches": 272,
+      "covered_branches": 246
+    },
+    "suggestions": {
+      "statements": 683,
+      "covered": 665,
+      "branches": 170,
+      "covered_branches": 154
+    }
+  }
+}

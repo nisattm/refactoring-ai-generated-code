@@ -121,6 +121,8 @@ Every metric and smell must have at least one module whose **requirements** give
 | Disallowed dependency (S22), bypassed type safety (S23) | Whole code base | 1–29 |
 | Time, CPU, RAM, allocations | Workloads W1–W3 ([`../docs/metrics.md`](../docs/metrics.md#workloads-added-29-october)) | 5, 7, 9, 10 |
 
+Observed at the final baseline (`results/baseline/final/v0-ai-baseline`): S02, S10, S19, S20, S21, S22 = 0; see [`../docs/smell-catalog.md`](../docs/smell-catalog.md#observed-smells-after-generation), Observed smells.
+
 ## Cross-module dependencies
 
 Which module needs data or an action of which other module, as implied by the rules in [`lms/requirements.md`](lms/requirements.md). Kept here, not in the requirements, so that the model is not told how to structure the code. Used for the level score above and for the architecture metrics.
