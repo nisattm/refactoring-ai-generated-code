@@ -6,7 +6,8 @@ tests, flaky list and a separate coverage run.
         [--skip-analysis] [--skip-coverage] [--timeout 7200]
 
 Written for ``scripts/measure_baseline.sh``, which takes the run lock and starts it in the Docker image.
-Output in ``<out>``: the analyzer files, ``tests.csv`` (first full run), ``tests_repeat1.csv`` and
+Output in ``<out>``: the analyzer files, ``tests.csv`` (first full run; with ``--second-full-run`` also
+``tests_run2.csv`` and ``tests_run2.json`` for the second one), ``tests_repeat1.csv`` and
 ``tests_repeat2.csv`` (the failing cases, run twice more), ``flaky.txt``, ``coverage_summary.json``,
 ``tests_run.json`` and ``baseline.json``; raw output of every step in ``<out>/raw/`` (not committed).
 
@@ -232,6 +233,8 @@ def main(argv: list[str] | None = None) -> int:
                 run2 = full_run("tests-run2")
                 if run2 is not None:
                     full_runs.append(run2)
+                    shutil.copy2(raw / "tests-run2" / "tests.csv", out / "tests_run2.csv")
+                    shutil.copy2(raw / "tests-run2" / "run.json", out / "tests_run2.json")
             failing = failing_cases(full_runs)
             observations = list(full_runs)
             if failing:

@@ -198,6 +198,9 @@ def test_second_full_run_catches_a_test_that_flips_between_the_full_runs(tmp_pat
     # run 1 passes, run 2 fails (and so do both repetitions): passed once and failed otherwise = flaky
     assert "T-X-03-a" in (out / "flaky.txt").read_text(encoding="utf-8")
     assert (out / "raw" / "tests-run2" / "tests.csv").is_file()
+    # the second run is kept outside raw/ (not committed), so that the final baseline records both full runs
+    assert (out / "tests_run2.csv").read_text(encoding="utf-8") == (out / "raw" / "tests-run2" / "tests.csv").read_text(encoding="utf-8")
+    assert json.loads((out / "tests_run2.json").read_text(encoding="utf-8"))["sets"]
 
 
 def test_modules_option_runs_only_the_selected_test_files(tmp_path, monkeypatch):
