@@ -172,3 +172,4 @@ The tests use two small projects (`scripts/tests/fixtures/analyzer/sample` and `
 - jscpd counts tokens its own way; the estimate of the analyzer can differ by tens of tokens, so files of 40–60 estimated tokens only produce a warning (D13).
 - T-TECH-10-a is `partial`: the `ORDER BY` half is not checked by a script (ADR 003 addendum, point 4).
 - Coverage is a separate run and has no target in Week 4 (D26); characterization tests are tracked in issue #115.
+- In the coverage run of the final baseline the UI tests T-UIDIG-03-a and T-UIROOM-07-a failed, although both passed in the two full runs; the cause is not verified (timing under coverage is likely), so for Week 5 treat these two cases as sensitive to run conditions and check them first if they fail in an experiment.
