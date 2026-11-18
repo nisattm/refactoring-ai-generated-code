@@ -47,3 +47,18 @@ results/baseline/trial/**/files.csv
 results/baseline/trial/**/metrics_long.csv
 results/baseline/trial/**/duplication.csv
 results/baseline/trial/**/pyexamine.csv
+
+# Token files of the experiment accounts (passed to docker --env-file, never committed)
+.env.*
+
+# Experiments (Week 5, ADR 004): the raw Claude Code logs and the unit-level detail files are not committed
+# (ADR 003 rule); the code of every round is kept as the tag exp/<approach>/<run-id>/r<k>
+results/experiments/**/stream.jsonl
+results/experiments/**/stderr.txt
+results/experiments/**/openapi/
+results/experiments/**/functions.csv
+results/experiments/**/classes.csv
+results/experiments/**/files.csv
+results/experiments/**/metrics_long.csv
+results/experiments/**/duplication.csv
+results/experiments/**/pyexamine.csv
