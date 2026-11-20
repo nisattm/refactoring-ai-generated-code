@@ -57,6 +57,8 @@ TABLE_MODULES = {
     "ui_core": "ui", "ui_services": "ui", "ui_community": "ui", "ui_printing": "ui",
 }
 COMMON_PREFIXES = ("LIB-TECH", "LIB-COM", "LIB-IF")
+# Characterization tests (issue #115) have their own tables ``char_<table>.md``; they belong to the module of <table>.
+CHAR_PREFIX = "char_"
 CASE_ID = re.compile(r"T-[A-Z0-9]+(?:-[A-Za-z0-9]+)+")
 RESULT_ORDER = ("error", "failed", "skipped", "passed")      # the worst result of a parametrized case wins
 CSV_COLUMNS = ("case", "module", "table", "type", "set", "result")
@@ -112,8 +114,9 @@ def load_case_tables(tests: Path) -> dict[str, dict]:
             if len(cells) < 6 or not CASE_ID.fullmatch(cells[0]):
                 continue
             requirement, kind, case_set = cells[1], cells[2], cells[-1].replace("held-out", "heldout")
-            module = TABLE_MODULES.get(md.stem, md.stem)
-            if md.stem == "core" and requirement.startswith(COMMON_PREFIXES):
+            base = md.stem.removeprefix(CHAR_PREFIX)
+            module = TABLE_MODULES.get(base, md.stem)
+            if base == "core" and requirement.startswith(COMMON_PREFIXES):
                 module = "common"
             cases[cells[0]] = {"table": md.stem, "module": module, "type": kind, "set": case_set,
                                "requirement": requirement}
