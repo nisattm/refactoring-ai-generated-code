@@ -18,7 +18,7 @@ Result: `results/baseline/trial/pilot-ce03f54-v2/` — `valid=True`, 436 s. The 
 | Self-compare `round_accepted` | true | ✅ true |
 | Self-compare `run_successful` | false (nothing improved) | ✅ false; all five primary metrics `same` |
 
-The old folder has no `functions.csv` (older analyzer), so `compare.py` cannot use it; the new folder is the one to pass as `--baseline` for the pilot.
+Use the new folder as `--baseline` for the pilot. Note: the unit-level files (`functions.csv`, `classes.csv`, `files.csv`, `metrics_long.csv`, `duplication.csv`, `pyexamine.csv`) of trial measurements are git-ignored, and `compare.py` needs `functions.csv` (it stopped with exit code 4 on a checkout without it). They exist only on the machine that measured; on another machine re-run the command above first (the analysis is deterministic).
 
 Self-compare command (code of `ce03f54` exported with `git archive` to a temporary folder for the OpenAPI hash):
 
