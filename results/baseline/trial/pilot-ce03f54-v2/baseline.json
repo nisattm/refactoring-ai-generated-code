@@ -1,0 +1,129 @@
+{
+  "label": "pilot-ce03f54-v2",
+  "started_at": "2026-11-20T15:29:08+00:00",
+  "environment": {
+    "cpus": 20,
+    "ram_gb": 7.6,
+    "python": "3.14.10",
+    "cpuset_cpus": "",
+    "memory": ""
+  },
+  "modules": "1-14",
+  "second_full_run": false,
+  "problems": [],
+  "analysis": {
+    "primary": {
+      "mean_cc": 2.6795,
+      "mean_cognitive": 1.8578,
+      "mi_weighted": 45.8653,
+      "duplication_pct": 0.809,
+      "smell_count": 83
+    },
+    "smell_counts": {
+      "S01": 15,
+      "S02": 0,
+      "S03": 39,
+      "S07": 3,
+      "S09": 1,
+      "S10": 0,
+      "S11": 8,
+      "S18": 1,
+      "S19": 0,
+      "S20": 0,
+      "S21": 0,
+      "S22": 0,
+      "S23": 16
+    },
+    "code_sha": "ce03f5420a2da697772c0441607f35a94d75c8f8",
+    "code_content_hash": "ef1c8f40ecd5b27bb1480ea1f6f4cad16e77dbaf18206c724f726b7b3369a3d1",
+    "analyzer_sha": "6e5ba22995dd857755c921080835d3bbf3a0a70c",
+    "image_id": "sha256:213b052362ead0d70857b04c1380229671a50053a53a18a4ccf56028cd267128",
+    "failures": []
+  },
+  "test_files": [
+    "api",
+    "audit_io",
+    "auth",
+    "branches",
+    "catalog",
+    "core",
+    "e2e",
+    "fees",
+    "loans",
+    "members",
+    "notifications",
+    "purchasing",
+    "reports",
+    "reservations",
+    "search"
+  ],
+  "tests": {
+    "sets": {
+      "feedback": {
+        "tests": 282,
+        "passed": 282,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "missing": 0
+      },
+      "heldout": {
+        "tests": 239,
+        "passed": 239,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "missing": 0
+      }
+    },
+    "failing_in_a_full_run": 0,
+    "flaky": 0,
+    "repetitions": 0,
+    "persistent_failures": 0
+  },
+  "coverage": {
+    "statement_coverage_pct": 96.3517,
+    "branch_coverage_pct": 86.7102,
+    "combined_coverage_pct": 94.6914
+  },
+  "finished_at": "2026-11-20T15:36:24+00:00",
+  "duration_s": 436,
+  "steps": [
+    {
+      "step": "analyze",
+      "started_at": "2026-11-20T15:29:08+00:00",
+      "state": "done",
+      "exit_code": 0,
+      "seconds": 26.8
+    },
+    {
+      "step": "tests-run1",
+      "started_at": "2026-11-20T15:29:37+00:00",
+      "state": "done",
+      "exit_code": 0,
+      "seconds": 193.4
+    },
+    {
+      "step": "coverage-run",
+      "started_at": "2026-11-20T15:32:50+00:00",
+      "state": "done",
+      "exit_code": 0,
+      "seconds": 203.4
+    },
+    {
+      "step": "coverage-combine",
+      "started_at": "2026-11-20T15:36:14+00:00",
+      "state": "done",
+      "exit_code": 0,
+      "seconds": 1.1
+    },
+    {
+      "step": "coverage-json",
+      "started_at": "2026-11-20T15:36:15+00:00",
+      "state": "done",
+      "exit_code": 0,
+      "seconds": 9.5
+    }
+  ],
+  "valid": true
+}

@@ -1,0 +1,102 @@
+{
+  "scope": "lms/ only, branch coverage, separate run; not part of the success decision",
+  "statements": 4413,
+  "covered_statements": 4252,
+  "statement_coverage_pct": 96.3517,
+  "branches": 918,
+  "covered_branches": 796,
+  "branch_coverage_pct": 86.7102,
+  "combined_coverage_pct": 94.6914,
+  "by_package": {
+    "(root)": {
+      "statements": 6,
+      "covered": 6,
+      "branches": 0,
+      "covered_branches": 0
+    },
+    "api": {
+      "statements": 1041,
+      "covered": 991,
+      "branches": 120,
+      "covered_branches": 102
+    },
+    "audit": {
+      "statements": 459,
+      "covered": 428,
+      "branches": 136,
+      "covered_branches": 107
+    },
+    "auth": {
+      "statements": 328,
+      "covered": 325,
+      "branches": 68,
+      "covered_branches": 64
+    },
+    "branches": {
+      "statements": 197,
+      "covered": 193,
+      "branches": 42,
+      "covered_branches": 37
+    },
+    "catalog": {
+      "statements": 420,
+      "covered": 392,
+      "branches": 92,
+      "covered_branches": 67
+    },
+    "core": {
+      "statements": 310,
+      "covered": 296,
+      "branches": 56,
+      "covered_branches": 44
+    },
+    "fines": {
+      "statements": 179,
+      "covered": 178,
+      "branches": 16,
+      "covered_branches": 15
+    },
+    "loans": {
+      "statements": 240,
+      "covered": 238,
+      "branches": 74,
+      "covered_branches": 72
+    },
+    "members": {
+      "statements": 286,
+      "covered": 283,
+      "branches": 72,
+      "covered_branches": 68
+    },
+    "notifications": {
+      "statements": 152,
+      "covered": 152,
+      "branches": 26,
+      "covered_branches": 26
+    },
+    "purchasing": {
+      "statements": 330,
+      "covered": 324,
+      "branches": 96,
+      "covered_branches": 87
+    },
+    "reports": {
+      "statements": 166,
+      "covered": 155,
+      "branches": 28,
+      "covered_branches": 23
+    },
+    "reservations": {
+      "statements": 220,
+      "covered": 212,
+      "branches": 60,
+      "covered_branches": 52
+    },
+    "search": {
+      "statements": 79,
+      "covered": 79,
+      "branches": 32,
+      "covered_branches": 32
+    }
+  }
+}
