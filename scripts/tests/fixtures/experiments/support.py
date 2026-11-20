@@ -60,6 +60,8 @@ def make_project(root: Path) -> dict:
     (baseline / "summary.json").write_text(json.dumps({"code_sha": sha, "primary": START}))
     write_tests_csv(baseline / "tests.csv", {})
     (baseline / "flaky.txt").write_text("# none\n")
+    for name in ("project.csv", "modules.csv", "levels.csv", "functions.csv", "classes.csv"):
+        (baseline / name).write_text("run_label\nx\n")
 
     tests = root / "tests"
     (tests / "feedback").mkdir(parents=True)
