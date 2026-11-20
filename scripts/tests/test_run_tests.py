@@ -140,6 +140,21 @@ def test_load_case_tables_reads_module_type_and_set(tmp_path):
     assert run_tests.load_case_tables(tmp_path / "nowhere") == {}
 
 
+def test_characterization_tables_belong_to_the_module_of_their_table(tmp_path):
+    tests, _ = _with_cases(tmp_path, "")
+    head = "| ID | Requirement | Type | Input | Expected | Set |\n| --- | --- | --- | --- | --- | --- |\n"
+    (tests / "cases" / "char_loans.md").write_text(
+        head + "| T-CHAR-LOAN-01-a | — | Characterization | i | e | feedback |\n", encoding="utf-8")
+    (tests / "cases" / "char_core.md").write_text(
+        head + "| T-CHAR-COM-01-a | LIB-COM-02 | Characterization | i | e | held-out |\n"
+               "| T-CHAR-CORE-01-a | LIB-CORE-01 | Characterization | i | e | feedback |\n", encoding="utf-8")
+    cases = run_tests.load_case_tables(tests)
+    assert cases["T-CHAR-LOAN-01-a"] == {"table": "char_loans", "module": "5", "type": "Characterization",
+                                         "set": "feedback", "requirement": "—"}
+    assert cases["T-CHAR-COM-01-a"]["module"] == "common" and cases["T-CHAR-CORE-01-a"]["module"] == "1"
+    assert run_tests.case_id("test_t_char_loan_01_a") == "T-CHAR-LOAN-01-a"
+
+
 def test_tests_csv_has_one_row_per_case_and_marks_missing(tmp_path):
     # T-X-02-a fails, T-X-03-a has no test at all (missing); the static case is not expected from pytest
     tests, code = _with_cases(tmp_path, "def test_t_x_01_a():\n    pass\n\ndef test_t_x_02_a():\n    assert False\n")
@@ -288,7 +303,8 @@ def test_real_case_tables_are_complete_and_every_case_has_a_module():
     assert not [c for c, info in cases.items() if info["module"] in ("", "unknown") or info["module"] == info["table"]
                 and info["table"] not in run_tests.TABLE_MODULES]
     assert {c["module"] for c in cases.values()} >= {"common", "1", "5", "14", "29", "e2e", "ui"}
-    assert all(info["type"] in ("Normal", "Boundary", "Error", "Property", "Scenario", "Static") for info in cases.values())
+    assert all(info["type"] in ("Normal", "Boundary", "Error", "Property", "Scenario", "Static", "Characterization")
+               for info in cases.values())
 
 
 def test_every_expected_case_has_a_test_function():
