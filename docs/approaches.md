@@ -1,6 +1,6 @@
 # The Three Approaches
 
-Defined in Weeks 1–2 (area B), updated on 29 October 2026 for Claude Code ([`decisions/002`](decisions/002-single-lms-claude-code.md)). The Claude Code mechanics are a proposal and are checked in the pilot.
+Defined in Weeks 1–2 (area B), updated on 29 October 2026 for Claude Code ([`decisions/002`](decisions/002-single-lms-claude-code.md)). The Claude Code mechanics are a proposal and are checked in the pilot. The Week 5 rules of the Single and Iterative runs (W1–W16) are in [`decisions/004`](decisions/004-week5-single-iterative.md); where this page and ADR 004 disagree, the ADR is right.
 
 ## Common rules
 
@@ -22,7 +22,7 @@ Defined in Weeks 1–2 (area B), updated on 29 October 2026 for Claude Code ([`d
 | Roles | — | — | Analyzer (does not change code), Refactoring, Reviewer (approve or reject with reasons) |
 | Steps | One message: "find and fix the problems" | Find → fix → check → fix again if needed | Analyzer → Refactoring → Reviewer → (if rejected) Refactoring → Reviewer … |
 | Max rounds | 1 | 3 fix rounds | 1 refactoring + at most 2 Reviewer returns = 3 fixes |
-| Stopping | — | No feedback test that passed at the start fails **and** the model reports no remaining problems, or 3 rounds used | No such regression **and** the Reviewer approves, or 2 returns used |
+| Stopping | — | No feedback test that passed at the start fails **and** the model writes `REFACTORING_DONE`, or 3 rounds changed code; at least one "re-evaluate" call after round 1, at most 4 calls ([`decisions/004`](decisions/004-week5-single-iterative.md), W4) | No such regression **and** the Reviewer approves, or 2 returns used |
 | Test feedback | No (baseline) | Yes | Yes |
 | Output | Refactored project | Refactored project | Refactored project |
 
@@ -39,7 +39,7 @@ Defined in Weeks 1–2 (area B), updated on 29 October 2026 for Claude Code ([`d
 The instructor's Week 6 plan gives test feedback to Multi-Agent. If Iterative did not get it, we could not tell whether a Multi-Agent advantage comes from the roles or from the test information. RefAgent compares its multi-agent system only with a single-shot single agent (44.5% vs 90% test pass rate, Table 6), so this separation is missing in the literature.
 
 - **Test feedback for both Iterative and Multi-Agent.** The only remaining difference is one conversation versus three roles. Precedents: Blyth et al. 2025 add failing-test information to the next prompt (Section III-C); AgentCoder compares single and separate agents with the same test feedback (71.3% vs 79.9%, Table 7).
-- The format is identical in both approaches: failing test name and error message, at most N lines (N set in the pilot).
+- The format is identical in both approaches: test ID and a short error message, only for regressions confirmed in two repetitions, at most 6 lines per test, 60 lines in total and 15 tests, produced by one shared script (`experiments/feedback.py`); metrics are never shown ([`decisions/004`](decisions/004-week5-single-iterative.md), W2). The limits are reviewed after the pilot.
 - To avoid overfitting to the feedback tests, the suite is split into a **feedback set** and a **held-out evaluation set** ([`testing.md`](testing.md)).
 
 ## Multi-Agent with Claude Code subagents
@@ -62,7 +62,7 @@ Claude Code is an agent: even one prompt can read files, run commands and retry.
 | Iterative | Yes | Yes | No (our runner runs it between rounds) | No |
 | Multi-Agent | Yes (all roles) | Refactoring subagent only | Orchestrator only | No |
 
-Limits are set with `--allowedTools` and the `dontAsk` permission mode, which denies every call not explicitly allowed. The feedback test command is one fixed script that prints the same output format in Iterative and Multi-Agent (failing test name and error message, at most N lines). Held-out tests are never runnable by the model.
+Limits are set with `--allowedTools` and the `dontAsk` permission mode, which denies every call not explicitly allowed. The feedback test command is one fixed script that prints the same output format in Iterative and Multi-Agent (the W2 format of [`decisions/004`](decisions/004-week5-single-iterative.md): test ID and a short error message, within the W2 limits). Held-out tests are never runnable by the model.
 
 ## Clean environment per run
 
@@ -88,7 +88,7 @@ Pro has a 5-hour usage window and a weekly limit; exact values are not published
 | How are token counts collected per run? | `claude -p --output-format json`: it contains `total_cost_usd`, a per-model breakdown, usage and `session_id`; cost figures are client-side estimates (Claude Code documentation). OpenTelemetry as an alternative. |
 | Does the Pro login work in a fresh container without other state? | Test in the pilot |
 | Subagent definition fields (model, tools) | Verify against the Claude Code subagent documentation in the pilot |
-| Is static analysis output given to the LLM? | **Decided (16 November 2026): no**, in none of the three approaches. Between rounds the model only gets the IDs of the failing feedback tests, so the three approaches stay equal and the study measures what the model finds itself |
+| Is static analysis output given to the LLM? | **Decided (16 November 2026): no**, in none of the three approaches. Between rounds the model gets only the test feedback, never metrics, so the three approaches stay equal and the study measures what the model finds itself. The feedback was first limited to the IDs of the failing feedback tests; **changed on 17 November 2026 (W2):** test ID and a short error message, within the W2 limits ([`decisions/004`](decisions/004-week5-single-iterative.md)) |
 | Does the Reviewer see the original code? | To decide in the pilot |
 
 ## Flow
