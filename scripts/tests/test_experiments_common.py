@@ -26,7 +26,8 @@ INIT = {"type": "system", "subtype": "init", "tools": list(common.TOOLS), "model
         "claude_code_version": "2.1.308", "apiKeySource": "none", "session_id": "s1"}
 USAGE = {common.MODEL: {"inputTokens": 1, "outputTokens": 2, "cacheReadInputTokens": 3, "cacheCreationInputTokens": 4}}
 RESULT = {"type": "result", "subtype": "success", "is_error": False, "result": "ok REFACTORING_DONE",
-          "session_id": "s1", "modelUsage": USAGE, "total_cost_usd": 0.5, "subagent_stats": {"spawned": 0}}
+          "session_id": "s1", "modelUsage": USAGE, "total_cost_usd": 0.5, "subagent_stats": {"spawned": 0},
+          "permission_denials": []}
 
 
 def test_parse_stream_collects_tools_files_and_text():
@@ -40,6 +41,20 @@ def test_parse_stream_collects_tools_files_and_text():
     assert common.DONE_MARKER in parsed["final_text"]
 
 
+def test_per_call_share_of_cumulative_totals():
+    first = {"usd": 0.0197, "input_tokens": 100, "cache_read_tokens": 1000, "note": "", "num_turns": 3}
+    second = {"usd": 0.0251, "input_tokens": 150, "cache_read_tokens": 1800, "note": "", "num_turns": 2}
+    share = common.per_call(second, first)
+    assert share["usd"] == 0.0054 and share["input_tokens"] == 50 and share["cache_read_tokens"] == 800
+    assert share["num_turns"] == 2 and common.per_call(first, None) == first
+    assert common.per_call({"usd": 0.01, "input_tokens": 5}, first) == {"usd": 0.01, "input_tokens": 5}  # new session
+
+
+def test_rate_limit_event_is_kept():
+    event = {"type": "rate_limit_event", "rate_limit_info": {"rateLimitType": "five_hour", "utilization": 0.16}}
+    assert common.parse_stream(stream(INIT, event, RESULT))["rate_limit"] == {"rate_limit_info": event["rate_limit_info"]}
+
+
 def test_check_call_ok():
     assert common.check_call(common.parse_stream(stream(INIT, RESULT)), "", "2.1.308") == ("ok", [])
 
@@ -51,6 +66,8 @@ def test_check_call_ok():
     ({}, {"subagent_stats": {"spawned": 2}}, "subagent"),
     ({}, {"subagent_stats": None}, "subagent_stats missing"),
     ({}, {"modelUsage": {"claude-opus-5-5": {"inputTokens": 1}}}, "other model"),
+    ({}, {"permission_denials": [{"tool_name": "Write", "tool_use_id": "t1"}]}, "denied tool call(s): Write"),
+    ({}, {"permission_denials": None}, "permission_denials missing"),
 ])
 def test_check_call_invalid(init, result, expected):
     status, invalid = common.check_call(common.parse_stream(stream({**INIT, **init}, {**RESULT, **result})), "", "2.1.308")
@@ -73,6 +90,8 @@ def test_claude_args_have_the_w9_settings():
     args = common.claude_args("do it", "high", "s1")
     assert args[:2] == ["-p", "do it"]
     assert args[args.index("--tools") + 1] == "Read,Edit,Write,Glob,Grep"
+    a = args.index("--allowedTools")
+    assert args[a + 1:a + 6] == ["Read", "Edit", "Write", "Glob", "Grep"] and args[a + 6] == "--disallowedTools"
     i = args.index("--disallowedTools")
     assert args[i + 1:i + 3] == ["Task", "Agent"]
     for flag in ("--safe-mode", "--verbose"):
@@ -94,6 +113,8 @@ def test_hidden_or_forbidden():
     before = {"lms/a.py": "1"}
     after = {**before, "lms/.cache/x": "2", "CLAUDE.md": "3", "lms/sub/AGENTS.md": "4", "lms/b.py": "5"}
     assert common.hidden_or_forbidden(before, after) == ["CLAUDE.md", "lms/.cache/x", "lms/sub/AGENTS.md"]
+    written = ["/work/lms/a.py", "/work/CLAUDE.md", "/root/.claude/settings.json", "/work/lms/AGENTS.md"]
+    assert common.forbidden_writes(written) == ["/root/.claude/settings.json", "/work/CLAUDE.md", "/work/lms/AGENTS.md"]
 
 
 def facts(**over):
