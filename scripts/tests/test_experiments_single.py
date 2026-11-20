@@ -142,3 +142,14 @@ def test_inputs_are_checked(tmp_path, monkeypatch):
     assert run_single.main(argv, support.FakeToolkit()) == common.EXIT_USAGE
     (tmp_path / ".run.lock").write_text("pid=1\n")
     assert run_single.main(argv, support.FakeToolkit()) == common.EXIT_LOCK
+
+
+def test_missing_detail_csv_of_the_baseline_stops_before_the_call(tmp_path, monkeypatch, capsys):
+    # results/baseline/trial/ does not commit functions.csv and classes.csv; compare.py needs them
+    project = support.make_project(tmp_path)
+    support.scenario(monkeypatch, tmp_path, [{"write": {"lms/a.py": "x = 1\n"}}])
+    (project["baseline"] / "functions.csv").unlink()
+    (project["baseline"] / "classes.csv").unlink()
+    assert run_single.main(support.argv(project, "s1"), support.FakeToolkit()) == common.EXIT_USAGE
+    assert "lacks functions.csv, classes.csv" in capsys.readouterr().err
+    assert not list(tmp_path.glob("work-s1/session/fake-call-*.json"))     # no Claude call, no quota used

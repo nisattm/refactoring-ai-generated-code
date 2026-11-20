@@ -99,6 +99,8 @@ RUNS_COLUMNS = [
     "input_tokens", "output_tokens", "cache_read_tokens", "cache_write_tokens", "usd_raw", "usd_diff", "usd_lost",
     "claude_s", "measure_s", "claude_code_version", "model", "effort", "image_id", "note",
 ]
+# Files of the starting measurement that the engine and compare.py read (checked before the first Claude call)
+BASELINE_FILES = ("summary.json", "tests.csv", "project.csv", "modules.csv", "levels.csv", "functions.csv", "classes.csv")
 PRIMARY = ("mean_cc", "mean_cognitive", "mi_weighted", "duplication_pct", "smell_count")
 
 
@@ -635,9 +637,11 @@ class Run:
         if a.window_pct is None or a.window_pct > WINDOW_LIMIT_PCT:
             raise EngineError(f"W6: start only when the account's 5-hour window is at most {WINDOW_LIMIT_PCT:g} % "
                               f"(--window-pct, from /usage)")
-        for name in ("summary.json", "tests.csv"):
-            if not (self.baseline / name).is_file():
-                raise EngineError(f"--baseline {self.baseline} has no {name}")
+        missing = [name for name in BASELINE_FILES if not (self.baseline / name).is_file()]
+        if missing:
+            raise EngineError(f"--baseline {self.baseline} lacks {', '.join(missing)} (compare.py reads them). The detail "
+                              f"CSVs of results/baseline/trial/ are not committed: use the folder of the machine that "
+                              f"measured it, or measure the start ref again")
         if not a.local:
             if not Path(a.env_file).is_file():
                 raise EngineError(f"--env-file {a.env_file} not found (it is passed to docker, never read)")
