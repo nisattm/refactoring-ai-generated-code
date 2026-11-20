@@ -37,7 +37,7 @@ def test_success(tmp_path, monkeypatch):
     # the model saw only lms/, requirements.txt and INTERFACE.md (W3), with the W9 settings
     call = json.loads(next(tmp_path.glob("work-s1/session/fake-call-1.json")).read_text())
     assert call["env"]["CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"] == "1"
-    assert call["args"][1] == "Refactor lms/.\n" and "--safe-mode" in call["args"]
+    assert call["args"][1] == "Refactor lms/.\n" and "--safe-mode" in call["args"] and "--allowedTools" in call["args"]
     assert sorted(p.name for p in Path(call["cwd"]).iterdir()) == ["INTERFACE.md", "lms", "requirements.txt"]
     # one full measurement (both sets) of the tagged code, compared with the start (no previous best)
     assert [(m["set"], m["previous_best"]) for m in toolkit.measured] == [("both", None)]
@@ -82,6 +82,14 @@ def test_subagent_makes_the_run_invalid(tmp_path, monkeypatch):
     assert support.read_runs(tmp_path)[0]["valid"] == "false"
 
 
+def test_denied_write_makes_the_run_invalid(tmp_path, monkeypatch):
+    # a denied Write still ends with subtype "success": without this check the run would look valid
+    _, toolkit, code, record = start(tmp_path, monkeypatch, [{"denied": ["Write", "Write"], "text": "Done."}])
+    assert code == common.EXIT_INVALID and toolkit.measured == []
+    assert "2 denied tool call(s): Write, Write" in record["reasons"]
+    assert support.read_runs(tmp_path)[0]["permission_denials"] == "2"
+
+
 def test_wrong_tools_and_version_make_the_run_invalid(tmp_path, monkeypatch):
     _, _, code, record = start(tmp_path, monkeypatch, [{"tools": ["Read", "Bash"], "version": "1.0.0"}])
     assert code == common.EXIT_INVALID
@@ -110,6 +118,13 @@ def test_changes_outside_lms_are_discarded_and_counted(tmp_path, monkeypatch):
 def test_hidden_file_makes_the_run_invalid(tmp_path, monkeypatch):
     _, _, code, record = start(tmp_path, monkeypatch, [{"write": {"lms/a.py": "x = 1\n", "CLAUDE.md": "memo"}}])
     assert code == common.EXIT_INVALID and any("CLAUDE.md" in r for r in record["reasons"])
+
+
+def test_claude_md_written_and_removed_makes_the_run_invalid(tmp_path, monkeypatch):
+    # --safe-mode does not stop the write; the file is gone at the end, the stream still shows it
+    _, _, code, record = start(tmp_path, monkeypatch, [{"write": {"lms/a.py": "x = 1\n", "CLAUDE.md": "memo"},
+                                                        "delete": ["CLAUDE.md"]}])
+    assert code == common.EXIT_INVALID and any("/work/CLAUDE.md" in r for r in record["reasons"])
 
 
 def test_test_files_changed_makes_the_run_invalid(tmp_path, monkeypatch):

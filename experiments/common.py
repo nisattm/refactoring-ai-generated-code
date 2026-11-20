@@ -61,7 +61,7 @@ DEFAULT_IMAGE = "refactoring-env"
 MODEL = cost.MODEL
 
 # --- W9: Claude Code settings. Update from results/check/week5/flags.md (Işıl) -----------------------------------
-TOOLS = ("Read", "Edit", "Write", "Glob", "Grep")
+TOOLS = ("Read", "Edit", "Write", "Glob", "Grep")   # offered with --tools and permitted with --allowedTools
 DISALLOWED_TOOLS = ("Task", "Agent")
 FIXED_FLAGS = ("--safe-mode", "--permission-mode", "dontAsk", "--output-format", "stream-json", "--verbose")
 CLAUDE_ENV = {"CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1"}
@@ -69,6 +69,7 @@ EXPECTED_CLAUDE_VERSION = "2.1.308"      # pinned in the image (generation log);
 DEFAULT_EFFORT = "high"                   # setting of the refactoring runs is chosen in the pilot (approaches.md)
 FORBIDDEN_NAMES = {"CLAUDE.md", "CLAUDE.local.md", "AGENTS.md"}
 SUBAGENT_TOOLS = {"Task", "Agent"}
+TOKEN_KEYS = ("input_tokens", "output_tokens", "cache_write_tokens", "cache_read_tokens", "thinking_tokens")
 
 # --- W4, W5, W6 ------------------------------------------------------------------------------------------------
 DONE_MARKER = "REFACTORING_DONE"
@@ -94,7 +95,7 @@ RUNS_COLUMNS = [
     *[f"{m}_{w}" for w in ("start", "best", "best_delta", "r1", "last") for m in
       ("mean_cc", "mean_cognitive", "mi_weighted", "duplication_pct", "smell_count")],
     "regressions_feedback", "regressions_heldout", "api_changed", "api_change_kind", "outside_lms_changes",
-    "subagents_spawned", "subagent_attempts", "files_read", "files_changed", "feedback_lines_max",
+    "subagents_spawned", "subagent_attempts", "permission_denials", "files_read", "files_changed", "feedback_lines_max",
     "input_tokens", "output_tokens", "cache_read_tokens", "cache_write_tokens", "usd_raw", "usd_diff", "usd_lost",
     "claude_s", "measure_s", "claude_code_version", "model", "effort", "image_id", "note",
 ]
@@ -324,6 +325,14 @@ def hidden_or_forbidden(before: dict[str, str], after: dict[str, str]) -> list[s
             or PurePosixPath(p).name in FORBIDDEN_NAMES]
 
 
+def forbidden_writes(written: list[str]) -> list[str]:
+    """Edit / Write targets that are CLAUDE.md, AGENTS.md or hidden (also outside the workspace, e.g. ~/.claude),
+    from the stream: catches a file that was written and removed again within the same call. --safe-mode does not
+    stop the model from writing CLAUDE.md (setup check, Işıl, 20 November 2026)."""
+    return sorted({p for p in written if PurePosixPath(p).name in FORBIDDEN_NAMES
+                   or any(part.startswith(".") for part in PurePosixPath(p).parts)})
+
+
 def prepare_tests(tests_src: Path, modules: str | None, ws: Workspace) -> list[str] | None:
     """The run's own copy of the tests (a module subset with --tests-modules) and the hashes of that copy."""
     if modules:
@@ -365,8 +374,10 @@ def fixed_sentence(prompts: Path, name: str, default: str) -> str:
 # --- the Claude Code call (W9) --------------------------------------------------------------------------------------
 
 def claude_args(prompt: str, effort: str, session_id: str | None) -> list[str]:
+    # --tools only offers the tools; in dontAsk mode a tool also needs --allowedTools, otherwise every Write is
+    # denied and the call still ends with subtype "success" (setup check, Işıl, 20 November 2026)
     args = ["-p", prompt, "--model", MODEL, "--effort", effort, "--tools", ",".join(TOOLS),
-            "--disallowedTools", *DISALLOWED_TOOLS, *FIXED_FLAGS]
+            "--allowedTools", *TOOLS, "--disallowedTools", *DISALLOWED_TOOLS, *FIXED_FLAGS]
     if session_id:
         args += ["--resume", session_id]
     return args
@@ -374,7 +385,7 @@ def claude_args(prompt: str, effort: str, session_id: str | None) -> list[str]:
 
 def parse_stream(text: str) -> dict:
     """Facts from a ``--output-format stream-json --verbose`` log: init event, result event, tool uses."""
-    init, result, uses, texts = None, None, [], []
+    init, result, uses, texts, rate_limit = None, None, [], [], None
     for line in text.splitlines():
         line = line.strip()
         if not line.startswith("{"):
@@ -388,6 +399,8 @@ def parse_stream(text: str) -> dict:
             init = event
         elif kind == "result":
             result = event
+        elif kind == "rate_limit_event":
+            rate_limit = {k: v for k, v in event.items() if k not in ("type", "uuid")}
         elif kind == "assistant":
             for block in (event.get("message") or {}).get("content") or []:
                 if block.get("type") == "tool_use":
@@ -400,7 +413,7 @@ def parse_stream(text: str) -> dict:
     counts: dict[str, int] = {}
     for u in uses:
         counts[u["name"]] = counts.get(u["name"], 0) + 1
-    return {"init": init, "result": result, "tool_counts": counts,
+    return {"init": init, "result": result, "tool_counts": counts, "rate_limit": rate_limit,
             "files_read": paths("Read"), "files_written": paths("Edit", "Write"),
             "subagent_attempts": sum(counts.get(n, 0) for n in SUBAGENT_TOOLS),
             "final_text": (result or {}).get("result") or (texts[-1] if texts else "")}
@@ -438,7 +451,38 @@ def check_call(parsed: dict, stderr: str, expected_version: str | None) -> tuple
         invalid.append("subagent_stats missing: subagents cannot be checked")
     elif stats.get("spawned"):
         invalid.append(f"{stats.get('spawned')} subagent(s) started")
+    denials = result.get("permission_denials")
+    if not isinstance(denials, list):
+        invalid.append("permission_denials missing: denied tool calls cannot be checked")
+    elif denials:
+        invalid.append(f"{len(denials)} denied tool call(s): {', '.join(denied_tools(denials))}")
     return "ok", invalid
+
+
+# In a resumed session total_cost_usd and the modelUsage token counts are cumulative (setup check, Işıl,
+# 20 November 2026): the value of one call is "this total - the total of the previous call of the same session".
+CUMULATIVE = ("usd", "usd_recomputed", "input_tokens", "output_tokens", "cache_write_tokens", "cache_write_1h_tokens",
+              "cache_read_tokens", "thinking_tokens", "total_input_tokens")
+
+
+def per_call(summary: dict, previous: dict | None) -> dict:
+    """``summary`` (cost.summarize of a result) with the cumulative fields turned into this call's share. A total
+    smaller than the previous one (a new session, e.g. after an account switch) is taken as it is."""
+    out = dict(summary)
+    if not previous:
+        return out
+    usd_now, usd_before = summary.get("usd"), previous.get("usd")
+    if isinstance(usd_now, (int, float)) and isinstance(usd_before, (int, float)) and usd_now < usd_before:
+        return out
+    for key in CUMULATIVE:
+        now_v, before_v = summary.get(key), previous.get(key)
+        if isinstance(now_v, (int, float)) and isinstance(before_v, (int, float)) and now_v >= before_v:
+            out[key] = round(now_v - before_v, 6) if isinstance(now_v, float) else now_v - before_v
+    return out
+
+
+def denied_tools(denials: list) -> list[str]:
+    return [str(d.get("tool_name") or d.get("name") or "?") if isinstance(d, dict) else str(d) for d in denials]
 
 
 # --- measurement --------------------------------------------------------------------------------------------------
@@ -685,7 +729,7 @@ class Run:
         if timed_out:
             status, invalid = "error", [f"call timed out after {self.settings['call_timeout']} s"]
         after = self.ws.listing()
-        hidden = hidden_or_forbidden(before, after)
+        hidden = sorted(set(hidden_or_forbidden(before, after)) | set(forbidden_writes(parsed["files_written"])))
         if hidden:
             invalid.append(f"new hidden file(s) or CLAUDE.md / AGENTS.md: {', '.join(hidden[:10])}")
         outside = self.ws.discard_outside_lms(before)
@@ -696,9 +740,9 @@ class Run:
         summary = cost.summarize(result) if result else {}
         raw = result.get("total_cost_usd") if isinstance(result.get("total_cost_usd"), (int, float)) else None
         same_session = [c for c in self.record["calls"] if c.get("session_id") and
-                        c.get("session_id") == result.get("session_id") and c.get("usd_raw") is not None]
-        previous = same_session[-1]["usd_raw"] if same_session else None
-        diff = None if raw is None else (raw - previous if previous is not None and raw >= previous else raw)
+                        c.get("session_id") == result.get("session_id") and c.get("summary_raw")]
+        share = per_call(summary, same_session[-1]["summary_raw"] if same_session else None) if summary else {}
+        diff = share.get("usd") if isinstance(share.get("usd"), (int, float)) else None
         record = {
             "number": number, "kind": kind, "account": self.args.account, "started_at": now(), "wall_s": wall,
             "exit_code": code, "status": status, "invalid": invalid, "session_in": session_id,
@@ -710,27 +754,32 @@ class Run:
             "files_read": parsed["files_read"], "files_written": parsed["files_written"],
             "subagent_attempts": parsed["subagent_attempts"],
             "subagents_spawned": (result.get("subagent_stats") or {}).get("spawned"),
+            "permission_denials": denied_tools(result.get("permission_denials") or []),
             "terminal_reason": result.get("terminal_reason"), "is_error": result.get("is_error"),
             "num_turns": result.get("num_turns"), "done_marker": DONE_MARKER in (parsed["final_text"] or ""),
             "outside_lms_changes": n_outside, "hidden_files": hidden,
-            "usd_raw": raw, "usd_diff": diff, "tokens": {k: summary.get(k) for k in (
-                "input_tokens", "output_tokens", "cache_write_tokens", "cache_read_tokens", "thinking_tokens")},
+            "rate_limit": parsed["rate_limit"],
+            "usd_raw": raw, "usd_diff": diff, "summary_raw": summary, "summary": share,
+            "tokens_raw": {k: summary.get(k) for k in TOKEN_KEYS}, "tokens": {k: share.get(k) for k in TOKEN_KEYS},
         }
         self.record["calls"].append(record)
         if result:
-            self.log_cost(record, result)
+            self.log_cost(record)
         self.event(f"call {number} finished: {status}, {wall} s" + (f"; invalid: {invalid}" if invalid else ""))
         return record
 
-    def log_cost(self, call: dict, result: dict, accepted: str = "") -> None:
+    def log_cost(self, call: dict, accepted: str = "") -> None:
+        """One cost-log row per call with this call's share (W16); the cumulative total is in the note."""
         path = Path(self.args.cost_log)
         if not path.parent.is_dir():
             return
-        cost.log_result(path, result, task=f"{self.approach}/{self.args.run_id}/call-{call['number']}",
-                        stage=self.approach, run_id=self.args.run_id, repetition=self.args.repetition or "",
+        share = dict(call["summary"])
+        note = "; ".join(x for x in (share.pop("note", ""), f"account {self.args.account}",
+                                      f"session total usd {call['usd_raw']} (tokens and usd are this call's share)") if x)
+        cost.append_row(path, task=f"{self.approach}/{self.args.run_id}/call-{call['number']}", stage=self.approach,
+                        model=MODEL, **share, run_id=self.args.run_id, repetition=self.args.repetition or "",
                         round=call["number"], role="refactor", accepted=accepted,
-                        claude_code_version=call.get("claude_code_version") or "",
-                        note=f"account {self.args.account}; usd_diff {call['usd_diff']}")
+                        claude_code_version=call.get("claude_code_version") or "", note=note)
 
     # --- rounds ----------------------------------------------------------------------------------------------------
     def commit_round(self, k: int) -> dict:
@@ -801,12 +850,15 @@ class Run:
             "outside_lms_changes": sum(c["outside_lms_changes"] for c in calls),
             "subagents_spawned": sum(c.get("subagents_spawned") or 0 for c in calls),
             "subagent_attempts": sum(c.get("subagent_attempts") or 0 for c in calls),
+            "permission_denials": sum(len(c.get("permission_denials") or []) for c in calls),
             "files_read": len({f for c in calls for f in c["files_read"]}),
             "files_changed": len({f for c in calls for f in c["files_written"]}),
             "feedback_lines_max": max((x.get("feedback_lines", 0) for x in rounds), default=0),
             "input_tokens": tok("input_tokens"), "output_tokens": tok("output_tokens"),
             "cache_read_tokens": tok("cache_read_tokens"), "cache_write_tokens": tok("cache_write_tokens"),
-            "usd_raw": usd("usd_raw"), "usd_diff": usd("usd_diff"),
+            "usd_raw": round(sum(max(c["usd_raw"] for c in calls if c.get("session_id") == s and c.get("usd_raw") is not None)
+                                 for s in {c.get("session_id") for c in calls if c.get("usd_raw") is not None}), 6),
+            "usd_diff": usd("usd_diff"),
             "usd_lost": round(sum(c["usd_diff"] or 0 for c in calls if c["status"] == "limit"), 6),
             "claude_s": round(sum(c["wall_s"] for c in calls), 1),
             "measure_s": round(sum(x.get("facts", {}).get("wall_s", 0) for x in rounds)

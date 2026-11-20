@@ -166,6 +166,16 @@ def test_limit_cut_then_resume_with_another_account(tmp_path, monkeypatch):
     assert rec["best_round"] == 2 and model_file(tmp_path, "lms/loans/service.py") == "# r1\n"
     row = support.read_runs(tmp_path)[0]
     assert row["calls"] == "2" and row["usd_lost"] == "0.2" and row["accounts_used"] == "acc-a;acc-b"
+    # cumulative session totals: 0.25, 0.45 (cut), 0.70 → shares 0.25, 0.2, 0.25 (W16)
+    assert [c["usd_raw"] for c in rec["calls"]] == [0.25, 0.45, 0.7]
+    assert [c["usd_diff"] for c in rec["calls"]] == [0.25, 0.2, 0.25]
+    assert [c["tokens"]["input_tokens"] for c in rec["calls"]] == [10, 10, 10]
+    assert row["usd_raw"] == "0.7" and row["usd_diff"] == "0.7" and row["input_tokens"] == "30"
+    import csv
+    with (tmp_path / "metrics" / "cost-log.csv").open(newline="") as handle:
+        log = list(csv.DictReader(handle))
+    assert [r["usd"] for r in log] == ["0.25", "0.2", "0.25"] and "session total usd 0.7" in log[2]["note"]
+    assert rec["calls"][0]["rate_limit"]["rate_limit_info"]["utilization"] == 0.05
 
 
 def test_limit_cut_then_discard(tmp_path, monkeypatch):

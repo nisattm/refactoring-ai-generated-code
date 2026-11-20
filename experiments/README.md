@@ -58,10 +58,13 @@ The model's folder holds `lms/`, `requirements.txt` and `INTERFACE.md` only (no 
 requirements); its git history is kept outside it. Changes outside `lms/` are undone after every call and counted.
 Every result is measured in a copy of the starting project in which only `lms/` is replaced.
 
-The Claude Code call (W9): `--tools Read,Edit,Write,Glob,Grep --disallowedTools Task Agent --safe-mode
---permission-mode dontAsk --output-format stream-json --verbose`, `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`, one
-`CLAUDE_CONFIG_DIR` per run, stdin closed. After every call: no subagent, exactly these five tools, no new hidden file,
-`CLAUDE.md` or `AGENTS.md`, the expected version and model, no API-key credential. A failed check makes the run invalid.
+The Claude Code call (W9): `--tools Read,Edit,Write,Glob,Grep --allowedTools Read Edit Write Glob Grep
+--disallowedTools Task Agent --safe-mode --permission-mode dontAsk --output-format stream-json --verbose`, `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`, one
+`CLAUDE_CONFIG_DIR` per run, stdin closed. `--tools` only offers the tools: in `dontAsk` mode they also need `--allowedTools`, otherwise every write is denied
+while the call still ends with `success` (setup check, 20 November). After every call: no subagent, no denied tool
+call (`permission_denials` empty), exactly these five tools, no new hidden file and no write to a hidden file,
+`CLAUDE.md` or `AGENTS.md` (`--safe-mode` does not stop such a write; the stream shows it even if the file is removed),
+the expected version and model, no API-key credential. A failed check makes the run invalid.
 
 ## Outcomes (W10)
 
@@ -78,7 +81,10 @@ The Claude Code call (W9): `--tools Read,Edit,Write,Glob,Grep --disallowedTools 
 
 `results/experiments/<approach>/<run-id>/run.json` (calls, rounds, decisions, code SHAs, image, version, account,
 times, cost: raw value and difference per call, W16), one row per run in `results/experiments/runs.csv`, one row per
-call in `metrics/cost-log.csv`, and the tag `exp/<approach>/<run-id>/r<k>` for every round (a commit on top of the
+call in `metrics/cost-log.csv`. In a resumed session `total_cost_usd` and the `modelUsage` tokens are cumulative (setup
+check, 20 November), so the cost log and `runs.csv` hold each call's share (this total minus the previous one of the same
+session); the cumulative totals stay in `run.json`, with the `rate_limit_event` of every call (5-hour and weekly use).
+Every round gets the tag `exp/<approach>/<run-id>/r<k>` (a commit on top of the
 start ref in which only `dataset/lms/generated/lms` differs, W12). Push the tags with
 `git push origin 'refs/tags/exp/*'`. The raw call logs and the detail CSVs are not committed (ADR 003 rule).
 
