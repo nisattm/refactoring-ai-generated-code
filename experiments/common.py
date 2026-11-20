@@ -179,7 +179,8 @@ def tag_code(repo: Path, start_sha: str, lms_dir: Path, tag: str, message: str) 
     with tempfile.TemporaryDirectory(prefix="exp-index-") as tmp:
         env = {**IDENTITY, "GIT_INDEX_FILE": str(Path(tmp) / "index")}
         git(["read-tree", start_sha], repo, env=env)
-        git(["rm", "--cached", "-r", "-q", "--ignore-unmatch", f"{GENERATED}/lms"], repo, env=env)
+        # --cached: only the temporary index changes; -f: the checked-out files may differ from the start ref
+        git(["rm", "--cached", "-r", "-q", "-f", "--ignore-unmatch", f"{GENERATED}/lms"], repo, env=env)
         files = code_files(lms_dir)
         paths = "\n".join(str(p) for p in files).encode("utf-8")
         blobs = git(["hash-object", "-w", "--no-filters", "--stdin-paths"], repo, input=paths).splitlines()

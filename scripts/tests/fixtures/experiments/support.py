@@ -50,6 +50,10 @@ def make_project(root: Path) -> dict:
     run_git(repo, "add", "-A")
     run_git(repo, "commit", "-q", "-m", "start")
     sha = run_git(repo, "rev-parse", "HEAD")
+    # the checkout is not the start ref (as in real use: main checked out, start ref v0-ai-baseline or ce03f54)
+    (gen / "lms" / "loans" / "service.py").write_text("def fee(days):\n    return days * 3\n")
+    run_git(repo, "commit", "-q", "-am", "later")
+    (gen / "lms" / "loans" / "service.py").write_text("def fee(days):\n    return days * 4\n")
 
     baseline = root / "baseline"
     baseline.mkdir()

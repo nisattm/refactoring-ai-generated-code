@@ -179,7 +179,8 @@ def test_workspace_and_tag(tmp_path):
     changed = support.run_git(project["repo"], "diff", "--name-only", project["sha"], "exp/single/t/r1").splitlines()
     assert changed == ["dataset/lms/generated/lms/loans/service.py"]
     assert support.run_git(project["repo"], "rev-parse", "exp/single/t/r1") == sha
-    assert support.run_git(project["repo"], "status", "--porcelain") == ""
+    assert support.run_git(project["repo"], "status", "--porcelain") == "M dataset/lms/generated/lms/loans/service.py"
+    assert "days * 4" in (project["repo"] / "dataset/lms/generated/lms/loans/service.py").read_text()
     with pytest.raises(common.EngineError):
         common.tag_code(project["repo"], project["sha"], ws.model / "lms", "exp/single/t/r1", "msg")
 
