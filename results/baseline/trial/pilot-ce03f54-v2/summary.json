@@ -1,0 +1,283 @@
+{
+  "label": "pilot-ce03f54-v2",
+  "primary": {
+    "mean_cc": 2.6795,
+    "mean_cognitive": 1.8578,
+    "mi_weighted": 45.8653,
+    "duplication_pct": 0.809,
+    "smell_count": 83
+  },
+  "smell_counts": {
+    "S01": 15,
+    "S02": 0,
+    "S03": 39,
+    "S07": 3,
+    "S09": 1,
+    "S10": 0,
+    "S11": 8,
+    "S18": 1,
+    "S19": 0,
+    "S20": 0,
+    "S21": 0,
+    "S22": 0,
+    "S23": 16
+  },
+  "secondary": {
+    "files": 90,
+    "files_excluded_by_d1": 0,
+    "sloc": 6449,
+    "loc": 8448,
+    "cc_units": 443,
+    "cognitive_units": 436,
+    "nested_units": 7,
+    "classes": 130,
+    "classes_by_kind": {
+      "orm": 21,
+      "plain": 25,
+      "schema": 84
+    },
+    "mi_plain_mean": 63.3194,
+    "duplication_pct_union": 1.6181,
+    "duplicated_lines_union": 136,
+    "duplication_pct_of_sloc": 2.1089,
+    "duplicated_lines_jscpd": 68,
+    "clones": 7,
+    "jscpd_files_read": 75,
+    "jscpd_token_warnings": {
+      "core/schemas.py": {
+        "estimated_tokens": 52,
+        "read_by_jscpd": false
+      },
+      "search/schemas.py": {
+        "estimated_tokens": 40,
+        "read_by_jscpd": false
+      }
+    },
+    "suppressions": {
+      "noqa": 17,
+      "type_ignore": 25,
+      "pylint_disable": 0,
+      "jscpd_ignore": 0
+    },
+    "raw_findings_by_rule": {
+      "ruff:ANN401": 17,
+      "ruff:F401": 3,
+      "ruff:PLR0913": 39,
+      "ruff:PLR0916": 1,
+      "ruff:PLR2004": 11
+    },
+    "ruff_f401_preview": 12,
+    "s03_route_handlers": 14,
+    "s03_other": 25,
+    "s18_without_function_level_imports": 0,
+    "s18_files_in_cycles": 11,
+    "package_cycles_module_level_sizes": [
+      10
+    ],
+    "pylint_secondary": {
+      "R0401": 10
+    },
+    "not_measured": [
+      "S04",
+      "S05",
+      "S08",
+      "S12",
+      "S13",
+      "S14",
+      "S15",
+      "S16",
+      "S17"
+    ],
+    "modules_not_generated": [
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23",
+      "24",
+      "25",
+      "26",
+      "27",
+      "28",
+      "29"
+    ],
+    "module_stats_valid": true,
+    "with_secondary": true,
+    "layer_violations": {
+      "api_persistence": 15,
+      "domain_imports_api": 0,
+      "core_imports_domain": 0,
+      "total": 15
+    },
+    "r0401_check": {
+      "pylint_messages": 10,
+      "pylint_files_in_cycles": 11,
+      "our_files_in_cycles": 11,
+      "agree": true
+    },
+    "static_cases": {
+      "T-TECH-02-a": "passed",
+      "T-TECH-04-a": "passed",
+      "T-TECH-06-a": "passed",
+      "T-TECH-10-a": "partial",
+      "T-TECH-11-a": "failed",
+      "T-TECH-12-a": "passed"
+    },
+    "vulture": {
+      "findings": 8,
+      "by_kind": {
+        "unused variable": 8
+      }
+    },
+    "pyexamine": {
+      "rows": 320,
+      "by_type": {
+        "Architectural": 102,
+        "Code": 193,
+        "Structural": 25
+      },
+      "by_name": {
+        "Data Clumps": 6,
+        "Feature Envy": 83,
+        "God Object": 3,
+        "High Fan-in": 17,
+        "High Fan-out": 6,
+        "High Number of Classes (NOC)": 1,
+        "Long Method": 13,
+        "Long Parameter List": 29,
+        "Message Chains": 30,
+        "Potential Improper API Usage": 27,
+        "Potential Redundant Abstractions": 2,
+        "Potential Shotgun Surgery": 30,
+        "Scattered Functionality": 8,
+        "Speculative Generality": 1,
+        "Temporary Field": 1,
+        "Too Many Branches": 1,
+        "Unstable Dependency": 62
+      },
+      "crashed_files": [
+        "auth/schemas.py",
+        "catalog/schemas.py",
+        "purchasing/schemas.py"
+      ]
+    }
+  },
+  "frozen_smell_list": [
+    {
+      "id": "S01",
+      "tool": "ast",
+      "rule": "function longer than 45 lines, docstring excluded"
+    },
+    {
+      "id": "S02",
+      "tool": "ast",
+      "rule": "plain class with more than 15 methods"
+    },
+    {
+      "id": "S03",
+      "tool": "ruff",
+      "rule": "PLR0913"
+    },
+    {
+      "id": "S07",
+      "tool": "ruff",
+      "rule": "F401, F841"
+    },
+    {
+      "id": "S09",
+      "tool": "ruff",
+      "rule": "PLR0916 (preview run), SIM"
+    },
+    {
+      "id": "S10",
+      "tool": "pylint",
+      "rule": "R1702"
+    },
+    {
+      "id": "S11",
+      "tool": "ruff",
+      "rule": "PLR2004"
+    },
+    {
+      "id": "S18",
+      "tool": "ast",
+      "rule": "import cycles (SCC > 1 at file level, function-level imports included)"
+    },
+    {
+      "id": "S19",
+      "tool": "ruff",
+      "rule": "S110, BLE001"
+    },
+    {
+      "id": "S20",
+      "tool": "ruff",
+      "rule": "B006"
+    },
+    {
+      "id": "S21",
+      "tool": "ruff",
+      "rule": "RET"
+    },
+    {
+      "id": "S22",
+      "tool": "ast",
+      "rule": "import outside the library list of LIB-TECH-02"
+    },
+    {
+      "id": "S23",
+      "tool": "ruff",
+      "rule": "ANN401, PGH003, cast( calls"
+    }
+  ],
+  "unassigned_sloc_pct": 0.0,
+  "code_sha": "ce03f5420a2da697772c0441607f35a94d75c8f8",
+  "code_dirty": false,
+  "code_last_change_sha": "ce03f5420a2da697772c0441607f35a94d75c8f8",
+  "code_content_hash": "ef1c8f40ecd5b27bb1480ea1f6f4cad16e77dbaf18206c724f726b7b3369a3d1",
+  "analyzer_sha": "6e5ba22995dd857755c921080835d3bbf3a0a70c",
+  "analyzer_dirty": false,
+  "image_id": "sha256:213b052362ead0d70857b04c1380229671a50053a53a18a4ccf56028cd267128",
+  "tool_versions": {
+    "python": "3.14.10",
+    "radon": "6.0.1",
+    "complexipy": "8.3.0",
+    "ruff": "0.17.3",
+    "pylint": "4.1.3",
+    "vulture": "2.16",
+    "code-quality-analyzer": "0.2.3",
+    "jscpd": "jscpd 5.4.2"
+  },
+  "schema_version": "1.0",
+  "started_at": "2026-11-20T15:29:10+00:00",
+  "duration_s": 23.46,
+  "tool_seconds": {
+    "radon_raw": 0.35,
+    "radon_mi": 0.42,
+    "radon_cc": 0.3,
+    "ruff_stable": 0.03,
+    "ruff_preview": 0.02,
+    "ruff_f401_preview": 0.02,
+    "ruff_files": 0.01,
+    "pylint": 7.6,
+    "jscpd": 0.16,
+    "vulture": 0.28,
+    "pyexamine": 4.15
+  },
+  "failures": [],
+  "secondary_failures": [
+    {
+      "tool": "pyexamine",
+      "kind": "fileset",
+      "reason": "a detector crashed on 3 file(s) although the exit code was 0",
+      "files": [
+        "auth/schemas.py",
+        "catalog/schemas.py",
+        "purchasing/schemas.py"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-20T15:32:50+00:00",
+  "code": "/code",
+  "tests": "/tmp/baseline-tests-n5y3d9k2/tests",
+  "valid": true,
+  "invalid_reasons": [],
+  "timeout_s": 7200,
+  "test_file_changes": {
+    "changed": [],
+    "added": [],
+    "removed": []
+  },
+  "sets": {
+    "feedback": {
+      "tests": 282,
+      "passed": 282,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "missing": 0
+    },
+    "heldout": {
+      "tests": 239,
+      "passed": 239,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "missing": 0
+    }
+  }
+}

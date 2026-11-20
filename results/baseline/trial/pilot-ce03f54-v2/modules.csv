@@ -1,0 +1,31 @@
+run_label,schema_version,module_no,module_name,level,status,valid,files,sloc,units,mean_cc,max_cc,share_cc_high,mean_cognitive,max_cognitive,share_cognitive_high,mi_weighted,mi_mean,smells,smells_per_ksloc,duplication_pct,duplicated_lines
+pilot-ce03f54-v2,1.0,1,Core,simple,generated,1,13,392,44,2.0000,5,0.0000,1.1429,5,0.0000,65.6758,70.1912,10,25.5102,0.0000,0
+pilot-ce03f54-v2,1.0,2,Identity and access,complex,generated,1,7,429,28,2.9286,20,0.0357,1.9630,21,0.0370,48.5415,61.1551,6,13.9860,0.0000,0
+pilot-ce03f54-v2,1.0,3,Members,complex,generated,1,5,408,22,3.1364,14,0.0455,2.0909,12,0.0000,40.7120,60.8979,4,9.8039,0.0000,0
+pilot-ce03f54-v2,1.0,4,Catalog,complex,generated,1,7,574,49,2.4490,16,0.0612,1.6531,18,0.0204,39.7565,67.8244,8,13.9373,3.0496,24
+pilot-ce03f54-v2,1.0,5,Loans and returns,complex,generated,1,4,381,12,5.2500,11,0.0833,4.2500,9,0.0000,34.9827,55.9958,5,13.1234,0.0000,0
+pilot-ce03f54-v2,1.0,6,Reservations,complex,generated,1,4,383,22,3.1364,14,0.0455,2.1818,14,0.0000,36.6866,59.1071,6,15.6658,0.0000,0
+pilot-ce03f54-v2,1.0,7,Fines and payments,complex,generated,1,4,270,15,2.0000,6,0.0000,0.9333,6,0.0000,44.9025,58.9510,3,11.1111,0.0000,0
+pilot-ce03f54-v2,1.0,8,Notifications,medium,generated,1,4,242,18,2.1111,6,0.0000,1.3333,7,0.0000,49.7628,67.4879,2,8.2645,0.0000,0
+pilot-ce03f54-v2,1.0,9,Search,simple,generated,1,3,135,7,4.7143,25,0.1429,4.2857,29,0.1429,50.6923,82.6652,2,14.8148,0.0000,0
+pilot-ce03f54-v2,1.0,10,Reports,medium,generated,1,3,245,14,2.6429,6,0.0000,2.0833,5,0.0000,43.9804,64.0664,2,8.1633,0.0000,0
+pilot-ce03f54-v2,1.0,11,Branches and transfers,medium,generated,1,5,318,13,3.3077,8,0.0000,2.3846,10,0.0000,50.8140,61.8288,3,9.4340,0.0000,0
+pilot-ce03f54-v2,1.0,12,Purchasing,medium,generated,1,4,477,30,3.1333,16,0.0667,2.3667,19,0.0667,37.0231,59.7399,4,8.3857,2.2989,14
+pilot-ce03f54-v2,1.0,13,"Audit log, import, export",complex,generated,1,8,735,38,4.2632,36,0.0789,4.4595,63,0.0811,38.4496,57.7566,11,14.9660,1.0965,10
+pilot-ce03f54-v2,1.0,14,API layer,medium,generated,1,19,1460,131,1.9771,12,0.0153,0.9462,13,0.0000,53.7957,61.1786,17,11.6438,4.6610,88
+pilot-ce03f54-v2,1.0,15,Study rooms,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,16,Equipment loans,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,17,Digital resources,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,18,Interlibrary loans,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,19,Staff and shifts,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,20,Events,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,21,Course reserves,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,22,Donations,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,23,Preservation,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,24,Inventory counts,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,25,Purchase suggestions,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,26,Reading programs,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,27,Announcements and messages,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,28,Member cards and building access,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,29,Printing and copying,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-ce03f54-v2,1.0,unassigned,unassigned,,unassigned,1,0,0,0,,,,,,,,,0,,,0
