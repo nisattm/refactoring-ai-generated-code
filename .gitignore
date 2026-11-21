@@ -53,6 +53,7 @@ results/baseline/trial/**/pyexamine.csv
 
 # Experiments (Week 5, ADR 004): the raw Claude Code logs and the unit-level detail files are not committed
 # (ADR 003 rule); the code of every round is kept as the tag exp/<approach>/<run-id>/r<k>
+results/experiments/**/raw/
 results/experiments/**/stream.jsonl
 results/experiments/**/stderr.txt
 results/experiments/**/openapi/
