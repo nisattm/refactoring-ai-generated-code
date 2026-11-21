@@ -1,0 +1,7 @@
+run_label,schema_version,case,requirement,result,detail
+pilot-s02-rounds-r1,1.0,T-TECH-02-a,LIB-TECH-02,passed,no import outside the allowed libraries
+pilot-s02-rounds-r1,1.0,T-TECH-04-a,LIB-TECH-04,passed,"7 pinned versions found, 25 pins in all"
+pilot-s02-rounds-r1,1.0,T-TECH-06-a,LIB-TECH-06,passed,no async route handler and no async SQLAlchemy import (async helper(s) that are not routes: 4)
+pilot-s02-rounds-r1,1.0,T-TECH-10-a,LIB-TECH-10,partial,"randomness only in auth/; ORDER BY not checked by script (select calls 108, order_by calls 47: information only)"
+pilot-s02-rounds-r1,1.0,T-TECH-11-a,LIB-TECH-11,failed,"missing package(s): access, courses, digital, donations, equipment, events, ill, inventory, messaging, preservation, printing, programs, rooms, staff, suggestions"
+pilot-s02-rounds-r1,1.0,T-TECH-12-a,LIB-TECH-12,passed,GET /health returned 200

@@ -1,0 +1,149 @@
+{
+  "approach": "single",
+  "run_id": "pilot-s01",
+  "repetition": "",
+  "start_ref": "ce03f54",
+  "start_sha": "ce03f5420a2da697772c0441607f35a94d75c8f8",
+  "start_state_commit": "769103d5a2bf7a3054e4ec59d8a4065aaa6532d7",
+  "baseline": "C:\\Users\\gulte\\refactoring-ai-generated-code\\results\\baseline\\trial\\pilot-ce03f54-v2",
+  "baseline_primary": {
+    "mean_cc": 2.6795,
+    "mean_cognitive": 1.8578,
+    "mi_weighted": 45.8653,
+    "duplication_pct": 0.809,
+    "smell_count": 83
+  },
+  "tests_modules": "1-14",
+  "test_files": [
+    "api",
+    "audit_io",
+    "auth",
+    "branches",
+    "catalog",
+    "core",
+    "e2e",
+    "fees",
+    "loans",
+    "members",
+    "notifications",
+    "purchasing",
+    "reports",
+    "reservations",
+    "search"
+  ],
+  "account": "exp-1",
+  "accounts_used": [
+    "exp-1"
+  ],
+  "window_pct_start": 3.0,
+  "work_root": "C:\\Users\\gulte\\AppData\\Local\\Temp\\exp-pilot-s01-ukjcnrre",
+  "image": "refactoring-env",
+  "image_id": "unknown",
+  "model": "claude-sonnet-5-5",
+  "effort": "high",
+  "flags": [
+    "--model",
+    "claude-sonnet-5-5",
+    "--effort",
+    "high",
+    "--tools",
+    "Read,Edit,Write,Glob,Grep",
+    "--allowedTools",
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "--disallowedTools",
+    "Task",
+    "Agent",
+    "--safe-mode",
+    "--permission-mode",
+    "dontAsk",
+    "--output-format",
+    "stream-json",
+    "--verbose"
+  ],
+  "env": {
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1"
+  },
+  "expected_version": "2.1.308",
+  "host": {
+    "os": "Windows-11-10.0.26300-SP0",
+    "python": "3.13.5"
+  },
+  "interface_sha256": "f01b787e6a38fe9236f6f1c8851e8b476e7d2e791d237cf0f5d85794801acb89",
+  "test_hashes_sha256": "f3f9502d862aaa3c601d184646d2a19768fddd8ce341fe60b55156800a0e56e4",
+  "started_at": "2026-11-21T14:23:12+03:00",
+  "finished_at": "2026-11-21T14:23:14+03:00",
+  "status": "finished",
+  "calls": [
+    {
+      "number": 1,
+      "kind": "single",
+      "account": "exp-1",
+      "started_at": "2026-11-21T14:23:14+03:00",
+      "wall_s": 0.2,
+      "exit_code": 1,
+      "status": "error",
+      "invalid": [
+        "no result event in the stream (call did not finish)"
+      ],
+      "session_in": null,
+      "session_id": null,
+      "prompt_sha256": "1b7f15ace699d297b781832a1f053554b67876988490fcd51547bedfd9a5dae8",
+      "claude_code_version": null,
+      "api_key_source": null,
+      "tools": null,
+      "tool_counts": {},
+      "files_read": [],
+      "files_written": [],
+      "subagent_attempts": 0,
+      "subagents_spawned": null,
+      "permission_denials": [],
+      "terminal_reason": null,
+      "is_error": null,
+      "num_turns": null,
+      "done_marker": false,
+      "outside_lms_changes": 0,
+      "hidden_files": [],
+      "rate_limit": null,
+      "usd_raw": null,
+      "usd_diff": null,
+      "summary_raw": {},
+      "summary": {},
+      "tokens_raw": {
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_write_tokens": null,
+        "cache_read_tokens": null,
+        "thinking_tokens": null
+      },
+      "tokens": {
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_write_tokens": null,
+        "cache_read_tokens": null,
+        "thinking_tokens": null
+      }
+    }
+  ],
+  "rounds": [],
+  "final": {},
+  "outside_lms_changes": [],
+  "events": [
+    {
+      "at": "2026-11-21T14:23:13+03:00",
+      "text": "call 1 (single) started"
+    },
+    {
+      "at": "2026-11-21T14:23:14+03:00",
+      "text": "call 1 finished: error, 0.2 s; invalid: ['no result event in the stream (call did not finish)']"
+    }
+  ],
+  "outcome": "invalid",
+  "valid": false,
+  "reasons": [
+    "no result event in the stream (call did not finish)"
+  ]
+}

@@ -1,0 +1,572 @@
+{
+  "approach": "single",
+  "run_id": "pilot-s02",
+  "repetition": "",
+  "start_ref": "ce03f54",
+  "start_sha": "ce03f5420a2da697772c0441607f35a94d75c8f8",
+  "start_state_commit": "b513d3aec7de5498684bd49ba9e674bb8ade1608",
+  "baseline": "C:\\Users\\gulte\\refactoring-ai-generated-code\\results\\baseline\\trial\\pilot-ce03f54-v2",
+  "baseline_primary": {
+    "mean_cc": 2.6795,
+    "mean_cognitive": 1.8578,
+    "mi_weighted": 45.8653,
+    "duplication_pct": 0.809,
+    "smell_count": 83
+  },
+  "tests_modules": "1-14",
+  "test_files": [
+    "api",
+    "audit_io",
+    "auth",
+    "branches",
+    "catalog",
+    "core",
+    "e2e",
+    "fees",
+    "loans",
+    "members",
+    "notifications",
+    "purchasing",
+    "reports",
+    "reservations",
+    "search"
+  ],
+  "account": "exp-1",
+  "accounts_used": [
+    "exp-1"
+  ],
+  "window_pct_start": 4.0,
+  "work_root": "C:\\Users\\gulte\\AppData\\Local\\Temp\\exp-pilot-s02-jvy7t_28",
+  "image": "refactoring-env",
+  "image_id": "sha256:213b052362ead0d70857b04c1380229671a50053a53a18a4ccf56028cd267128",
+  "model": "claude-sonnet-5-5",
+  "effort": "high",
+  "flags": [
+    "--model",
+    "claude-sonnet-5-5",
+    "--effort",
+    "high",
+    "--tools",
+    "Read,Edit,Write,Glob,Grep",
+    "--allowedTools",
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "--disallowedTools",
+    "Task",
+    "Agent",
+    "--safe-mode",
+    "--permission-mode",
+    "dontAsk",
+    "--output-format",
+    "stream-json",
+    "--verbose"
+  ],
+  "env": {
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1"
+  },
+  "expected_version": "2.1.308",
+  "host": {
+    "os": "Windows-11-10.0.26300-SP0",
+    "python": "3.13.5"
+  },
+  "interface_sha256": "f01b787e6a38fe9236f6f1c8851e8b476e7d2e791d237cf0f5d85794801acb89",
+  "test_hashes_sha256": "f3f9502d862aaa3c601d184646d2a19768fddd8ce341fe60b55156800a0e56e4",
+  "started_at": "2026-11-21T19:34:37+03:00",
+  "finished_at": "2026-11-21T19:43:10+03:00",
+  "status": "finished",
+  "calls": [
+    {
+      "number": 1,
+      "kind": "single",
+      "account": "exp-1",
+      "started_at": "2026-11-21T19:39:01+03:00",
+      "wall_s": 262.7,
+      "exit_code": 0,
+      "status": "ok",
+      "invalid": [],
+      "session_in": null,
+      "session_id": "1e560c4f-fce0-44b8-b13e-5358c277a1d5",
+      "prompt_sha256": "1b7f15ace699d297b781832a1f053554b67876988490fcd51547bedfd9a5dae8",
+      "claude_code_version": "2.1.308",
+      "api_key_source": "none",
+      "tools": [
+        "Edit",
+        "Glob",
+        "Grep",
+        "Read",
+        "Write"
+      ],
+      "tool_counts": {
+        "Glob": 1,
+        "Read": 50,
+        "Grep": 11,
+        "Edit": 116,
+        "Write": 3
+      },
+      "files_read": [
+        "/work/INTERFACE.md",
+        "/work/lms/__init__.py",
+        "/work/lms/api/app.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/auth.py",
+        "/work/lms/api/branches.py",
+        "/work/lms/api/calendar.py",
+        "/work/lms/api/catalog.py",
+        "/work/lms/api/dataexchange.py",
+        "/work/lms/api/errors.py",
+        "/work/lms/api/fines.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/notifications.py",
+        "/work/lms/api/purchasing.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/search.py",
+        "/work/lms/api/transfers.py",
+        "/work/lms/api/users.py",
+        "/work/lms/audit/exporter.py",
+        "/work/lms/audit/importer.py",
+        "/work/lms/audit/service.py",
+        "/work/lms/auth/deps.py",
+        "/work/lms/catalog/release.py",
+        "/work/lms/catalog/service.py",
+        "/work/lms/core/__init__.py",
+        "/work/lms/core/calendar.py",
+        "/work/lms/core/clock.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/errors.py",
+        "/work/lms/core/holidays.py",
+        "/work/lms/core/money.py",
+        "/work/lms/core/pagination.py",
+        "/work/lms/core/schemas.py",
+        "/work/lms/core/settings.py",
+        "/work/lms/core/text.py",
+        "/work/lms/core/timeutil.py",
+        "/work/lms/loans/service.py",
+        "/work/lms/members/service.py",
+        "/work/lms/purchasing/service.py",
+        "/work/lms/reservations/service.py"
+      ],
+      "files_written": [
+        "/work/lms/api/app.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/auth.py",
+        "/work/lms/api/branches.py",
+        "/work/lms/api/calendar.py",
+        "/work/lms/api/catalog.py",
+        "/work/lms/api/common.py",
+        "/work/lms/api/dataexchange.py",
+        "/work/lms/api/fines.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/notifications.py",
+        "/work/lms/api/purchasing.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/transfers.py",
+        "/work/lms/api/users.py",
+        "/work/lms/audit/importer.py",
+        "/work/lms/auth/service.py",
+        "/work/lms/branches/service.py",
+        "/work/lms/branches/transfers.py",
+        "/work/lms/catalog/service.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/errors.py",
+        "/work/lms/core/text.py",
+        "/work/lms/fines/service.py",
+        "/work/lms/loans/service.py",
+        "/work/lms/members/service.py",
+        "/work/lms/notifications/service.py",
+        "/work/lms/purchasing/service.py",
+        "/work/lms/reservations/service.py"
+      ],
+      "subagent_attempts": 0,
+      "subagents_spawned": 0,
+      "permission_denials": [],
+      "terminal_reason": "completed",
+      "is_error": false,
+      "num_turns": 182,
+      "done_marker": true,
+      "outside_lms_changes": 0,
+      "hidden_files": [],
+      "rate_limit": {
+        "rate_limit_info": {
+          "status": "allowed",
+          "resetsAt": 1795296600,
+          "rateLimitType": "five_hour",
+          "overageStatus": "rejected",
+          "overageDisabledReason": "org_level_disabled",
+          "isUsingOverage": false,
+          "unifiedWindows": {
+            "five_hour": {
+              "utilization": 0.14,
+              "resetsAt": 1795296600
+            },
+            "seven_day": {
+              "utilization": 0.3,
+              "resetsAt": 1795554000
+            }
+          }
+        },
+        "session_id": "1e560c4f-fce0-44b8-b13e-5358c277a1d5"
+      },
+      "usd_raw": 1.5461535,
+      "usd_diff": 1.5461535,
+      "summary_raw": {
+        "input_tokens": 88,
+        "output_tokens": 43715,
+        "cache_write_tokens": 163941,
+        "cache_write_1h_tokens": 163941,
+        "cache_read_tokens": 4530635,
+        "thinking_tokens": 5358,
+        "total_input_tokens": 4694664,
+        "usd": 1.5461535,
+        "usd_recomputed": 1.5461535,
+        "duration_s": 259.894,
+        "api_duration_s": 254.868,
+        "num_turns": 182,
+        "subagents_spawned": 0,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "1e560c4f-fce0-44b8-b13e-5358c277a1d5",
+        "note": ""
+      },
+      "summary": {
+        "input_tokens": 88,
+        "output_tokens": 43715,
+        "cache_write_tokens": 163941,
+        "cache_write_1h_tokens": 163941,
+        "cache_read_tokens": 4530635,
+        "thinking_tokens": 5358,
+        "total_input_tokens": 4694664,
+        "usd": 1.5461535,
+        "usd_recomputed": 1.5461535,
+        "duration_s": 259.894,
+        "api_duration_s": 254.868,
+        "num_turns": 182,
+        "subagents_spawned": 0,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "1e560c4f-fce0-44b8-b13e-5358c277a1d5",
+        "note": ""
+      },
+      "tokens_raw": {
+        "input_tokens": 88,
+        "output_tokens": 43715,
+        "cache_write_tokens": 163941,
+        "cache_read_tokens": 4530635,
+        "thinking_tokens": 5358
+      },
+      "tokens": {
+        "input_tokens": 88,
+        "output_tokens": 43715,
+        "cache_write_tokens": 163941,
+        "cache_read_tokens": 4530635,
+        "thinking_tokens": 5358
+      }
+    }
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "call": 1,
+      "state_commit": "6eb2e418c4a8c31feb7980e4bd7483ef5fb6ab34",
+      "tag": "exp/single/pilot-s02/r1",
+      "code_sha": "7602d618912f3bf94b76939f3acb95930deb1b95",
+      "accepted": true,
+      "facts": {
+        "status": "ok",
+        "problems": [],
+        "round_accepted": true,
+        "run_successful": true,
+        "reasons": [],
+        "accept_reasons": [],
+        "regressions": 0,
+        "regressions_by_set": {
+          "feedback": 0,
+          "heldout": 0
+        },
+        "regression_cases": [],
+        "api_changed": false,
+        "api_loads": true,
+        "api_change_kind": null,
+        "invalid_metrics": [],
+        "primary": {
+          "duplication_pct": {
+            "before": 0.809,
+            "after": 0.8112,
+            "delta": 0.0022,
+            "status": "same"
+          },
+          "mean_cc": {
+            "before": 2.6795,
+            "after": 2.5676,
+            "delta": -0.1119,
+            "status": "improved"
+          },
+          "mean_cognitive": {
+            "before": 1.8578,
+            "after": 1.7258,
+            "delta": -0.132,
+            "status": "improved"
+          },
+          "mi_weighted": {
+            "before": 45.8653,
+            "after": 47.8434,
+            "delta": 1.9781,
+            "status": "improved"
+          },
+          "smell_count": {
+            "before": 83,
+            "after": 81,
+            "delta": -2.0,
+            "status": "improved"
+          }
+        },
+        "wall_s": 248.2,
+        "folder": "rounds\\r1"
+      }
+    }
+  ],
+  "final": {
+    "best": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 0.809,
+          "after": 0.8112,
+          "delta": 0.0022,
+          "status": "same"
+        },
+        "mean_cc": {
+          "before": 2.6795,
+          "after": 2.5676,
+          "delta": -0.1119,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 1.8578,
+          "after": 1.7258,
+          "delta": -0.132,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 45.8653,
+          "after": 47.8434,
+          "delta": 1.9781,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 83,
+          "after": 81,
+          "delta": -2.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 248.2,
+      "folder": "rounds\\r1"
+    },
+    "round1": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 0.809,
+          "after": 0.8112,
+          "delta": 0.0022,
+          "status": "same"
+        },
+        "mean_cc": {
+          "before": 2.6795,
+          "after": 2.5676,
+          "delta": -0.1119,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 1.8578,
+          "after": 1.7258,
+          "delta": -0.132,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 45.8653,
+          "after": 47.8434,
+          "delta": 1.9781,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 83,
+          "after": 81,
+          "delta": -2.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 248.2,
+      "folder": "rounds\\r1"
+    },
+    "last": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 0.809,
+          "after": 0.8112,
+          "delta": 0.0022,
+          "status": "same"
+        },
+        "mean_cc": {
+          "before": 2.6795,
+          "after": 2.5676,
+          "delta": -0.1119,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 1.8578,
+          "after": 1.7258,
+          "delta": -0.132,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 45.8653,
+          "after": 47.8434,
+          "delta": 1.9781,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 83,
+          "after": 81,
+          "delta": -2.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 248.2,
+      "folder": "rounds\\r1"
+    }
+  },
+  "outside_lms_changes": [],
+  "events": [
+    {
+      "at": "2026-11-21T19:34:38+03:00",
+      "text": "call 1 (single) started"
+    },
+    {
+      "at": "2026-11-21T19:39:01+03:00",
+      "text": "call 1 finished: ok, 262.7 s"
+    },
+    {
+      "at": "2026-11-21T19:39:01+03:00",
+      "text": "round 1: exp/single/pilot-s02/r1 = 7602d618912f"
+    },
+    {
+      "at": "2026-11-21T19:39:01+03:00",
+      "text": "measurement rounds/r1 (both) started"
+    },
+    {
+      "at": "2026-11-21T19:43:10+03:00",
+      "text": "measurement rounds/r1: status ok, accepted True, successful True, regressions 0"
+    }
+  ],
+  "best_round": 1,
+  "best_tag": "exp/single/pilot-s02/r1",
+  "best_facts": {
+    "status": "ok",
+    "problems": [],
+    "round_accepted": true,
+    "run_successful": true,
+    "reasons": [],
+    "accept_reasons": [],
+    "regressions": 0,
+    "regressions_by_set": {
+      "feedback": 0,
+      "heldout": 0
+    },
+    "regression_cases": [],
+    "api_changed": false,
+    "api_loads": true,
+    "api_change_kind": null,
+    "invalid_metrics": [],
+    "primary": {
+      "duplication_pct": {
+        "before": 0.809,
+        "after": 0.8112,
+        "delta": 0.0022,
+        "status": "same"
+      },
+      "mean_cc": {
+        "before": 2.6795,
+        "after": 2.5676,
+        "delta": -0.1119,
+        "status": "improved"
+      },
+      "mean_cognitive": {
+        "before": 1.8578,
+        "after": 1.7258,
+        "delta": -0.132,
+        "status": "improved"
+      },
+      "mi_weighted": {
+        "before": 45.8653,
+        "after": 47.8434,
+        "delta": 1.9781,
+        "status": "improved"
+      },
+      "smell_count": {
+        "before": 83,
+        "after": 81,
+        "delta": -2.0,
+        "status": "improved"
+      }
+    },
+    "wall_s": 248.2,
+    "folder": "rounds\\r1"
+  },
+  "outcome": "success",
+  "valid": true,
+  "reasons": []
+}
