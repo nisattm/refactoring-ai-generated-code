@@ -1,0 +1,32 @@
+run_label,schema_version,module_no,module_name,level,status,valid,files,sloc,units,mean_cc,max_cc,share_cc_high,mean_cognitive,max_cognitive,share_cognitive_high,mi_weighted,mi_mean,smells,smells_per_ksloc,duplication_pct,duplicated_lines
+pilot-i01-final-r2,1.0,1,Core,simple,generated,1,17,586,72,2.0972,5,0.0000,1.1714,5,0.0000,59.6147,68.9825,13,22.1843,0.0000,0
+pilot-i01-final-r2,1.0,2,Identity and access,complex,generated,1,9,520,40,2.4750,20,0.0250,1.5789,21,0.0263,54.7401,66.6343,6,11.5385,0.0000,0
+pilot-i01-final-r2,1.0,3,Members,complex,generated,1,6,504,29,2.6897,13,0.0345,1.7586,11,0.0000,43.7314,59.2572,4,7.9365,0.0000,0
+pilot-i01-final-r2,1.0,4,Catalog,complex,generated,1,8,743,71,2.0845,16,0.0423,1.2113,18,0.0141,41.8731,65.1658,9,12.1131,2.7478,28
+pilot-i01-final-r2,1.0,5,Loans and returns,complex,generated,1,5,484,21,2.9524,8,0.0000,2.0000,8,0.0000,51.2963,65.4131,7,14.4628,7.5342,44
+pilot-i01-final-r2,1.0,6,Reservations,complex,generated,1,5,496,30,2.6000,13,0.0333,1.8667,13,0.0000,39.5083,56.9604,8,16.1290,1.9017,12
+pilot-i01-final-r2,1.0,7,Fines and payments,complex,generated,1,5,358,22,1.5909,6,0.0000,0.5909,6,0.0000,49.1376,59.2882,5,13.9665,2.5806,12
+pilot-i01-final-r2,1.0,8,Notifications,medium,generated,1,5,318,25,1.5600,5,0.0000,0.6800,6,0.0000,62.6152,74.9173,3,9.4340,0.0000,0
+pilot-i01-final-r2,1.0,9,Search,simple,generated,1,4,181,8,5.3750,24,0.2500,4.2500,28,0.1250,51.9534,75.7785,3,16.5746,0.0000,0
+pilot-i01-final-r2,1.0,10,Reports,medium,generated,1,3,228,11,2.5455,6,0.0000,1.8889,5,0.0000,45.9100,64.8381,1,4.3860,0.0000,0
+pilot-i01-final-r2,1.0,11,Branches and transfers,medium,generated,1,7,393,23,2.0870,8,0.0000,1.1304,10,0.0000,58.4055,67.5568,4,10.1781,0.0000,0
+pilot-i01-final-r2,1.0,12,Purchasing,medium,generated,1,5,559,41,2.3659,16,0.0488,1.5610,19,0.0488,49.1875,68.3993,4,7.1556,1.9257,14
+pilot-i01-final-r2,1.0,13,"Audit log, import, export",complex,generated,1,10,783,40,3.9250,36,0.0750,4.0769,63,0.0769,43.4744,63.7220,13,16.6028,1.4344,14
+pilot-i01-final-r2,1.0,14,API layer,medium,generated,1,4,141,12,2.6667,9,0.0000,1.3636,6,0.0000,62.3737,80.5476,1,7.0922,0.0000,0
+pilot-i01-final-r2,1.0,15,Study rooms,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,16,Equipment loans,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,17,Digital resources,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,18,Interlibrary loans,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,19,Staff and shifts,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,20,Events,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,21,Course reserves,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,22,Donations,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,23,Preservation,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,24,Inventory counts,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,25,Purchase suggestions,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,26,Reading programs,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,27,Announcements and messages,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,28,Member cards and building access,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,29,Printing and copying,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-i01-final-r2,1.0,api/reports.py,API router reports (module 10 and 15-28 reports),medium,generated,1,1,99,6,2.6667,6,0.0000,1.6667,5,0.0000,43.4286,43.4286,1,10.1010,0.0000,0
+pilot-i01-final-r2,1.0,unassigned,unassigned,,unassigned,1,0,0,0,,,,,,,,,0,,,0

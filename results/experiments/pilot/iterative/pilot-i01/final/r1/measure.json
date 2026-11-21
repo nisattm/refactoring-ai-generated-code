@@ -1,0 +1,26 @@
+{
+  "label": "pilot-i01-final-r1",
+  "code_sha": "878a56d14389f7deed9474147f7b518e8ed5273b",
+  "set": "both",
+  "steps": [
+    {
+      "name": "analyze",
+      "exit": 0,
+      "seconds": 31.1
+    },
+    {
+      "name": "tests",
+      "exit": 0,
+      "seconds": 374.5
+    },
+    {
+      "name": "compare",
+      "exit": 0,
+      "seconds": 12.4
+    }
+  ],
+  "problems": [],
+  "status": "ok",
+  "new_failures": [],
+  "api_change_kind": null
+}
