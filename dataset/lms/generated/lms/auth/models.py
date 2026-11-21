@@ -8,6 +8,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
 from lms.core.db import Base
+from lms.core.text import normalize
 from lms.core.timeutil import TZDateTime
 
 
@@ -29,6 +30,22 @@ class User(Base):
     member_id: Mapped[int | None] = mapped_column(default=None)
     created_at: Mapped[datetime.datetime] = mapped_column(TZDateTime)
     last_login_at: Mapped[datetime.datetime | None] = mapped_column(TZDateTime, default=None)
+
+    @classmethod
+    def create(
+        cls, *, email: str, full_name: str, role: str, password_hash: str, created_at: datetime.datetime
+    ) -> User:
+        """A new, active user. ``email`` is already lower case."""
+        return cls(
+            email=email,
+            email_key=normalize(email),
+            full_name=full_name,
+            role=role,
+            password_hash=password_hash,
+            is_active=True,
+            failed_login_count=0,
+            created_at=created_at,
+        )
 
 
 class AuthSession(Base):

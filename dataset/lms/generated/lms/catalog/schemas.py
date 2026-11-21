@@ -59,7 +59,7 @@ def _classification(value: str) -> str:
     return value
 
 
-def _price(value: Decimal) -> Decimal:
+def check_price(value: Decimal) -> Decimal:
     if not MIN_PRICE <= value <= MAX_PRICE:
         raise ValueError("price must be between 0.01 and 100000.00")
     return value
@@ -92,7 +92,7 @@ class PublisherOut(BaseModel):
 # --- books ------------------------------------------------------------------------
 
 
-class _BookChecks:
+class BookFieldChecks:
     @field_validator("isbn", check_fields=False)
     @classmethod
     def _isbn(cls, value: str) -> str:
@@ -114,7 +114,7 @@ class _BookChecks:
         return _classification(value)
 
 
-class BookCreateIn(_BookChecks, RequestModel):
+class BookCreateIn(BookFieldChecks, RequestModel):
     isbn: str
     title: Name
     subtitle: Subtitle | None = None
@@ -125,7 +125,7 @@ class BookCreateIn(_BookChecks, RequestModel):
     classification: str
 
 
-class BookPatchIn(_BookChecks, RequestModel):
+class BookPatchIn(BookFieldChecks, RequestModel):
     """Any subset of the create fields. Only ``subtitle`` may be ``null``."""
 
     isbn: str = None  # type: ignore[assignment]
@@ -176,7 +176,7 @@ class CopyCreateIn(RequestModel):
     @field_validator("price")
     @classmethod
     def _price(cls, value: Decimal) -> Decimal:
-        return _price(value)
+        return check_price(value)
 
 
 class CopyPatchIn(RequestModel):
@@ -189,7 +189,7 @@ class CopyPatchIn(RequestModel):
     @field_validator("price")
     @classmethod
     def _price(cls, value: Decimal) -> Decimal:
-        return _price(value)
+        return check_price(value)
 
 
 class WithdrawIn(RequestModel):

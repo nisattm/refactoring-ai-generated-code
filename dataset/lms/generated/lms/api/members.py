@@ -7,12 +7,12 @@ from typing import Annotated
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
-from lms.auth.deps import CurrentPrincipal, Principal, StaffOnly
-from lms.core.clock import local_now, today
+from lms.auth.deps import CurrentPrincipal, StaffOnly, own_member_check
+from lms.core.context import app_settings, request_now, request_today
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, NotFound
+from lms.core.errors import NotFound
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.text import normalize
+from lms.core.text import normalize, search_needle
 from lms.fines.schemas import balance_out
 from lms.members import service
 from lms.members.models import Member
@@ -31,20 +31,12 @@ router = APIRouter(prefix="/members", tags=["members"])
 
 MemberId = Annotated[int, Path(ge=1)]
 
-
-def _today(request: Request):  # noqa: ANN202
-    return today(request.app.state.settings.clock)
-
-
-def _own_or_staff(principal: Principal, member: Member) -> None:
-    """LIB-AUTH-25: a member may only address their own record."""
-    if principal.user.role == "member" and principal.user.member_id != member.id:
-        raise Forbidden("Only your own member record can be accessed")
+_own_or_staff = own_member_check("Only your own member record can be accessed")
 
 
 @router.post("", response_model=MemberOut, status_code=201)
 def register_member(body: MemberCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = service.register_member(db, now, staff.user, **body.model_dump())
     return member_out(member, now.date())
 
@@ -61,7 +53,7 @@ def list_members(
     home_branch_id: Annotated[int | None, Query()] = None,
     membership_valid: Annotated[bool | None, Query()] = None,
 ) -> Page[MemberOut]:
-    day = _today(request)
+    day = request_today(request)
     stmt = sa.select(Member).order_by(Member.id)
     if membership_type is not None:
         stmt = stmt.where(Member.membership_type == membership_type)
@@ -72,7 +64,7 @@ def list_members(
     if membership_valid is not None:
         valid = sa.and_(Member.status == "active", Member.valid_until >= day)
         stmt = stmt.where(valid if membership_valid else sa.not_(valid))
-    needle = normalize(q.strip()) if q is not None else ""
+    needle = search_needle(q)
     if not needle:
         return paginate(db, stmt, page, lambda m: member_out(m, day))
     # Case-insensitive matching follows LIB-COM-30, which SQLite cannot do for Turkish letters.
@@ -94,54 +86,53 @@ def get_own_member(request: Request, db: SessionDep, principal: CurrentPrincipal
     member = db.get(Member, member_id) if member_id is not None else None
     if member is None:
         raise NotFound("The authenticated user has no member record", details={"resource": "member"})
-    return member_out(member, _today(request))
+    return member_out(member, request_today(request))
 
 
 @router.get("/{member_id}", response_model=MemberOut)
 def get_member(member_id: MemberId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> MemberOut:
     member = service.get_member_or_404(db, member_id)
-    _own_or_staff(principal, member)
-    return member_out(member, _today(request))
+    _own_or_staff(principal, member.id)
+    return member_out(member, request_today(request))
 
 
 @router.patch("/{member_id}", response_model=MemberOut)
 def update_member(
     member_id: MemberId, body: MemberPatchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> MemberOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = service.get_member_or_404(db, member_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    return member_out(service.update_member(db, now, staff.user, member, fields), now.date())
+    return member_out(service.update_member(db, now, staff.user, member, body.provided_fields()), now.date())
 
 
 @router.post("/{member_id}/renew-membership", response_model=MemberOut)
 def renew_membership(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = service.get_member_or_404(db, member_id)
     return member_out(service.renew_membership(db, now, staff.user, member), now.date())
 
 
 @router.post("/{member_id}/deactivate", response_model=MemberOut)
 def deactivate_member(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
-    settings = request.app.state.settings
-    now = local_now(settings.clock)
+    now = request_now(request)
     member = service.get_member_or_404(db, member_id)
-    return member_out(service.deactivate_member(db, now, staff.user, settings.holidays, member), now.date())
+    holidays = app_settings(request).holidays
+    return member_out(service.deactivate_member(db, now, staff.user, holidays, member), now.date())
 
 
 @router.post("/{member_id}/activate", response_model=MemberOut)
 def activate_member(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = service.get_member_or_404(db, member_id)
     return member_out(service.activate_member(db, now, staff.user, member), now.date())
 
 
 @router.get("/{member_id}/summary", response_model=MemberSummaryOut)
 def member_summary(member_id: MemberId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> MemberSummaryOut:
-    day = _today(request)
+    day = request_today(request)
     member = service.get_member_or_404(db, member_id)
-    _own_or_staff(principal, member)
-    activity = service.member_activity(db, member, day, request.app.state.settings.holidays)
+    _own_or_staff(principal, member.id)
+    activity = service.member_activity(db, member, day, app_settings(request).holidays)
     reasons = service.borrowing_blockers(member, activity, day)
     return MemberSummaryOut(
         member=member_out(member, day),

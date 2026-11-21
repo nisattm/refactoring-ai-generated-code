@@ -9,12 +9,19 @@ from pydantic import BaseModel, Field, StrictBool, StrictInt, field_validator
 
 from lms.branches.models import Branch, Transfer
 from lms.core.schemas import RequestModel
-from lms.core.timeutil import format_datetime
+from lms.core.timeutil import format_date_or_none, format_datetime
 
 _CODE_RE = re.compile(r"^[A-Z0-9]{2,10}$")
 
 BranchName = Annotated[str, Field(min_length=1, max_length=200)]
 BranchAddress = Annotated[str, Field(max_length=300)]
+
+
+def check_branch_code(value: str) -> str:
+    value = value.upper()
+    if not _CODE_RE.match(value):
+        raise ValueError("code must be 2-10 characters from A-Z and 0-9")
+    return value
 
 
 class BranchCreateIn(RequestModel):
@@ -25,10 +32,7 @@ class BranchCreateIn(RequestModel):
     @field_validator("code")
     @classmethod
     def _code(cls, value: str) -> str:
-        value = value.upper()
-        if not _CODE_RE.match(value):
-            raise ValueError("code must be 2-10 characters from A-Z and 0-9")
-        return value
+        return check_branch_code(value)
 
 
 class BranchPatchIn(RequestModel):
@@ -92,5 +96,5 @@ def transfer_out(transfer: Transfer) -> TransferOut:
         started_on=transfer.started_on.isoformat(),
         expected_on=transfer.expected_on.isoformat(),
         status=transfer.status,
-        received_on=transfer.received_on.isoformat() if transfer.received_on is not None else None,
+        received_on=format_date_or_none(transfer.received_on),
     )

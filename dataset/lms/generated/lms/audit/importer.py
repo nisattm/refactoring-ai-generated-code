@@ -17,7 +17,7 @@ from lms.branches.models import Branch
 from lms.catalog.models import Author, Book, BookAuthor, Copy, Publisher
 from lms.core.calendar import working_days_between
 from lms.core.errors import Conflict, ValidationFailed
-from lms.core.text import normalize
+from lms.core.text import normalize, normalize_or_none
 from lms.loans.models import Loan
 from lms.members.models import Member
 from lms.members.service import type_field_problems
@@ -281,15 +281,8 @@ def _write(
 
     users: dict[int, User] = {}
     for r in parsed["members"]:
-        users[r.id] = User(
-            email=r.email,
-            email_key=normalize(r.email),
-            full_name=r.full_name,
-            role="member",
-            password_hash=UNUSABLE_PASSWORD_HASH,
-            is_active=True,
-            failed_login_count=0,
-            created_at=now,
+        users[r.id] = User.create(
+            email=r.email, full_name=r.full_name, role="member", password_hash=UNUSABLE_PASSWORD_HASH, created_at=now
         )
     db.add_all(users.values())
     db.flush()
@@ -301,7 +294,7 @@ def _write(
             phone=r.phone,
             membership_type=r.membership_type,
             university_id=r.university_id,
-            university_id_key=normalize(r.university_id) if r.university_id is not None else None,
+            university_id_key=normalize_or_none(r.university_id),
             home_branch_id=r.home_branch_id,
             status=r.status,
             membership_start=r.membership_start,

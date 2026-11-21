@@ -12,6 +12,7 @@ from pydantic import BaseModel, StrictInt
 from lms.core.errors import ValidationFailed
 from lms.core.money import ZERO, Money, format_amount
 from lms.core.schemas import RequestModel
+from lms.core.timeutil import format_date_or_none
 from lms.fines.service import accrued_late_fee, late_fee_amount
 from lms.loans.models import Loan
 
@@ -91,7 +92,7 @@ def loan_out(loan: Loan, today: datetime.date, holidays: Container[datetime.date
         daily_fee=format_amount(loan.daily_fee),
         renewal_count=loan.renewal_count,
         status=loan.status,
-        returned_on=loan.returned_on.isoformat() if loan.returned_on is not None else None,
+        returned_on=format_date_or_none(loan.returned_on),
         return_branch_id=loan.return_branch_id,
         condition_on_return=loan.condition_on_return,
         late_days=loan.late_days,

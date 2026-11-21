@@ -11,7 +11,7 @@ from lms.auth.deps import AdminOnly, AnyUser
 from lms.branches import service
 from lms.branches.models import Branch
 from lms.branches.schemas import BranchCreateIn, BranchOut, BranchPatchIn, branch_out
-from lms.core.clock import local_now
+from lms.core.context import request_now
 from lms.core.db import SessionDep
 from lms.core.pagination import Page, PageDep, paginate
 
@@ -22,7 +22,7 @@ BranchId = Annotated[int, Path(ge=1)]
 
 @router.post("", response_model=BranchOut, status_code=201)
 def create_branch(body: BranchCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> BranchOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     return branch_out(service.create_branch(db, now, admin.user, body.code, body.name, body.address))
 
 
@@ -48,7 +48,6 @@ def get_branch(branch_id: BranchId, db: SessionDep, _: AnyUser) -> BranchOut:
 def update_branch(
     branch_id: BranchId, body: BranchPatchIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> BranchOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     branch = service.get_branch_or_404(db, branch_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    return branch_out(service.update_branch(db, now, admin.user, branch, fields))
+    return branch_out(service.update_branch(db, now, admin.user, branch, body.provided_fields()))

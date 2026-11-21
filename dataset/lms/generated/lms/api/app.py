@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from fastapi import APIRouter, FastAPI, Request
 from pydantic import BaseModel
-from sqlalchemy.orm import sessionmaker
 
 from lms.api import (
     audit,
@@ -26,11 +25,31 @@ from lms.api import (
 )
 from lms.api.errors import register_error_handlers
 from lms.auth.bootstrap import ensure_bootstrap_admin
-from lms.core.clock import today
-from lms.core.db import create_schema, get_engine
+from lms.core.context import request_today
+from lms.core.db import create_session_factory, open_database
 from lms.core.settings import Settings
 
 API_PREFIX = "/api/v1"
+
+# The order of inclusion is the order of the routes.
+ROUTER_MODULES = (
+    calendar,
+    auth,
+    users,
+    branches,
+    members,
+    catalog,
+    loans,
+    reservations,
+    fines,
+    transfers,
+    notifications,
+    search,
+    reports,
+    purchasing,
+    audit,
+    dataexchange,
+)
 
 
 class HealthOut(BaseModel):
@@ -41,9 +60,8 @@ class HealthOut(BaseModel):
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings if settings is not None else Settings()
 
-    engine = get_engine(settings)
-    create_schema(engine)
-    session_factory = sessionmaker(engine, expire_on_commit=False)
+    engine = open_database(settings)
+    session_factory = create_session_factory(engine)
     with session_factory.begin() as session:
         ensure_bootstrap_admin(session, settings)
 
@@ -55,24 +73,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/health", response_model=HealthOut, tags=["health"])
     def health(request: Request) -> HealthOut:
-        return HealthOut(status="ok", today=today(request.app.state.settings.clock).isoformat())
+        return HealthOut(status="ok", today=request_today(request).isoformat())
 
     api = APIRouter(prefix=API_PREFIX)
-    api.include_router(calendar.router)
-    api.include_router(auth.router)
-    api.include_router(users.router)
-    api.include_router(branches.router)
-    api.include_router(members.router)
-    api.include_router(catalog.router)
-    api.include_router(loans.router)
-    api.include_router(reservations.router)
-    api.include_router(fines.router)
-    api.include_router(transfers.router)
-    api.include_router(notifications.router)
-    api.include_router(search.router)
-    api.include_router(reports.router)
-    api.include_router(purchasing.router)
-    api.include_router(audit.router)
-    api.include_router(dataexchange.router)
+    for module in ROUTER_MODULES:
+        api.include_router(module.router)
     app.include_router(api)
     return app

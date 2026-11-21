@@ -12,8 +12,8 @@ from pydantic import BaseModel
 from lms.core import calendar as cal
 from lms.core.errors import ValidationFailed
 from lms.core.holidays import holiday_name
-from lms.core.settings import Settings
-from lms.core.timeutil import parse_date
+from lms.core.context import app_settings
+from lms.core.timeutil import DATE_PROBLEM, parse_date
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
 
@@ -58,7 +58,7 @@ class _Params:
         try:
             return parse_date(raw.strip())
         except ValueError:
-            self.problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
+            self.problems.append({"field": name, "problem": DATE_PROBLEM})
             return None
 
     def integer(self, name: str, raw: str | None, low: int, high: int) -> int | None:
@@ -76,10 +76,6 @@ class _Params:
             raise ValidationFailed(self.problems)
 
 
-def _settings(request: Request) -> Settings:
-    return request.app.state.settings
-
-
 def _overflow() -> ValidationFailed:
     return ValidationFailed.single("date", "date is outside the supported range")
 
@@ -90,7 +86,7 @@ def holidays(request: Request, year: Annotated[str | None, Query()] = None) -> H
     value = p.integer("year", year, 1900, 2100)
     p.check()
     assert value is not None
-    days = sorted(d for d in _settings(request).holidays if d.year == value)
+    days = sorted(d for d in app_settings(request).holidays if d.year == value)
     return HolidaysOut(year=value, holidays=[HolidayOut(date=d.isoformat(), name=holiday_name(d)) for d in days])
 
 
@@ -100,7 +96,7 @@ def day_info(request: Request, date: str) -> DayOut:
     value = p.date("date", date)
     p.check()
     assert value is not None
-    reason = cal.day_reason(value, _settings(request).holidays)
+    reason = cal.day_reason(value, app_settings(request).holidays)
     return DayOut(date=value.isoformat(), working_day=reason is None, reason=reason)
 
 
@@ -111,7 +107,7 @@ def next_working_day(request: Request, date: Annotated[str | None, Query()] = No
     p.check()
     assert value is not None
     try:
-        result = cal.next_working_day(value, _settings(request).holidays)
+        result = cal.next_working_day(value, app_settings(request).holidays)
     except OverflowError:
         raise _overflow() from None
     return DateOut(date=result.isoformat())
@@ -129,7 +125,7 @@ def add_working_days(
     p.check()
     assert value is not None and count is not None
     try:
-        result = cal.add_working_days(value, count, _settings(request).holidays)
+        result = cal.add_working_days(value, count, app_settings(request).holidays)
     except OverflowError:
         raise _overflow() from None
     return DateOut(date=result.isoformat())
@@ -148,4 +144,4 @@ def working_days_between(
     assert first is not None and last is not None
     if (last - first).days > MAX_SPAN_DAYS:
         raise ValidationFailed.single("end", f"end must be at most {MAX_SPAN_DAYS} days after start")
-    return WorkingDaysOut(working_days=cal.working_days_between(first, last, _settings(request).holidays))
+    return WorkingDaysOut(working_days=cal.working_days_between(first, last, app_settings(request).holidays))

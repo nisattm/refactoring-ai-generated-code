@@ -15,11 +15,11 @@ from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.auth.passwords import hash_password
 from lms.branches.service import require_active_branch
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict, ValidationFailed
 from lms.core.money import ZERO
-from lms.core.text import normalize
+from lms.core.text import normalize, normalize_or_none
 from lms.fines import service as fines
-from lms.fines.schemas import BLOCKING_DEBT
 from lms.loans.models import Loan
 from lms.members.models import Member
 from lms.members.types import MEMBERSHIP_TYPES, initial_valid_until
@@ -28,10 +28,7 @@ from lms.reservations import service as reservations
 
 
 def get_member_or_404(db: Session, member_id: int) -> Member:
-    member = db.get(Member, member_id)
-    if member is None:
-        raise NotFound(f"Member {member_id} does not exist", details={"resource": "member", "id": member_id})
-    return member
+    return get_or_404(db, Member, member_id, "member")
 
 
 def type_field_problems(membership_type: str, phone: str | None, university_id: str | None) -> list[dict[str, str]]:
@@ -90,15 +87,8 @@ def register_member(
     _check_unique_university_id(db, university_id)
 
     today = now.date()
-    user = User(
-        email=email,
-        email_key=normalize(email),
-        full_name=full_name,
-        role="member",
-        password_hash=hash_password(password),
-        is_active=True,
-        failed_login_count=0,
-        created_at=now,
+    user = User.create(
+        email=email, full_name=full_name, role="member", password_hash=hash_password(password), created_at=now
     )
     db.add(user)
     db.flush()
@@ -108,7 +98,7 @@ def register_member(
         phone=phone,
         membership_type=membership_type,
         university_id=university_id,
-        university_id_key=normalize(university_id) if university_id is not None else None,
+        university_id_key=normalize_or_none(university_id),
         home_branch_id=home_branch_id,
         status="active",
         membership_start=today,
@@ -173,7 +163,7 @@ def update_member(db: Session, now: datetime.datetime, actor: User, member: Memb
     diff = changes({name: getattr(member, name) for name in new}, new)
     for name, value in new.items():
         setattr(member, name, value)
-    member.university_id_key = normalize(member.university_id) if member.university_id is not None else None
+    member.university_id_key = normalize_or_none(member.university_id)
 
     account = changes({"email": user.email, "full_name": user.full_name}, {"email": new["email"], "full_name": new["full_name"]})
     if account:
@@ -292,7 +282,7 @@ def borrowing_blockers(member: Member, activity: MemberActivity, today: datetime
         reasons.append("MEMBERSHIP_EXPIRED")
     if activity.overdue_loans > 0:
         reasons.append("MEMBER_HAS_OVERDUE")
-    if activity.outstanding_fees + activity.accrued_late_fees >= BLOCKING_DEBT:
+    if activity.outstanding_fees + activity.accrued_late_fees >= fines.BLOCKING_DEBT:
         reasons.append("MEMBER_BLOCKED_BY_DEBT")
     if activity.open_loans >= MEMBERSHIP_TYPES[member.membership_type].loan_limit:
         reasons.append("LOAN_LIMIT_REACHED")

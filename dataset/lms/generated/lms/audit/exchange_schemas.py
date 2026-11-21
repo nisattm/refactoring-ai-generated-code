@@ -7,18 +7,18 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator
 
+from lms.branches.schemas import check_branch_code
 from lms.catalog.schemas import (
-    MAX_PRICE,
-    MIN_PRICE,
     AuthorIds,
+    BookFieldChecks,
     DateField,
     ShelfLocation,
     Subtitle,
-    _BookChecks,
     check_barcode,
+    check_price,
 )
 from lms.core.money import Money
-from lms.members.schemas import MembershipTypeName, _MemberFieldChecks
+from lms.members.schemas import MemberFieldChecks, MembershipTypeName
 
 FORMAT_VERSION = 1
 LISTS = ("branches", "authors", "publishers", "books", "copies", "members", "loans")
@@ -43,12 +43,7 @@ class BranchRecord(_Record):
     @field_validator("code")
     @classmethod
     def _code(cls, value: str) -> str:
-        from lms.branches.schemas import _CODE_RE
-
-        value = value.upper()
-        if not _CODE_RE.match(value):
-            raise ValueError("code must be 2-10 characters from A-Z and 0-9")
-        return value
+        return check_branch_code(value)
 
 
 class AuthorRecord(_Record):
@@ -61,7 +56,7 @@ class PublisherRecord(_Record):
     name: Name
 
 
-class BookRecord(_BookChecks, _Record):
+class BookRecord(BookFieldChecks, _Record):
     id: Id
     isbn: str
     title: Name
@@ -92,12 +87,10 @@ class CopyRecord(_Record):
     @field_validator("price")
     @classmethod
     def _price(cls, value: Decimal) -> Decimal:
-        if not MIN_PRICE <= value <= MAX_PRICE:
-            raise ValueError("price must be between 0.01 and 100000.00")
-        return value
+        return check_price(value)
 
 
-class MemberRecord(_MemberFieldChecks, _Record):
+class MemberRecord(MemberFieldChecks, _Record):
     id: Id
     full_name: Name
     email: str

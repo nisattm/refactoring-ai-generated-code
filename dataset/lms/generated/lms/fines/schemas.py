@@ -9,10 +9,9 @@ from pydantic import BaseModel, Field, field_validator
 
 from lms.core.money import ZERO, Money, format_amount
 from lms.core.schemas import RequestModel
-from lms.core.timeutil import format_datetime
+from lms.core.timeutil import format_datetime, format_datetime_or_none
 from lms.fines.models import Fee, Payment
-
-BLOCKING_DEBT = Decimal("50.00")
+from lms.fines.service import BLOCKING_DEBT
 
 FeeKind = Literal["late_fee", "damage_fee", "lost_book", "lost_processing"]
 FeeStatus = Literal["open", "paid", "waived"]
@@ -62,7 +61,7 @@ def fee_out(fee: Fee) -> FeeOut:
         status=fee.status,
         created_on=fee.created_on.isoformat(),
         waived_by=fee.waived_by,
-        waived_at=format_datetime(fee.waived_at) if fee.waived_at is not None else None,
+        waived_at=format_datetime_or_none(fee.waived_at),
         waive_reason=fee.waive_reason,
         outstanding=format_amount(fee.outstanding),
     )

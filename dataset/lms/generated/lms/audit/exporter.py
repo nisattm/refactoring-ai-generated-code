@@ -10,12 +10,13 @@ from sqlalchemy.orm import Session
 
 from lms.audit.exchange_schemas import FORMAT_VERSION
 from lms.audit.service import record
-from lms.catalog.models import Author, Book, BookAuthor, Copy, Publisher
 from lms.branches.models import Branch
+from lms.catalog.models import Author, Book, BookAuthor, Copy, Publisher
+from lms.core.csvio import to_csv
 from lms.core.money import format_amount
+from lms.core.timeutil import format_date_or_none as _date
 from lms.loans.models import Loan
 from lms.members.models import Member
-from lms.reports.service import to_csv
 
 CSV_ENTITIES = ("branches", "books", "copies", "members", "loans")
 
@@ -38,10 +39,6 @@ CSV_COLUMNS: dict[str, tuple[str, ...]] = {
         "return_branch_id", "late_days",
     ),
 }
-
-
-def _date(value: datetime.date | None) -> str | None:
-    return value.isoformat() if value is not None else None
 
 
 def _branches(db: Session) -> list[dict[str, Any]]:

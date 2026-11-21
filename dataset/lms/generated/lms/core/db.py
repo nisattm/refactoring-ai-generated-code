@@ -4,16 +4,19 @@ from __future__ import annotations
 
 import weakref
 from collections.abc import Iterator
+from typing import Annotated, TypeVar
 
 import sqlalchemy as sa
-from typing import Annotated
-
 from fastapi import Depends, Request
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from lms.core.errors import resource_not_found
+from lms.core.settings import Settings
 from lms.core.text import normalize
+
+T = TypeVar("T")
 
 
 class Base(DeclarativeBase):
@@ -45,7 +48,7 @@ def create_db_engine(database_url: str) -> sa.Engine:
 _MEMORY_ENGINES: dict[int, sa.Engine] = {}
 
 
-def get_engine(settings) -> sa.Engine:  # noqa: ANN001
+def get_engine(settings: Settings) -> sa.Engine:
     """The engine of ``settings``. An in-memory database exists once per ``Settings`` object, so that
     ``create_app`` and ``import_dataset`` / ``export_dataset`` called with the same settings see the same data."""
     url = make_url(settings.database_url)
@@ -73,6 +76,25 @@ def create_schema(engine: sa.Engine) -> None:
     import lms.reservations.models  # noqa: F401
 
     Base.metadata.create_all(engine)
+
+
+def open_database(settings: Settings) -> sa.Engine:
+    """The engine of ``settings`` with its schema created."""
+    engine = get_engine(settings)
+    create_schema(engine)
+    return engine
+
+
+def create_session_factory(engine: sa.Engine) -> sessionmaker[Session]:
+    return sessionmaker(engine, expire_on_commit=False)
+
+
+def get_or_404(db: Session, model: type[T], entity_id: int, resource: str, label: str | None = None) -> T:
+    """The ``model`` row with primary key ``entity_id``; ``404 NOT_FOUND`` if there is none."""
+    entity = db.get(model, entity_id)
+    if entity is None:
+        raise resource_not_found(resource, entity_id, label)
+    return entity
 
 
 def get_session(request: Request) -> Iterator[Session]:

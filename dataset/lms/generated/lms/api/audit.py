@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Query
@@ -11,20 +10,10 @@ from lms.audit.schemas import AuditEntryOut, audit_entry_out
 from lms.audit.service import audit_list_stmt
 from lms.auth.deps import AdminOnly
 from lms.core.db import SessionDep
-from lms.core.errors import ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate
-from lms.core.timeutil import parse_date
+from lms.core.timeutil import parse_date_param
 
 router = APIRouter(tags=["audit"])
-
-
-def _date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
 
 
 @router.get("/audit-log", response_model=Page[AuditEntryOut])
@@ -44,7 +33,7 @@ def list_audit_log(
         actor_user_id=actor_user_id,
         entity_type=entity_type,
         entity_id=entity_id,
-        date_from=_date("from", date_from),
-        date_to=_date("to", date_to),
+        date_from=parse_date_param("from", date_from),
+        date_to=parse_date_param("to", date_to),
     )
     return paginate(db, stmt, page, audit_entry_out)
