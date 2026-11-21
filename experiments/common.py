@@ -80,8 +80,8 @@ WINDOW_LIMIT_PCT = 10.0
 # experiments/prompts/reverted.md and accepted.md override these defaults when they exist.
 REVERTED_TEXT = "Your previous changes were reverted. Read the files again before you continue."
 ACCEPTED_TEXT = "Your previous changes were kept."
-PLACEHOLDERS = ("{round}", "{max_rounds}", "{feedback}", "{reverted}",
-                "{test_command}", "{max_refactoring_calls}", "{max_test_runs}")     # the last three: Multi-Agent
+PLACEHOLDERS = ("{round}", "{max_rounds}", "{feedback}", "{reverted}")          # Iterative (ADR 004)
+MULTIAGENT_PLACEHOLDERS = ("{test_command}", "{max_refactoring_calls}", "{max_test_runs}")
 
 LIMIT_PATTERN = re.compile(r"usage limit|rate.?limit|limit reached|quota|too many requests|\b429\b", re.I)
 
@@ -371,7 +371,7 @@ def prepare_tests(tests_src: Path, modules: str | None, ws: Workspace) -> list[s
 def fill_prompt(text: str, **values: Any) -> str:
     """Only the four placeholders are filled; the text itself is never changed (Aslınur's contract)."""
     for key, value in values.items():
-        if f"{{{key}}}" not in PLACEHOLDERS:
+        if f"{{{key}}}" not in PLACEHOLDERS + MULTIAGENT_PLACEHOLDERS:
             raise ValueError(f"unknown placeholder {key}")
         text = text.replace(f"{{{key}}}", str(value))
     return text
