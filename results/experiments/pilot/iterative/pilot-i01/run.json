@@ -5,7 +5,7 @@
   "start_ref": "ce03f54",
   "start_sha": "ce03f5420a2da697772c0441607f35a94d75c8f8",
   "start_state_commit": "74630e73bb2d819471923447b2fe9aeaadbcf277",
-  "baseline": "C:\\Users\\Administrator\\Desktop\\Projeler\\EngDes\\results\\baseline\\trial\\pilot-ce03f54-v2",
+  "baseline": "results/baseline/trial/pilot-ce03f54-v2",
   "baseline_primary": {
     "mean_cc": 2.6795,
     "mean_cognitive": 1.8578,

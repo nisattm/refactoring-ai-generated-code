@@ -112,6 +112,20 @@ class EngineError(Exception):
         self.code = code
 
 
+def repo_relative(path: Path, repo: Path) -> str:
+    """``path`` relative to the repository (``results/baseline/...``) when it is inside it, so that run.json and
+    runs.csv are the same on every machine; otherwise the absolute path."""
+    try:
+        return Path(path).resolve().relative_to(Path(repo).resolve()).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def from_repo(path: str, repo: Path) -> Path:
+    """The inverse of ``repo_relative``."""
+    return Path(path) if Path(path).is_absolute() else Path(repo) / path
+
+
 def now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -682,7 +696,7 @@ class Run:
         self.out.mkdir(parents=True)
         self.record = {
             "approach": self.approach, "run_id": a.run_id, "repetition": a.repetition, "start_ref": a.start_ref,
-            "start_sha": start_sha, "start_state_commit": self.ws.head(), "baseline": str(self.baseline),
+            "start_sha": start_sha, "start_state_commit": self.ws.head(), "baseline": repo_relative(self.baseline, self.repo),
             "baseline_primary": summary.get("primary"), "tests_modules": a.modules, "test_files": stems,
             "account": a.account, "accounts_used": [a.account], "window_pct_start": a.window_pct,
             "work_root": str(root), "image": a.image, "image_id": self.image_id, "model": MODEL,
