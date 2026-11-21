@@ -80,7 +80,8 @@ WINDOW_LIMIT_PCT = 10.0
 # experiments/prompts/reverted.md and accepted.md override these defaults when they exist.
 REVERTED_TEXT = "Your previous changes were reverted. Read the files again before you continue."
 ACCEPTED_TEXT = "Your previous changes were kept."
-PLACEHOLDERS = ("{round}", "{max_rounds}", "{feedback}", "{reverted}")
+PLACEHOLDERS = ("{round}", "{max_rounds}", "{feedback}", "{reverted}")          # Iterative (ADR 004)
+MULTIAGENT_PLACEHOLDERS = ("{test_command}", "{max_refactoring_calls}", "{max_test_runs}")
 
 LIMIT_PATTERN = re.compile(r"usage limit|rate.?limit|limit reached|quota|too many requests|\b429\b", re.I)
 
@@ -370,7 +371,7 @@ def prepare_tests(tests_src: Path, modules: str | None, ws: Workspace) -> list[s
 def fill_prompt(text: str, **values: Any) -> str:
     """Only the four placeholders are filled; the text itself is never changed (Aslınur's contract)."""
     for key, value in values.items():
-        if f"{{{key}}}" not in PLACEHOLDERS:
+        if f"{{{key}}}" not in PLACEHOLDERS + MULTIAGENT_PLACEHOLDERS:
             raise ValueError(f"unknown placeholder {key}")
         text = text.replace(f"{{{key}}}", str(value))
     return text
@@ -390,11 +391,13 @@ def fixed_sentence(prompts: Path, name: str, default: str) -> str:
 
 # --- the Claude Code call (W9) --------------------------------------------------------------------------------------
 
-def claude_args(prompt: str, effort: str, session_id: str | None) -> list[str]:
+def claude_args(prompt: str, effort: str, session_id: str | None, tools: tuple = TOOLS, allowed: tuple | None = None,
+                disallowed: tuple = DISALLOWED_TOOLS, extra: tuple = ()) -> list[str]:
     # --tools only offers the tools; in dontAsk mode a tool also needs --allowedTools, otherwise every Write is
     # denied and the call still ends with subtype "success" (setup check, Işıl, 20 November 2026)
-    args = ["-p", prompt, "--model", MODEL, "--effort", effort, "--tools", ",".join(TOOLS),
-            "--allowedTools", *TOOLS, "--disallowedTools", *DISALLOWED_TOOLS, *FIXED_FLAGS]
+    args = ["-p", prompt, "--model", MODEL, "--effort", effort, "--tools", ",".join(tools),
+            "--allowedTools", *(allowed or tools), *(("--disallowedTools", *disallowed) if disallowed else ()),
+            *extra, *FIXED_FLAGS]
     if session_id:
         args += ["--resume", session_id]
     return args
@@ -421,7 +424,8 @@ def parse_stream(text: str) -> dict:
         elif kind == "assistant":
             for block in (event.get("message") or {}).get("content") or []:
                 if block.get("type") == "tool_use":
-                    uses.append({"name": block.get("name"), "input": block.get("input") or {}})
+                    uses.append({"name": block.get("name"), "input": block.get("input") or {}, "id": block.get("id"),
+                                 "parent": event.get("parent_tool_use_id")})     # parent: the subagent's call
                 elif block.get("type") == "text":
                     texts.append(block.get("text") or "")
     def paths(*names: str) -> list[str]:
@@ -430,13 +434,14 @@ def parse_stream(text: str) -> dict:
     counts: dict[str, int] = {}
     for u in uses:
         counts[u["name"]] = counts.get(u["name"], 0) + 1
-    return {"init": init, "result": result, "tool_counts": counts, "rate_limit": rate_limit,
+    return {"init": init, "result": result, "tool_counts": counts, "rate_limit": rate_limit, "uses": uses,
             "files_read": paths("Read"), "files_written": paths("Edit", "Write"),
             "subagent_attempts": sum(counts.get(n, 0) for n in SUBAGENT_TOOLS),
             "final_text": (result or {}).get("result") or (texts[-1] if texts else "")}
 
 
-def check_call(parsed: dict, stderr: str, expected_version: str | None) -> tuple[str, list[str]]:
+def check_call(parsed: dict, stderr: str, expected_version: str | None, tools: tuple = TOOLS,
+               subagents_allowed: bool = False) -> tuple[str, list[str]]:
     """Status of a call (``ok``, ``limit`` or ``error``) and the reasons that make the run invalid (W9, W10)."""
     init, result = parsed["init"], parsed["result"]
     invalid: list[str] = []
@@ -451,9 +456,9 @@ def check_call(parsed: dict, stderr: str, expected_version: str | None) -> tuple
     if init is None:
         invalid.append("no init event: tool list, model and version cannot be checked")
     else:
-        tools = sorted(init.get("tools") or [])
-        if tools != sorted(TOOLS):
-            invalid.append(f"tool list is not exactly {','.join(TOOLS)}: {','.join(tools)}")
+        offered = sorted(init.get("tools") or [])
+        if offered != sorted(tools):
+            invalid.append(f"tool list is not exactly {','.join(tools)}: {','.join(offered)}")
         if expected_version and init.get("claude_code_version") != expected_version:
             invalid.append(f"Claude Code version {init.get('claude_code_version')} (expected {expected_version})")
         if "ANTHROPIC" in str(init.get("apiKeySource") or ""):
@@ -466,7 +471,7 @@ def check_call(parsed: dict, stderr: str, expected_version: str | None) -> tuple
     stats = result.get("subagent_stats")
     if not isinstance(stats, dict):
         invalid.append("subagent_stats missing: subagents cannot be checked")
-    elif stats.get("spawned"):
+    elif stats.get("spawned") and not subagents_allowed:
         invalid.append(f"{stats.get('spawned')} subagent(s) started")
     denials = result.get("permission_denials")
     if not isinstance(denials, list):
@@ -719,21 +724,27 @@ class Run:
         self.save()
 
     # --- one Claude Code call --------------------------------------------------------------------------------------
-    def call(self, prompt: str, kind: str, session_id: str | None) -> dict:
+    def call(self, prompt: str, kind: str, session_id: str | None, setup: dict | None = None) -> dict:
+        """One Claude Code call. ``setup`` (Multi-Agent): ``args`` (the claude arguments), ``tools`` (the expected
+        tool list), ``subagents_allowed``, ``volumes`` ([(host, container, read_only)]) and ``env`` (docker only)."""
+        setup = setup or {}
         number = len(self.record["calls"]) + 1
         folder = self.out / "calls" / f"call-{number}"
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "prompt.md").write_text(prompt, encoding="utf-8")
         before = self.ws.listing()
-        args = claude_args(prompt, self.settings["effort"], session_id)
+        args = setup.get("args") or claude_args(prompt, self.settings["effort"], session_id)
+        extra_env = setup.get("env") or {}
+        volumes = [x for host, inside, ro in setup.get("volumes", []) for x in ("-v", f"{host}:{inside}{':ro' if ro else ''}")]
         name = f"exp-{self.args.run_id}-c{number}-{os.getpid()}"
         if self.settings["local"]:
             cmd, env, cwd = [*self.settings["claude_command"], *args], {
-                **os.environ, **CLAUDE_ENV, "CLAUDE_CONFIG_DIR": str(self.ws.session)}, self.ws.model
+                **os.environ, **CLAUDE_ENV, **extra_env, "CLAUDE_CONFIG_DIR": str(self.ws.session)}, self.ws.model
         else:
             cmd = ["docker", "run", "--rm", "--name", name, "--env-file", str(Path(self.args.env_file).resolve()),
-                   "-e", "CLAUDE_CONFIG_DIR=/session", *[x for k, v in CLAUDE_ENV.items() for x in ("-e", f"{k}={v}")],
-                   "-v", f"{self.ws.model}:/work", "-v", f"{self.ws.session}:/session", "-w", "/work",
+                   "-e", "CLAUDE_CONFIG_DIR=/session",
+                   *[x for k, v in {**CLAUDE_ENV, **extra_env}.items() for x in ("-e", f"{k}={v}")],
+                   "-v", f"{self.ws.model}:/work", "-v", f"{self.ws.session}:/session", *volumes, "-w", "/work",
                    self.settings["image"], "claude", *args]
             env, cwd = None, None
         self.event(f"call {number} ({kind}) started")
@@ -751,7 +762,9 @@ class Run:
         wall = round(time.monotonic() - started, 1)
         parsed = parse_stream((folder / "stream.jsonl").read_text(encoding="utf-8", errors="replace"))
         stderr = (folder / "stderr.txt").read_text(encoding="utf-8", errors="replace")
-        status, invalid = check_call(parsed, stderr, self.settings["expected_version"])
+        status, invalid = check_call(parsed, stderr, self.settings["expected_version"],
+                                     tools=setup.get("tools", TOOLS), subagents_allowed=setup.get("subagents_allowed", False))
+        self.last_parsed = parsed
         if timed_out:
             status, invalid = "error", [f"call timed out after {self.settings['call_timeout']} s"]
         after = self.ws.listing()
@@ -802,7 +815,8 @@ class Run:
         share = dict(call["summary"])
         note = "; ".join(x for x in (share.pop("note", ""), f"account {self.args.account}",
                                       f"session total usd {call['usd_raw']} (tokens and usd are this call's share)") if x)
-        cost.append_row(path, task=f"{self.approach}/{self.args.run_id}/call-{call['number']}", stage=self.approach,
+        stage = {"multiagent": "multi-agent"}.get(self.approach, self.approach)      # the stage names of cost.py
+        cost.append_row(path, task=f"{self.approach}/{self.args.run_id}/call-{call['number']}", stage=stage,
                         model=MODEL, **share, run_id=self.args.run_id, repetition=self.args.repetition or "",
                         round=call["number"], role="refactor", accepted=accepted,
                         claude_code_version=call.get("claude_code_version") or "", note=note)

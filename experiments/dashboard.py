@@ -172,6 +172,7 @@ def detail(key: str, folder: Path) -> dict | None:
         modules = test_modules(mfolder) if facts.get("regression_cases") else {}
         rounds.append({
             "round": entry.get("round"), "call": entry.get("call"), "tag": entry.get("tag"),
+            "source": entry.get("source"),
             "accepted": entry.get("accepted"), "status": facts.get("status"), "problems": facts.get("problems", []),
             "regressions": [{"case": c, "module": modules.get(c, "")} for c in facts.get("regression_cases", [])],
             "accept_reasons": facts.get("accept_reasons", []), "api_changed": facts.get("api_changed"),
@@ -209,6 +210,7 @@ def detail(key: str, folder: Path) -> dict | None:
         "stop_reason": record.get("stop_reason"), "best_round": record.get("best_round"),
         "best_tag": record.get("best_tag"), "tests_modules": record.get("tests_modules"),
         "model": record.get("model"), "effort": record.get("effort"), "live": live,
+        "roles": record.get("roles"), "budget": record.get("budget"),
     })
     return out
 
