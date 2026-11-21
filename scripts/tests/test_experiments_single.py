@@ -50,6 +50,8 @@ def test_success(tmp_path, monkeypatch):
     assert row["outcome"] == "success" and row["valid"] == "true" and row["best_tag"] == "exp/single/s1/r1"
     assert row["mean_cc_best"] == "2.5" and row["mean_cc_start"] == "3.0" and row["usd_raw"] == "0.75"
     assert row["account"] == "acc-a" and row["calls"] == "1" and row["window_pct_start"] == "5.0"
+    # one measurement, counted once although it is the round, "best", "round1" and "last" (pilot-s01b: 270 s, not 1080)
+    assert float(row["measure_s"]) == record["rounds"][0]["facts"]["wall_s"]
     with (tmp_path / "metrics" / "cost-log.csv").open(newline="") as handle:
         cost_rows = list(csv.DictReader(handle))
     assert cost_rows[0]["stage"] == "single" and cost_rows[0]["run_id"] == "s1" and cost_rows[0]["valid"] == "true"

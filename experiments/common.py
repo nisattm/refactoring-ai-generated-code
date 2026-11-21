@@ -866,8 +866,9 @@ class Run:
             "usd_diff": usd("usd_diff"),
             "usd_lost": round(sum(c["usd_diff"] or 0 for c in calls if c["status"] == "limit"), 6),
             "claude_s": round(sum(c["wall_s"] for c in calls), 1),
-            "measure_s": round(sum(x.get("facts", {}).get("wall_s", 0) for x in rounds)
-                               + sum(f.get("wall_s", 0) for f in r["final"].values()), 1),
+            # every measurement once: the same folder can be a round, "best", "round1" and "last" at the same time
+            "measure_s": round(sum({f["folder"]: f.get("wall_s", 0) for f in [x.get("facts") or {} for x in rounds]
+                                    + list(r["final"].values()) if f.get("folder")}.values()), 1),
             "claude_code_version": ";".join(sorted({c["claude_code_version"] for c in calls
                                                     if c.get("claude_code_version")})),
             "model": MODEL, "effort": r["effort"], "image_id": r["image_id"], "note": r.get("note", ""),

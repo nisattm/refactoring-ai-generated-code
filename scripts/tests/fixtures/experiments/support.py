@@ -12,6 +12,7 @@ import json
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -126,6 +127,7 @@ class FakeToolkit(common.Toolkit):
         self.feedback_calls: list[tuple] = []
 
     def measure(self, run, tree, out, label, code_sha, test_set, previous_best):
+        time.sleep(0.15)                      # a measurable duration, so that measure_s sums can be checked
         q_file = tree / "lms" / "quality.json"
         q = json.loads(q_file.read_text()) if q_file.is_file() else {}
         after = {m: q.get(m, START[m]) for m in START}

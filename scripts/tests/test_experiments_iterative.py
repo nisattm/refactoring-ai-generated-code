@@ -65,6 +65,8 @@ def test_accept_then_reject_and_revert(tmp_path, monkeypatch):
     row = support.read_runs(tmp_path)[0]
     assert (row["calls"], row["code_rounds"], row["accepted_rounds"], row["rejected_rounds"]) == ("3", "2", "1", "1")
     assert (row["mean_cc_best"], row["mean_cc_r1"], row["mean_cc_last"]) == ("2.5", "2.5", "2.8")
+    walls = [r["facts"]["wall_s"] for r in rec["rounds"]] + [rec["final"][k]["wall_s"] for k in ("best", "last")]
+    assert abs(float(row["measure_s"]) - sum(walls)) < 0.05    # final r1 = best = round1, counted once
 
 
 def test_regression_feedback_goes_into_the_next_prompt(tmp_path, monkeypatch):
