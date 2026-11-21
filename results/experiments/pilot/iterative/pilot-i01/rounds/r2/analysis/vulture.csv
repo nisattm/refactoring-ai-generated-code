@@ -1,0 +1,9 @@
+run_label,schema_version,path,line,kind,message,confidence
+pilot-i01-rounds-r2,1.0,core/money.py,43,unused variable,unused variable 'handler',100
+pilot-i01-rounds-r2,1.0,core/money.py,43,unused variable,unused variable 'source',100
+pilot-i01-rounds-r2,1.0,core/money.py,64,unused variable,unused variable 'handler',100
+pilot-i01-rounds-r2,1.0,core/money.py,64,unused variable,unused variable 'schema',100
+pilot-i01-rounds-r2,1.0,core/money.py,77,unused variable,unused variable 'dialect',100
+pilot-i01-rounds-r2,1.0,core/money.py,82,unused variable,unused variable 'dialect',100
+pilot-i01-rounds-r2,1.0,core/timeutil.py,66,unused variable,unused variable 'dialect',100
+pilot-i01-rounds-r2,1.0,core/timeutil.py,73,unused variable,unused variable 'dialect',100

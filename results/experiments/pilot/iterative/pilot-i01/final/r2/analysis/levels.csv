@@ -1,0 +1,11 @@
+run_label,schema_version,level,aggregation,modules,files,sloc,smells,mean_cc,mean_cognitive,mi_weighted,smells_per_ksloc,duplication_pct,note
+pilot-i01-final-r2,1.0,simple,module mean,2,19,610,15,3.2857,2.6464,58.2690,21.0916,0.0000,descriptive only (2 modules)
+pilot-i01-final-r2,1.0,simple,pooled units,2,19,610,15,2.2609,1.4627,62.3331,24.5902,0.0000,descriptive only (2 modules)
+pilot-i01-final-r2,1.0,medium,module mean,5,36,2671,26,2.3102,1.4686,50.5584,8.3928,1.2150,
+pilot-i01-final-r2,1.0,medium,pooled units,5,36,2671,26,2.0255,1.0674,55.3074,9.7342,2.3693,
+pilot-i01-final-r2,1.0,complex,module mean,7,39,3112,41,3.0046,2.2709,42.1193,12.7920,0.7432,
+pilot-i01-final-r2,1.0,complex,pooled units,7,39,3112,41,3.0000,2.3388,41.8327,13.1748,1.0401,
+pilot-i01-final-r2,1.0,complex 2-7 and 13,module mean,7,39,3112,41,3.0046,2.2709,42.1193,12.7920,0.7432,sensitivity row
+pilot-i01-final-r2,1.0,complex 2-7 and 13,pooled units,7,39,3112,41,3.0000,2.3388,41.8327,13.1748,1.0401,sensitivity row
+pilot-i01-final-r2,1.0,complex 15-29,module mean,0,0,0,0,,,,,,sensitivity row
+pilot-i01-final-r2,1.0,complex 15-29,pooled units,0,0,0,0,,,,,,sensitivity row
