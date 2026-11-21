@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Refactoring Experiments</title>
+<style>
+:root {
+  --bg: #f6f6f4; --panel: #ffffff; --ink: #1d1f21; --muted: #6b6f75; --line: #e3e3df; --soft: #f0f0ec;
+  --accent: #2f5d8a; --good: #2e7d4f; --good-bg: #e6f2ea; --bad: #b3261e; --bad-bg: #fbe9e7;
+  --warn: #8a5a00; --warn-bg: #fbf1dc; --live: #1f6fb2; --live-bg: #e4eff8;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #17191b; --panel: #1f2225; --ink: #e6e6e3; --muted: #9aa0a6; --line: #33373b; --soft: #26292d;
+          --accent: #8db4dc; --good: #7cc49a; --good-bg: #1f3328; --bad: #f08a80; --bad-bg: #3a2220;
+          --warn: #e0b45c; --warn-bg: #3a3020; --live: #8cc2ef; --live-bg: #1d2f3f; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
+header h1 { font-size: 17px; font-weight: 600; margin: 0; }
+header .lock { font-size: 13px; color: var(--muted); }
+header .lock.on { color: var(--live); }
+header .spacer { flex: 1; }
+header select { font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink); }
+header .updated { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+nav { display: flex; gap: 2px; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+nav button { font: inherit; border: 0; background: none; color: var(--muted); padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent; }
+nav button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+nav button .n { font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: 400; }
+main { padding: 20px 24px; }
+.cols { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } main, header, nav { padding-left: 16px; padding-right: 16px; } }
+.list { display: flex; flex-direction: column; gap: 6px; }
+.item { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; cursor: pointer; }
+.item:hover { border-color: var(--muted); }
+.item.sel { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.item .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.item .id { font-family: var(--mono); font-size: 13px; }
+.item .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; margin-left: 6px; }
+.badge { font-size: 12px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
+.b-success { background: var(--good-bg); color: var(--good); }
+.b-failed, .b-invalid { background: var(--bad-bg); color: var(--bad); }
+.b-no_improvement, .b-discarded_limit { background: var(--warn-bg); color: var(--warn); }
+.b-no_change, .b-other { background: var(--soft); color: var(--muted); }
+.b-running { background: var(--live-bg); color: var(--live); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; margin-bottom: 14px; }
+.panel h2 { font-size: 15px; margin: 0 0 10px; font-weight: 600; }
+.panel h3 { font-size: 13px; margin: 14px 0 6px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.title .id { font-family: var(--mono); font-size: 16px; font-weight: 600; }
+.meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 18px; margin-top: 12px; }
+.meta div span { display: block; font-size: 12px; color: var(--muted); }
+.meta div b { font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; }
+td.num, th.num { text-align: right; }
+.good { color: var(--good); } .bad { color: var(--bad); } .muted { color: var(--muted); }
+.problem { background: var(--bad-bg); border: 1px solid var(--bad); border-radius: 6px; padding: 12px 14px; margin-bottom: 14px; }
+.problem h2 { color: var(--bad); font-size: 15px; margin: 0 0 6px; }
+.problem ul { margin: 4px 0 0; padding-left: 18px; }
+.live { border-color: var(--live); }
+.live h2 { color: var(--live); display: flex; align-items: center; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); animation: pulse 1.4s infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+.actions { font-family: var(--mono); font-size: 12.5px; max-height: 260px; overflow: auto; }
+.actions div { padding: 2px 0; border-bottom: 1px dashed var(--line); }
+.actions .tool { display: inline-block; width: 52px; color: var(--muted); }
+pre { font-family: var(--mono); font-size: 12px; background: var(--soft); padding: 10px; border-radius: 4px; white-space: pre-wrap; margin: 6px 0 0; max-height: 240px; overflow: auto; }
+.timeline { font-size: 13px; max-height: 280px; overflow: auto; }
+.timeline div { display: grid; grid-template-columns: 70px 1fr; gap: 8px; padding: 3px 0; }
+.timeline .t { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.empty { color: var(--muted); padding: 40px 0; text-align: center; }
+details summary { cursor: pointer; color: var(--accent); font-size: 13px; margin-top: 6px; }
+.note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Refactoring Experiments</h1>
+  <span id="lock" class="lock">–</span>
+  <span class="spacer"></span>
+  <label class="updated">Runs
+    <select id="include">
+      <option value="all">all</option>
+      <option value="real">experiments only</option>
+      <option value="pilot">pilot only</option>
+    </select>
+  </label>
+  <span id="updated" class="updated"></span>
+</header>
+<nav id="tabs"></nav>
+<main id="main"><p class="empty">Loading…</p></main>
+
+<script>
+const TABS = [["single", "Single LLM"], ["iterative", "Iterative LLM"], ["multiagent", "Multi-Agent"], ["compare", "Comparison"]];
+const METRICS = [["mean_cc", "Cyclomatic complexity", 2], ["mean_cognitive", "Cognitive complexity", 2],
+                 ["mi_weighted", "Maintainability index", 1], ["duplication_pct", "Duplication %", 2], ["smell_count", "Code smells", 0]];
+const HIGHER = new Set(["mi_weighted"]);
+const OUTCOME = { success: "Successful", no_improvement: "No improvement", no_change: "No change", failed: "Failed",
+                  invalid: "Invalid", discarded_limit: "Usage limit" };
+let state = { tab: "iterative", key: null, include: "all", runs: [], compare: {}, detail: null };
+try { const saved = JSON.parse(localStorage.getItem("dash") || "{}"); Object.assign(state, saved); } catch (e) {}
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const fmt = (v, d = 2) => (v === null || v === undefined || v === "") ? "–" : Number(v).toFixed(d);
+const time = iso => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+const date = iso => iso ? new Date(iso).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+const mins = s => s ? `${Math.round(s / 60)} min` : "–";
+function save() { try { localStorage.setItem("dash", JSON.stringify({ tab: state.tab, key: state.key, include: state.include })); } catch (e) {} }
+function badge(run) {
+  if (run.status === "running") return `<span class="badge b-running">Running</span>`;
+  if (run.status === "limit_cut") return `<span class="badge b-discarded_limit">Stopped at usage limit</span>`;
+  if (run.status !== "finished") return `<span class="badge b-other">${esc(run.status || "?")}</span>`;
+  return `<span class="badge b-${esc(run.outcome)}">${esc(OUTCOME[run.outcome] || run.outcome)}</span>`;
+}
+function delta(metric, d, digits, status) {
+  if (d === null || d === undefined) return `<span class="muted">–</span>`;
+  const better = HIGHER.has(metric) ? d > 0 : d < 0, same = Math.abs(d) < 1e-9;
+  // compare.py's verdict decides the colour when it is known (its thresholds, D17); "same" stays grey
+  const cls = status ? ({ improved: "good", worse: "bad" }[status] || "muted") : (same ? "muted" : (better ? "good" : "bad"));
+  return `<span class="${cls}">${d > 0 ? "+" : ""}${Number(d).toFixed(digits)}</span>`;
+}
+
+async function load() {
+  try {
+    const res = await fetch(`/api/runs?include=${state.include}`);
+    const data = await res.json();
+    state.runs = data.runs; state.compare = data.compare;
+    const lock = document.getElementById("lock");
+    lock.textContent = data.lock ? `● Running now: ${data.lock.what}` : "No run in progress";
+    lock.className = "lock" + (data.lock ? " on" : "");
+    if (state.key && state.tab !== "compare") {
+      const r = await fetch(`/api/run?key=${encodeURIComponent(state.key)}`);
+      state.detail = r.ok ? await r.json() : null;
+    }
+    document.getElementById("updated").textContent = "Updated " + new Date().toLocaleTimeString();
+    render();
+  } catch (e) {
+    document.getElementById("updated").textContent = "Dashboard server not reachable";
+  }
+}
+
+function render() {
+  document.getElementById("tabs").innerHTML = TABS.map(([id, label]) => {
+    const n = id === "compare" ? "" : `<span class="n">${state.runs.filter(r => r.approach === id).length}</span>`;
+    return `<button class="${state.tab === id ? "active" : ""}" data-tab="${id}">${label}${n}</button>`;
+  }).join("");
+  const main = document.getElementById("main");
+  if (state.tab === "compare") { main.innerHTML = renderCompare(); return; }
+  const runs = state.runs.filter(r => r.approach === state.tab);
+  if (!runs.length) {
+    main.innerHTML = `<p class="empty">No ${esc(TABS.find(t => t[0] === state.tab)[1])} runs yet. They appear here as soon as the engine starts one.</p>`;
+    return;
+  }
+  if (!runs.some(r => r.key === state.key)) { state.key = runs[0].key; state.detail = null; save(); load(); }
+  main.innerHTML = `<div class="cols"><div class="list">${runs.map(renderItem).join("")}</div><div>${renderDetail()}</div></div>`;
+}
+
+function renderItem(run) {
+  const cc = run.deltas && run.deltas.mean_cc, ccStatus = (run.metric_status || {}).mean_cc;
+  return `<div class="item ${run.key === state.key ? "sel" : ""}" data-key="${esc(run.key)}">
+    <div class="top"><span class="id">${esc(run.run_id)}${run.group ? `<span class="tag">${esc(run.group)}</span>` : ""}</span>${badge(run)}</div>
+    <div class="sub">${esc(date(run.started_at))} · ${run.calls} call${run.calls === 1 ? "" : "s"} · ${run.usd ? "$" + fmt(run.usd) : "–"}${cc !== null && cc !== undefined ? " · CC " + delta("mean_cc", cc, 2, ccStatus) : ""}</div>
+    ${run.status === "running" ? `<div class="sub">${esc(run.current)}</div>` : ""}
+  </div>`;
+}
+
+function renderDetail() {
+  const d = state.detail;
+  if (!d || d.key !== state.key) return `<div class="panel"><p class="muted">Loading…</p></div>`;
+  const w = d.window || {};
+  let html = `<div class="panel"><div class="title"><span class="id">${esc(d.run_id)}</span>${badge(d)}
+      ${d.group ? `<span class="tag">${esc(d.group)}</span>` : ""}</div>
+    <div class="meta">
+      <div><span>Started</span><b>${esc(date(d.started_at))}</b></div>
+      <div><span>Start code</span><b>${esc(/^[0-9a-f]{40}$/.test(d.start_ref || "") ? d.start_sha : d.start_ref)}${d.tests_modules ? " · modules " + esc(d.tests_modules) : ""}</b></div>
+      <div><span>${d.approach === "single" ? "Calls" : "Calls / rounds"}</span><b>${d.approach === "single" ? d.calls : `${d.calls} / ${d.rounds} (${d.accepted} accepted)`}</b></div>
+      <div><span>Claude time</span><b>${mins(d.claude_s)}</b></div>
+      <div><span>Cost (list price)</span><b>${d.usd ? "$" + fmt(d.usd) : "–"}</b></div>
+      <div><span>5-hour window</span><b>${fmt(w.start, 0)}% → ${w.end === null || w.end === undefined ? "–" : fmt(w.end, 0) + "%"}</b></div>
+      <div><span>Account</span><b>${esc(d.account)}</b></div>
+      <div><span>Model</span><b>${esc(d.model)} · ${esc(d.effort)}</b></div>
+    </div>
+    ${d.stop_reason && d.status === "finished" ? `<p class="note">Stopped because: ${esc(d.stop_reason)}</p>` : ""}
+  </div>`;
+  html += renderLive(d) + renderProblems(d) + renderMetrics(d) + renderRounds(d) + renderCalls(d) + renderTimeline(d);
+  return html;
+}
+
+function renderLive(d) {
+  if (!d.live) return "";
+  const l = d.live;
+  const actions = (l.actions || []).slice().reverse().map(a =>
+    `<div><span class="tool">${esc(a.tool)}</span>${esc(a.target)}</div>`).join("") || `<div class="muted">No tool call yet.</div>`;
+  return `<div class="panel live"><h2><span class="dot"></span>Live${l.call ? ` · call ${l.call}` : ""}</h2>
+    <div><b>Now:</b> ${esc(d.current)}</div>
+    ${l.call ? `<h3>Latest model actions</h3><div class="actions">${actions}</div>
+    ${l.text ? `<h3>Latest message</h3><pre>${esc(l.text)}</pre>` : ""}` : ""}
+  </div>`;
+}
+
+function renderProblems(d) {
+  const items = [];
+  if (d.status === "finished" && d.valid === false) items.push(...d.reasons.map(r => `Invalid run: ${esc(r)}`));
+  const reverts = d.approach !== "single";
+  if (d.outcome === "failed" && !reverts) items.push(...d.reasons.map(r => `Run failed: ${esc(r)}`));
+  (d.calls_detail || []).forEach(c => (c.invalid || []).forEach(r => items.push(`Call ${c.number}: ${esc(r)}`)));
+  (d.rounds_detail || []).forEach(r => {
+    if (r.regressions.length) items.push(`${reverts ? "Round " + r.round + ": " : "Tests: "}${r.regressions.length} test regression(s) – ` +
+      r.regressions.map(x => `${esc(x.case)}${x.module ? " (module " + esc(x.module) + ")" : ""}`).join(", ") +
+      (reverts && r.accepted === false ? " → round reverted" : ""));
+    if (r.api_changed) items.push(`Round ${r.round}: API changed (${esc(r.api_change_kind || "unclassified")})${reverts && r.accepted === false ? " → round reverted" : ""}`);
+    (r.problems || []).forEach(p => items.push(`Round ${r.round}: ${esc(p)}`));
+  });
+  const seen = new Set();
+  Object.values(d.final || {}).forEach(f => {
+    if (seen.has(f.round)) return; seen.add(f.round);
+    if (reverts && (f.regressions || []).length) items.push(`Final measurement of round ${f.round} (feedback and held-out): ` +
+      f.regressions.map(x => `${esc(x.case)}${x.module ? " (module " + esc(x.module) + ")" : ""}`).join(", "));
+  });
+  if (d.outcome === "failed" && reverts) items.push(...d.reasons.map(r => `Run failed: ${esc(r)}`));
+  if (!items.length) return "";
+  return `<div class="problem"><h2>Where it went wrong</h2><ul>${[...new Set(items)].map(i => `<li>${i}</li>`).join("")}</ul></div>`;
+}
+
+function renderMetrics(d) {
+  const f = d.final || {};
+  const after = vals => Object.fromEntries(Object.entries(vals || {}).map(([m, v]) => [m, v && typeof v === "object" ? v.after : v]));
+  const cols = [["Start", d.start_metrics]];
+  let ref = null;
+  if (f.best) {
+    if (f.round1 && f.round1.round !== f.best.round) cols.push(["Round 1", after(f.round1.metrics)]);
+    cols.push([d.approach === "single" ? "After" : `Best${d.best_round ? " (round " + d.best_round + ")" : ""}`, after(f.best.metrics)]);
+    if (f.last && f.last.round !== f.best.round) cols.push([`Last (round ${f.last.round})`, after(f.last.metrics)]);
+    ref = f.best.metrics;
+  } else if ((d.rounds_detail || []).length) {          // running, or no accepted round: the latest round so far
+    const last = d.rounds_detail[d.rounds_detail.length - 1];
+    cols.push([`Round ${last.round}${d.status === "running" ? " (so far)" : ""}`, after(last.metrics)]);
+    ref = last.metrics;
+  }
+  if (cols.length === 1 && d.status === "finished") return "";
+  const rows = METRICS.map(([m, label, digits]) => {
+    const v = ref && ref[m];
+    return `<tr><td>${label}</td>${cols.map(([, vals]) => `<td class="num">${fmt(vals && vals[m], digits)}</td>`).join("")}
+      <td class="num">${v ? delta(m, v.delta, digits, v.status) : "–"}</td></tr>`;
+  }).join("");
+  const who = d.approach === "single" ? "The result" : "Best result";
+  const succ = f.best ? (f.best.run_successful ? `<span class="good">meets the success rule</span>` :
+    `<span class="bad">does not meet the success rule</span>${(f.best.reasons || []).length ? ": " + esc(f.best.reasons.join("; ")) : ""}`) : "";
+  return `<div class="panel"><h2>Quality metrics</h2>
+    <table><tr><th>Metric</th>${cols.map(([l]) => `<th class="num">${l}</th>`).join("")}<th class="num">Change</th></tr>${rows}</table>
+    ${succ ? `<p class="note">${who} ${succ}.</p>` : ""}
+    <p class="note">Lower is better, except the maintainability index. Tests: feedback and held-out sets, measured in the starting project.</p></div>`;
+}
+
+function renderRounds(d) {
+  if (!(d.rounds_detail || []).length || d.approach === "single") return "";
+  const rows = d.rounds_detail.map(r => {
+    const verdict = r.accepted === true ? `<span class="good">accepted</span>` : r.accepted === false ? `<span class="bad">rejected</span>` : "–";
+    const changes = METRICS.map(([m, label, digits]) => {
+      const v = r.metrics[m]; return v ? delta(m, v.delta, digits, v.status) : "–"; }).join(" ");
+    const why = r.accepted === false ? esc((r.accept_reasons || []).join("; ")) : "";
+    return `<tr><td>${r.round}</td><td>${r.call}</td><td>${verdict}${why ? `<div class="note">${why}</div>` : ""}</td>
+      <td class="num">${r.regressions.length}</td><td class="num">${changes}</td><td class="num">${mins(r.wall_s)}</td></tr>
+      ${r.feedback ? `<tr><td></td><td colspan="5"><details><summary>Feedback sent to the model</summary><pre>${esc(r.feedback)}</pre></details></td></tr>` : ""}`;
+  }).join("");
+  return `<div class="panel"><h2>Rounds</h2><table>
+    <tr><th>Round</th><th>Call</th><th>Decision</th><th class="num">Regressions</th><th class="num">CC · Cog · MI · Dup · Smells (vs start)</th><th class="num">Measured in</th></tr>
+    ${rows}</table></div>`;
+}
+
+function renderCalls(d) {
+  if (!(d.calls_detail || []).length) return "";
+  const rows = d.calls_detail.map(c => `<tr><td>${c.number}</td><td>${esc(c.kind)}</td>
+    <td>${c.status === "ok" ? "ok" : `<span class="bad">${esc(c.status)}</span>`}</td>
+    <td class="num">${mins(c.wall_s)}</td><td class="num">${c.turns ?? "–"}</td><td class="num">${c.files_read}</td>
+    <td class="num">${c.files_written}</td><td class="num">${c.usd !== null && c.usd !== undefined ? "$" + fmt(c.usd) : "–"}</td>
+    <td>${c.done_marker ? "yes" : ""}</td></tr>
+    ${c.written.length ? `<tr><td></td><td colspan="8"><details><summary>Files changed in call ${c.number} (${c.files_written})</summary><pre>${esc(c.written.join("\n"))}</pre></details></td></tr>` : ""}`).join("");
+  return `<div class="panel"><h2>Claude calls</h2><table>
+    <tr><th>#</th><th>Prompt</th><th>Status</th><th class="num">Time</th><th class="num">Turns</th><th class="num">Files read</th><th class="num">Files changed</th><th class="num">Cost</th><th>Said done</th></tr>
+    ${rows}</table></div>`;
+}
+
+function renderTimeline(d) {
+  const events = (d.events || []).slice().reverse();
+  if (!events.length) return "";
+  return `<div class="panel"><h2>Timeline</h2><div class="timeline">${events.map(e =>
+    `<div><span class="t">${esc(time(e.at))}</span><span>${esc(e.text)}</span></div>`).join("")}</div></div>`;
+}
+
+function renderCompare() {
+  const c = state.compare || {};
+  const names = { single: "Single LLM", iterative: "Iterative LLM", multiagent: "Multi-Agent" };
+  const ids = ["single", "iterative", "multiagent"];
+  const row = (label, fn) => `<tr><td>${label}</td>${ids.map(id => `<td class="num">${fn(c[id] || {})}</td>`).join("")}</tr>`;
+  const rate = a => a.valid ? `${a.success} / ${a.valid} (${Math.round(100 * a.success / a.valid)}%)` : "–";
+  let html = `<div class="panel"><h2>Comparison of the approaches</h2><table>
+    <tr><th></th>${ids.map(id => `<th class="num">${names[id]}</th>`).join("")}</tr>
+    ${row("Finished runs (valid)", a => a.runs ? `${a.runs} (${a.valid})` : "0")}
+    ${row("Successful runs", rate)}
+    ${["failed", "no_improvement", "no_change", "invalid", "discarded_limit"].map(o => row(OUTCOME[o], a => (a.outcomes || {})[o] || 0)).join("")}
+    <tr><th colspan="4">Mean change of the best result vs the start (valid runs)</th></tr>
+    ${METRICS.map(([m, label, digits]) => row(label, a => delta(m, (a.deltas || {})[m], digits))).join("")}
+    <tr><th colspan="4">Cost per valid run</th></tr>
+    ${row("Cost (list price)", a => a.usd !== null && a.usd !== undefined ? "$" + fmt(a.usd) : "–")}
+    ${row("Claude time", a => a.claude_min !== null && a.claude_min !== undefined ? fmt(a.claude_min, 0) + " min" : "–")}
+    ${row("5-hour window used", a => a.window_used !== null && a.window_used !== undefined ? fmt(a.window_used, 0) + " %" : "–")}
+  </table>
+  <p class="note">A run is successful when no test that passed at the start fails, no primary metric is worse, at least one improved and the API is unchanged (ADR 003). Pilot runs use the pilot code (modules 1–14) and are not comparable with the real runs; choose "experiments only" above for the study results.</p></div>`;
+  return html;
+}
+
+document.addEventListener("click", e => {
+  const tab = e.target.closest("[data-tab]");
+  if (tab) { state.tab = tab.dataset.tab; state.key = null; state.detail = null; save(); render(); load(); return; }
+  const item = e.target.closest("[data-key]");
+  if (item) { state.key = item.dataset.key; state.detail = null; save(); render(); load(); }
+});
+const include = document.getElementById("include");
+include.value = state.include;
+include.addEventListener("change", () => { state.include = include.value; state.key = null; save(); load(); });
+load();
+setInterval(load, 3000);
+</script>
+</body>
+</html>
