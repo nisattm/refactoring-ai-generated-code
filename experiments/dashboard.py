@@ -1,0 +1,326 @@
+"""Experiment dashboard: a local, read-only web page that shows the Single, Iterative and Multi-Agent runs while
+they run and after they finish.
+
+    python experiments/dashboard.py [--root results/experiments] [--port 8765]
+
+Then open http://localhost:8765. The page reloads its data every few seconds. It only reads what the engine writes
+(``run.json``, the ``stream.jsonl`` of a running call, the round folders, ``.run.lock``); it never changes a file and
+never talks to Claude. It listens on 127.0.0.1 only. Standard library only, so it runs on the host (Windows, macOS,
+Linux) without Docker.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import os
+import re
+import sys
+import threading
+import webbrowser
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path, PurePosixPath
+from urllib.parse import parse_qs, urlparse
+
+REPO = Path(__file__).resolve().parents[1]
+APPROACHES = ("single", "iterative", "multiagent")
+PRIMARY = ("mean_cc", "mean_cognitive", "mi_weighted", "duplication_pct", "smell_count")
+HIGHER_IS_BETTER = {"mi_weighted"}
+SKIP_DIRS = {"calls", "rounds", "final", "analysis", "tests", "compare", "raw", "openapi", "repeat1", "repeat2"}
+TAIL_BYTES = 400_000
+
+
+# --- reading the engine's files ----------------------------------------------------------------------------------
+
+def read_json(path: Path):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def find_runs(root: Path) -> dict[str, Path]:
+    """``key -> run folder`` for every run.json the engine wrote under ``root`` (key: path relative to root)."""
+    runs: dict[str, Path] = {}
+    if not root.is_dir():
+        return runs
+    for folder, dirs, files in os.walk(root):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        if "run.json" in files:
+            record = read_json(Path(folder) / "run.json")
+            if isinstance(record, dict) and "approach" in record and "run_id" in record:
+                runs[Path(folder).relative_to(root).as_posix()] = Path(folder)
+    return runs
+
+
+def group_of(key: str, approach: str) -> str:
+    """``pilot`` for results/experiments/pilot/<approach>/<run>, empty for the real runs."""
+    parts = PurePosixPath(key).parts
+    return "/".join(parts[:parts.index(approach)]) if approach in parts else ""
+
+
+def tail_events(stream: Path, limit: int = 25) -> dict:
+    """The last tool uses and text of a stream-json log that is still being written."""
+    try:
+        with stream.open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            handle.seek(max(0, size - TAIL_BYTES))
+            text = handle.read().decode("utf-8", errors="replace")
+    except OSError:
+        return {"actions": [], "text": "", "bytes": 0}
+    actions, last_text = [], ""
+    for line in text.splitlines():
+        if not line.startswith("{"):
+            continue
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if event.get("type") != "assistant":
+            continue
+        for block in (event.get("message") or {}).get("content") or []:
+            if block.get("type") == "tool_use":
+                data = block.get("input") or {}
+                target = data.get("file_path") or data.get("path") or data.get("pattern") or ""
+                actions.append({"tool": block.get("name"), "target": short_path(str(target))})
+            elif block.get("type") == "text" and (block.get("text") or "").strip():
+                last_text = block["text"].strip()
+    return {"actions": actions[-limit:], "text": last_text[-600:], "bytes": size}
+
+
+def short_path(path: str) -> str:
+    return re.sub(r"^/work/", "", path)
+
+
+def test_modules(folder: Path) -> dict[str, str]:
+    """Case ID -> module, from the tests.csv of a measurement folder."""
+    path = folder / "tests" / "tests.csv"
+    try:
+        with path.open(newline="", encoding="utf-8") as handle:
+            return {row["case"]: row.get("module", "") for row in csv.DictReader(handle)}
+    except (OSError, KeyError, csv.Error):
+        return {}
+
+
+def read_text(path: Path, limit: int = 4000) -> str:
+    try:
+        return path.read_text(encoding="utf-8")[:limit]
+    except OSError:
+        return ""
+
+
+def window_used(record: dict) -> dict:
+    """5-hour window at the start (given by the operator) and after the last call (rate_limit_event)."""
+    end = None
+    for call in record.get("calls", []):
+        info = ((call.get("rate_limit") or {}).get("rate_limit_info") or {})
+        five = ((info.get("unifiedWindows") or {}).get("five_hour") or {}).get("utilization")
+        if isinstance(five, (int, float)):
+            end = round(five * 100, 1)
+    start = record.get("window_pct_start")
+    return {"start": start, "end": end,
+            "used": round(end - start, 1) if isinstance(end, (int, float)) and isinstance(start, (int, float)) else None}
+
+
+def metrics_of(facts: dict | None) -> dict:
+    """``metric -> {after, delta, status}``; status is compare.py's verdict with its thresholds (D17)."""
+    return {m: {k: (v or {}).get(k) for k in ("after", "delta", "status")}
+            for m, v in ((facts or {}).get("primary") or {}).items()}
+
+
+# --- one run -----------------------------------------------------------------------------------------------------
+
+def summary(key: str, folder: Path) -> dict | None:
+    record = read_json(folder / "run.json")
+    if not isinstance(record, dict):
+        return None
+    calls, rounds = record.get("calls", []), record.get("rounds", [])
+    best = record.get("best_facts") or {}
+    start = record.get("baseline_primary") or {}
+    deltas = {m: (best.get("primary", {}).get(m) or {}).get("delta") for m in PRIMARY}
+    events = record.get("events", [])
+    status = {m: (best.get("primary", {}).get(m) or {}).get("status") for m in PRIMARY}
+    return {
+        "key": key, "run_id": record["run_id"], "approach": record["approach"], "group": group_of(key, record["approach"]),
+        "status": record.get("status"), "outcome": record.get("outcome"), "valid": record.get("valid"),
+        "reasons": record.get("reasons", []), "started_at": record.get("started_at"),
+        "finished_at": record.get("finished_at"), "start_ref": record.get("start_ref"),
+        "start_sha": (record.get("start_sha") or "")[:12],
+        "account": record.get("account"), "calls": sum(1 for c in calls if c.get("status") != "limit"),
+        "rounds": len(rounds), "accepted": sum(1 for r in rounds if r.get("accepted") is True),
+        "usd": round(sum(c.get("usd_diff") or 0 for c in calls), 4),
+        "claude_s": round(sum(c.get("wall_s") or 0 for c in calls), 1),
+        "window": window_used(record), "start_metrics": {m: start.get(m) for m in PRIMARY},
+        "best_metrics": {m: (best.get("primary", {}).get(m) or {}).get("after") for m in PRIMARY},
+        "deltas": deltas, "metric_status": status, "current": events[-1]["text"] if events else "",
+        "regressions": best.get("regressions"),
+    }
+
+
+def detail(key: str, folder: Path) -> dict | None:
+    record = read_json(folder / "run.json")
+    if not isinstance(record, dict):
+        return None
+    out = summary(key, folder) or {}
+    calls = record.get("calls", [])
+    rounds = []
+    for entry in record.get("rounds", []):
+        facts = entry.get("facts") or {}
+        mfolder = folder / facts.get("folder", f"rounds/r{entry.get('round')}")
+        modules = test_modules(mfolder) if facts.get("regression_cases") else {}
+        rounds.append({
+            "round": entry.get("round"), "call": entry.get("call"), "tag": entry.get("tag"),
+            "accepted": entry.get("accepted"), "status": facts.get("status"), "problems": facts.get("problems", []),
+            "regressions": [{"case": c, "module": modules.get(c, "")} for c in facts.get("regression_cases", [])],
+            "accept_reasons": facts.get("accept_reasons", []), "api_changed": facts.get("api_changed"),
+            "api_change_kind": facts.get("api_change_kind"),
+            "metrics": {m: {k: v for k, v in (val or {}).items()} for m, val in (facts.get("primary") or {}).items()},
+            "feedback": read_text(mfolder / "feedback.txt"), "wall_s": facts.get("wall_s"),
+        })
+    final = {}
+    for name, facts in (record.get("final") or {}).items():
+        mfolder = folder / facts.get("folder", "")
+        modules = test_modules(mfolder) if facts.get("regression_cases") else {}
+        final[name] = {"round": facts.get("round"), "run_successful": facts.get("run_successful"),
+                       "reasons": facts.get("reasons", []), "metrics": metrics_of(facts),
+                       "regressions": [{"case": c, "module": modules.get(c, "")} for c in facts.get("regression_cases", [])],
+                       "regressions_by_set": facts.get("regressions_by_set"), "api_changed": facts.get("api_changed")}
+    live = None
+    if record.get("status") in ("running", "limit_cut"):
+        started = [int(m.group(1)) for e in record.get("events", [])
+                   if (m := re.match(r"call (\d+) \(.*\) started", e.get("text", "")))]
+        running_call = max(started) if started else None
+        if running_call and running_call > len(calls):
+            live = {"call": running_call, **tail_events(folder / "calls" / f"call-{running_call}" / "stream.jsonl")}
+        else:
+            live = {"call": None, "actions": [], "text": "", "bytes": 0}
+    out.update({
+        "calls_detail": [{
+            "number": c.get("number"), "kind": c.get("kind"), "status": c.get("status"), "invalid": c.get("invalid", []),
+            "wall_s": c.get("wall_s"), "usd": c.get("usd_diff"), "turns": c.get("num_turns"),
+            "files_read": len(c.get("files_read") or []), "files_written": len(c.get("files_written") or []),
+            "written": [short_path(p) for p in (c.get("files_written") or [])][:60],
+            "done_marker": c.get("done_marker"), "denials": c.get("permission_denials") or [],
+            "subagents": c.get("subagents_spawned"), "outside": c.get("outside_lms_changes"),
+        } for c in calls],
+        "rounds_detail": rounds, "final": final, "events": record.get("events", [])[-60:],
+        "stop_reason": record.get("stop_reason"), "best_round": record.get("best_round"),
+        "best_tag": record.get("best_tag"), "tests_modules": record.get("tests_modules"),
+        "model": record.get("model"), "effort": record.get("effort"), "live": live,
+    })
+    return out
+
+
+def compare_approaches(summaries: list[dict]) -> dict:
+    """Per approach: runs, valid runs, successes, mean change of the primary metrics, cost, time, window."""
+    table = {}
+    for approach in APPROACHES:
+        runs = [s for s in summaries if s["approach"] == approach and s["status"] == "finished"]
+        valid = [s for s in runs if s["valid"]]
+        mean = lambda values: round(sum(values) / len(values), 4) if values else None  # noqa: E731
+        table[approach] = {
+            "runs": len(runs), "valid": len(valid),
+            "success": sum(1 for s in valid if s["outcome"] == "success"),
+            "outcomes": {o: sum(1 for s in runs if s["outcome"] == o) for o in
+                         ("success", "no_improvement", "no_change", "failed", "invalid", "discarded_limit")},
+            "deltas": {m: mean([s["deltas"][m] for s in valid if isinstance(s["deltas"].get(m), (int, float))])
+                       for m in PRIMARY},
+            "usd": mean([s["usd"] for s in valid]), "claude_min": mean([s["claude_s"] / 60 for s in valid]),
+            "window_used": mean([s["window"]["used"] for s in valid if isinstance(s["window"]["used"], (int, float))]),
+        }
+    return table
+
+
+def lock_info(lock: Path) -> dict | None:
+    try:
+        text = lock.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    fields = dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
+    return {"what": fields.get("what", ""), "start": fields.get("start", "")}
+
+
+# --- web server --------------------------------------------------------------------------------------------------
+
+class Dashboard:
+    def __init__(self, root: Path, lock: Path):
+        self.root, self.lock = root, lock
+
+    def runs(self, include: str) -> dict:
+        found = find_runs(self.root)
+        summaries = [s for key, folder in found.items() if (s := summary(key, folder))]
+        if include == "real":
+            summaries = [s for s in summaries if not s["group"]]
+        elif include == "pilot":
+            summaries = [s for s in summaries if s["group"]]
+        summaries.sort(key=lambda s: s.get("started_at") or "", reverse=True)
+        return {"runs": summaries, "compare": compare_approaches(summaries), "lock": lock_info(self.lock),
+                "root": str(self.root)}
+
+    def run(self, key: str) -> dict | None:
+        folder = find_runs(self.root).get(key)
+        return detail(key, folder) if folder else None
+
+
+def handler_for(board: Dashboard):
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *args) -> None:  # quiet
+            pass
+
+        def send(self, code: int, body: bytes, kind: str) -> None:
+            self.send_response(code)
+            self.send_header("Content-Type", kind)
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self) -> None:  # noqa: N802
+            url = urlparse(self.path)
+            query = parse_qs(url.query)
+            if url.path == "/":
+                self.send(200, PAGE.encode("utf-8"), "text/html; charset=utf-8")
+            elif url.path == "/api/runs":
+                data = board.runs((query.get("include") or ["all"])[0])
+                self.send(200, json.dumps(data).encode("utf-8"), "application/json")
+            elif url.path == "/api/run":
+                data = board.run((query.get("key") or [""])[0])
+                if data is None:
+                    self.send(404, b'{"error": "unknown run"}', "application/json")
+                else:
+                    self.send(200, json.dumps(data).encode("utf-8"), "application/json")
+            else:
+                self.send(404, b"not found", "text/plain")
+
+    return Handler
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--root", default=str(REPO / "results" / "experiments"), help="folder the engine writes to")
+    parser.add_argument("--lock-file", default=str(REPO / ".run.lock"))
+    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--no-browser", action="store_true", help="do not open the page in the browser")
+    args = parser.parse_args(argv)
+    board = Dashboard(Path(args.root).resolve(), Path(args.lock_file).resolve())
+    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(board))
+    url = f"http://localhost:{args.port}"
+    print(f"Experiment dashboard on {url} (reading {board.root}); stop with Ctrl+C")
+    if not args.no_browser:
+        threading.Timer(0.5, lambda: webbrowser.open(url)).start()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+    return 0
+
+
+PAGE = (Path(__file__).resolve().parent / "dashboard.html").read_text(encoding="utf-8") \
+    if (Path(__file__).resolve().parent / "dashboard.html").is_file() else "<p>dashboard.html is missing</p>"
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -94,3 +94,18 @@ start ref in which only `dataset/lms/generated/lms` differs, W12). Push the tags
 files and prints a stream-json log, and a fake measurement step; they cover accept, reject and revert, regression
 feedback, API change, subagent, limit cut (discard and resume), changes outside `lms/`, hidden files and the stop rules.
 `measure.py` is tested with stub scripts; the real tools run in the pilot.
+
+## Dashboard
+
+```bash
+python experiments/dashboard.py            # opens http://localhost:8765
+```
+
+A local, read-only page for the runs under `results/experiments/`: one tab per approach (Single, Iterative,
+Multi-Agent) and a comparison tab. A running run shows the current step and the latest actions of the model (from the
+`stream.jsonl` of the running call); every run shows where it went wrong (invalid checks, test regressions with their
+module, API changes, reverted rounds and the feedback the model got), the quality metrics of the start, round 1, the
+best and the last round, the rounds, the calls and a timeline. The comparison counts finished runs per approach
+(outcomes, success rate, mean change of the primary metrics, cost, Claude time, window used); pilot runs can be shown or
+hidden. It never writes a file, listens on 127.0.0.1 only and needs only the standard library (no Docker). A
+Multi-Agent run appears in its tab as soon as its engine writes the same `run.json`.
