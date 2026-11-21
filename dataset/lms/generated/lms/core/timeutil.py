@@ -35,6 +35,14 @@ def format_datetime(value: datetime.datetime) -> str:
     return value.astimezone(LOCAL_TZ).isoformat()
 
 
+def format_optional_date(value: datetime.date | None) -> str | None:
+    return value.isoformat() if value is not None else None
+
+
+def format_optional_datetime(value: datetime.datetime | None) -> str | None:
+    return format_datetime(value) if value is not None else None
+
+
 class TZDateTime(sa.TypeDecorator[datetime.datetime]):
     """Stores aware date-times as UTC; returns them aware, in local time."""
 

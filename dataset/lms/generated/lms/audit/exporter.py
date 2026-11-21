@@ -13,6 +13,7 @@ from lms.audit.service import record
 from lms.catalog.models import Author, Book, BookAuthor, Copy, Publisher
 from lms.branches.models import Branch
 from lms.core.money import format_amount
+from lms.core.timeutil import format_optional_date
 from lms.loans.models import Loan
 from lms.members.models import Member
 from lms.reports.service import to_csv
@@ -38,10 +39,6 @@ CSV_COLUMNS: dict[str, tuple[str, ...]] = {
         "return_branch_id", "late_days",
     ),
 }
-
-
-def _date(value: datetime.date | None) -> str | None:
-    return value.isoformat() if value is not None else None
 
 
 def _branches(db: Session) -> list[dict[str, Any]]:
@@ -97,7 +94,7 @@ def _copies(db: Session) -> list[dict[str, Any]]:
             "current_branch_id": c.current_branch_id,
             "price": format_amount(c.price),
             "status": c.status,
-            "acquired_on": _date(c.acquired_on),
+            "acquired_on": format_optional_date(c.acquired_on),
             "shelf_location": c.shelf_location,
         }
         for c in db.scalars(sa.select(Copy).order_by(Copy.id))
@@ -115,8 +112,8 @@ def _members(db: Session) -> list[dict[str, Any]]:
             "university_id": m.university_id,
             "home_branch_id": m.home_branch_id,
             "status": m.status,
-            "membership_start": _date(m.membership_start),
-            "valid_until": _date(m.valid_until),
+            "membership_start": format_optional_date(m.membership_start),
+            "valid_until": format_optional_date(m.valid_until),
         }
         for m in db.scalars(sa.select(Member).order_by(Member.id))
     ]
@@ -129,11 +126,11 @@ def _loans(db: Session) -> list[dict[str, Any]]:
             "copy_id": ln.copy_id,
             "member_id": ln.member_id,
             "branch_id": ln.branch_id,
-            "loan_date": _date(ln.loan_date),
-            "due_date": _date(ln.due_date),
+            "loan_date": format_optional_date(ln.loan_date),
+            "due_date": format_optional_date(ln.due_date),
             "renewal_count": ln.renewal_count,
             "status": ln.status,
-            "returned_on": _date(ln.returned_on),
+            "returned_on": format_optional_date(ln.returned_on),
             "return_branch_id": ln.return_branch_id,
         }
         for ln in db.scalars(sa.select(Loan).order_by(Loan.id))

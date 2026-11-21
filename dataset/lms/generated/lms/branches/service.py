@@ -17,15 +17,15 @@ from lms.branches.models import Branch, Transfer
 from lms.catalog.models import Copy
 from lms.catalog.status import set_status
 from lms.core.calendar import add_working_days
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.db import ensure_unique, get_or_404, get_referenced
+from lms.core.errors import Conflict
 from lms.members.models import Member
 from lms.reservations.models import ACTIVE_STATUSES, Reservation
 
 
 def create_branch(db: Session, now: datetime.datetime, actor: User, code: str, name: str, address: str) -> Branch:
     """LIB-BR-01. ``code`` is already upper case and valid."""
-    if db.scalar(sa.select(Branch.id).where(Branch.code == code)) is not None:
-        raise Conflict("A branch with this code already exists", details={"field": "code"})
+    ensure_unique(db, Branch, Branch.code, code, message="A branch with this code already exists", field="code")
     branch = Branch(code=code, name=name, address=address, is_active=True, created_at=now)
     db.add(branch)
     db.flush()
@@ -42,22 +42,22 @@ def create_branch(db: Session, now: datetime.datetime, actor: User, code: str, n
 
 
 def get_branch_or_404(db: Session, branch_id: int) -> Branch:
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise NotFound(f"Branch {branch_id} does not exist", details={"resource": "branch", "id": branch_id})
-    return branch
+    return get_or_404(db, Branch, branch_id, "branch")
+
+
+def check_branch_active(branch: Branch, field: str) -> None:
+    """``409 BRANCH_INACTIVE`` if ``branch``, referenced from ``field`` of a request, is inactive (LIB-BR-04)."""
+    if not branch.is_active:
+        raise Conflict(
+            f"Branch {branch.code} is inactive", code="BRANCH_INACTIVE", details={"field": field, "id": branch.id}
+        )
 
 
 def require_active_branch(db: Session, field: str, branch_id: int) -> Branch:
     """A branch referenced from a request: ``404 NOT_FOUND`` if missing (LIB-COM-29),
     ``409 BRANCH_INACTIVE`` if inactive (LIB-BR-04)."""
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found(field, branch_id)
-    if not branch.is_active:
-        raise Conflict(
-            f"Branch {branch.code} is inactive", code="BRANCH_INACTIVE", details={"field": field, "id": branch_id}
-        )
+    branch = get_referenced(db, Branch, field, branch_id)
+    check_branch_active(branch, field)
     return branch
 
 

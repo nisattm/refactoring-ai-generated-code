@@ -19,33 +19,24 @@ from lms.catalog.schemas import (
     AuthorOut,
     AvailabilityOut,
     BookOut,
-    PublisherOut,
+    publisher_out,
 )
 from lms.catalog.status import GONE_STATUSES, invalid_status, set_status
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.db import ensure_unique, get_or_404, get_referenced
+from lms.core.errors import Conflict, NotFound, ValidationFailed
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
-
-
-def _not_found(resource: str, resource_id: int) -> NotFound:
-    return NotFound(f"{resource.capitalize()} {resource_id} does not exist", details={"resource": resource, "id": resource_id})
 
 
 # --- authors and publishers ---------------------------------------------------
 
 
 def get_author_or_404(db: Session, author_id: int) -> Author:
-    author = db.get(Author, author_id)
-    if author is None:
-        raise _not_found("author", author_id)
-    return author
+    return get_or_404(db, Author, author_id, "author")
 
 
 def get_publisher_or_404(db: Session, publisher_id: int) -> Publisher:
-    publisher = db.get(Publisher, publisher_id)
-    if publisher is None:
-        raise _not_found("publisher", publisher_id)
-    return publisher
+    return get_or_404(db, Publisher, publisher_id, "publisher")
 
 
 def create_author(db: Session, name: str) -> Author:
@@ -69,11 +60,15 @@ def delete_author(db: Session, author: Author) -> None:
 
 
 def _check_unique_publisher(db: Session, name: str, *, own_id: int | None = None) -> None:
-    stmt = sa.select(Publisher.id).where(Publisher.name_key == normalize(name))
-    if own_id is not None:
-        stmt = stmt.where(Publisher.id != own_id)
-    if db.scalar(stmt) is not None:
-        raise Conflict("A publisher with this name already exists", details={"field": "name"})
+    ensure_unique(
+        db,
+        Publisher,
+        Publisher.name_key,
+        normalize(name),
+        message="A publisher with this name already exists",
+        field="name",
+        own_id=own_id,
+    )
 
 
 def create_publisher(db: Session, name: str) -> Publisher:
@@ -102,10 +97,7 @@ def delete_publisher(db: Session, publisher: Publisher) -> None:
 
 
 def get_book_or_404(db: Session, book_id: int) -> Book:
-    book = db.get(Book, book_id)
-    if book is None:
-        raise _not_found("book", book_id)
-    return book
+    return get_or_404(db, Book, book_id, "book")
 
 
 def check_publication_year(year: int, today: datetime.date) -> None:
@@ -124,21 +116,17 @@ def book_author_ids(db: Session, book_id: int) -> list[int]:
 
 def _require_authors(db: Session, author_ids: list[int]) -> None:
     for author_id in author_ids:
-        if db.get(Author, author_id) is None:
-            raise reference_not_found("author_ids", author_id)
+        get_referenced(db, Author, "author_ids", author_id)
 
 
 def _require_publisher(db: Session, publisher_id: int) -> None:
-    if db.get(Publisher, publisher_id) is None:
-        raise reference_not_found("publisher_id", publisher_id)
+    get_referenced(db, Publisher, "publisher_id", publisher_id)
 
 
 def _check_unique_isbn(db: Session, isbn: str, *, own_id: int | None = None) -> None:
-    stmt = sa.select(Book.id).where(Book.isbn == isbn)
-    if own_id is not None:
-        stmt = stmt.where(Book.id != own_id)
-    if db.scalar(stmt) is not None:
-        raise Conflict("A book with this ISBN already exists", details={"field": "isbn"})
+    ensure_unique(
+        db, Book, Book.isbn, isbn, message="A book with this ISBN already exists", field="isbn", own_id=own_id
+    )
 
 
 def _set_authors(db: Session, book: Book, author_ids: list[int]) -> None:
@@ -237,12 +225,6 @@ def delete_book(db: Session, now: datetime.datetime, actor: User, book: Book) ->
     record(db, at=now, event="book_deleted", actor_user_id=actor.id, entity_type="book", entity_id=book.id, details=details)
 
 
-def is_lendable(db: Session, book_id: int) -> bool:
-    """LIB-CAT-12."""
-    stmt = sa.select(Copy.id).where(Copy.book_id == book_id, Copy.status.not_in(GONE_STATUSES)).limit(1)
-    return db.scalar(stmt) is not None
-
-
 def availability(db: Session, book_id: int) -> list[AvailabilityOut]:
     """Per current branch: copies ``available`` and copies not ``lost`` or ``withdrawn`` (section 8.1)."""
     rows = db.execute(
@@ -273,7 +255,7 @@ def book_out(db: Session, book: Book) -> BookOut:
         title=book.title,
         subtitle=book.subtitle,
         authors=[AuthorOut(id=i, name=n) for i, n in author_rows],
-        publisher=PublisherOut(id=publisher.id, name=publisher.name),
+        publisher=publisher_out(publisher),
         publication_year=book.publication_year,
         language=book.language,
         classification=book.classification,
@@ -286,10 +268,7 @@ def book_out(db: Session, book: Book) -> BookOut:
 
 
 def get_copy_or_404(db: Session, copy_id: int) -> Copy:
-    copy = db.get(Copy, copy_id)
-    if copy is None:
-        raise _not_found("copy", copy_id)
-    return copy
+    return get_or_404(db, Copy, copy_id, "copy")
 
 
 def get_copy_by_barcode_or_404(db: Session, barcode: str) -> Copy:

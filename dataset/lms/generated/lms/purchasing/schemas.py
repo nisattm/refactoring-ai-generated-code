@@ -10,8 +10,9 @@ from pydantic import BaseModel, Field, StrictBool, StrictInt, field_validator, m
 from lms.catalog.schemas import check_barcode
 from lms.core.money import Money, format_amount
 from lms.core.schemas import RequestModel
-from lms.core.timeutil import format_datetime
-from lms.members.schemas import check_email, check_phone
+from lms.core.text import check_email
+from lms.core.timeutil import format_datetime, format_optional_date
+from lms.members.schemas import check_phone
 from lms.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier
 
 MAX_LINES = 50
@@ -170,6 +171,6 @@ def order_out(order: PurchaseOrder, lines: list[PurchaseOrderLine]) -> OrderOut:
         lines=[line_out(line) for line in lines],
         created_by=order.created_by,
         created_at=format_datetime(order.created_at),
-        ordered_on=order.ordered_on.isoformat() if order.ordered_on is not None else None,
+        ordered_on=format_optional_date(order.ordered_on),
         total=format_amount(total),
     )

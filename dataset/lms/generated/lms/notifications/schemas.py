@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from lms.core.timeutil import format_datetime
+from lms.core.timeutil import format_datetime, format_optional_datetime
 from lms.notifications.models import Notification
 
 NotificationType = Literal[
@@ -63,5 +63,5 @@ def notification_out(n: Notification) -> NotificationOut:
         reservation_id=n.reservation_id,
         fee_id=n.fee_id,
         created_at=format_datetime(n.created_at),
-        read_at=format_datetime(n.read_at) if n.read_at is not None else None,
+        read_at=format_optional_datetime(n.read_at),
     )

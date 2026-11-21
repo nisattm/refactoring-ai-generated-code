@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Literal
 
+import sqlalchemy as sa
+from sqlalchemy.orm import Session
+
 from lms.catalog.models import Copy
 from lms.core.errors import Conflict
 
@@ -23,6 +26,12 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
 
 # Statuses that do not count towards a book's lendability or availability totals (LIB-CAT-12).
 GONE_STATUSES = ("lost", "withdrawn")
+
+
+def is_lendable(db: Session, book_id: int) -> bool:
+    """LIB-CAT-12: the book has at least one copy that is not ``lost`` or ``withdrawn``."""
+    stmt = sa.select(Copy.id).where(Copy.book_id == book_id, Copy.status.not_in(GONE_STATUSES)).limit(1)
+    return db.scalar(stmt) is not None
 
 
 def invalid_status(copy: Copy, action: str) -> Conflict:

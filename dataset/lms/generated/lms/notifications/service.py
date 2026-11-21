@@ -16,7 +16,7 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.catalog.models import Book, Copy
 from lms.core.calendar import add_working_days
-from lms.core.errors import NotFound
+from lms.core.db import apply_filters, get_or_404
 from lms.core.money import format_amount
 from lms.fines.models import Fee
 from lms.loans.models import Loan
@@ -25,13 +25,7 @@ from lms.reservations.models import Reservation
 
 
 def get_notification_or_404(db: Session, notification_id: int) -> Notification:
-    notification = db.get(Notification, notification_id)
-    if notification is None:
-        raise NotFound(
-            f"Notification {notification_id} does not exist",
-            details={"resource": "notification", "id": notification_id},
-        )
-    return notification
+    return get_or_404(db, Notification, notification_id, "notification")
 
 
 def _create(
@@ -151,42 +145,49 @@ def _already_sent(db: Session, type_: str, loan_id: int, reminder_date: datetime
     return db.scalar(stmt.limit(1)) is not None
 
 
+def _remind(
+    db: Session,
+    now: datetime.datetime,
+    loan: Loan,
+    type_: str,
+    reminder_date: datetime.date,
+    template: str,
+) -> int:
+    """Create one reminder unless it was already sent for ``reminder_date``; returns how many were created (0 or 1).
+
+    ``template`` may use ``{title}`` (the book title) and ``{due}`` (the due date of the loan).
+    """
+    if _already_sent(db, type_, loan.id, reminder_date):
+        return 0
+    message = template.format(title=_title_of_loan(db, loan), due=loan.due_date.isoformat())
+    _create(db, now, loan.member_id, type_, message, loan_id=loan.id, reminder_date=reminder_date)
+    return 1
+
+
 def run_reminders(
     db: Session, now: datetime.datetime, actor: User, holidays: Container[datetime.date]
 ) -> tuple[int, int]:
     """Create today's ``due_reminder`` and ``overdue_notice`` notifications; returns the two counts."""
     today = now.date()
     next_day = add_working_days(today, 1, holidays)
-    due_reminders = 0
-    overdue_notices = 0
 
     due_loans = db.scalars(
         sa.select(Loan).where(Loan.status == "open", Loan.due_date == next_day).order_by(Loan.id)
     ).all()
-    for loan in due_loans:
-        if _already_sent(db, "due_reminder", loan.id, loan.due_date):
-            continue
-        title = _title_of_loan(db, loan)
-        _create(
-            db, now, loan.member_id, "due_reminder",
-            f'Your loan of "{title}" is due on {loan.due_date.isoformat()}.',
-            loan_id=loan.id, reminder_date=loan.due_date,
-        )
-        due_reminders += 1
+    due_reminders = sum(
+        _remind(db, now, loan, "due_reminder", loan.due_date, 'Your loan of "{title}" is due on {due}.')
+        for loan in due_loans
+    )
 
     overdue_loans = db.scalars(
         sa.select(Loan).where(Loan.status == "open", Loan.due_date < today).order_by(Loan.id)
     ).all()
-    for loan in overdue_loans:
-        if _already_sent(db, "overdue_notice", loan.id, today):
-            continue
-        title = _title_of_loan(db, loan)
-        _create(
-            db, now, loan.member_id, "overdue_notice",
-            f'Your loan of "{title}" was due on {loan.due_date.isoformat()} and is overdue.',
-            loan_id=loan.id, reminder_date=today,
+    overdue_notices = sum(
+        _remind(
+            db, now, loan, "overdue_notice", today, 'Your loan of "{title}" was due on {due} and is overdue.'
         )
-        overdue_notices += 1
+        for loan in overdue_loans
+    )
 
     record(
         db,
@@ -230,11 +231,11 @@ def notification_list_stmt(
     *, member_id: int | None = None, unread: bool | None = None, type_: str | None = None
 ) -> sa.Select[tuple[Notification]]:
     """LIB-NOT-03: newest first."""
-    stmt = sa.select(Notification).order_by(Notification.created_at.desc(), Notification.id.desc())
-    if member_id is not None:
-        stmt = stmt.where(Notification.member_id == member_id)
+    stmt = apply_filters(
+        sa.select(Notification).order_by(Notification.created_at.desc(), Notification.id.desc()),
+        (Notification.member_id, member_id),
+        (Notification.type, type_),
+    )
     if unread is not None:
         stmt = stmt.where(Notification.read_at.is_(None) if unread else Notification.read_at.is_not(None))
-    if type_ is not None:
-        stmt = stmt.where(Notification.type == type_)
     return stmt

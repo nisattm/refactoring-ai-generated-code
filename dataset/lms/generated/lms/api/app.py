@@ -24,9 +24,9 @@ from lms.api import (
     transfers,
     users,
 )
+from lms.api.common import today_of
 from lms.api.errors import register_error_handlers
 from lms.auth.bootstrap import ensure_bootstrap_admin
-from lms.core.clock import today
 from lms.core.db import create_schema, get_engine
 from lms.core.settings import Settings
 
@@ -55,7 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/health", response_model=HealthOut, tags=["health"])
     def health(request: Request) -> HealthOut:
-        return HealthOut(status="ok", today=today(request.app.state.settings.clock).isoformat())
+        return HealthOut(status="ok", today=today_of(request).isoformat())
 
     api = APIRouter(prefix=API_PREFIX)
     api.include_router(calendar.router)

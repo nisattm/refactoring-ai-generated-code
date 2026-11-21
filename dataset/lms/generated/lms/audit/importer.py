@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from lms.audit.exchange_schemas import FORMAT_VERSION, LISTS, RECORD_MODELS
 from lms.audit.service import record
 from lms.auth.models import User
+from lms.auth.service import build_user
 from lms.branches.models import Branch
 from lms.catalog.models import Author, Book, BookAuthor, Copy, Publisher
 from lms.core.calendar import working_days_between
@@ -228,13 +229,8 @@ def _is_empty(db: Session) -> bool:
     return all(db.scalar(sa.select(model.id).limit(1)) is None for model in (Branch, Book, Member))
 
 
-def _write(
-    db: Session,
-    now: datetime.datetime,
-    created_by: int,
-    holidays: Container[datetime.date],
-    parsed: dict[str, list[Any]],
-) -> dict[str, int]:
+def _write_catalog(db: Session, now: datetime.datetime, parsed: dict[str, list[Any]]) -> None:
+    """Branches, authors, publishers, books and copies."""
     db.add_all(
         Branch(id=r.id, code=r.code, name=r.name, address=r.address, is_active=r.is_active, created_at=now)
         for r in parsed["branches"]
@@ -279,18 +275,15 @@ def _write(
     )
     db.flush()
 
-    users: dict[int, User] = {}
-    for r in parsed["members"]:
-        users[r.id] = User(
-            email=r.email,
-            email_key=normalize(r.email),
-            full_name=r.full_name,
-            role="member",
-            password_hash=UNUSABLE_PASSWORD_HASH,
-            is_active=True,
-            failed_login_count=0,
-            created_at=now,
+
+def _write_members(db: Session, now: datetime.datetime, parsed: dict[str, list[Any]]) -> None:
+    """Members, each with its user account (which cannot log in, LIB-IO-05)."""
+    users: dict[int, User] = {
+        r.id: build_user(
+            email=r.email, full_name=r.full_name, role="member", password_hash=UNUSABLE_PASSWORD_HASH, now=now
         )
+        for r in parsed["members"]
+    }
     db.add_all(users.values())
     db.flush()
     db.add_all(
@@ -315,6 +308,14 @@ def _write(
     for member_id, user in users.items():
         user.member_id = member_id
 
+
+def _write_loans(
+    db: Session,
+    now: datetime.datetime,
+    created_by: int,
+    holidays: Container[datetime.date],
+    parsed: dict[str, list[Any]],
+) -> None:
     types = {r.id: MEMBERSHIP_TYPES[r.membership_type] for r in parsed["members"]}
     today = now.date()
     loans = []
@@ -348,6 +349,18 @@ def _write(
         )
     db.add_all(loans)
     db.flush()
+
+
+def _write(
+    db: Session,
+    now: datetime.datetime,
+    created_by: int,
+    holidays: Container[datetime.date],
+    parsed: dict[str, list[Any]],
+) -> dict[str, int]:
+    _write_catalog(db, now, parsed)
+    _write_members(db, now, parsed)
+    _write_loans(db, now, created_by, holidays, parsed)
     return {name: len(parsed[name]) for name in LISTS}
 
 

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from lms.catalog.models import Author, Book, BookAuthor, Copy, Publisher
 from lms.catalog.service import book_out
 from lms.catalog.status import GONE_STATUSES
-from lms.core.pagination import Page, PageParams
+from lms.core.pagination import Page, PageParams, count_rows
 from lms.core.text import normalize
 from lms.loans.models import Loan
 from lms.search.schemas import SearchItemOut
@@ -72,6 +72,64 @@ def _loan_counts() -> sa.Subquery:
     )
 
 
+def _copy_conditions(branch_id: int | None, available_only: bool) -> list[sa.ColumnElement[bool]]:
+    """LIB-SRCH-04: the filters that look at the copies of a book."""
+    if available_only:
+        copy_filter = [Copy.book_id == Book.id, Copy.status == "available"]
+        if branch_id is not None:
+            copy_filter.append(Copy.current_branch_id == branch_id)
+        return [sa.exists().where(*copy_filter)]
+    if branch_id is not None:
+        return [
+            sa.exists().where(
+                Copy.book_id == Book.id, Copy.current_branch_id == branch_id, Copy.status.not_in(GONE_STATUSES)
+            )
+        ]
+    return []
+
+
+def _conditions(
+    tokens: list[str],
+    *,
+    author: str | None,
+    publisher: str | None,
+    language: str | None,
+    year_from: int | None,
+    year_to: int | None,
+    classification_prefix: str | None,
+    branch_id: int | None,
+    available_only: bool,
+) -> list[sa.ColumnElement[bool]]:
+    conditions: list[sa.ColumnElement[bool]] = [_token_match(t) for t in tokens]
+    if author:
+        conditions.append(_author_contains(normalize(author)))
+    if publisher:
+        conditions.append(_contains(Publisher.name_key, normalize(publisher)))
+    if language:
+        conditions.append(Book.language == language)
+    if year_from is not None:
+        conditions.append(Book.publication_year >= year_from)
+    if year_to is not None:
+        conditions.append(Book.publication_year <= year_to)
+    if classification_prefix:
+        conditions.append(Book.classification.startswith(classification_prefix, autoescape=True))
+    conditions.extend(_copy_conditions(branch_id, available_only))
+    return conditions
+
+
+def _loan_counts_of(db: Session, book_ids: list[int]) -> dict[int, int]:
+    """Number of loans per book, for the books of one result page."""
+    if not book_ids:
+        return {}
+    rows = db.execute(
+        sa.select(Copy.book_id, sa.func.count(Loan.id))
+        .join(Loan, Loan.copy_id == Copy.id)
+        .where(Copy.book_id.in_(book_ids))
+        .group_by(Copy.book_id)
+    )
+    return {book_id: count for book_id, count in rows}
+
+
 def search_books(
     db: Session,
     page: PageParams,
@@ -88,33 +146,17 @@ def search_books(
     sort: SortKey,
 ) -> Page[SearchItemOut]:
     tokens = tokens_of(q)
-    conditions: list[sa.ColumnElement[bool]] = [_token_match(t) for t in tokens]
-
-    if author:
-        conditions.append(_author_contains(normalize(author)))
-    if publisher:
-        conditions.append(_contains(Publisher.name_key, normalize(publisher)))
-    if language:
-        conditions.append(Book.language == language)
-    if year_from is not None:
-        conditions.append(Book.publication_year >= year_from)
-    if year_to is not None:
-        conditions.append(Book.publication_year <= year_to)
-    if classification_prefix:
-        conditions.append(Book.classification.startswith(classification_prefix, autoescape=True))
-
-    # LIB-SRCH-04
-    if available_only:
-        copy_filter = [Copy.book_id == Book.id, Copy.status == "available"]
-        if branch_id is not None:
-            copy_filter.append(Copy.current_branch_id == branch_id)
-        conditions.append(sa.exists().where(*copy_filter))
-    elif branch_id is not None:
-        conditions.append(
-            sa.exists().where(
-                Copy.book_id == Book.id, Copy.current_branch_id == branch_id, Copy.status.not_in(GONE_STATUSES)
-            )
-        )
+    conditions = _conditions(
+        tokens,
+        author=author,
+        publisher=publisher,
+        language=language,
+        year_from=year_from,
+        year_to=year_to,
+        classification_prefix=classification_prefix,
+        branch_id=branch_id,
+        available_only=available_only,
+    )
 
     score: sa.ColumnElement[int] = sa.literal(0)
     if tokens:
@@ -139,21 +181,11 @@ def search_books(
     else:
         order = [sa.literal_column("score").desc(), Book.title_key, Book.id]
 
-    total = db.scalar(sa.select(sa.func.count()).select_from(base.order_by(None).subquery())) or 0
+    total = count_rows(db, base)
     rows = db.execute(base.order_by(*order).limit(page.page_size).offset(page.offset)).all()
 
     book_ids = [r.id for r in rows]
-    loan_counts: dict[int, int] = {}
-    if book_ids:
-        loan_counts = {
-            book_id: count
-            for book_id, count in db.execute(
-                sa.select(Copy.book_id, sa.func.count(Loan.id))
-                .join(Loan, Loan.copy_id == Copy.id)
-                .where(Copy.book_id.in_(book_ids))
-                .group_by(Copy.book_id)
-            )
-        }
+    loan_counts = _loan_counts_of(db, book_ids)
     books = {b.id: b for b in db.scalars(sa.select(Book).where(Book.id.in_(book_ids)))} if book_ids else {}
     items = [
         SearchItemOut(book=book_out(db, books[r.id]), score=int(r.score), loan_count=loan_counts.get(r.id, 0))

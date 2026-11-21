@@ -7,10 +7,9 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from lms.auth.passwords import password_problem
-from lms.auth.schemas import RawPassword
+from lms.auth.schemas import RawPassword, check_password_policy
 from lms.core.schemas import RequestModel
-from lms.core.text import is_valid_email
+from lms.core.text import check_email
 from lms.core.timeutil import format_datetime
 from lms.fines.schemas import BalanceOut
 from lms.members.models import Member
@@ -22,15 +21,6 @@ _PHONE_RE = re.compile(r"^\+?[0-9 ]+$")
 _UNIVERSITY_ID_RE = re.compile(r"^[A-Za-z0-9]{4,20}$")
 
 FullName = Annotated[str, Field(min_length=1, max_length=200)]
-
-
-def check_email(value: str) -> str:
-    value = value.lower()
-    if len(value) > 254:
-        raise ValueError("e-mail must be at most 254 characters")
-    if not is_valid_email(value):
-        raise ValueError("invalid e-mail address")
-    return value
 
 
 def check_phone(value: str | None) -> str | None:
@@ -50,7 +40,9 @@ def check_university_id(value: str | None) -> str | None:
     return value
 
 
-class _MemberFieldChecks:
+class MemberFieldChecks:
+    """Validators of the fields that member bodies and import records share."""
+
     @field_validator("email", check_fields=False)
     @classmethod
     def _email(cls, value: str) -> str:
@@ -67,7 +59,7 @@ class _MemberFieldChecks:
         return check_university_id(value)
 
 
-class MemberCreateIn(_MemberFieldChecks, RequestModel):
+class MemberCreateIn(MemberFieldChecks, RequestModel):
     full_name: FullName
     email: str
     phone: str | None = None
@@ -79,13 +71,10 @@ class MemberCreateIn(_MemberFieldChecks, RequestModel):
     @field_validator("password")
     @classmethod
     def _policy(cls, value: str) -> str:
-        problem = password_problem(value)
-        if problem is not None:
-            raise ValueError(problem)
-        return value
+        return check_password_policy(value)
 
 
-class MemberPatchIn(_MemberFieldChecks, RequestModel):
+class MemberPatchIn(MemberFieldChecks, RequestModel):
     """Any subset of the fields. ``phone`` and ``university_id`` may be ``null``; the others may not."""
 
     full_name: FullName = None  # type: ignore[assignment]

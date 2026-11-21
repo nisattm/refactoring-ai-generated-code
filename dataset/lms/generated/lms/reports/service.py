@@ -19,7 +19,7 @@ from lms.catalog.status import ALLOWED_TRANSITIONS
 from lms.core.calendar import working_days_between
 from lms.core.clock import LOCAL_TZ
 from lms.core.money import ZERO, format_amount
-from lms.core.pagination import PageParams
+from lms.core.pagination import PageParams, count_rows
 from lms.fines.models import Fee, Payment, PaymentAllocation
 from lms.fines.service import late_fee_amount
 from lms.loans.models import Loan
@@ -143,10 +143,6 @@ def month_range(year: int, month: int) -> tuple[datetime.date, datetime.date]:
     return datetime.date(year, month, 1), datetime.date(year, month, calendar.monthrange(year, month)[1])
 
 
-def _count(db: Session, stmt: sa.Select[Any]) -> int:
-    return db.scalar(sa.select(sa.func.count()).select_from(stmt.order_by(None).subquery())) or 0
-
-
 def _sum(values: Iterable[Decimal]) -> Decimal:
     return sum(values, ZERO)
 
@@ -210,13 +206,13 @@ def monthly_summary(db: Session, year: int, month: int, branch_id: int | None) -
         year=year,
         month=month,
         branch_id=branch_id,
-        new_members=_count(db, members),
-        loans_created=_count(db, created),
-        loans_returned=_count(db, returned),
-        loans_lost=_count(db, lost),
-        reservations_created=_count(db, res_created),
-        reservations_fulfilled=_count(db, res_fulfilled),
-        reservations_expired=_count(db, res_expired),
+        new_members=count_rows(db, members),
+        loans_created=count_rows(db, created),
+        loans_returned=count_rows(db, returned),
+        loans_lost=count_rows(db, lost),
+        reservations_created=count_rows(db, res_created),
+        reservations_fulfilled=count_rows(db, res_fulfilled),
+        reservations_expired=count_rows(db, res_expired),
         fees_created=format_amount(_sum(db.scalars(fees))),
         payments_received=format_amount(_sum(db.scalars(payments))),
         fees_waived=format_amount(_sum(amount - paid for amount, paid in db.execute(waived))),

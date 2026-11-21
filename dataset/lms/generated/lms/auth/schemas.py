@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field, StrictBool, StringConstraints, field_vali
 from lms.auth.models import User
 from lms.auth.passwords import password_problem
 from lms.core.schemas import RequestModel
-from lms.core.text import is_valid_email
-from lms.core.timeutil import format_datetime
+from lms.core.text import check_email
+from lms.core.timeutil import format_datetime, format_optional_datetime
 
 Role = Literal["member", "librarian", "admin"]
 StaffRole = Literal["librarian", "admin"]
@@ -20,19 +20,10 @@ RawPassword = Annotated[str, StringConstraints(strip_whitespace=False)]
 FullName = Annotated[str, Field(min_length=1, max_length=200)]
 
 
-def _check_policy(value: str) -> str:
+def check_password_policy(value: str) -> str:
     problem = password_problem(value)
     if problem is not None:
         raise ValueError(problem)
-    return value
-
-
-def _check_email(value: str) -> str:
-    value = value.lower()
-    if len(value) > 254:
-        raise ValueError("e-mail must be at most 254 characters")
-    if not is_valid_email(value):
-        raise ValueError("invalid e-mail address")
     return value
 
 
@@ -49,7 +40,7 @@ class ChangePasswordIn(RequestModel):
     @field_validator("new_password")
     @classmethod
     def _policy(cls, value: str) -> str:
-        return _check_policy(value)
+        return check_password_policy(value)
 
 
 class ResetPasswordIn(RequestModel):
@@ -58,7 +49,7 @@ class ResetPasswordIn(RequestModel):
     @field_validator("new_password")
     @classmethod
     def _policy(cls, value: str) -> str:
-        return _check_policy(value)
+        return check_password_policy(value)
 
 
 class UserCreateIn(RequestModel):
@@ -70,12 +61,12 @@ class UserCreateIn(RequestModel):
     @field_validator("email")
     @classmethod
     def _email(cls, value: str) -> str:
-        return _check_email(value)
+        return check_email(value)
 
     @field_validator("password")
     @classmethod
     def _policy(cls, value: str) -> str:
-        return _check_policy(value)
+        return check_password_policy(value)
 
 
 class UserPatchIn(RequestModel):
@@ -106,7 +97,7 @@ def user_out(user: User) -> UserOut:
         is_active=user.is_active,
         member_id=user.member_id,
         created_at=format_datetime(user.created_at),
-        last_login_at=format_datetime(user.last_login_at) if user.last_login_at else None,
+        last_login_at=format_optional_datetime(user.last_login_at),
     )
 
 

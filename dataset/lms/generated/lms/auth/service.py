@@ -13,7 +13,8 @@ from lms.audit.service import changes, record
 from lms.auth.deps import hash_token
 from lms.auth.models import AuthSession, User
 from lms.auth.passwords import hash_password, verify_password
-from lms.core.errors import ApiError, Conflict, Forbidden, NotFound
+from lms.core.db import ensure_unique, get_or_404
+from lms.core.errors import ApiError, Conflict, Forbidden
 from lms.core.settings import Settings
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
@@ -176,20 +177,36 @@ def change_password(
 # --- user management --------------------------------------------------------
 
 
-def create_user(db: Session, now: datetime.datetime, actor: User, email: str, full_name: str, role: str, password: str) -> User:
-    key = normalize(email)
-    if db.scalar(sa.select(User.id).where(User.email_key == key)) is not None:
-        raise Conflict("A user with this e-mail address already exists", details={"field": "email"})
-    user = User(
+def build_user(*, email: str, full_name: str, role: str, password_hash: str, now: datetime.datetime) -> User:
+    """A new, active user (not yet added to a session). ``email`` is already lower case."""
+    return User(
         email=email,
-        email_key=key,
+        email_key=normalize(email),
         full_name=full_name,
         role=role,
-        password_hash=hash_password(password),
+        password_hash=password_hash,
         is_active=True,
         failed_login_count=0,
         created_at=now,
     )
+
+
+def ensure_email_available(db: Session, email: str, *, own_user_id: int | None = None) -> None:
+    """LIB-COM-17, LIB-COM-30: ``409 CONFLICT`` if another user already has this e-mail address."""
+    ensure_unique(
+        db,
+        User,
+        User.email_key,
+        normalize(email),
+        message="A user with this e-mail address already exists",
+        field="email",
+        own_id=own_user_id,
+    )
+
+
+def create_user(db: Session, now: datetime.datetime, actor: User, email: str, full_name: str, role: str, password: str) -> User:
+    ensure_email_available(db, email)
+    user = build_user(email=email, full_name=full_name, role=role, password_hash=hash_password(password), now=now)
     db.add(user)
     db.flush()
     record(
@@ -205,10 +222,7 @@ def create_user(db: Session, now: datetime.datetime, actor: User, email: str, fu
 
 
 def get_user_or_404(db: Session, user_id: int) -> User:
-    user = db.get(User, user_id)
-    if user is None:
-        raise NotFound(f"User {user_id} does not exist", details={"resource": "user", "id": user_id})
-    return user
+    return get_or_404(db, User, user_id, "user")
 
 
 def update_user(db: Session, now: datetime.datetime, actor: User, user: User, fields: dict[str, object]) -> User:

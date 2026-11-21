@@ -4,16 +4,19 @@ from __future__ import annotations
 
 import weakref
 from collections.abc import Iterator
+from typing import Annotated, Any, TypeVar
 
 import sqlalchemy as sa
-from typing import Annotated
-
 from fastapi import Depends, Request
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.settings import Settings
 from lms.core.text import normalize
+
+T = TypeVar("T")
 
 
 class Base(DeclarativeBase):
@@ -21,10 +24,14 @@ class Base(DeclarativeBase):
     so that ids are never reused (LIB-COM-14)."""
 
 
+def _is_memory_database(url: sa.engine.URL) -> bool:
+    return url.get_backend_name() == "sqlite" and url.database in (None, "", ":memory:")
+
+
 def create_db_engine(database_url: str) -> sa.Engine:
     url = make_url(database_url)
     kwargs: dict = {"connect_args": {"check_same_thread": False}}
-    if url.get_backend_name() == "sqlite" and url.database in (None, "", ":memory:"):
+    if _is_memory_database(url):
         # In-memory database: all connections of one application must see the same data.
         kwargs["poolclass"] = StaticPool
     engine = sa.create_engine(url, **kwargs)
@@ -45,11 +52,11 @@ def create_db_engine(database_url: str) -> sa.Engine:
 _MEMORY_ENGINES: dict[int, sa.Engine] = {}
 
 
-def get_engine(settings) -> sa.Engine:  # noqa: ANN001
+def get_engine(settings: Settings) -> sa.Engine:
     """The engine of ``settings``. An in-memory database exists once per ``Settings`` object, so that
     ``create_app`` and ``import_dataset`` / ``export_dataset`` called with the same settings see the same data."""
     url = make_url(settings.database_url)
-    if url.get_backend_name() == "sqlite" and url.database in (None, "", ":memory:"):
+    if _is_memory_database(url):
         key = id(settings)
         engine = _MEMORY_ENGINES.get(key)
         if engine is None:
@@ -91,3 +98,49 @@ def get_session(request: Request) -> Iterator[Session]:
 
 # ``scope="function"`` makes the transaction end (commit or rollback) before the response is sent.
 SessionDep = Annotated[Session, Depends(get_session, scope="function")]
+
+
+# --- lookups and checks shared by the services ----------------------------------------------
+
+
+def get_or_404(db: Session, model: type[T], entity_id: int, resource: str) -> T:
+    """The ``model`` row addressed by ``entity_id``, or ``404 NOT_FOUND`` (LIB-COM-28 step 4)."""
+    entity = db.get(model, entity_id)
+    if entity is None:
+        label = resource.replace("_", " ").capitalize()
+        raise NotFound(f"{label} {entity_id} does not exist", details={"resource": resource, "id": entity_id})
+    return entity
+
+
+def get_referenced(db: Session, model: type[T], field: str, entity_id: int) -> T:
+    """The ``model`` row an id in a request refers to, or ``404 NOT_FOUND`` for ``field`` (LIB-COM-29)."""
+    entity = db.get(model, entity_id)
+    if entity is None:
+        raise reference_not_found(field, entity_id)
+    return entity
+
+
+def ensure_unique(
+    db: Session,
+    model: Any,
+    column: Any,
+    value: Any,
+    *,
+    message: str,
+    field: str,
+    own_id: int | None = None,
+) -> None:
+    """``409 CONFLICT`` if another ``model`` row (not ``own_id``) already has ``value`` in ``column``."""
+    stmt = sa.select(model.id).where(column == value)
+    if own_id is not None:
+        stmt = stmt.where(model.id != own_id)
+    if db.scalar(stmt) is not None:
+        raise Conflict(message, details={"field": field})
+
+
+def apply_filters(stmt: sa.Select[Any], *conditions: tuple[Any, Any]) -> sa.Select[Any]:
+    """Restrict ``stmt`` to ``column == value`` for every ``(column, value)`` pair whose value is not ``None``."""
+    for column, value in conditions:
+        if value is not None:
+            stmt = stmt.where(column == value)
+    return stmt

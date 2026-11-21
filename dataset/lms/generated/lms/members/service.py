@@ -14,8 +14,10 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.auth.passwords import hash_password
+from lms.auth.service import build_user, ensure_email_available
 from lms.branches.service import require_active_branch
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.db import ensure_unique, get_or_404
+from lms.core.errors import Conflict, ValidationFailed
 from lms.core.money import ZERO
 from lms.core.text import normalize
 from lms.fines import service as fines
@@ -28,10 +30,7 @@ from lms.reservations import service as reservations
 
 
 def get_member_or_404(db: Session, member_id: int) -> Member:
-    member = db.get(Member, member_id)
-    if member is None:
-        raise NotFound(f"Member {member_id} does not exist", details={"resource": "member", "id": member_id})
-    return member
+    return get_or_404(db, Member, member_id, "member")
 
 
 def type_field_problems(membership_type: str, phone: str | None, university_id: str | None) -> list[dict[str, str]]:
@@ -47,22 +46,18 @@ def type_field_problems(membership_type: str, phone: str | None, university_id: 
     return problems
 
 
-def _check_unique_email(db: Session, email: str, *, own_user_id: int | None = None) -> None:
-    stmt = sa.select(User.id).where(User.email_key == normalize(email))
-    if own_user_id is not None:
-        stmt = stmt.where(User.id != own_user_id)
-    if db.scalar(stmt) is not None:
-        raise Conflict("A user with this e-mail address already exists", details={"field": "email"})
-
-
 def _check_unique_university_id(db: Session, university_id: str | None, *, own_member_id: int | None = None) -> None:
     if university_id is None:
         return
-    stmt = sa.select(Member.id).where(Member.university_id_key == normalize(university_id))
-    if own_member_id is not None:
-        stmt = stmt.where(Member.id != own_member_id)
-    if db.scalar(stmt) is not None:
-        raise Conflict("A member with this university_id already exists", details={"field": "university_id"})
+    ensure_unique(
+        db,
+        Member,
+        Member.university_id_key,
+        normalize(university_id),
+        message="A member with this university_id already exists",
+        field="university_id",
+        own_id=own_member_id,
+    )
 
 
 # --- registration and update ------------------------------------------------
@@ -86,19 +81,12 @@ def register_member(
     if problems:
         raise ValidationFailed(problems)
     require_active_branch(db, "home_branch_id", home_branch_id)
-    _check_unique_email(db, email)
+    ensure_email_available(db, email)
     _check_unique_university_id(db, university_id)
 
     today = now.date()
-    user = User(
-        email=email,
-        email_key=normalize(email),
-        full_name=full_name,
-        role="member",
-        password_hash=hash_password(password),
-        is_active=True,
-        failed_login_count=0,
-        created_at=now,
+    user = build_user(
+        email=email, full_name=full_name, role="member", password_hash=hash_password(password), now=now
     )
     db.add(user)
     db.flush()
@@ -166,7 +154,7 @@ def update_member(db: Session, now: datetime.datetime, actor: User, member: Memb
     user = db.get(User, member.user_id)
     assert user is not None
     if new["email"] != member.email:
-        _check_unique_email(db, new["email"], own_user_id=user.id)
+        ensure_email_available(db, new["email"], own_user_id=user.id)
     if new["university_id"] != member.university_id:
         _check_unique_university_id(db, new["university_id"], own_member_id=member.id)
 

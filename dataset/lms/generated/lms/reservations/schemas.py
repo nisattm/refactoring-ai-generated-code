@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, StrictInt
 
 from lms.core.schemas import RequestModel
-from lms.core.timeutil import format_datetime
+from lms.core.timeutil import format_datetime, format_optional_date, format_optional_datetime
 from lms.reservations.models import Reservation
 
 ReservationStatus = Literal["waiting", "in_transit", "ready", "fulfilled", "cancelled", "expired"]
@@ -47,9 +47,9 @@ def reservation_out(reservation: Reservation, queue_position: int | None) -> Res
         status=reservation.status,
         created_at=format_datetime(reservation.created_at),
         copy_id=reservation.copy_id,
-        ready_on=reservation.ready_on.isoformat() if reservation.ready_on is not None else None,
-        hold_until=reservation.hold_until.isoformat() if reservation.hold_until is not None else None,
-        closed_at=format_datetime(reservation.closed_at) if reservation.closed_at is not None else None,
+        ready_on=format_optional_date(reservation.ready_on),
+        hold_until=format_optional_date(reservation.hold_until),
+        closed_at=format_optional_datetime(reservation.closed_at),
         cancel_reason=reservation.cancel_reason,
         queue_position=queue_position,
     )

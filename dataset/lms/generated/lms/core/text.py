@@ -16,3 +16,13 @@ def is_valid_email(email: str) -> bool:
         return False
     local, domain = email.split("@")
     return bool(local) and "." in domain
+
+
+def check_email(value: str) -> str:
+    """Field validator: the lower-cased e-mail address; raises ``ValueError`` if it is too long or malformed."""
+    value = value.lower()
+    if len(value) > 254:
+        raise ValueError("e-mail must be at most 254 characters")
+    if not is_valid_email(value):
+        raise ValueError("invalid e-mail address")
+    return value
