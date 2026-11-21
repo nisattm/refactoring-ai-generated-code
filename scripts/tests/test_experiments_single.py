@@ -146,6 +146,19 @@ def test_inputs_are_checked(tmp_path, monkeypatch):
     assert run_single.main(argv, support.FakeToolkit()) == common.EXIT_LOCK
 
 
+def test_docker_not_running_stops_before_the_call(tmp_path, monkeypatch, capsys):
+    import subprocess
+    project = support.make_project(tmp_path)
+    support.scenario(monkeypatch, tmp_path, [])
+    env = tmp_path / ".env"
+    env.write_text("X=1\n")
+    argv = [a for a in support.argv(project, "s1") if a != "--local"] + ["--env-file", str(env)]
+    monkeypatch.setattr(common.shutil, "which", lambda name: "/usr/bin/docker")
+    monkeypatch.setattr(common.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 1, "", "no daemon"))
+    assert run_single.main(argv, support.FakeToolkit()) == common.EXIT_USAGE
+    assert "Docker is not running" in capsys.readouterr().err
+
+
 def test_missing_detail_csv_of_the_baseline_stops_before_the_call(tmp_path, monkeypatch, capsys):
     # results/baseline/trial/ does not commit functions.csv and classes.csv; compare.py needs them
     project = support.make_project(tmp_path)
