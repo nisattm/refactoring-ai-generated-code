@@ -1,0 +1,26 @@
+{
+  "label": "scale-s01-rounds-r1",
+  "code_sha": "2295f9180aad05cf5ecd170bf7c0b30cfaa4d561",
+  "set": "both",
+  "steps": [
+    {
+      "name": "analyze",
+      "exit": 0,
+      "seconds": 25.0
+    },
+    {
+      "name": "tests",
+      "exit": 1,
+      "seconds": 1446.8
+    },
+    {
+      "name": "compare",
+      "exit": 0,
+      "seconds": 5.6
+    }
+  ],
+  "problems": [],
+  "status": "ok",
+  "new_failures": [],
+  "api_change_kind": null
+}
