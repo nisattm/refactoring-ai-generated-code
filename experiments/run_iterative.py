@@ -202,7 +202,7 @@ def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -
             if args.resume_run or args.discard_run:
                 if not (run.out / "state.json").is_file():
                     raise EngineError(f"no saved state in {run.out}")
-                run.baseline = Path(common.read_json(run.out / "run.json")["baseline"])
+                run.baseline = common.from_repo(common.read_json(run.out / "run.json")["baseline"], run.repo)
                 return resume(run, args)
             return execute(run)
     except EngineError as exc:

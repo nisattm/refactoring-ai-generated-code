@@ -291,3 +291,14 @@ def test_measure_timeout_is_repeated_once(tmp_path, monkeypatch):
     code, info, steps = stub_measure(tmp_path, monkeypatch, STUB_TESTS_EXIT="4")
     assert code == 4 and info["status"] == "timeout"
     assert [s[0] for s in steps] == ["analyze", "run_tests", "run_tests"]
+
+
+def test_baseline_is_recorded_relative_to_the_repository(tmp_path):
+    repo = tmp_path / "repo"
+    inside = repo / "results" / "baseline" / "trial" / "pilot"
+    inside.mkdir(parents=True)
+    assert common.repo_relative(inside, repo) == "results/baseline/trial/pilot"
+    assert common.from_repo("results/baseline/trial/pilot", repo) == repo / "results/baseline/trial/pilot"
+    outside = tmp_path / "elsewhere"
+    assert common.repo_relative(outside, repo) == str(outside)
+    assert common.from_repo(str(outside), repo) == outside
