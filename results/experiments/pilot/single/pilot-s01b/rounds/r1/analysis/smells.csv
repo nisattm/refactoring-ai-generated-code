@@ -1,0 +1,91 @@
+run_label,schema_version,s_id,tool,rule,path,unit,line,module_no,module_name,level,counted,route_handler
+pilot-s01b-rounds-r1,1.0,S01,ast,95 lines,audit/importer.py,_check_consistency,128,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,60 lines,auth/service.py,login,77,2,Identity and access,complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,47 lines,auth/service.py,update_user,228,2,Identity and access,complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,50 lines,catalog/service.py,create_book,138,4,Catalog,complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,46 lines,catalog/service.py,add_copy,287,4,Catalog,complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,51 lines,fines/service.py,record_payment,102,7,Fines and payments,complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,67 lines,loans/service.py,lend,59,5,Loans and returns,complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,56 lines,loans/service.py,return_loan,189,5,Loans and returns,complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,72 lines,members/service.py,register_member,66,3,Members,complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,75 lines,purchasing/service.py,receive_order,274,12,Purchasing,medium,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,70 lines,reports/service.py,monthly_summary,150,10,Reports,medium,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,74 lines,reservations/service.py,create_reservation,167,6,Reservations,complex,1,0
+pilot-s01b-rounds-r1,1.0,S01,ast,62 lines,search/service.py,search_books,133,9,Search,simple,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/audit.py,list_audit_log,20,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/catalog.py,list_books,121,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/fines.py,list_member_fees,47,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/fines.py,list_fees,62,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/loans.py,_loan_page,22,14,API layer,medium,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/loans.py,list_loans,62,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/loans.py,list_member_loans,97,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/members.py,list_members,41,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/notifications.py,list_member_notifications,30,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/reports.py,most_borrowed,38,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/reservations.py,list_reservations,67,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/reservations.py,list_member_reservations,99,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/search.py,search_books,22,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/transfers.py,list_transfers,38,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,api/users.py,list_users,30,14,API layer,medium,1,1
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,audit/importer.py,_check_unique,113,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,audit/service.py,record,16,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,audit/service.py,audit_list_stmt,44,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,auth/service.py,change_password,164,2,Identity and access,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,auth/service.py,create_user,207,2,Identity and access,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,branches/service.py,create_branch,26,11,Branches and transfers,medium,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,branches/service.py,start_transfer,101,11,Branches and transfers,medium,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,branches/transfers.py,relocate,27,11,Branches and transfers,medium,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,catalog/service.py,create_book,138,4,Catalog,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,catalog/service.py,add_copy,287,4,Catalog,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,core/db.py,ensure_unique,123,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,fines/service.py,create_fee,67,7,Fines and payments,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,fines/service.py,record_payment,102,7,Fines and payments,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,loans/service.py,lend,59,5,Loans and returns,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,loans/service.py,return_loan,189,5,Loans and returns,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,loans/service.py,loan_list_stmt,282,5,Loans and returns,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,members/service.py,register_member,66,3,Members,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,notifications/service.py,_create,31,8,Notifications,medium,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,notifications/service.py,_remind,148,8,Notifications,medium,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,purchasing/service.py,create_supplier,44,12,Purchasing,medium,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,purchasing/service.py,create_order,154,12,Purchasing,medium,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,purchasing/service.py,receive_order,274,12,Purchasing,medium,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,reservations/service.py,make_ready,112,6,Reservations,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,reservations/service.py,create_reservation,167,6,Reservations,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,reservations/service.py,cancel_reservation,263,6,Reservations,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,reservations/service.py,fulfil_for_loan,361,6,Reservations,complex,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,search/service.py,_conditions,91,9,Search,simple,1,0
+pilot-s01b-rounds-r1,1.0,S03,ruff,PLR0913,search/service.py,search_books,133,9,Search,simple,1,0
+pilot-s01b-rounds-r1,1.0,S07,ruff,F401,catalog/schemas.py,<module>,16,4,Catalog,complex,1,0
+pilot-s01b-rounds-r1,1.0,S07,ruff,F401,core/db.py,create_schema,80,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S09,ruff,PLR0916,catalog/isbn.py,normalize_isbn,14,4,Catalog,complex,1,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,api/errors.py,_handle_http_exception,77,14,API layer,medium,1,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,api/errors.py,_handle_http_exception,79,14,API layer,medium,0,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,auth/deps.py,_bearer_token,37,2,Identity and access,complex,1,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,catalog/isbn.py,normalize_isbn,14,4,Catalog,complex,1,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,catalog/isbn.py,normalize_isbn,21,4,Catalog,complex,0,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,core/calendar.py,day_reason,15,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,core/settings.py,Settings.__post_init__,23,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,core/text.py,check_email,24,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,members/schemas.py,check_phone,30,3,Members,complex,1,0
+pilot-s01b-rounds-r1,1.0,S11,ruff,PLR2004,members/schemas.py,check_phone,30,3,Members,complex,0,0
+pilot-s01b-rounds-r1,1.0,S18,ast,cycle of 11 files,audit/models.py,lms.audit.models,1,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,api/dataexchange.py,import_dataset,26,14,API layer,medium,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,audit/importer.py,_parse,57,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,audit/importer.py,_raw_ids,102,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,audit/importer.py,_check_unique,114,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,audit/importer.py,_check_consistency,129,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,audit/importer.py,import_data,372,13,"Audit log, import, export",complex,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,catalog/service.py,add_copy,295,4,Catalog,complex,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/db.py,ensure_unique,125,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/db.py,ensure_unique,126,1,Core,simple,0,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/db.py,ensure_unique,127,1,Core,simple,0,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/errors.py,reference_not_found,59,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/money.py,_MoneyAnnotation.__get_pydantic_core_schema__,43,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/money.py,_MoneyAnnotation.__get_pydantic_core_schema__.<locals>.validate,44,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/money.py,MoneyType.process_bind_param,77,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/money.py,MoneyType.process_result_value,82,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/timeutil.py,TZDateTime.process_bind_param,52,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,core/timeutil.py,TZDateTime.process_result_value,59,1,Core,simple,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,reports/service.py,_csv_value,249,10,Reports,medium,1,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,reports/service.py,_csv_value,249,10,Reports,medium,0,0
+pilot-s01b-rounds-r1,1.0,S23,ruff,ANN401,reservations/service.py,_emit,46,6,Reservations,complex,1,0

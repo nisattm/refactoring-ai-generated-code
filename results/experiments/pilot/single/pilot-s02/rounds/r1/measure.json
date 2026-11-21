@@ -1,0 +1,26 @@
+{
+  "label": "pilot-s02-rounds-r1",
+  "code_sha": "7602d618912f3bf94b76939f3acb95930deb1b95",
+  "set": "both",
+  "steps": [
+    {
+      "name": "analyze",
+      "exit": 0,
+      "seconds": 25.7
+    },
+    {
+      "name": "tests",
+      "exit": 0,
+      "seconds": 209.1
+    },
+    {
+      "name": "compare",
+      "exit": 0,
+      "seconds": 12.4
+    }
+  ],
+  "problems": [],
+  "status": "ok",
+  "new_failures": [],
+  "api_change_kind": null
+}

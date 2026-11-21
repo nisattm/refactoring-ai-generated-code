@@ -1,0 +1,11 @@
+run_label,schema_version,level,aggregation,modules,files,sloc,smells,mean_cc,mean_cognitive,mi_weighted,smells_per_ksloc,duplication_pct,note
+pilot-s02-rounds-r1,1.0,simple,module mean,2,16,539,12,3.3571,2.7095,57.8096,19.7836,0.0000,descriptive only (2 modules)
+pilot-s02-rounds-r1,1.0,simple,pooled units,2,16,539,12,2.3519,1.5577,61.3617,22.2635,0.0000,descriptive only (2 modules)
+pilot-s02-rounds-r1,1.0,medium,module mean,5,36,2700,27,2.5488,1.7368,49.0342,9.1705,1.4114,
+pilot-s02-rounds-r1,1.0,medium,pooled units,5,36,2700,27,2.1881,1.2513,53.6520,10.0000,2.9052,
+pilot-s02-rounds-r1,1.0,complex,module mean,7,39,3164,42,3.0559,2.1927,40.9706,13.1258,0.5964,
+pilot-s02-rounds-r1,1.0,complex,pooled units,7,39,3164,42,3.0205,2.2577,40.5838,13.2743,0.8283,
+pilot-s02-rounds-r1,1.0,complex 2-7 and 13,module mean,7,39,3164,42,3.0559,2.1927,40.9706,13.1258,0.5964,sensitivity row
+pilot-s02-rounds-r1,1.0,complex 2-7 and 13,pooled units,7,39,3164,42,3.0205,2.2577,40.5838,13.2743,0.8283,sensitivity row
+pilot-s02-rounds-r1,1.0,complex 15-29,module mean,0,0,0,0,,,,,,sensitivity row
+pilot-s02-rounds-r1,1.0,complex 15-29,pooled units,0,0,0,0,,,,,,sensitivity row

@@ -1,0 +1,352 @@
+{
+  "after": {
+    "analyzer_sha": "1d583c038e2b31b1b512ac58ccc60ee6ce20c68b",
+    "code_content_hash": "a93f21160f467f2f7534780cc6dd28cdfd4e6af3c91fe43a53dd249f47be3520",
+    "code_sha": "49e05dd52e8c09b16f088d8f1d982fc43b78e4c9",
+    "image_id": "sha256:213b052362ead0d70857b04c1380229671a50053a53a18a4ccf56028cd267128",
+    "label": "pilot-s01b-rounds-r1",
+    "schema_version": "1.0",
+    "tool_versions": {
+      "code-quality-analyzer": "0.2.3",
+      "complexipy": "8.3.0",
+      "jscpd": "jscpd 5.4.2",
+      "pylint": "4.1.3",
+      "python": "3.14.10",
+      "radon": "6.0.1",
+      "ruff": "0.17.3",
+      "vulture": "2.16"
+    }
+  },
+  "before": {
+    "analyzer_sha": "6e5ba22995dd857755c921080835d3bbf3a0a70c",
+    "code_content_hash": "ef1c8f40ecd5b27bb1480ea1f6f4cad16e77dbaf18206c724f726b7b3369a3d1",
+    "code_sha": "ce03f5420a2da697772c0441607f35a94d75c8f8",
+    "image_id": "sha256:213b052362ead0d70857b04c1380229671a50053a53a18a4ccf56028cd267128",
+    "label": "pilot-ce03f54-v2",
+    "schema_version": "1.0",
+    "tool_versions": {
+      "code-quality-analyzer": "0.2.3",
+      "complexipy": "8.3.0",
+      "jscpd": "jscpd 5.4.2",
+      "pylint": "4.1.3",
+      "python": "3.14.10",
+      "radon": "6.0.1",
+      "ruff": "0.17.3",
+      "vulture": "2.16"
+    }
+  },
+  "change_size": {
+    "files_added": 1,
+    "files_changed": 49,
+    "files_removed": 0,
+    "lines_added": 862,
+    "lines_removed": 894
+  },
+  "compare_version": "1.0",
+  "invalid": [],
+  "inventory": {
+    "added": [
+      "class BookFieldChecks",
+      "class MemberFieldChecks",
+      "class QueryParams",
+      "function BookFieldChecks._authors",
+      "function BookFieldChecks._classification",
+      "function BookFieldChecks._isbn",
+      "function BookFieldChecks._language",
+      "function MemberFieldChecks._email",
+      "function MemberFieldChecks._phone",
+      "function MemberFieldChecks._university_id",
+      "function QueryParams.__init__",
+      "function QueryParams.check",
+      "function QueryParams.date",
+      "function QueryParams.integer",
+      "function RequestModel.provided_fields",
+      "function _charge_late_fee",
+      "function _conditions",
+      "function _copy_conditions",
+      "function _csv_of",
+      "function _is_memory_database",
+      "function _loan_counts_of",
+      "function _loan_page",
+      "function _remind",
+      "function _reserving_member_id",
+      "function _write_catalog",
+      "function _write_loans",
+      "function _write_members",
+      "function apply_filters",
+      "function author_out",
+      "function build_user",
+      "function check_branch_active",
+      "function check_branch_code",
+      "function check_password_policy",
+      "function check_price",
+      "function count_rows",
+      "function csv_response",
+      "function ensure_email_available",
+      "function ensure_unique",
+      "function format_optional_date",
+      "function format_optional_datetime",
+      "function get_or_404",
+      "function get_referenced",
+      "function now_of",
+      "function optional_date",
+      "function publisher_out",
+      "function require_own_or_staff",
+      "function settings_of",
+      "function today_of"
+    ],
+    "added_by_id": 50,
+    "added_by_name": 48,
+    "removed": [
+      "class ResponseModel",
+      "class _BookChecks",
+      "class _MemberFieldChecks",
+      "class _Params",
+      "function _BookChecks._authors",
+      "function _BookChecks._classification",
+      "function _BookChecks._isbn",
+      "function _BookChecks._language",
+      "function _MemberFieldChecks._email",
+      "function _MemberFieldChecks._phone",
+      "function _MemberFieldChecks._university_id",
+      "function _Params.__init__",
+      "function _Params.check",
+      "function _Params.date",
+      "function _Params.integer",
+      "function _check_branch_active",
+      "function _check_email",
+      "function _check_policy",
+      "function _check_unique_email",
+      "function _count",
+      "function _csv_response",
+      "function _due_before",
+      "function _not_found",
+      "function _now",
+      "function _own_or_staff",
+      "function _price",
+      "function _required_date",
+      "function _settings",
+      "function _today"
+    ],
+    "removed_by_id": 37,
+    "removed_by_name": 29,
+    "removed_share_pct": 5.6311,
+    "units_after": 534,
+    "units_before": 515
+  },
+  "openapi": {
+    "after_hash": "c2ea3e0693e351b8deacb53179390b056892c2a084920cf12d1791f79df7739d",
+    "before_hash": "c2ea3e0693e351b8deacb53179390b056892c2a084920cf12d1791f79df7739d",
+    "changed": false,
+    "checked": true,
+    "error": null
+  },
+  "previous_best": null,
+  "primary": {
+    "duplication_pct": {
+      "after": 0.5721,
+      "before": 0.809,
+      "delta": -0.2369,
+      "direction": "lower",
+      "status": "improved",
+      "threshold": 0.05
+    },
+    "mean_cc": {
+      "after": 2.407,
+      "before": 2.6795,
+      "delta": -0.2725,
+      "direction": "lower",
+      "status": "improved",
+      "threshold": 0.01
+    },
+    "mean_cognitive": {
+      "after": 1.5644,
+      "before": 1.8578,
+      "delta": -0.2934,
+      "direction": "lower",
+      "status": "improved",
+      "threshold": 0.01
+    },
+    "mi_weighted": {
+      "after": 49.5393,
+      "before": 45.8653,
+      "delta": 3.674,
+      "direction": "higher",
+      "status": "improved",
+      "threshold": 0.1
+    },
+    "smell_count": {
+      "after": 84,
+      "before": 83,
+      "delta": 1.0,
+      "direction": "lower",
+      "status": "worse",
+      "threshold": 1.0
+    }
+  },
+  "primary_vs_previous_best": null,
+  "round_accepted": {
+    "criteria": [
+      {
+        "detail": "all primary metrics measured",
+        "name": "valid",
+        "ok": true
+      },
+      {
+        "detail": "no regression",
+        "name": "tests",
+        "ok": true
+      },
+      {
+        "detail": "worse: smell_count",
+        "name": "primary metrics not worse than the previous best",
+        "ok": false
+      },
+      {
+        "detail": "OpenAPI schema unchanged",
+        "name": "openapi",
+        "ok": true
+      }
+    ],
+    "reasons": [
+      "primary metrics not worse than the previous best: worse: smell_count"
+    ],
+    "value": false
+  },
+  "run_successful": {
+    "criteria": [
+      {
+        "detail": "all primary metrics measured",
+        "name": "valid",
+        "ok": true
+      },
+      {
+        "detail": "no regression",
+        "name": "tests",
+        "ok": true
+      },
+      {
+        "detail": "worse: smell_count",
+        "name": "no primary metric worse",
+        "ok": false
+      },
+      {
+        "detail": "improved: mean_cc, mean_cognitive, mi_weighted, duplication_pct",
+        "name": "at least one primary metric improved",
+        "ok": true
+      },
+      {
+        "detail": "OpenAPI schema unchanged",
+        "name": "openapi",
+        "ok": true
+      }
+    ],
+    "reasons": [
+      "no primary metric worse: worse: smell_count"
+    ],
+    "value": false
+  },
+  "sloc": {
+    "after": 6372,
+    "before": 6449,
+    "drop_pct": 1.194,
+    "warning": false,
+    "warning_above_pct": 15.0
+  },
+  "smell_counts": {
+    "S01": {
+      "after": 13,
+      "before": 15
+    },
+    "S02": {
+      "after": 0,
+      "before": 0
+    },
+    "S03": {
+      "after": 43,
+      "before": 39
+    },
+    "S07": {
+      "after": 2,
+      "before": 3
+    },
+    "S09": {
+      "after": 1,
+      "before": 1
+    },
+    "S10": {
+      "after": 0,
+      "before": 0
+    },
+    "S11": {
+      "after": 7,
+      "before": 8
+    },
+    "S18": {
+      "after": 1,
+      "before": 1
+    },
+    "S19": {
+      "after": 0,
+      "before": 0
+    },
+    "S20": {
+      "after": 0,
+      "before": 0
+    },
+    "S21": {
+      "after": 0,
+      "before": 0
+    },
+    "S22": {
+      "after": 0,
+      "before": 0
+    },
+    "S23": {
+      "after": 17,
+      "before": 16
+    }
+  },
+  "status": "ok",
+  "tests": {
+    "excluded_flaky": [],
+    "lost_cases": [],
+    "new_passing": [],
+    "recovered_in_repeat": [],
+    "regression_count": 0,
+    "regressions": [],
+    "regressions_by_module": {},
+    "regressions_by_type": {},
+    "regressions_confirmed": 0,
+    "regressions_unconfirmed": 0,
+    "repetitions_given": 0,
+    "sets": {
+      "feedback": {
+        "after_passed": 282,
+        "baseline_failing": 0,
+        "baseline_failing_still": 0,
+        "before_passed": 282,
+        "lost": 0,
+        "new_cases": 0,
+        "new_passing": 0,
+        "regressions": 0
+      },
+      "heldout": {
+        "after_passed": 239,
+        "baseline_failing": 0,
+        "baseline_failing_still": 0,
+        "before_passed": 239,
+        "lost": 0,
+        "new_cases": 0,
+        "new_passing": 0,
+        "regressions": 0
+      }
+    },
+    "sets_compared": [
+      "feedback",
+      "heldout"
+    ],
+    "sets_not_run": []
+  },
+  "warnings": []
+}
