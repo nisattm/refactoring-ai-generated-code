@@ -6,7 +6,7 @@ Other modules call the ``notify_*`` functions in the transaction of the event th
 from __future__ import annotations
 
 import datetime
-from collections.abc import Container
+from collections.abc import Callable, Container
 from decimal import Decimal
 
 import sqlalchemy as sa
@@ -16,8 +16,10 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.catalog.models import Book, Copy
 from lms.core.calendar import add_working_days
-from lms.core.errors import NotFound
+from lms.core.db import get_or_404
 from lms.core.money import format_amount
+from lms.core.queries import filter_equal
+from lms.core.timeutil import format_date_or_none
 from lms.fines.models import Fee
 from lms.loans.models import Loan
 from lms.notifications.models import Notification
@@ -25,13 +27,7 @@ from lms.reservations.models import Reservation
 
 
 def get_notification_or_404(db: Session, notification_id: int) -> Notification:
-    notification = db.get(Notification, notification_id)
-    if notification is None:
-        raise NotFound(
-            f"Notification {notification_id} does not exist",
-            details={"resource": "notification", "id": notification_id},
-        )
-    return notification
+    return get_or_404(db, Notification, notification_id, "notification")
 
 
 def _create(
@@ -93,7 +89,7 @@ def notify_loan(db: Session, now: datetime.datetime, type_: str, loan: Loan) -> 
 def notify_reservation(db: Session, now: datetime.datetime, type_: str, reservation: Reservation) -> Notification:
     """``reservation_ready``, ``reservation_in_transit``, ``reservation_expired`` and ``reservation_cancelled``."""
     title = _title_of_book(db, reservation.book_id)
-    hold = reservation.hold_until.isoformat() if reservation.hold_until is not None else None
+    hold = format_date_or_none(reservation.hold_until)
     if type_ == "reservation_ready":
         message = f'Your reservation of "{title}" is ready for pickup until {hold}.'
     elif type_ == "reservation_in_transit":
@@ -151,6 +147,25 @@ def _already_sent(db: Session, type_: str, loan_id: int, reminder_date: datetime
     return db.scalar(stmt.limit(1)) is not None
 
 
+def _remind(
+    db: Session,
+    now: datetime.datetime,
+    loan: Loan,
+    type_: str,
+    reminder_date: datetime.date,
+    message: Callable[[str], str],
+) -> bool:
+    """Create the ``type_`` notification of ``loan`` for ``reminder_date`` unless it exists already.
+    ``message`` builds the text from the title of the book. Returns whether a notification was created."""
+    if _already_sent(db, type_, loan.id, reminder_date):
+        return False
+    _create(
+        db, now, loan.member_id, type_, message(_title_of_loan(db, loan)),
+        loan_id=loan.id, reminder_date=reminder_date,
+    )
+    return True
+
+
 def run_reminders(
     db: Session, now: datetime.datetime, actor: User, holidays: Container[datetime.date]
 ) -> tuple[int, int]:
@@ -164,29 +179,24 @@ def run_reminders(
         sa.select(Loan).where(Loan.status == "open", Loan.due_date == next_day).order_by(Loan.id)
     ).all()
     for loan in due_loans:
-        if _already_sent(db, "due_reminder", loan.id, loan.due_date):
-            continue
-        title = _title_of_loan(db, loan)
-        _create(
-            db, now, loan.member_id, "due_reminder",
-            f'Your loan of "{title}" is due on {loan.due_date.isoformat()}.',
-            loan_id=loan.id, reminder_date=loan.due_date,
+        due = loan.due_date.isoformat()
+        due_reminders += _remind(
+            db, now, loan, "due_reminder", loan.due_date, lambda title: f'Your loan of "{title}" is due on {due}.'
         )
-        due_reminders += 1
 
     overdue_loans = db.scalars(
         sa.select(Loan).where(Loan.status == "open", Loan.due_date < today).order_by(Loan.id)
     ).all()
     for loan in overdue_loans:
-        if _already_sent(db, "overdue_notice", loan.id, today):
-            continue
-        title = _title_of_loan(db, loan)
-        _create(
-            db, now, loan.member_id, "overdue_notice",
-            f'Your loan of "{title}" was due on {loan.due_date.isoformat()} and is overdue.',
-            loan_id=loan.id, reminder_date=today,
+        due = loan.due_date.isoformat()
+        overdue_notices += _remind(
+            db,
+            now,
+            loan,
+            "overdue_notice",
+            today,
+            lambda title: f'Your loan of "{title}" was due on {due} and is overdue.',
         )
-        overdue_notices += 1
 
     record(
         db,
@@ -230,11 +240,11 @@ def notification_list_stmt(
     *, member_id: int | None = None, unread: bool | None = None, type_: str | None = None
 ) -> sa.Select[tuple[Notification]]:
     """LIB-NOT-03: newest first."""
-    stmt = sa.select(Notification).order_by(Notification.created_at.desc(), Notification.id.desc())
-    if member_id is not None:
-        stmt = stmt.where(Notification.member_id == member_id)
+    stmt = filter_equal(
+        sa.select(Notification).order_by(Notification.created_at.desc(), Notification.id.desc()),
+        (Notification.member_id, member_id),
+        (Notification.type, type_),
+    )
     if unread is not None:
         stmt = stmt.where(Notification.read_at.is_(None) if unread else Notification.read_at.is_not(None))
-    if type_ is not None:
-        stmt = stmt.where(Notification.type == type_)
     return stmt

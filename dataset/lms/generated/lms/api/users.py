@@ -11,11 +11,12 @@ from lms.auth import service
 from lms.auth.deps import AdminOnly, CurrentPrincipal
 from lms.auth.models import User
 from lms.auth.schemas import ResetPasswordIn, Role, UserCreateIn, UserOut, UserPatchIn, user_out
-from lms.core.clock import local_now
+from lms.core.context import request_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.text import normalize
+from lms.core.queries import filter_equal
+from lms.core.text import normalize, search_needle
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -24,7 +25,7 @@ UserId = Annotated[int, Path(ge=1)]
 
 @router.post("", response_model=UserOut, status_code=201)
 def create_user(body: UserCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> UserOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     user = service.create_user(db, now, admin.user, body.email, body.full_name, body.role, body.password)
     return user_out(user)
 
@@ -38,12 +39,8 @@ def list_users(
     is_active: Annotated[bool | None, Query()] = None,
     q: Annotated[str | None, Query()] = None,
 ) -> Page[UserOut]:
-    stmt = sa.select(User).order_by(User.id)
-    if role is not None:
-        stmt = stmt.where(User.role == role)
-    if is_active is not None:
-        stmt = stmt.where(User.is_active == is_active)
-    needle = normalize(q.strip()) if q is not None else ""
+    stmt = filter_equal(sa.select(User).order_by(User.id), (User.role, role), (User.is_active, is_active))
+    needle = search_needle(q)
     if not needle:
         return paginate(db, stmt, page, user_out)
     # Case-insensitive matching follows LIB-COM-30, which SQLite cannot do for Turkish letters.
@@ -65,15 +62,14 @@ def get_user(user_id: UserId, db: SessionDep, principal: CurrentPrincipal) -> Us
 
 @router.patch("/{user_id}", response_model=UserOut)
 def update_user(user_id: UserId, body: UserPatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> UserOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     user = service.get_user_or_404(db, user_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    return user_out(service.update_user(db, now, admin.user, user, fields))
+    return user_out(service.update_user(db, now, admin.user, user, body.provided_fields()))
 
 
 @router.post("/{user_id}/reset-password", status_code=204)
 def reset_password(user_id: UserId, body: ResetPasswordIn, request: Request, db: SessionDep, admin: AdminOnly) -> Response:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     user = service.get_user_or_404(db, user_id)
     service.reset_password(db, now, admin.user, user, body.new_password)
     return Response(status_code=204)

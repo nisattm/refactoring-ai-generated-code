@@ -12,11 +12,14 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch
+from lms.branches.service import check_branch_active
 from lms.catalog.models import Book
 from lms.catalog.service import add_copy
+from lms.core.db import get_or_404
 from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.queries import filter_equal
 from lms.core.money import format_amount
-from lms.core.text import normalize
+from lms.core.text import normalize, search_needle
 from lms.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier
 from lms.purchasing.schemas import LineIn, ReceiveLineIn
 
@@ -24,10 +27,7 @@ from lms.purchasing.schemas import LineIn, ReceiveLineIn
 
 
 def get_supplier_or_404(db: Session, supplier_id: int) -> Supplier:
-    supplier = db.get(Supplier, supplier_id)
-    if supplier is None:
-        raise NotFound(f"Supplier {supplier_id} does not exist", details={"resource": "supplier", "id": supplier_id})
-    return supplier
+    return get_or_404(db, Supplier, supplier_id, "supplier")
 
 
 def _check_unique_name(db: Session, name: str, *, own_id: int | None = None) -> None:
@@ -84,7 +84,7 @@ def update_supplier(
 
 def supplier_list_stmt(q: str | None, is_active: bool | None) -> sa.Select[tuple[Supplier]]:
     stmt = sa.select(Supplier).order_by(Supplier.name_key, Supplier.id)
-    needle = normalize(q.strip()) if q is not None else ""
+    needle = search_needle(q)
     if needle:
         stmt = stmt.where(Supplier.name_key.contains(needle, autoescape=True))
     if is_active is not None:
@@ -96,12 +96,7 @@ def supplier_list_stmt(q: str | None, is_active: bool | None) -> sa.Select[tuple
 
 
 def get_order_or_404(db: Session, order_id: int) -> PurchaseOrder:
-    order = db.get(PurchaseOrder, order_id)
-    if order is None:
-        raise NotFound(
-            f"Purchase order {order_id} does not exist", details={"resource": "purchase_order", "id": order_id}
-        )
-    return order
+    return get_or_404(db, PurchaseOrder, order_id, "purchase_order", "Purchase order")
 
 
 def order_lines(db: Session, order_id: int) -> list[PurchaseOrderLine]:
@@ -127,13 +122,6 @@ def _require_books(db: Session, lines: list[LineIn]) -> None:
                 f"book_id {line.book_id} does not exist",
                 details={"field": f"lines[{index}].book_id", "id": line.book_id},
             )
-
-
-def _check_branch_active(branch: Branch, field: str) -> None:
-    if not branch.is_active:
-        raise Conflict(
-            f"Branch {branch.code} is inactive", code="BRANCH_INACTIVE", details={"field": field, "id": branch.id}
-        )
 
 
 def _check_supplier_active(supplier: Supplier) -> None:
@@ -177,10 +165,10 @@ def create_order(
     if branch is None:
         raise reference_not_found("branch_id", branch_id)
     _require_books(db, lines)
-    _check_branch_active(branch, "branch_id")  # LIB-BR-04: before all other 409 checks
+    check_branch_active(branch, "branch_id")  # LIB-BR-04: before all other 409 checks
     _check_supplier_active(supplier)
 
-    order = PurchaseOrder(
+    order =PurchaseOrder(
         supplier_id=supplier_id, branch_id=branch_id, status="draft", created_by=actor.id, created_at=now
     )
     db.add(order)
@@ -214,7 +202,7 @@ def update_order(
     if "lines" in fields:
         _require_books(db, fields["lines"])
     if branch is not None:
-        _check_branch_active(branch, "branch_id")  # LIB-BR-04: before all other 409 checks
+        check_branch_active(branch, "branch_id")  # LIB-BR-04: before all other 409 checks
     if order.status != "draft":
         raise _invalid_status(order, "editing")
     if supplier is not None:
@@ -306,7 +294,7 @@ def receive_order(
             )
     branch = db.get(Branch, order.branch_id)
     assert branch is not None
-    _check_branch_active(branch, "branch_id")  # LIB-BR-04: before all other 409 checks
+    check_branch_active(branch, "branch_id")  # LIB-BR-04: before all other 409 checks
     if order.status not in ("ordered", "partially_received"):
         raise _invalid_status(order, "receive")
 
@@ -370,11 +358,9 @@ def order_list_stmt(
     *, status: str | None, supplier_id: int | None, branch_id: int | None
 ) -> sa.Select[tuple[PurchaseOrder]]:
     """LIB-PUR-09."""
-    stmt = sa.select(PurchaseOrder).order_by(PurchaseOrder.id.desc())
-    if status is not None:
-        stmt = stmt.where(PurchaseOrder.status == status)
-    if supplier_id is not None:
-        stmt = stmt.where(PurchaseOrder.supplier_id == supplier_id)
-    if branch_id is not None:
-        stmt = stmt.where(PurchaseOrder.branch_id == branch_id)
-    return stmt
+    return filter_equal(
+        sa.select(PurchaseOrder).order_by(PurchaseOrder.id.desc()),
+        (PurchaseOrder.status, status),
+        (PurchaseOrder.supplier_id, supplier_id),
+        (PurchaseOrder.branch_id, branch_id),
+    )

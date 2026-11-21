@@ -17,7 +17,8 @@ from lms.branches.models import Branch, Transfer
 from lms.catalog.models import Copy
 from lms.catalog.status import set_status
 from lms.core.calendar import add_working_days
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict, reference_not_found
 from lms.members.models import Member
 from lms.reservations.models import ACTIVE_STATUSES, Reservation
 
@@ -42,10 +43,15 @@ def create_branch(db: Session, now: datetime.datetime, actor: User, code: str, n
 
 
 def get_branch_or_404(db: Session, branch_id: int) -> Branch:
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise NotFound(f"Branch {branch_id} does not exist", details={"resource": "branch", "id": branch_id})
-    return branch
+    return get_or_404(db, Branch, branch_id, "branch")
+
+
+def check_branch_active(branch: Branch, field: str) -> None:
+    """``409 BRANCH_INACTIVE`` if the branch referenced by ``field`` of a request is inactive (LIB-BR-04)."""
+    if not branch.is_active:
+        raise Conflict(
+            f"Branch {branch.code} is inactive", code="BRANCH_INACTIVE", details={"field": field, "id": branch.id}
+        )
 
 
 def require_active_branch(db: Session, field: str, branch_id: int) -> Branch:
@@ -54,10 +60,7 @@ def require_active_branch(db: Session, field: str, branch_id: int) -> Branch:
     branch = db.get(Branch, branch_id)
     if branch is None:
         raise reference_not_found(field, branch_id)
-    if not branch.is_active:
-        raise Conflict(
-            f"Branch {branch.code} is inactive", code="BRANCH_INACTIVE", details={"field": field, "id": branch_id}
-        )
+    check_branch_active(branch, field)
     return branch
 
 

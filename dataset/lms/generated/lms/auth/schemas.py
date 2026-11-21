@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field, StrictBool, StringConstraints, field_vali
 from lms.auth.models import User
 from lms.auth.passwords import password_problem
 from lms.core.schemas import RequestModel
-from lms.core.text import is_valid_email
-from lms.core.timeutil import format_datetime
+from lms.core.text import check_email
+from lms.core.timeutil import format_datetime, format_datetime_or_none
 
 Role = Literal["member", "librarian", "admin"]
 StaffRole = Literal["librarian", "admin"]
@@ -24,15 +24,6 @@ def _check_policy(value: str) -> str:
     problem = password_problem(value)
     if problem is not None:
         raise ValueError(problem)
-    return value
-
-
-def _check_email(value: str) -> str:
-    value = value.lower()
-    if len(value) > 254:
-        raise ValueError("e-mail must be at most 254 characters")
-    if not is_valid_email(value):
-        raise ValueError("invalid e-mail address")
     return value
 
 
@@ -70,7 +61,7 @@ class UserCreateIn(RequestModel):
     @field_validator("email")
     @classmethod
     def _email(cls, value: str) -> str:
-        return _check_email(value)
+        return check_email(value)
 
     @field_validator("password")
     @classmethod
@@ -106,7 +97,7 @@ def user_out(user: User) -> UserOut:
         is_active=user.is_active,
         member_id=user.member_id,
         created_at=format_datetime(user.created_at),
-        last_login_at=format_datetime(user.last_login_at) if user.last_login_at else None,
+        last_login_at=format_datetime_or_none(user.last_login_at),
     )
 
 

@@ -12,12 +12,15 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
+from lms.branches.service import check_branch_active
 from lms.catalog.models import Copy
 from lms.catalog.release import release_copy
 from lms.catalog.status import set_status
 from lms.core.calendar import next_working_day
+from lms.core.db import get_or_404
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.core.money import format_amount
+from lms.core.queries import filter_equal
 from lms.fines.service import (
     LOST_PROCESSING_FEE,
     create_fee,
@@ -33,10 +36,21 @@ from lms.reservations import service as reservations
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> Loan:
-    loan = db.get(Loan, loan_id)
-    if loan is None:
-        raise NotFound(f"Loan {loan_id} does not exist", details={"resource": "loan", "id": loan_id})
-    return loan
+    return get_or_404(db, Loan, loan_id, "loan")
+
+
+def _require_open(loan: Loan) -> None:
+    if loan.status != "open":
+        raise Conflict("The loan is not open", code="LOAN_NOT_OPEN", details={"status": loan.status})
+
+
+def _charge_late_fee(db: Session, now: datetime.datetime, actor: User, loan: Loan) -> None:
+    """LIB-FEE-02: a late fee for the late days of a returned or lost loan (none if it was not late)."""
+    if loan.late_days > 0:
+        create_fee(
+            db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="late_fee",
+            amount=late_fee_amount(loan.late_days, loan.daily_fee),
+        )
 
 
 def due_date_after(start: datetime.date, loan_period_days: int, holidays: Container[datetime.date]) -> datetime.date:
@@ -143,8 +157,7 @@ def renew(
     member = db.get(Member, loan.member_id)
     copy = db.get(Copy, loan.copy_id)
     assert member is not None and copy is not None
-    if loan.status != "open":
-        raise Conflict("The loan is not open", code="LOAN_NOT_OPEN", details={"status": loan.status})
+    _require_open(loan)
     if member.status == "passive":
         raise Conflict("The member is passive", code="MEMBER_PASSIVE")
     if today > member.valid_until:
@@ -197,12 +210,8 @@ def return_loan(
     branch = db.get(Branch, branch_id)
     if branch is None:
         raise reference_not_found("branch_id", branch_id)
-    if loan.status != "open":
-        raise Conflict("The loan is not open", code="LOAN_NOT_OPEN", details={"status": loan.status})
-    if not branch.is_active:
-        raise Conflict(
-            f"Branch {branch.code} is inactive", code="BRANCH_INACTIVE", details={"field": "branch_id", "id": branch_id}
-        )
+    _require_open(loan)
+    check_branch_active(branch, "branch_id")
     copy = db.get(Copy, loan.copy_id)
     assert copy is not None
     if damage_fee is not None and damage_fee > copy.price:
@@ -235,11 +244,7 @@ def return_loan(
         },
     )
     notify_loan(db, now, "loan_returned", loan)
-    if loan.late_days > 0:
-        create_fee(
-            db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="late_fee",
-            amount=late_fee_amount(loan.late_days, loan.daily_fee),
-        )
+    _charge_late_fee(db, now, actor, loan)
     copy.current_branch_id = branch_id
     if condition == "damaged":
         assert damage_fee is not None
@@ -254,8 +259,7 @@ def report_lost(
     db: Session, now: datetime.datetime, actor: User, holidays: Container[datetime.date], loan: Loan
 ) -> Loan:
     """LIB-LOAN-13, LIB-FEE-04."""
-    if loan.status != "open":
-        raise Conflict("The loan is not open", code="LOAN_NOT_OPEN", details={"status": loan.status})
+    _require_open(loan)
     copy = db.get(Copy, loan.copy_id)
     assert copy is not None
     today = now.date()
@@ -273,11 +277,7 @@ def report_lost(
         details={"member_id": loan.member_id, "copy_id": loan.copy_id, "late_days": loan.late_days},
     )
     notify_loan(db, now, "loan_lost", loan)
-    if loan.late_days > 0:
-        create_fee(
-            db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="late_fee",
-            amount=late_fee_amount(loan.late_days, loan.daily_fee),
-        )
+    _charge_late_fee(db, now, actor, loan)
     create_fee(db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="lost_book", amount=copy.price)
     create_fee(
         db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="lost_processing", amount=LOST_PROCESSING_FEE
@@ -300,17 +300,15 @@ def loan_list_stmt(
     due_before: datetime.date | None = None,
 ) -> sa.Select[tuple[Loan]]:
     """LIB-LOAN-14: filtered loans, newest first."""
-    stmt = sa.select(Loan).order_by(Loan.id.desc())
-    if member_id is not None:
-        stmt = stmt.where(Loan.member_id == member_id)
-    if copy_id is not None:
-        stmt = stmt.where(Loan.copy_id == copy_id)
+    stmt = filter_equal(
+        sa.select(Loan).order_by(Loan.id.desc()),
+        (Loan.member_id, member_id),
+        (Loan.copy_id, copy_id),
+        (Loan.branch_id, branch_id),
+        (Loan.status, status),
+    )
     if book_id is not None:
         stmt = stmt.where(Loan.copy_id.in_(sa.select(Copy.id).where(Copy.book_id == book_id)))
-    if branch_id is not None:
-        stmt = stmt.where(Loan.branch_id == branch_id)
-    if status is not None:
-        stmt = stmt.where(Loan.status == status)
     if overdue is not None:
         is_overdue = sa.and_(Loan.status == "open", Loan.due_date < today)
         stmt = stmt.where(is_overdue if overdue else sa.not_(is_overdue))

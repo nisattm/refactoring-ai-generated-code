@@ -9,6 +9,7 @@ from typing import Any
 import sqlalchemy as sa
 
 from lms.core.clock import LOCAL_TZ
+from lms.core.errors import ValidationFailed
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -30,9 +31,30 @@ def parse_datetime(text: str) -> datetime.datetime:
     return value
 
 
+DATE_PROBLEM = "expected a valid date in the form YYYY-MM-DD"
+
+
+def parse_date_param(name: str, raw: str | None) -> datetime.date | None:
+    """An optional date query parameter; ``422 VALIDATION_ERROR`` if it is present but invalid."""
+    if raw is None:
+        return None
+    try:
+        return parse_date(raw.strip())
+    except ValueError:
+        raise ValidationFailed.single(name, DATE_PROBLEM) from None
+
+
 def format_datetime(value: datetime.datetime) -> str:
     """Local time (UTC+03:00) as ISO 8601 with offset, e.g. ``2026-11-02T09:30:00+03:00``."""
     return value.astimezone(LOCAL_TZ).isoformat()
+
+
+def format_date_or_none(value: datetime.date | None) -> str | None:
+    return value.isoformat() if value is not None else None
+
+
+def format_datetime_or_none(value: datetime.datetime | None) -> str | None:
+    return format_datetime(value) if value is not None else None
 
 
 class TZDateTime(sa.TypeDecorator[datetime.datetime]):

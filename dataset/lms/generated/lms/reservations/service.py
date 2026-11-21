@@ -15,11 +15,12 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.branches.service import start_transfer
+from lms.branches.service import check_branch_active, start_transfer
 from lms.catalog.models import Book, Copy
 from lms.catalog.status import GONE_STATUSES, set_status
 from lms.core.calendar import add_working_days
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict, reference_not_found
 from lms.loans.models import Loan
 from lms.members.models import Member
 from lms.notifications.service import notify_reservation
@@ -30,13 +31,7 @@ HOLD_WORKING_DAYS = 3
 
 
 def get_reservation_or_404(db: Session, reservation_id: int) -> Reservation:
-    reservation = db.get(Reservation, reservation_id)
-    if reservation is None:
-        raise NotFound(
-            f"Reservation {reservation_id} does not exist",
-            details={"resource": "reservation", "id": reservation_id},
-        )
-    return reservation
+    return get_or_404(db, Reservation, reservation_id, "reservation")
 
 
 _NOTIFIED_EVENTS = frozenset({"reservation_ready", "reservation_in_transit", "reservation_expired"})
@@ -190,12 +185,7 @@ def create_reservation(
     if member is None:
         raise reference_not_found("member_id", member_id)
 
-    if not branch.is_active:  # LIB-BR-04: before all other 409 checks
-        raise Conflict(
-            f"Branch {branch.code} is inactive",
-            code="BRANCH_INACTIVE",
-            details={"field": "pickup_branch_id", "id": pickup_branch_id},
-        )
+    check_branch_active(branch, "pickup_branch_id")  # LIB-BR-04: before all other 409 checks
     today = now.date()
     if member.status == "passive":
         raise Conflict("The member is passive", code="MEMBER_PASSIVE")

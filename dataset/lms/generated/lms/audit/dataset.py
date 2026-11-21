@@ -4,27 +4,19 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy.orm import sessionmaker
-
 from lms.audit import exporter
 from lms.audit.importer import import_data
 from lms.auth.bootstrap import ensure_bootstrap_admin
 from lms.core.clock import local_now
-from lms.core.db import create_schema, get_engine
+from lms.core.db import create_session_factory, open_database
 from lms.core.errors import Conflict, ValidationFailed
 from lms.core.settings import Settings
-
-
-def _session_factory(settings: Settings) -> sessionmaker:
-    engine = get_engine(settings)
-    create_schema(engine)
-    return sessionmaker(engine, expire_on_commit=False)
 
 
 def import_dataset(settings: Settings, data: dict) -> dict[str, int]:
     """``POST /api/v1/import`` without authentication. Raises ``ValueError`` if the data is invalid and
     ``RuntimeError`` if the database is not empty. Returns the counts per list."""
-    factory = _session_factory(settings)
+    factory = create_session_factory(open_database(settings))
     now = local_now(settings.clock)
     try:
         with factory.begin() as session:
@@ -41,7 +33,7 @@ def import_dataset(settings: Settings, data: dict) -> dict[str, int]:
 
 def export_dataset(settings: Settings) -> dict[str, Any]:
     """The document of ``GET /api/v1/export`` (section 22.1)."""
-    factory = _session_factory(settings)
+    factory = create_session_factory(open_database(settings))
     now = local_now(settings.clock)
     with factory.begin() as session:
         document = exporter.build_document(session)

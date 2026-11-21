@@ -11,19 +11,18 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch, Transfer
-from lms.branches.service import start_transfer
+from lms.branches.service import check_branch_active, start_transfer
 from lms.catalog.models import Copy
 from lms.catalog.status import invalid_status
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict, reference_not_found
+from lms.core.queries import filter_equal
 from lms.reservations import service as reservations
 from lms.reservations.models import Reservation
 
 
 def get_transfer_or_404(db: Session, transfer_id: int) -> Transfer:
-    transfer = db.get(Transfer, transfer_id)
-    if transfer is None:
-        raise NotFound(f"Transfer {transfer_id} does not exist", details={"resource": "transfer", "id": transfer_id})
-    return transfer
+    return get_or_404(db, Transfer, transfer_id, "transfer")
 
 
 def relocate(
@@ -42,12 +41,7 @@ def relocate(
     branch = db.get(Branch, to_branch_id)
     if branch is None:
         raise reference_not_found("to_branch_id", to_branch_id)
-    if not branch.is_active:
-        raise Conflict(
-            f"Branch {branch.code} is inactive",
-            code="BRANCH_INACTIVE",
-            details={"field": "to_branch_id", "id": to_branch_id},
-        )
+    check_branch_active(branch, "to_branch_id")
     if copy.status != "available":
         raise invalid_status(copy, "relocate")
     if copy.current_branch_id == to_branch_id:
@@ -105,14 +99,11 @@ def transfer_list_stmt(
     reason: str | None = None,
 ) -> sa.Select[tuple[Transfer]]:
     """LIB-BR-09: filtered transfers, newest first."""
-    stmt = sa.select(Transfer).order_by(Transfer.id.desc())
-    for column, value in (
+    return filter_equal(
+        sa.select(Transfer).order_by(Transfer.id.desc()),
         (Transfer.status, status),
         (Transfer.copy_id, copy_id),
         (Transfer.from_branch_id, from_branch_id),
         (Transfer.to_branch_id, to_branch_id),
         (Transfer.reason, reason),
-    ):
-        if value is not None:
-            stmt = stmt.where(column == value)
-    return stmt
+    )

@@ -5,12 +5,14 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path, Query, Request
+from sqlalchemy.orm import Session
 
 from lms.auth.deps import StaffOnly
-from lms.core.clock import local_now
+from lms.core.context import app_settings, request_now
 from lms.core.db import SessionDep
 from lms.core.pagination import Page, PageDep, paginate
 from lms.purchasing import service
+from lms.purchasing.models import PurchaseOrder
 from lms.purchasing.schemas import (
     OrderCreateIn,
     OrderOut,
@@ -31,7 +33,7 @@ OrderId = Annotated[int, Path(ge=1)]
 OrderStatus = Literal["draft", "ordered", "partially_received", "received", "cancelled"]
 
 
-def _order(db, order) -> OrderOut:  # noqa: ANN001
+def _order(db: Session, order: PurchaseOrder) -> OrderOut:
     return order_out(order, service.order_lines(db, order.id))
 
 
@@ -40,7 +42,7 @@ def _order(db, order) -> OrderOut:  # noqa: ANN001
 
 @router.post("/suppliers", response_model=SupplierOut, status_code=201)
 def create_supplier(body: SupplierCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> SupplierOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     return supplier_out(
         service.create_supplier(db, now, staff.user, name=body.name, email=body.email, phone=body.phone)
     )
@@ -66,10 +68,9 @@ def get_supplier(supplier_id: SupplierId, db: SessionDep, _: StaffOnly) -> Suppl
 def update_supplier(
     supplier_id: SupplierId, body: SupplierPatchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> SupplierOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     supplier = service.get_supplier_or_404(db, supplier_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    return supplier_out(service.update_supplier(db, now, staff.user, supplier, fields))
+    return supplier_out(service.update_supplier(db, now, staff.user, supplier, body.provided_fields()))
 
 
 # --- purchase orders ----------------------------------------------------------------
@@ -77,7 +78,7 @@ def update_supplier(
 
 @router.post("/purchase-orders", response_model=OrderOut, status_code=201)
 def create_order(body: OrderCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     order = service.create_order(
         db, now, staff.user, supplier_id=body.supplier_id, branch_id=body.branch_id, lines=body.lines
     )
@@ -104,21 +105,20 @@ def get_order(order_id: OrderId, db: SessionDep, _: StaffOnly) -> OrderOut:
 
 @router.patch("/purchase-orders/{order_id}", response_model=OrderOut)
 def update_order(order_id: OrderId, body: OrderPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     order = service.get_order_or_404(db, order_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    return _order(db, service.update_order(db, now, staff.user, order, fields))
+    return _order(db, service.update_order(db, now, staff.user, order, body.provided_fields()))
 
 
 @router.post("/purchase-orders/{order_id}/submit", response_model=OrderOut)
 def submit_order(order_id: OrderId, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     return _order(db, service.submit_order(db, now, staff.user, service.get_order_or_404(db, order_id)))
 
 
 @router.post("/purchase-orders/{order_id}/cancel", response_model=OrderOut)
 def cancel_order(order_id: OrderId, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     return _order(db, service.cancel_order(db, now, staff.user, service.get_order_or_404(db, order_id)))
 
 
@@ -126,7 +126,6 @@ def cancel_order(order_id: OrderId, request: Request, db: SessionDep, staff: Sta
 def receive_order(
     order_id: OrderId, body: ReceiveIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> OrderOut:
-    settings = request.app.state.settings
-    now = local_now(settings.clock)
+    now = request_now(request)
     order = service.get_order_or_404(db, order_id)
-    return _order(db, service.receive_order(db, now, staff.user, settings.holidays, order, body.lines))
+    return _order(db, service.receive_order(db, now, staff.user, app_settings(request).holidays, order, body.lines))

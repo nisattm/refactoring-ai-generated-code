@@ -6,10 +6,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 
-from lms.auth.deps import CurrentPrincipal, Principal, StaffOnly, require_roles
-from lms.core.clock import local_now
+from lms.auth.deps import CurrentPrincipal, Principal, StaffOnly, own_member_check, require_roles
+from lms.core.context import app_settings, request_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden
 from lms.core.pagination import Page, PageDep, paginate
 from lms.members.service import get_member_or_404
 from lms.notifications import service
@@ -30,10 +29,7 @@ NotificationId = Annotated[int, Path(ge=1)]
 MemberOnly = Annotated[Principal, Depends(require_roles("member"))]
 
 
-def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25: a member may only address their own notifications."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own notifications can be accessed")
+_own_or_staff = own_member_check("Only your own notifications can be accessed")
 
 
 @router.get("/members/{member_id}/notifications", response_model=Page[NotificationOut])
@@ -60,7 +56,7 @@ def unread_count(member_id: MemberId, db: SessionDep, principal: CurrentPrincipa
 
 @router.post("/members/{member_id}/notifications/read-all", response_model=ReadAllOut)
 def read_all(member_id: MemberId, request: Request, db: SessionDep, principal: MemberOnly) -> ReadAllOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     return ReadAllOut(updated=service.mark_all_read(db, now, member.id))
@@ -81,9 +77,8 @@ def list_notifications(
 
 @router.post("/notifications/run-reminders", response_model=RemindersOut)
 def run_reminders(request: Request, db: SessionDep, staff: StaffOnly) -> RemindersOut:
-    settings = request.app.state.settings
-    now = local_now(settings.clock)
-    due, overdue = service.run_reminders(db, now, staff.user, settings.holidays)
+    now = request_now(request)
+    due, overdue = service.run_reminders(db, now, staff.user, app_settings(request).holidays)
     return RemindersOut(due_reminders=due, overdue_notices=overdue)
 
 
@@ -91,7 +86,7 @@ def run_reminders(request: Request, db: SessionDep, staff: StaffOnly) -> Reminde
 def read_notification(
     notification_id: NotificationId, request: Request, db: SessionDep, principal: MemberOnly
 ) -> NotificationOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     notification = service.get_notification_or_404(db, notification_id)
     _own_or_staff(principal, notification.member_id)
     return notification_out(service.mark_read(now, notification))

@@ -11,10 +11,9 @@ import sqlalchemy as sa
 from fastapi import Depends, Request
 
 from lms.auth.models import AuthSession, User
-from lms.core.clock import local_now
+from lms.core.context import request_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, Unauthenticated
-from lms.core.settings import Settings
 
 
 @dataclasses.dataclass
@@ -46,8 +45,7 @@ def authenticate(request: Request, db: SessionDep) -> Principal:
     auth_session = db.scalar(sa.select(AuthSession).where(AuthSession.token_hash == hash_token(token)))
     if auth_session is None or auth_session.revoked_at is not None:
         raise Unauthenticated("Invalid or revoked token")
-    settings: Settings = request.app.state.settings
-    if local_now(settings.clock) >= auth_session.expires_at:
+    if request_now(request) >= auth_session.expires_at:
         raise Unauthenticated("Token has expired", code="TOKEN_EXPIRED")
     user = db.get(User, auth_session.user_id)
     if user is None or not user.is_active:
@@ -65,6 +63,17 @@ def require_roles(*roles: str) -> Callable[[Principal], Principal]:
         if principal.user.role not in roles:
             raise Forbidden("Your role does not allow this action")
         return principal
+
+    return check
+
+
+def own_member_check(message: str) -> Callable[[Principal, int], None]:
+    """LIB-AUTH-25: a check that a ``member`` user addresses only records of their own member record
+    (403 with ``message`` otherwise). Librarians and admins may address every member."""
+
+    def check(principal: Principal, member_id: int) -> None:
+        if principal.user.role == "member" and principal.user.member_id != member_id:
+            raise Forbidden(message)
 
     return check
 

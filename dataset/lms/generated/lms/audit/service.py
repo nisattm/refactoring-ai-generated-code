@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from lms.audit.models import AuditEntry
 from lms.core.clock import LOCAL_TZ
+from lms.core.queries import filter_equal
 
 
 def record(
@@ -50,15 +51,13 @@ def audit_list_stmt(
     date_to: datetime.date | None = None,
 ) -> sa.Select[tuple[AuditEntry]]:
     """LIB-AUD-03: newest first; ``date_from`` and ``date_to`` are inclusive local dates of ``at``."""
-    stmt = sa.select(AuditEntry).order_by(AuditEntry.id.desc())
-    if event is not None:
-        stmt = stmt.where(AuditEntry.event == event)
-    if actor_user_id is not None:
-        stmt = stmt.where(AuditEntry.actor_user_id == actor_user_id)
-    if entity_type is not None:
-        stmt = stmt.where(AuditEntry.entity_type == entity_type)
-    if entity_id is not None:
-        stmt = stmt.where(AuditEntry.entity_id == entity_id)
+    stmt = filter_equal(
+        sa.select(AuditEntry).order_by(AuditEntry.id.desc()),
+        (AuditEntry.event, event),
+        (AuditEntry.actor_user_id, actor_user_id),
+        (AuditEntry.entity_type, entity_type),
+        (AuditEntry.entity_id, entity_id),
+    )
     if date_from is not None:
         stmt = stmt.where(AuditEntry.at >= datetime.datetime.combine(date_from, datetime.time.min, LOCAL_TZ))
     if date_to is not None and date_to < datetime.date.max:
