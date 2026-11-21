@@ -1,0 +1,32 @@
+run_label,schema_version,module_no,module_name,level,status,valid,files,sloc,units,mean_cc,max_cc,share_cc_high,mean_cognitive,max_cognitive,share_cognitive_high,mi_weighted,mi_mean,smells,smells_per_ksloc,duplication_pct,duplicated_lines
+v0-ai-baseline-ct,1.0,1,Core,simple,generated,1,14,520,55,2.1091,5,0.0000,1.1509,5,0.0000,58.9829,67.6133,10,19.2308,0.0000,0
+v0-ai-baseline-ct,1.0,2,Identity and access,complex,generated,1,9,526,37,2.7838,22,0.0270,1.8056,23,0.0278,52.6757,65.0190,7,13.3080,0.0000,0
+v0-ai-baseline-ct,1.0,3,Members,complex,generated,1,6,666,33,3.3939,21,0.0606,2.5152,25,0.0303,41.7221,58.2184,7,10.5105,0.0000,0
+v0-ai-baseline-ct,1.0,4,Catalog,complex,generated,1,8,843,73,2.3699,16,0.0411,1.5068,18,0.0137,41.4473,65.2213,11,13.0486,2.1277,24
+v0-ai-baseline-ct,1.0,5,Loans and returns,complex,generated,1,5,527,21,4.0000,14,0.0952,3.0000,14,0.0000,38.0848,55.4746,7,13.2827,10.3668,65
+v0-ai-baseline-ct,1.0,6,Reservations,complex,generated,1,5,529,31,3.0000,14,0.0323,2.2258,14,0.0000,39.5513,56.5844,9,17.0132,4.7904,32
+v0-ai-baseline-ct,1.0,7,Fines and payments,complex,generated,1,5,454,23,2.1304,6,0.0000,1.0870,6,0.0000,43.0537,54.3587,6,13.2159,2.1277,12
+v0-ai-baseline-ct,1.0,8,Notifications,medium,generated,1,5,595,43,1.5349,7,0.0000,0.6279,8,0.0000,48.3618,60.7639,15,25.2101,0.0000,0
+v0-ai-baseline-ct,1.0,9,Search,simple,generated,1,4,181,8,5.5000,25,0.2500,4.3750,29,0.1250,52.4755,75.9630,3,16.5746,0.0000,0
+v0-ai-baseline-ct,1.0,10,Reports,medium,generated,1,3,245,14,2.6429,6,0.0000,2.0833,5,0.0000,43.9804,64.0664,2,8.1633,0.0000,0
+v0-ai-baseline-ct,1.0,11,Branches and transfers,medium,generated,1,7,454,21,3.1905,17,0.0476,2.2381,16,0.0476,56.0762,67.0827,5,11.0132,1.0619,6
+v0-ai-baseline-ct,1.0,12,Purchasing,medium,generated,1,5,611,43,2.7674,19,0.0465,2.0698,27,0.0465,45.8747,67.5969,5,8.1833,4.9682,39
+v0-ai-baseline-ct,1.0,13,"Audit log, import, export",complex,generated,1,10,814,43,3.9535,36,0.0698,4.0000,63,0.0714,41.3758,59.0913,12,14.7420,1.6683,17
+v0-ai-baseline-ct,1.0,14,API layer,medium,generated,1,4,437,33,2.2727,9,0.0000,1.3750,10,0.0000,45.0666,62.2619,5,11.4416,8.5028,46
+v0-ai-baseline-ct,1.0,15,Study rooms,complex,generated,1,11,1825,115,3.5391,18,0.0696,2.8860,19,0.0088,29.9605,43.2739,30,16.4384,3.6558,82
+v0-ai-baseline-ct,1.0,16,Equipment loans,complex,generated,1,11,2040,114,3.0965,20,0.0526,2.3186,29,0.0265,32.4250,46.1817,30,14.7059,4.4124,110
+v0-ai-baseline-ct,1.0,17,Digital resources,complex,generated,1,13,1715,118,2.8814,23,0.0339,2.0427,24,0.0256,35.4922,47.5391,16,9.3294,3.6778,79
+v0-ai-baseline-ct,1.0,18,Interlibrary loans,complex,generated,1,10,1366,94,2.7021,17,0.0106,1.7826,20,0.0109,35.8906,52.7706,14,10.2489,3.2834,57
+v0-ai-baseline-ct,1.0,19,Staff and shifts,complex,generated,1,10,1920,113,3.1947,19,0.0531,2.2212,20,0.0088,29.5402,40.4227,30,15.6250,4.3202,102
+v0-ai-baseline-ct,1.0,20,Events,complex,generated,1,12,1630,90,3.3889,18,0.0667,2.5444,23,0.0333,38.8820,52.1267,19,11.6564,5.2812,108
+v0-ai-baseline-ct,1.0,21,Course reserves,complex,generated,1,13,1835,125,2.6560,16,0.0240,1.6532,15,0.0000,39.7277,49.9463,14,7.6294,3.5133,82
+v0-ai-baseline-ct,1.0,22,Donations,complex,generated,1,12,1579,83,4.0120,28,0.0964,3.2048,36,0.0482,34.8000,49.4111,10,6.3331,5.4404,105
+v0-ai-baseline-ct,1.0,23,Preservation,complex,generated,1,10,1143,73,2.8356,17,0.0411,1.6438,11,0.0000,37.2802,52.4262,11,9.6238,2.6189,38
+v0-ai-baseline-ct,1.0,24,Inventory counts,complex,generated,1,10,878,49,3.0612,19,0.0408,2.2041,22,0.0408,45.1189,58.5781,7,7.9727,1.8885,21
+v0-ai-baseline-ct,1.0,25,Purchase suggestions,complex,generated,1,11,1381,75,3.2400,21,0.0267,2.3243,23,0.0135,38.4723,54.7371,17,12.3099,3.1030,53
+v0-ai-baseline-ct,1.0,26,Reading programs,complex,generated,1,11,1596,103,2.8447,19,0.0291,1.8824,23,0.0196,38.1218,52.4211,11,6.8922,2.2211,45
+v0-ai-baseline-ct,1.0,27,Announcements and messages,complex,generated,1,10,1320,84,3.2262,21,0.0476,2.2619,18,0.0119,35.2787,52.7561,10,7.5758,3.8392,64
+v0-ai-baseline-ct,1.0,28,Member cards and building access,complex,generated,1,12,1345,78,2.6667,11,0.0256,1.5844,9,0.0000,40.1668,51.5572,14,10.4089,2.2539,38
+v0-ai-baseline-ct,1.0,29,Printing and copying,complex,generated,1,10,931,45,3.4000,18,0.0444,2.4000,16,0.0222,40.6685,52.9865,11,11.8153,2.3156,27
+v0-ai-baseline-ct,1.0,api/reports.py,API router reports (module 10 and 15-28 reports),medium,generated,1,1,354,18,3.9444,6,0.0000,2.9444,5,0.0000,18.1516,18.1516,12,33.8983,46.8672,187
+v0-ai-baseline-ct,1.0,unassigned,unassigned,,unassigned,1,0,0,0,,,,,,,,,0,,,0

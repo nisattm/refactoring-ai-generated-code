@@ -1,0 +1,2 @@
+# Cases with a mixed result over the full run(s) and the two repetitions of the failing cases (ADR 003, D18).
+# They are left out of the comparison.

@@ -1,0 +1,133 @@
+{
+  "label": "v0-ai-baseline-ct",
+  "started_at": "2026-11-21T15:28:47+00:00",
+  "environment": {
+    "cpus": 8,
+    "ram_gb": 7.7,
+    "python": "3.14.10",
+    "cpuset_cpus": "",
+    "memory": ""
+  },
+  "modules": null,
+  "second_full_run": true,
+  "problems": [],
+  "analysis": {
+    "primary": {
+      "mean_cc": 3.0129,
+      "mean_cognitive": 2.1321,
+      "mi_weighted": 38.2452,
+      "duplication_pct": 2.9526,
+      "smell_count": 360
+    },
+    "smell_counts": {
+      "S01": 80,
+      "S02": 0,
+      "S03": 192,
+      "S07": 4,
+      "S09": 2,
+      "S10": 0,
+      "S11": 34,
+      "S18": 1,
+      "S19": 0,
+      "S20": 0,
+      "S21": 0,
+      "S22": 0,
+      "S23": 47
+    },
+    "code_sha": "3bd14129262d562e9f66eb899737119ce7d6c586",
+    "code_content_hash": "ee5856a8c61fb2f6611f37fb0e24c997595c61df64000332fb752ff934e18f01",
+    "analyzer_sha": "c555155fb111ea564992ae70233230080cb8420e",
+    "image_id": "sha256:9d423f119a8cd6714eac526bbc1ba03c2f7cc67232e4b62abdfe5fdc77e8222e",
+    "failures": []
+  },
+  "tests": {
+    "sets": {
+      "feedback": {
+        "tests": 905,
+        "passed": 905,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "missing": 0
+      },
+      "heldout": {
+        "tests": 795,
+        "passed": 794,
+        "failed": 1,
+        "errors": 0,
+        "skipped": 0,
+        "missing": 0
+      }
+    },
+    "failing_in_a_full_run": 1,
+    "flaky": 0,
+    "repetitions": 2,
+    "persistent_failures": 1
+  },
+  "coverage": {
+    "statement_coverage_pct": 97.6287,
+    "branch_coverage_pct": 90.2164,
+    "combined_coverage_pct": 96.2357
+  },
+  "finished_at": "2026-11-21T16:47:09+00:00",
+  "duration_s": 4701,
+  "steps": [
+    {
+      "step": "analyze",
+      "started_at": "2026-11-21T15:28:47+00:00",
+      "state": "done",
+      "exit_code": 0,
+      "seconds": 24.7
+    },
+    {
+      "step": "tests-run1",
+      "started_at": "2026-11-21T15:29:12+00:00",
+      "state": "done",
+      "exit_code": 1,
+      "seconds": 1432.1
+    },
+    {
+      "step": "tests-run2",
+      "started_at": "2026-11-21T15:53:04+00:00",
+      "state": "done",
+      "exit_code": 1,
+      "seconds": 1437.3
+    },
+    {
+      "step": "tests-repeat1",
+      "started_at": "2026-11-21T16:17:01+00:00",
+      "state": "done",
+      "exit_code": 1,
+      "seconds": 4.6
+    },
+    {
+      "step": "tests-repeat2",
+      "started_at": "2026-11-21T16:17:06+00:00",
+      "state": "done",
+      "exit_code": 1,
+      "seconds": 4.6
+    },
+    {
+      "step": "coverage-run",
+      "started_at": "2026-11-21T16:17:10+00:00",
+      "state": "done",
+      "exit_code": 1,
+      "seconds": 1796.2
+    },
+    {
+      "step": "coverage-combine",
+      "started_at": "2026-11-21T16:47:07+00:00",
+      "state": "done",
+      "exit_code": 0,
+      "seconds": 0.3
+    },
+    {
+      "step": "coverage-json",
+      "started_at": "2026-11-21T16:47:07+00:00",
+      "state": "done",
+      "exit_code": 0,
+      "seconds": 1.7
+    }
+  ],
+  "valid": true
+}

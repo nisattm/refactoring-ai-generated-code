@@ -1,0 +1,485 @@
+run_label,schema_version,unit_id,path,qualname,class_kind,module_no,module_name,level,lineno,end_lineno,wmc,nom,cbo,lcom4,rfc,dit,noc,fan_in,fan_out
+v0-ai-baseline-ct,1.0,access/models.py::Card::class::1,access/models.py,Card,orm,28,Member cards and building access,complex,18,34,1,1,1,1,1,2,0,0,1
+v0-ai-baseline-ct,1.0,access/models.py::AccessSettings::class::1,access/models.py,AccessSettings,orm,28,Member cards and building access,complex,37,44,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,access/models.py::DayPass::class::1,access/models.py,DayPass,orm,28,Member cards and building access,complex,47,59,0,0,3,0,0,2,0,0,3
+v0-ai-baseline-ct,1.0,access/models.py::Visit::class::1,access/models.py,Visit,orm,28,Member cards and building access,complex,62,79,2,1,2,1,3,2,0,0,2
+v0-ai-baseline-ct,1.0,access/models.py::AccessBan::class::1,access/models.py,AccessBan,orm,28,Member cards and building access,complex,82,95,2,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,access/models.py::AccessAlert::class::1,access/models.py,AccessAlert,orm,28,Member cards and building access,complex,98,107,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,access/models.py::DeniedScan::class::1,access/models.py,DeniedScan,orm,28,Member cards and building access,complex,110,121,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,access/schemas.py::ReportIn::class::1,access/schemas.py,ReportIn,schema,28,Member cards and building access,complex,26,27,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,access/schemas.py::SettingsIn::class::1,access/schemas.py,SettingsIn,schema,28,Member cards and building access,complex,30,50,4,2,1,2,4,2,0,0,1
+v0-ai-baseline-ct,1.0,access/schemas.py::ScanIn::class::1,access/schemas.py,ScanIn,schema,28,Member cards and building access,complex,53,57,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,access/schemas.py::DayPassIn::class::1,access/schemas.py,DayPassIn,schema,28,Member cards and building access,complex,60,62,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,access/schemas.py::BanIn::class::1,access/schemas.py,BanIn,schema,28,Member cards and building access,complex,65,68,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,access/schemas.py::CardOut::class::1,access/schemas.py,CardOut,schema,28,Member cards and building access,complex,74,83,0,0,0,0,0,1,1,1,0
+v0-ai-baseline-ct,1.0,access/schemas.py::CardMemberOut::class::1,access/schemas.py,CardMemberOut,schema,28,Member cards and building access,complex,86,91,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,access/schemas.py::CardDetailOut::class::1,access/schemas.py,CardDetailOut,schema,28,Member cards and building access,complex,94,95,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,access/schemas.py::SettingsOut::class::1,access/schemas.py,SettingsOut,schema,28,Member cards and building access,complex,112,117,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::OccupancyOut::class::1,access/schemas.py,OccupancyOut,schema,28,Member cards and building access,complex,120,126,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::InsideOut::class::1,access/schemas.py,InsideOut,schema,28,Member cards and building access,complex,129,134,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::ScanOut::class::1,access/schemas.py,ScanOut,schema,28,Member cards and building access,complex,137,141,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::VisitOut::class::1,access/schemas.py,VisitOut,schema,28,Member cards and building access,complex,144,153,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::AlertOut::class::1,access/schemas.py,AlertOut,schema,28,Member cards and building access,complex,170,173,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::DayPassOut::class::1,access/schemas.py,DayPassOut,schema,28,Member cards and building access,complex,176,185,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::BanOut::class::1,access/schemas.py,BanOut,schema,28,Member cards and building access,complex,202,210,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::ProcessOut::class::1,access/schemas.py,ProcessOut,schema,28,Member cards and building access,complex,226,229,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::VisitsReportOut::class::1,access/schemas.py,VisitsReportOut,schema,28,Member cards and building access,complex,232,241,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,access/schemas.py::AccessSummaryOut::class::1,access/schemas.py,AccessSummaryOut,schema,28,Member cards and building access,complex,244,248,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,api/app.py::HealthOut::class::1,api/app.py,HealthOut,schema,14,API layer,medium,56,58,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,api/calendar.py::HolidayOut::class::1,api/calendar.py,HolidayOut,schema,14,API layer,medium,24,26,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,api/calendar.py::HolidaysOut::class::1,api/calendar.py,HolidaysOut,schema,14,API layer,medium,29,31,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,api/calendar.py::DayOut::class::1,api/calendar.py,DayOut,schema,14,API layer,medium,34,37,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,api/calendar.py::DateOut::class::1,api/calendar.py,DateOut,schema,14,API layer,medium,40,41,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,api/calendar.py::WorkingDaysOut::class::1,api/calendar.py,WorkingDaysOut,schema,14,API layer,medium,44,45,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,api/calendar.py::_Params::class::1,api/calendar.py,_Params,plain,14,API layer,medium,48,76,10,4,1,1,10,0,0,0,1
+v0-ai-baseline-ct,1.0,api/dataexchange.py::ImportedOut::class::1,api/dataexchange.py,ImportedOut,schema,14,API layer,medium,22,23,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,audit/exchange_schemas.py::_Record::class::1,audit/exchange_schemas.py,_Record,schema,13,"Audit log, import, export",complex,30,33,0,0,0,0,0,1,7,7,0
+v0-ai-baseline-ct,1.0,audit/exchange_schemas.py::BranchRecord::class::1,audit/exchange_schemas.py,BranchRecord,schema,13,"Audit log, import, export",complex,36,51,2,1,1,1,5,2,0,0,1
+v0-ai-baseline-ct,1.0,audit/exchange_schemas.py::AuthorRecord::class::1,audit/exchange_schemas.py,AuthorRecord,schema,13,"Audit log, import, export",complex,54,56,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,audit/exchange_schemas.py::PublisherRecord::class::1,audit/exchange_schemas.py,PublisherRecord,schema,13,"Audit log, import, export",complex,59,61,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,audit/exchange_schemas.py::BookRecord::class::1,audit/exchange_schemas.py,BookRecord,schema,13,"Audit log, import, export",complex,64,73,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,audit/exchange_schemas.py::CopyRecord::class::1,audit/exchange_schemas.py,CopyRecord,schema,13,"Audit log, import, export",complex,76,97,3,2,1,2,5,2,0,0,1
+v0-ai-baseline-ct,1.0,audit/exchange_schemas.py::MemberRecord::class::1,audit/exchange_schemas.py,MemberRecord,schema,13,"Audit log, import, export",complex,100,110,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,audit/exchange_schemas.py::LoanRecord::class::1,audit/exchange_schemas.py,LoanRecord,schema,13,"Audit log, import, export",complex,113,123,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,audit/importer.py::_Problems::class::1,audit/importer.py,_Problems,plain,13,"Audit log, import, export",complex,32,43,4,3,0,1,6,0,0,0,0
+v0-ai-baseline-ct,1.0,audit/models.py::AuditEntry::class::1,audit/models.py,AuditEntry,orm,13,"Audit log, import, export",complex,15,25,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,audit/schemas.py::AuditEntryOut::class::1,audit/schemas.py,AuditEntryOut,schema,13,"Audit log, import, export",complex,13,20,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,auth/deps.py::Principal::class::1,auth/deps.py,Principal,plain,2,Identity and access,complex,21,25,0,0,2,0,0,0,0,0,2
+v0-ai-baseline-ct,1.0,auth/models.py::User::class::1,auth/models.py,User,orm,2,Identity and access,complex,14,31,0,0,2,0,0,2,0,1,2
+v0-ai-baseline-ct,1.0,auth/models.py::AuthSession::class::1,auth/models.py,AuthSession,orm,2,Identity and access,complex,34,45,0,0,2,0,0,2,0,1,2
+v0-ai-baseline-ct,1.0,auth/schemas.py::LoginIn::class::1,auth/schemas.py,LoginIn,schema,2,Identity and access,complex,39,42,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,auth/schemas.py::ChangePasswordIn::class::1,auth/schemas.py,ChangePasswordIn,schema,2,Identity and access,complex,45,52,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,auth/schemas.py::ResetPasswordIn::class::1,auth/schemas.py,ResetPasswordIn,schema,2,Identity and access,complex,55,61,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,auth/schemas.py::UserCreateIn::class::1,auth/schemas.py,UserCreateIn,schema,2,Identity and access,complex,64,78,2,2,1,2,5,2,0,0,1
+v0-ai-baseline-ct,1.0,auth/schemas.py::UserPatchIn::class::1,auth/schemas.py,UserPatchIn,schema,2,Identity and access,complex,81,86,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,auth/schemas.py::UserOut::class::1,auth/schemas.py,UserOut,schema,2,Identity and access,complex,89,97,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,auth/schemas.py::LoginOut::class::1,auth/schemas.py,LoginOut,schema,2,Identity and access,complex,113,117,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,auth/service.py::_InvalidCredentials::class::1,auth/service.py,_InvalidCredentials,plain,2,Identity and access,complex,31,33,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,auth/service.py::_AccountLocked::class::1,auth/service.py,_AccountLocked,plain,2,Identity and access,complex,36,37,0,0,1,0,0,3,0,0,1
+v0-ai-baseline-ct,1.0,auth/service.py::_AccountDisabled::class::1,auth/service.py,_AccountDisabled,plain,2,Identity and access,complex,40,41,0,0,1,0,0,3,0,0,1
+v0-ai-baseline-ct,1.0,branches/models.py::Branch::class::1,branches/models.py,Branch,orm,11,Branches and transfers,medium,14,23,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,branches/models.py::Transfer::class::1,branches/models.py,Transfer,orm,11,Branches and transfers,medium,26,41,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,branches/schemas.py::BranchCreateIn::class::1,branches/schemas.py,BranchCreateIn,schema,11,Branches and transfers,medium,20,31,2,1,1,1,5,2,0,0,1
+v0-ai-baseline-ct,1.0,branches/schemas.py::BranchPatchIn::class::1,branches/schemas.py,BranchPatchIn,schema,11,Branches and transfers,medium,34,39,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,branches/schemas.py::BranchOut::class::1,branches/schemas.py,BranchOut,schema,11,Branches and transfers,medium,42,48,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,branches/schemas.py::TransferCreateIn::class::1,branches/schemas.py,TransferCreateIn,schema,11,Branches and transfers,medium,62,64,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,branches/schemas.py::TransferOut::class::1,branches/schemas.py,TransferOut,schema,11,Branches and transfers,medium,67,77,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,branches/schemas.py::ReceivedOut::class::1,branches/schemas.py,ReceivedOut,schema,11,Branches and transfers,medium,80,81,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,catalog/models.py::Author::class::1,catalog/models.py,Author,orm,4,Catalog,complex,16,23,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,catalog/models.py::Publisher::class::1,catalog/models.py,Publisher,orm,4,Catalog,complex,26,33,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,catalog/models.py::Book::class::1,catalog/models.py,Book,orm,4,Catalog,complex,36,50,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,catalog/models.py::BookAuthor::class::1,catalog/models.py,BookAuthor,orm,4,Catalog,complex,53,60,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,catalog/models.py::Copy::class::1,catalog/models.py,Copy,orm,4,Catalog,complex,63,87,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,catalog/schemas.py::NameIn::class::1,catalog/schemas.py,NameIn,schema,4,Catalog,complex,76,77,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,catalog/schemas.py::NamePatchIn::class::1,catalog/schemas.py,NamePatchIn,schema,4,Catalog,complex,80,81,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,catalog/schemas.py::AuthorOut::class::1,catalog/schemas.py,AuthorOut,schema,4,Catalog,complex,84,86,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,catalog/schemas.py::PublisherOut::class::1,catalog/schemas.py,PublisherOut,schema,4,Catalog,complex,89,91,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,catalog/schemas.py::_BookChecks::class::1,catalog/schemas.py,_BookChecks,plain,4,Catalog,complex,97,116,4,4,0,4,6,0,3,3,0
+v0-ai-baseline-ct,1.0,catalog/schemas.py::BookCreateIn::class::1,catalog/schemas.py,BookCreateIn,schema,4,Catalog,complex,119,127,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,catalog/schemas.py::BookPatchIn::class::1,catalog/schemas.py,BookPatchIn,schema,4,Catalog,complex,130,140,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,catalog/schemas.py::AvailabilityOut::class::1,catalog/schemas.py,AvailabilityOut,schema,4,Catalog,complex,143,147,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,catalog/schemas.py::BookOut::class::1,catalog/schemas.py,BookOut,schema,4,Catalog,complex,150,162,0,0,3,0,0,1,0,2,3
+v0-ai-baseline-ct,1.0,catalog/schemas.py::CopyCreateIn::class::1,catalog/schemas.py,CopyCreateIn,schema,4,Catalog,complex,168,183,2,2,1,2,4,2,0,0,1
+v0-ai-baseline-ct,1.0,catalog/schemas.py::CopyPatchIn::class::1,catalog/schemas.py,CopyPatchIn,schema,4,Catalog,complex,186,196,1,1,1,1,2,2,0,0,1
+v0-ai-baseline-ct,1.0,catalog/schemas.py::WithdrawIn::class::1,catalog/schemas.py,WithdrawIn,schema,4,Catalog,complex,199,200,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,catalog/schemas.py::CopyOut::class::1,catalog/schemas.py,CopyOut,schema,4,Catalog,complex,210,226,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,core/clock.py::Clock::class::1,core/clock.py,Clock,plain,1,Core,simple,11,12,1,1,0,1,1,1,0,1,0
+v0-ai-baseline-ct,1.0,core/clock.py::SystemClock::class::1,core/clock.py,SystemClock,plain,1,Core,simple,15,17,1,1,0,1,1,0,0,1,0
+v0-ai-baseline-ct,1.0,core/clock.py::FixedClock::class::1,core/clock.py,FixedClock,plain,1,Core,simple,28,39,4,4,0,1,6,0,0,0,0
+v0-ai-baseline-ct,1.0,core/db.py::Base::class::1,core/db.py,Base,orm,1,Core,simple,19,21,0,0,0,0,0,1,84,84,0
+v0-ai-baseline-ct,1.0,core/errors.py::ApiError::class::1,core/errors.py,ApiError,plain,1,Core,simple,8,19,3,1,0,1,2,1,7,7,0
+v0-ai-baseline-ct,1.0,core/errors.py::Unauthenticated::class::1,core/errors.py,Unauthenticated,plain,1,Core,simple,22,24,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,core/errors.py::Forbidden::class::1,core/errors.py,Forbidden,plain,1,Core,simple,27,29,0,0,1,0,0,2,2,2,1
+v0-ai-baseline-ct,1.0,core/errors.py::NotFound::class::1,core/errors.py,NotFound,plain,1,Core,simple,32,34,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,core/errors.py::Conflict::class::1,core/errors.py,Conflict,plain,1,Core,simple,37,39,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,core/errors.py::BusinessRuleViolation::class::1,core/errors.py,BusinessRuleViolation,plain,1,Core,simple,42,44,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,core/errors.py::ValidationFailed::class::1,core/errors.py,ValidationFailed,plain,1,Core,simple,47,56,2,2,1,2,4,2,0,4,1
+v0-ai-baseline-ct,1.0,core/money.py::_MoneyAnnotation::class::1,core/money.py,_MoneyAnnotation,plain,1,Core,simple,39,65,2,2,0,2,9,0,0,0,0
+v0-ai-baseline-ct,1.0,core/money.py::MoneyType::class::1,core/money.py,MoneyType,plain,1,Core,simple,71,85,4,2,0,2,6,1,0,23,0
+v0-ai-baseline-ct,1.0,core/pagination.py::PageParams::class::1,core/pagination.py,PageParams,schema,1,Core,simple,16,22,1,1,0,1,1,1,0,0,0
+v0-ai-baseline-ct,1.0,core/pagination.py::Page::class::1,core/pagination.py,Page,schema,1,Core,simple,35,39,0,0,0,0,0,1,1,1,0
+v0-ai-baseline-ct,1.0,core/schemas.py::RequestModel::class::1,core/schemas.py,RequestModel,schema,1,Core,simple,8,11,0,0,0,0,0,1,131,131,0
+v0-ai-baseline-ct,1.0,core/schemas.py::ResponseModel::class::1,core/schemas.py,ResponseModel,schema,1,Core,simple,14,15,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,core/settings.py::Settings::class::1,core/settings.py,Settings,plain,1,Core,simple,13,24,4,1,2,1,3,0,0,0,2
+v0-ai-baseline-ct,1.0,core/timeutil.py::TZDateTime::class::1,core/timeutil.py,TZDateTime,plain,1,Core,simple,38,54,6,2,0,2,6,1,0,56,0
+v0-ai-baseline-ct,1.0,courses/models.py::Course::class::1,courses/models.py,Course,orm,21,Course reserves,complex,16,39,2,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,courses/models.py::Enrollment::class::1,courses/models.py,Enrollment,orm,21,Course reserves,complex,42,52,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,courses/models.py::ReadingListItem::class::1,courses/models.py,ReadingListItem,orm,21,Course reserves,complex,55,68,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,courses/models.py::ReserveLoan::class::1,courses/models.py,ReserveLoan,orm,21,Course reserves,complex,71,89,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,courses/schemas.py::CourseCreateIn::class::1,courses/schemas.py,CourseCreateIn,schema,21,Course reserves,complex,46,79,8,3,1,3,11,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::CoursePatchIn::class::1,courses/schemas.py,CoursePatchIn,schema,21,Course reserves,complex,82,89,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::EnrollIn::class::1,courses/schemas.py,EnrollIn,schema,21,Course reserves,complex,92,100,2,1,1,1,5,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::ItemCreateIn::class::1,courses/schemas.py,ItemCreateIn,schema,21,Course reserves,complex,103,108,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::ItemPatchIn::class::1,courses/schemas.py,ItemPatchIn,schema,21,Course reserves,complex,111,117,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::OrderIn::class::1,courses/schemas.py,OrderIn,schema,21,Course reserves,complex,120,121,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::PlaceCopyIn::class::1,courses/schemas.py,PlaceCopyIn,schema,21,Course reserves,complex,124,125,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::ReserveLoanCreateIn::class::1,courses/schemas.py,ReserveLoanCreateIn,schema,21,Course reserves,complex,128,138,4,1,2,1,2,2,0,0,2
+v0-ai-baseline-ct,1.0,courses/schemas.py::ReserveReturnIn::class::1,courses/schemas.py,ReserveReturnIn,schema,21,Course reserves,complex,141,142,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::CourseOut::class::1,courses/schemas.py,CourseOut,schema,21,Course reserves,complex,152,168,0,0,0,0,0,1,2,2,0
+v0-ai-baseline-ct,1.0,courses/schemas.py::CourseClosedOut::class::1,courses/schemas.py,CourseClosedOut,schema,21,Course reserves,complex,171,172,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::MemberCourseOut::class::1,courses/schemas.py,MemberCourseOut,schema,21,Course reserves,complex,175,176,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::EnrollmentOut::class::1,courses/schemas.py,EnrollmentOut,schema,21,Course reserves,complex,200,209,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,courses/schemas.py::SkippedOut::class::1,courses/schemas.py,SkippedOut,schema,21,Course reserves,complex,226,228,0,0,0,0,0,1,0,2,0
+v0-ai-baseline-ct,1.0,courses/schemas.py::EnrollResultOut::class::1,courses/schemas.py,EnrollResultOut,schema,21,Course reserves,complex,231,233,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,courses/schemas.py::ItemOut::class::1,courses/schemas.py,ItemOut,schema,21,Course reserves,complex,236,250,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,courses/schemas.py::PlacedCopyOut::class::1,courses/schemas.py,PlacedCopyOut,schema,21,Course reserves,complex,274,279,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,courses/schemas.py::ReserveLoanOut::class::1,courses/schemas.py,ReserveLoanOut,schema,21,Course reserves,complex,282,298,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,courses/schemas.py::ProcessOut::class::1,courses/schemas.py,ProcessOut,schema,21,Course reserves,complex,301,305,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,courses/schemas.py::CourseReservesSummaryOut::class::1,courses/schemas.py,CourseReservesSummaryOut,schema,21,Course reserves,complex,308,312,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,courses/schemas.py::CourseReportOut::class::1,courses/schemas.py,CourseReportOut,schema,21,Course reserves,complex,315,327,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,digital/models.py::DigitalResource::class::1,digital/models.py,DigitalResource,orm,17,Digital resources,complex,16,29,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,digital/models.py::DigitalLicense::class::1,digital/models.py,DigitalLicense,orm,17,Digital resources,complex,32,61,10,2,2,1,2,2,0,0,2
+v0-ai-baseline-ct,1.0,digital/models.py::DigitalLoan::class::1,digital/models.py,DigitalLoan,orm,17,Digital resources,complex,64,91,8,3,2,1,3,2,0,0,2
+v0-ai-baseline-ct,1.0,digital/models.py::DigitalHold::class::1,digital/models.py,DigitalHold,orm,17,Digital resources,complex,94,113,5,2,2,1,2,2,0,0,2
+v0-ai-baseline-ct,1.0,digital/models.py::DigitalSession::class::1,digital/models.py,DigitalSession,orm,17,Digital resources,complex,116,128,2,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,digital/rules.py::DigitalRules::class::1,digital/rules.py,DigitalRules,plain,17,Digital resources,complex,19,24,0,0,0,0,0,0,0,0,0
+v0-ai-baseline-ct,1.0,digital/schemas.py::ResourceCreateIn::class::1,digital/schemas.py,ResourceCreateIn,schema,17,Digital resources,complex,53,63,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,digital/schemas.py::ResourcePatchIn::class::1,digital/schemas.py,ResourcePatchIn,schema,17,Digital resources,complex,66,78,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,digital/schemas.py::ResourceOut::class::1,digital/schemas.py,ResourceOut,schema,17,Digital resources,complex,81,93,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,digital/schemas.py::CalendarDayOut::class::1,digital/schemas.py,CalendarDayOut,schema,17,Digital resources,complex,115,117,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,digital/schemas.py::CalendarOut::class::1,digital/schemas.py,CalendarOut,schema,17,Digital resources,complex,120,122,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,digital/schemas.py::LicenseCreateIn::class::1,digital/schemas.py,LicenseCreateIn,schema,17,Digital resources,complex,128,139,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,digital/schemas.py::LicensePatchIn::class::1,digital/schemas.py,LicensePatchIn,schema,17,Digital resources,complex,142,150,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,digital/schemas.py::LicenseRenewIn::class::1,digital/schemas.py,LicenseRenewIn,schema,17,Digital resources,complex,153,161,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,digital/schemas.py::LicenseOut::class::1,digital/schemas.py,LicenseOut,schema,17,Digital resources,complex,164,174,0,0,0,0,0,1,1,1,0
+v0-ai-baseline-ct,1.0,digital/schemas.py::ExpiringLicenseOut::class::1,digital/schemas.py,ExpiringLicenseOut,schema,17,Digital resources,complex,177,178,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,digital/schemas.py::ActionCreateIn::class::1,digital/schemas.py,ActionCreateIn,schema,17,Digital resources,complex,207,211,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,digital/schemas.py::LoanOut::class::1,digital/schemas.py,LoanOut,schema,17,Digital resources,complex,214,224,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,digital/schemas.py::HoldOut::class::1,digital/schemas.py,HoldOut,schema,17,Digital resources,complex,246,256,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,digital/schemas.py::SessionOut::class::1,digital/schemas.py,SessionOut,schema,17,Digital resources,complex,274,281,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,digital/schemas.py::ProcessOut::class::1,digital/schemas.py,ProcessOut,schema,17,Digital resources,complex,296,300,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,digital/schemas.py::DigitalSummaryOut::class::1,digital/schemas.py,DigitalSummaryOut,schema,17,Digital resources,complex,303,306,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,digital/schemas.py::DigitalUsageOut::class::1,digital/schemas.py,DigitalUsageOut,schema,17,Digital resources,complex,309,318,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,donations/models.py::Donor::class::1,donations/models.py,Donor,orm,22,Donations,complex,18,35,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/models.py::Donation::class::1,donations/models.py,Donation,orm,22,Donations,complex,38,56,1,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/models.py::DonationItem::class::1,donations/models.py,DonationItem,orm,22,Donations,complex,59,76,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/models.py::Receiving::class::1,donations/models.py,Receiving,orm,22,Donations,complex,79,88,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/schemas.py::_DonorChecks::class::1,donations/schemas.py,_DonorChecks,plain,22,Donations,complex,32,41,3,2,0,2,5,0,2,2,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::DonorCreateIn::class::1,donations/schemas.py,DonorCreateIn,schema,22,Donations,complex,44,50,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/schemas.py::DonorPatchIn::class::1,donations/schemas.py,DonorPatchIn,schema,22,Donations,complex,53,60,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/schemas.py::MergeIn::class::1,donations/schemas.py,MergeIn,schema,22,Donations,complex,63,64,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,donations/schemas.py::DonorOut::class::1,donations/schemas.py,DonorOut,schema,22,Donations,complex,67,79,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::YearOut::class::1,donations/schemas.py,YearOut,schema,22,Donations,complex,82,85,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::HistoryOut::class::1,donations/schemas.py,HistoryOut,schema,22,Donations,complex,88,96,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,donations/schemas.py::WallDonorOut::class::1,donations/schemas.py,WallDonorOut,schema,22,Donations,complex,99,101,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::WallOut::class::1,donations/schemas.py,WallOut,schema,22,Donations,complex,104,107,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,donations/schemas.py::ItemIn::class::1,donations/schemas.py,ItemIn,schema,22,Donations,complex,113,124,2,1,1,1,3,2,0,2,1
+v0-ai-baseline-ct,1.0,donations/schemas.py::DonationCreateIn::class::1,donations/schemas.py,DonationCreateIn,schema,22,Donations,complex,139,148,1,1,2,1,3,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/schemas.py::DonationPatchIn::class::1,donations/schemas.py,DonationPatchIn,schema,22,Donations,complex,151,159,1,1,2,1,3,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/schemas.py::ItemOut::class::1,donations/schemas.py,ItemOut,schema,22,Donations,complex,162,175,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::DonationOut::class::1,donations/schemas.py,DonationOut,schema,22,Donations,complex,178,192,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,donations/schemas.py::SuggestionOut::class::1,donations/schemas.py,SuggestionOut,schema,22,Donations,complex,198,202,0,0,0,0,0,1,0,3,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::SuggestionsOut::class::1,donations/schemas.py,SuggestionsOut,schema,22,Donations,complex,205,206,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,donations/schemas.py::ReviewItemIn::class::1,donations/schemas.py,ReviewItemIn,schema,22,Donations,complex,209,232,9,1,1,1,4,2,0,1,1
+v0-ai-baseline-ct,1.0,donations/schemas.py::ReviewIn::class::1,donations/schemas.py,ReviewIn,schema,22,Donations,complex,235,236,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/schemas.py::ReceiveItemIn::class::1,donations/schemas.py,ReceiveItemIn,schema,22,Donations,complex,242,249,2,1,1,1,3,2,0,1,1
+v0-ai-baseline-ct,1.0,donations/schemas.py::ReceiveIn::class::1,donations/schemas.py,ReceiveIn,schema,22,Donations,complex,252,261,3,1,2,1,5,2,0,0,2
+v0-ai-baseline-ct,1.0,donations/schemas.py::ReceiptDonorOut::class::1,donations/schemas.py,ReceiptDonorOut,schema,22,Donations,complex,264,267,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::ReceiptLineOut::class::1,donations/schemas.py,ReceiptLineOut,schema,22,Donations,complex,270,275,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::ReceiptOut::class::1,donations/schemas.py,ReceiptOut,schema,22,Donations,complex,278,286,0,0,2,0,0,1,0,0,2
+v0-ai-baseline-ct,1.0,donations/schemas.py::ProcessOut::class::1,donations/schemas.py,ProcessOut,schema,22,Donations,complex,289,290,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::DeclinedOut::class::1,donations/schemas.py,DeclinedOut,schema,22,Donations,complex,296,301,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,donations/schemas.py::DonationReportOut::class::1,donations/schemas.py,DonationReportOut,schema,22,Donations,complex,304,311,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,donations/schemas.py::DonorReportOut::class::1,donations/schemas.py,DonorReportOut,schema,22,Donations,complex,314,320,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,donations/summary.py::DonationSummaryOut::class::1,donations/summary.py,DonationSummaryOut,schema,22,Donations,complex,8,12,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,equipment/models.py::EquipmentType::class::1,equipment/models.py,EquipmentType,orm,16,Equipment loans,complex,16,28,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,equipment/models.py::EquipmentItem::class::1,equipment/models.py,EquipmentItem,orm,16,Equipment loans,complex,31,43,0,0,3,0,0,2,0,0,3
+v0-ai-baseline-ct,1.0,equipment/models.py::EquipmentTraining::class::1,equipment/models.py,EquipmentTraining,orm,16,Equipment loans,complex,46,56,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,equipment/models.py::EquipmentLoan::class::1,equipment/models.py,EquipmentLoan,orm,16,Equipment loans,complex,59,82,0,0,3,0,0,2,0,0,3
+v0-ai-baseline-ct,1.0,equipment/models.py::EquipmentReservation::class::1,equipment/models.py,EquipmentReservation,orm,16,Equipment loans,complex,85,99,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,equipment/rules.py::EquipmentRules::class::1,equipment/rules.py,EquipmentRules,plain,16,Equipment loans,complex,35,40,0,0,0,0,0,0,0,0,0
+v0-ai-baseline-ct,1.0,equipment/schemas.py::TypeCreateIn::class::1,equipment/schemas.py,TypeCreateIn,schema,16,Equipment loans,complex,92,107,2,1,1,1,5,2,0,0,1
+v0-ai-baseline-ct,1.0,equipment/schemas.py::TypePatchIn::class::1,equipment/schemas.py,TypePatchIn,schema,16,Equipment loans,complex,110,118,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,equipment/schemas.py::TypeOut::class::1,equipment/schemas.py,TypeOut,schema,16,Equipment loans,complex,121,132,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,equipment/schemas.py::ItemCreateIn::class::1,equipment/schemas.py,ItemCreateIn,schema,16,Equipment loans,complex,151,172,4,2,1,2,6,2,0,0,1
+v0-ai-baseline-ct,1.0,equipment/schemas.py::ItemPatchIn::class::1,equipment/schemas.py,ItemPatchIn,schema,16,Equipment loans,complex,175,185,2,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,equipment/schemas.py::ItemOut::class::1,equipment/schemas.py,ItemOut,schema,16,Equipment loans,complex,188,197,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,equipment/schemas.py::TrainingIn::class::1,equipment/schemas.py,TrainingIn,schema,16,Equipment loans,complex,214,216,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,equipment/schemas.py::TrainingOut::class::1,equipment/schemas.py,TrainingOut,schema,16,Equipment loans,complex,219,226,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,equipment/schemas.py::LoanCreateIn::class::1,equipment/schemas.py,LoanCreateIn,schema,16,Equipment loans,complex,241,244,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,equipment/schemas.py::ReturnIn::class::1,equipment/schemas.py,ReturnIn,schema,16,Equipment loans,complex,247,249,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,equipment/schemas.py::EquipmentLoanOut::class::1,equipment/schemas.py,EquipmentLoanOut,schema,16,Equipment loans,complex,252,271,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,equipment/schemas.py::ReservationCreateIn::class::1,equipment/schemas.py,ReservationCreateIn,schema,16,Equipment loans,complex,300,304,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,equipment/schemas.py::ReservationOut::class::1,equipment/schemas.py,ReservationOut,schema,16,Equipment loans,complex,307,318,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,equipment/schemas.py::SlotOut::class::1,equipment/schemas.py,SlotOut,schema,16,Equipment loans,complex,337,339,0,0,0,0,0,1,0,3,0
+v0-ai-baseline-ct,1.0,equipment/schemas.py::AvailabilityOut::class::1,equipment/schemas.py,AvailabilityOut,schema,16,Equipment loans,complex,342,347,0,0,1,0,0,1,0,1,1
+v0-ai-baseline-ct,1.0,equipment/schemas.py::ProcessOut::class::1,equipment/schemas.py,ProcessOut,schema,16,Equipment loans,complex,350,352,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,equipment/schemas.py::EquipmentSummaryOut::class::1,equipment/schemas.py,EquipmentSummaryOut,schema,16,Equipment loans,complex,355,358,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,equipment/schemas.py::EquipmentUsageOut::class::1,equipment/schemas.py,EquipmentUsageOut,schema,16,Equipment loans,complex,361,371,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,events/models.py::EventSeries::class::1,events/models.py,EventSeries,orm,20,Events,complex,19,25,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,events/models.py::Event::class::1,events/models.py,Event,orm,20,Events,complex,28,61,4,3,3,1,4,2,0,0,3
+v0-ai-baseline-ct,1.0,events/models.py::EventRegistration::class::1,events/models.py,EventRegistration,orm,20,Events,complex,64,82,1,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,events/models.py::EventBan::class::1,events/models.py,EventBan,orm,20,Events,complex,85,96,1,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,events/rules.py::EventRules::class::1,events/rules.py,EventRules,plain,20,Events,complex,29,33,0,0,0,0,0,0,0,0,0
+v0-ai-baseline-ct,1.0,events/schemas.py::_EventFields::class::1,events/schemas.py,_EventFields,schema,20,Events,complex,38,54,1,1,1,1,3,2,2,2,1
+v0-ai-baseline-ct,1.0,events/schemas.py::EventCreateIn::class::1,events/schemas.py,EventCreateIn,schema,20,Events,complex,57,58,0,0,1,0,0,3,0,0,1
+v0-ai-baseline-ct,1.0,events/schemas.py::SeriesCreateIn::class::1,events/schemas.py,SeriesCreateIn,schema,20,Events,complex,61,63,0,0,1,0,0,3,0,0,1
+v0-ai-baseline-ct,1.0,events/schemas.py::EventPatchIn::class::1,events/schemas.py,EventPatchIn,schema,20,Events,complex,66,82,2,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,events/schemas.py::RegistrationCreateIn::class::1,events/schemas.py,RegistrationCreateIn,schema,20,Events,complex,85,86,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,events/schemas.py::EventOut::class::1,events/schemas.py,EventOut,schema,20,Events,complex,92,114,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,events/schemas.py::RegistrationOut::class::1,events/schemas.py,RegistrationOut,schema,20,Events,complex,148,163,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,events/schemas.py::BanOut::class::1,events/schemas.py,BanOut,schema,20,Events,complex,186,191,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,events/schemas.py::SkippedOut::class::1,events/schemas.py,SkippedOut,schema,20,Events,complex,204,206,0,0,0,0,0,1,0,2,0
+v0-ai-baseline-ct,1.0,events/schemas.py::SeriesCreatedOut::class::1,events/schemas.py,SeriesCreatedOut,schema,20,Events,complex,209,212,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,events/schemas.py::SeriesCancelledOut::class::1,events/schemas.py,SeriesCancelledOut,schema,20,Events,complex,215,216,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,events/schemas.py::ProcessOut::class::1,events/schemas.py,ProcessOut,schema,20,Events,complex,219,223,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,events/schemas.py::EventSummaryOut::class::1,events/schemas.py,EventSummaryOut,schema,20,Events,complex,226,230,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,events/schemas.py::AttendanceOut::class::1,events/schemas.py,AttendanceOut,schema,20,Events,complex,233,244,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,fines/models.py::Fee::class::1,fines/models.py,Fee,orm,7,Fines and payments,complex,16,50,2,1,3,1,2,2,0,0,3
+v0-ai-baseline-ct,1.0,fines/models.py::Payment::class::1,fines/models.py,Payment,orm,7,Fines and payments,complex,53,62,0,0,3,0,0,2,0,0,3
+v0-ai-baseline-ct,1.0,fines/models.py::PaymentAllocation::class::1,fines/models.py,PaymentAllocation,orm,7,Fines and payments,complex,65,71,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,fines/schemas.py::BalanceOut::class::1,fines/schemas.py,BalanceOut,schema,7,Fines and payments,complex,40,44,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,fines/schemas.py::FeeOut::class::1,fines/schemas.py,FeeOut,schema,7,Fines and payments,complex,57,76,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,fines/schemas.py::PaymentIn::class::1,fines/schemas.py,PaymentIn,schema,7,Fines and payments,complex,103,112,2,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,fines/schemas.py::WaiveIn::class::1,fines/schemas.py,WaiveIn,schema,7,Fines and payments,complex,115,116,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,fines/schemas.py::AllocationOut::class::1,fines/schemas.py,AllocationOut,schema,7,Fines and payments,complex,119,121,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,fines/schemas.py::PaymentOut::class::1,fines/schemas.py,PaymentOut,schema,7,Fines and payments,complex,124,131,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,ill/models.py::IllPartner::class::1,ill/models.py,IllPartner,orm,18,Interlibrary loans,complex,19,30,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,ill/models.py::IllRequest::class::1,ill/models.py,IllRequest,orm,18,Interlibrary loans,complex,33,62,0,0,3,0,0,2,0,0,3
+v0-ai-baseline-ct,1.0,ill/models.py::IllRequestAction::class::1,ill/models.py,IllRequestAction,orm,18,Interlibrary loans,complex,65,75,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,ill/models.py::IllOutgoing::class::1,ill/models.py,IllOutgoing,orm,18,Interlibrary loans,complex,78,95,0,0,3,0,0,2,0,0,3
+v0-ai-baseline-ct,1.0,ill/schemas.py::_RangeChecks::class::1,ill/schemas.py,_RangeChecks,plain,18,Interlibrary loans,complex,68,78,2,1,0,1,5,0,2,2,0
+v0-ai-baseline-ct,1.0,ill/schemas.py::PartnerCreateIn::class::1,ill/schemas.py,PartnerCreateIn,schema,18,Interlibrary loans,complex,82,101,3,2,2,2,6,2,0,0,2
+v0-ai-baseline-ct,1.0,ill/schemas.py::PartnerPatchIn::class::1,ill/schemas.py,PartnerPatchIn,schema,18,Interlibrary loans,complex,104,117,1,1,2,1,2,2,0,0,2
+v0-ai-baseline-ct,1.0,ill/schemas.py::PartnerOut::class::1,ill/schemas.py,PartnerOut,schema,18,Interlibrary loans,complex,120,130,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,ill/schemas.py::RequestCreateIn::class::1,ill/schemas.py,RequestCreateIn,schema,18,Interlibrary loans,complex,151,160,2,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,ill/schemas.py::SendIn::class::1,ill/schemas.py,SendIn,schema,18,Interlibrary loans,complex,163,164,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,ill/schemas.py::RejectIn::class::1,ill/schemas.py,RejectIn,schema,18,Interlibrary loans,complex,167,168,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,ill/schemas.py::ReceiveIn::class::1,ill/schemas.py,ReceiveIn,schema,18,Interlibrary loans,complex,171,181,2,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,ill/schemas.py::BranchIn::class::1,ill/schemas.py,BranchIn,schema,18,Interlibrary loans,complex,184,185,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,ill/schemas.py::RenewalAnswerIn::class::1,ill/schemas.py,RenewalAnswerIn,schema,18,Interlibrary loans,complex,188,196,3,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,ill/schemas.py::RequestOut::class::1,ill/schemas.py,RequestOut,schema,18,Interlibrary loans,complex,199,222,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,ill/schemas.py::OutgoingCreateIn::class::1,ill/schemas.py,OutgoingCreateIn,schema,18,Interlibrary loans,complex,261,263,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,ill/schemas.py::ShipIn::class::1,ill/schemas.py,ShipIn,schema,18,Interlibrary loans,complex,266,267,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,ill/schemas.py::OutgoingOut::class::1,ill/schemas.py,OutgoingOut,schema,18,Interlibrary loans,complex,270,283,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,ill/schemas.py::ProcessOut::class::1,ill/schemas.py,ProcessOut,schema,18,Interlibrary loans,complex,311,313,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,ill/schemas.py::IllSummaryOut::class::1,ill/schemas.py,IllSummaryOut,schema,18,Interlibrary loans,complex,316,319,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,ill/schemas.py::IllActivityOut::class::1,ill/schemas.py,IllActivityOut,schema,18,Interlibrary loans,complex,322,332,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,inventory/models.py::InventoryCount::class::1,inventory/models.py,InventoryCount,orm,24,Inventory counts,complex,14,26,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,inventory/models.py::ExpectedCopy::class::1,inventory/models.py,ExpectedCopy,orm,24,Inventory counts,complex,29,35,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,inventory/models.py::InventoryScan::class::1,inventory/models.py,InventoryScan,orm,24,Inventory counts,complex,38,50,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,inventory/models.py::InventoryLine::class::1,inventory/models.py,InventoryLine,orm,24,Inventory counts,complex,53,58,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,inventory/schemas.py::CountIn::class::1,inventory/schemas.py,CountIn,schema,24,Inventory counts,complex,21,24,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,inventory/schemas.py::ScansIn::class::1,inventory/schemas.py,ScansIn,schema,24,Inventory counts,complex,27,28,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,inventory/schemas.py::FoundIn::class::1,inventory/schemas.py,FoundIn,schema,24,Inventory counts,complex,31,32,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,inventory/schemas.py::SummaryOut::class::1,inventory/schemas.py,SummaryOut,schema,24,Inventory counts,complex,35,40,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,inventory/schemas.py::ProblemsOut::class::1,inventory/schemas.py,ProblemsOut,schema,24,Inventory counts,complex,43,50,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,inventory/schemas.py::ProgressOut::class::1,inventory/schemas.py,ProgressOut,schema,24,Inventory counts,complex,53,57,0,0,1,0,0,1,0,1,1
+v0-ai-baseline-ct,1.0,inventory/schemas.py::CountOut::class::1,inventory/schemas.py,CountOut,schema,24,Inventory counts,complex,60,71,0,0,0,0,0,1,1,1,0
+v0-ai-baseline-ct,1.0,inventory/schemas.py::CountDetailOut::class::1,inventory/schemas.py,CountDetailOut,schema,24,Inventory counts,complex,74,76,0,0,3,0,0,2,0,0,3
+v0-ai-baseline-ct,1.0,inventory/schemas.py::ScanOut::class::1,inventory/schemas.py,ScanOut,schema,24,Inventory counts,complex,79,86,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,inventory/schemas.py::AddedScanOut::class::1,inventory/schemas.py,AddedScanOut,schema,24,Inventory counts,complex,89,93,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,inventory/schemas.py::ScansAddedOut::class::1,inventory/schemas.py,ScansAddedOut,schema,24,Inventory counts,complex,96,97,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,inventory/schemas.py::LineOut::class::1,inventory/schemas.py,LineOut,schema,24,Inventory counts,complex,100,105,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,inventory/schemas.py::ApplyOut::class::1,inventory/schemas.py,ApplyOut,schema,24,Inventory counts,complex,108,111,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,inventory/schemas.py::ProcessOut::class::1,inventory/schemas.py,ProcessOut,schema,24,Inventory counts,complex,114,116,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,inventory/schemas.py::InventoryReportRowOut::class::1,inventory/schemas.py,InventoryReportRowOut,schema,24,Inventory counts,complex,119,128,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,inventory/schemas.py::InventoryYearReportOut::class::1,inventory/schemas.py,InventoryYearReportOut,schema,24,Inventory counts,complex,131,132,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,loans/models.py::Loan::class::1,loans/models.py,Loan,orm,5,Loans and returns,complex,15,34,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,loans/schemas.py::LoanCreateIn::class::1,loans/schemas.py,LoanCreateIn,schema,5,Loans and returns,complex,22,36,5,1,2,1,2,2,0,0,2
+v0-ai-baseline-ct,1.0,loans/schemas.py::ReturnIn::class::1,loans/schemas.py,ReturnIn,schema,5,Loans and returns,complex,39,52,5,1,2,1,2,2,0,0,2
+v0-ai-baseline-ct,1.0,loans/schemas.py::LoanOut::class::1,loans/schemas.py,LoanOut,schema,5,Loans and returns,complex,55,73,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,members/models.py::Member::class::1,members/models.py,Member,orm,3,Members,complex,14,40,3,2,2,2,2,2,0,0,2
+v0-ai-baseline-ct,1.0,members/schemas.py::_MemberFieldChecks::class::1,members/schemas.py,_MemberFieldChecks,plain,3,Members,complex,65,79,3,3,0,3,7,0,3,3,0
+v0-ai-baseline-ct,1.0,members/schemas.py::MemberCreateIn::class::1,members/schemas.py,MemberCreateIn,schema,3,Members,complex,82,97,2,1,2,1,4,2,0,0,2
+v0-ai-baseline-ct,1.0,members/schemas.py::MemberPatchIn::class::1,members/schemas.py,MemberPatchIn,schema,3,Members,complex,100,108,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,members/schemas.py::MemberOut::class::1,members/schemas.py,MemberOut,schema,3,Members,complex,111,124,0,0,0,0,0,1,1,2,0
+v0-ai-baseline-ct,1.0,members/schemas.py::MemberMeOut::class::1,members/schemas.py,MemberMeOut,schema,3,Members,complex,127,129,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,members/schemas.py::BorrowingOut::class::1,members/schemas.py,BorrowingOut,schema,3,Members,complex,150,152,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,members/schemas.py::MemberSummaryOut::class::1,members/schemas.py,MemberSummaryOut,schema,3,Members,complex,155,173,0,0,15,0,0,1,0,0,15
+v0-ai-baseline-ct,1.0,members/service.py::MemberActivity::class::1,members/service.py,MemberActivity,plain,3,Members,complex,327,337,0,0,0,0,0,0,0,0,0
+v0-ai-baseline-ct,1.0,members/types.py::MembershipType::class::1,members/types.py,MembershipType,plain,3,Members,complex,11,17,0,0,0,0,0,0,0,0,0
+v0-ai-baseline-ct,1.0,messaging/models.py::Announcement::class::1,messaging/models.py,Announcement,orm,27,Announcements and messages,complex,17,42,4,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,messaging/models.py::ReadMark::class::1,messaging/models.py,ReadMark,orm,27,Announcements and messages,complex,45,52,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,messaging/models.py::Thread::class::1,messaging/models.py,Thread,orm,27,Announcements and messages,complex,55,73,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,messaging/models.py::Message::class::1,messaging/models.py,Message,orm,27,Announcements and messages,complex,76,87,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,messaging/schemas.py::AnnouncementCreateIn::class::1,messaging/schemas.py,AnnouncementCreateIn,schema,27,Announcements and messages,complex,60,73,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,messaging/schemas.py::AnnouncementPatchIn::class::1,messaging/schemas.py,AnnouncementPatchIn,schema,27,Announcements and messages,complex,76,98,4,2,1,2,5,2,0,0,1
+v0-ai-baseline-ct,1.0,messaging/schemas.py::ThreadCreateIn::class::1,messaging/schemas.py,ThreadCreateIn,schema,27,Announcements and messages,complex,101,107,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,messaging/schemas.py::MessageIn::class::1,messaging/schemas.py,MessageIn,schema,27,Announcements and messages,complex,110,112,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,messaging/schemas.py::AssignIn::class::1,messaging/schemas.py,AssignIn,schema,27,Announcements and messages,complex,115,116,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,messaging/schemas.py::RateIn::class::1,messaging/schemas.py,RateIn,schema,27,Announcements and messages,complex,119,120,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,messaging/schemas.py::AnnouncementOut::class::1,messaging/schemas.py,AnnouncementOut,schema,27,Announcements and messages,complex,130,146,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::FeedPage::class::1,messaging/schemas.py,FeedPage,schema,27,Announcements and messages,complex,168,173,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,messaging/schemas.py::ReadOut::class::1,messaging/schemas.py,ReadOut,schema,27,Announcements and messages,complex,176,178,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::StatsOut::class::1,messaging/schemas.py,StatsOut,schema,27,Announcements and messages,complex,181,184,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::MessageOut::class::1,messaging/schemas.py,MessageOut,schema,27,Announcements and messages,complex,187,194,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::ThreadMemberOut::class::1,messaging/schemas.py,ThreadMemberOut,schema,27,Announcements and messages,complex,209,213,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::ThreadLoanOut::class::1,messaging/schemas.py,ThreadLoanOut,schema,27,Announcements and messages,complex,216,219,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::ThreadFeeOut::class::1,messaging/schemas.py,ThreadFeeOut,schema,27,Announcements and messages,complex,222,226,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::ThreadOut::class::1,messaging/schemas.py,ThreadOut,schema,27,Announcements and messages,complex,229,253,0,0,4,0,0,1,0,0,4
+v0-ai-baseline-ct,1.0,messaging/schemas.py::ProcessOut::class::1,messaging/schemas.py,ProcessOut,schema,27,Announcements and messages,complex,284,286,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::MessagesSummaryOut::class::1,messaging/schemas.py,MessagesSummaryOut,schema,27,Announcements and messages,complex,289,292,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::ByCategoryOut::class::1,messaging/schemas.py,ByCategoryOut,schema,27,Announcements and messages,complex,295,300,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::AnnouncementsReportOut::class::1,messaging/schemas.py,AnnouncementsReportOut,schema,27,Announcements and messages,complex,303,306,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,messaging/schemas.py::MessagingReportOut::class::1,messaging/schemas.py,MessagingReportOut,schema,27,Announcements and messages,complex,309,317,0,0,2,0,0,1,0,0,2
+v0-ai-baseline-ct,1.0,notifications/models.py::Notification::class::1,notifications/models.py,Notification,orm,8,Notifications,medium,14,55,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,notifications/schemas.py::NotificationOut::class::1,notifications/schemas.py,NotificationOut,schema,8,Notifications,medium,82,106,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,notifications/schemas.py::UnreadCountOut::class::1,notifications/schemas.py,UnreadCountOut,schema,8,Notifications,medium,109,110,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,notifications/schemas.py::ReadAllOut::class::1,notifications/schemas.py,ReadAllOut,schema,8,Notifications,medium,113,114,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,notifications/schemas.py::RemindersOut::class::1,notifications/schemas.py,RemindersOut,schema,8,Notifications,medium,117,119,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,preservation/models.py::Inspection::class::1,preservation/models.py,Inspection,orm,23,Preservation,complex,18,27,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,preservation/models.py::Budget::class::1,preservation/models.py,Budget,orm,23,Preservation,complex,30,37,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,preservation/models.py::Shipment::class::1,preservation/models.py,Shipment,orm,23,Preservation,complex,40,48,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,preservation/models.py::RepairJob::class::1,preservation/models.py,RepairJob,orm,23,Preservation,complex,51,84,4,2,3,1,2,2,0,0,3
+v0-ai-baseline-ct,1.0,preservation/schemas.py::BudgetIn::class::1,preservation/schemas.py,BudgetIn,schema,23,Preservation,complex,38,46,2,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,preservation/schemas.py::BudgetOut::class::1,preservation/schemas.py,BudgetOut,schema,23,Preservation,complex,49,55,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,preservation/schemas.py::InspectionIn::class::1,preservation/schemas.py,InspectionIn,schema,23,Preservation,complex,61,63,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,preservation/schemas.py::InspectionOut::class::1,preservation/schemas.py,InspectionOut,schema,23,Preservation,complex,66,72,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,preservation/schemas.py::JobCreateIn::class::1,preservation/schemas.py,JobCreateIn,schema,23,Preservation,complex,78,95,2,2,1,2,6,2,0,0,1
+v0-ai-baseline-ct,1.0,preservation/schemas.py::JobPatchIn::class::1,preservation/schemas.py,JobPatchIn,schema,23,Preservation,complex,106,119,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,preservation/schemas.py::ReturnIn::class::1,preservation/schemas.py,ReturnIn,schema,23,Preservation,complex,122,130,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,preservation/schemas.py::JobOut::class::1,preservation/schemas.py,JobOut,schema,23,Preservation,complex,133,160,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,preservation/schemas.py::ShipmentIn::class::1,preservation/schemas.py,ShipmentIn,schema,23,Preservation,complex,166,175,2,1,1,1,5,2,0,0,1
+v0-ai-baseline-ct,1.0,preservation/schemas.py::ShipmentOut::class::1,preservation/schemas.py,ShipmentOut,schema,23,Preservation,complex,178,185,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,preservation/schemas.py::ProcessOut::class::1,preservation/schemas.py,ProcessOut,schema,23,Preservation,complex,191,194,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,preservation/schemas.py::SuggestionOut::class::1,preservation/schemas.py,SuggestionOut,schema,23,Preservation,complex,197,200,0,0,0,0,0,1,0,3,0
+v0-ai-baseline-ct,1.0,preservation/schemas.py::SuggestionsOut::class::1,preservation/schemas.py,SuggestionsOut,schema,23,Preservation,complex,203,204,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,preservation/schemas.py::PreservationReportOut::class::1,preservation/schemas.py,PreservationReportOut,schema,23,Preservation,complex,207,217,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,preservation/schemas.py::RecoveryOut::class::1,preservation/schemas.py,RecoveryOut,schema,23,Preservation,complex,220,227,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,preservation/schemas.py::RecoveryTotalsOut::class::1,preservation/schemas.py,RecoveryTotalsOut,schema,23,Preservation,complex,230,233,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,preservation/schemas.py::RecoveryPage::class::1,preservation/schemas.py,RecoveryPage,schema,23,Preservation,complex,236,241,0,0,2,0,0,1,0,0,2
+v0-ai-baseline-ct,1.0,printing/models.py::Printer::class::1,printing/models.py,Printer,orm,29,Printing and copying,complex,15,30,1,1,1,1,1,2,0,0,1
+v0-ai-baseline-ct,1.0,printing/models.py::PrintJob::class::1,printing/models.py,PrintJob,orm,29,Printing and copying,complex,33,57,1,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,printing/models.py::PrintPack::class::1,printing/models.py,PrintPack,orm,29,Printing and copying,complex,60,69,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,printing/models.py::PrintJobPackUse::class::1,printing/models.py,PrintJobPackUse,orm,29,Printing and copying,complex,72,79,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,printing/quota.py::Payment::class::1,printing/quota.py,Payment,plain,29,Printing and copying,complex,107,114,0,0,0,0,0,0,0,0,0
+v0-ai-baseline-ct,1.0,printing/schemas.py::PrinterCreateIn::class::1,printing/schemas.py,PrinterCreateIn,schema,29,Printing and copying,complex,23,35,5,1,1,1,7,2,0,0,1
+v0-ai-baseline-ct,1.0,printing/schemas.py::PrinterPatchIn::class::1,printing/schemas.py,PrinterPatchIn,schema,29,Printing and copying,complex,38,51,2,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,printing/schemas.py::RefillIn::class::1,printing/schemas.py,RefillIn,schema,29,Printing and copying,complex,54,55,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,printing/schemas.py::PrintJobIn::class::1,printing/schemas.py,PrintJobIn,schema,29,Printing and copying,complex,58,65,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,printing/schemas.py::FailIn::class::1,printing/schemas.py,FailIn,schema,29,Printing and copying,complex,68,69,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,printing/schemas.py::ReleaseByCardIn::class::1,printing/schemas.py,ReleaseByCardIn,schema,29,Printing and copying,complex,72,74,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,printing/schemas.py::PrinterOut::class::1,printing/schemas.py,PrinterOut,schema,29,Printing and copying,complex,80,89,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,printing/schemas.py::JobPrinterOut::class::1,printing/schemas.py,JobPrinterOut,schema,29,Printing and copying,complex,106,109,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,printing/schemas.py::PrintJobOut::class::1,printing/schemas.py,PrintJobOut,schema,29,Printing and copying,complex,112,131,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,printing/schemas.py::RefusedOut::class::1,printing/schemas.py,RefusedOut,schema,29,Printing and copying,complex,158,160,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,printing/schemas.py::ReleaseByCardOut::class::1,printing/schemas.py,ReleaseByCardOut,schema,29,Printing and copying,complex,163,165,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,printing/schemas.py::PackOut::class::1,printing/schemas.py,PackOut,schema,29,Printing and copying,complex,168,174,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,printing/schemas.py::QuotaOut::class::1,printing/schemas.py,QuotaOut,schema,29,Printing and copying,complex,188,196,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,printing/schemas.py::ProcessOut::class::1,printing/schemas.py,ProcessOut,schema,29,Printing and copying,complex,199,200,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,printing/schemas.py::PrintingSummaryOut::class::1,printing/schemas.py,PrintingSummaryOut,schema,29,Printing and copying,complex,203,206,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,printing/schemas.py::PrintingReportOut::class::1,printing/schemas.py,PrintingReportOut,schema,29,Printing and copying,complex,209,221,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,programs/models.py::Program::class::1,programs/models.py,Program,orm,26,Reading programs,complex,19,42,2,1,3,1,1,2,0,0,3
+v0-ai-baseline-ct,1.0,programs/models.py::ProgramBook::class::1,programs/models.py,ProgramBook,orm,26,Reading programs,complex,45,51,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,programs/models.py::Participation::class::1,programs/models.py,Participation,orm,26,Reading programs,complex,54,75,0,0,3,0,0,2,0,0,3
+v0-ai-baseline-ct,1.0,programs/models.py::Entry::class::1,programs/models.py,Entry,orm,26,Reading programs,complex,78,91,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,programs/schemas.py::ProgramCreateIn::class::1,programs/schemas.py,ProgramCreateIn,schema,26,Reading programs,complex,39,53,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::ProgramPatchIn::class::1,programs/schemas.py,ProgramPatchIn,schema,26,Reading programs,complex,56,79,4,2,1,2,5,2,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::BooksIn::class::1,programs/schemas.py,BooksIn,schema,26,Reading programs,complex,82,83,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::CopyIn::class::1,programs/schemas.py,CopyIn,schema,26,Reading programs,complex,86,87,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::JoinIn::class::1,programs/schemas.py,JoinIn,schema,26,Reading programs,complex,90,92,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::LeaveIn::class::1,programs/schemas.py,LeaveIn,schema,26,Reading programs,complex,95,96,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::VisibilityIn::class::1,programs/schemas.py,VisibilityIn,schema,26,Reading programs,complex,99,100,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::EntryIn::class::1,programs/schemas.py,EntryIn,schema,26,Reading programs,complex,103,105,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::ParticipationOut::class::1,programs/schemas.py,ParticipationOut,schema,26,Reading programs,complex,115,129,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,programs/schemas.py::ProgramOut::class::1,programs/schemas.py,ProgramOut,schema,26,Reading programs,complex,151,169,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::BookOut::class::1,programs/schemas.py,BookOut,schema,26,Reading programs,complex,194,196,0,0,0,0,0,1,0,2,0
+v0-ai-baseline-ct,1.0,programs/schemas.py::BooksOut::class::1,programs/schemas.py,BooksOut,schema,26,Reading programs,complex,199,200,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::MemberProgramOut::class::1,programs/schemas.py,MemberProgramOut,schema,26,Reading programs,complex,203,212,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,programs/schemas.py::ParticipantOut::class::1,programs/schemas.py,ParticipantOut,schema,26,Reading programs,complex,215,225,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,programs/schemas.py::LeaderboardOut::class::1,programs/schemas.py,LeaderboardOut,schema,26,Reading programs,complex,228,234,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,programs/schemas.py::EntryOut::class::1,programs/schemas.py,EntryOut,schema,26,Reading programs,complex,237,248,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,programs/schemas.py::CertificateOut::class::1,programs/schemas.py,CertificateOut,schema,26,Reading programs,complex,267,274,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,programs/schemas.py::ProcessOut::class::1,programs/schemas.py,ProcessOut,schema,26,Reading programs,complex,277,281,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,programs/schemas.py::TopBookOut::class::1,programs/schemas.py,TopBookOut,schema,26,Reading programs,complex,284,287,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,programs/schemas.py::ProgramReportOut::class::1,programs/schemas.py,ProgramReportOut,schema,26,Reading programs,complex,290,300,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,programs/schemas.py::ProgramSummaryOut::class::1,programs/schemas.py,ProgramSummaryOut,schema,26,Reading programs,complex,303,306,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,purchasing/models.py::Supplier::class::1,purchasing/models.py,Supplier,orm,12,Purchasing,medium,16,26,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,purchasing/models.py::PurchaseOrder::class::1,purchasing/models.py,PurchaseOrder,orm,12,Purchasing,medium,29,39,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,purchasing/models.py::PurchaseOrderLine::class::1,purchasing/models.py,PurchaseOrderLine,orm,12,Purchasing,medium,42,54,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::_SupplierChecks::class::1,purchasing/schemas.py,_SupplierChecks,plain,12,Purchasing,medium,24,33,3,2,0,2,5,0,2,2,0
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::SupplierCreateIn::class::1,purchasing/schemas.py,SupplierCreateIn,schema,12,Purchasing,medium,36,39,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::SupplierPatchIn::class::1,purchasing/schemas.py,SupplierPatchIn,schema,12,Purchasing,medium,42,48,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::SupplierOut::class::1,purchasing/schemas.py,SupplierOut,schema,12,Purchasing,medium,51,56,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::LineIn::class::1,purchasing/schemas.py,LineIn,schema,12,Purchasing,medium,68,78,2,1,1,1,3,2,0,2,1
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::OrderCreateIn::class::1,purchasing/schemas.py,OrderCreateIn,schema,12,Purchasing,medium,90,98,1,1,2,1,3,2,0,0,2
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::OrderPatchIn::class::1,purchasing/schemas.py,OrderPatchIn,schema,12,Purchasing,medium,101,109,1,1,2,1,3,2,0,0,2
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::ReceiveLineIn::class::1,purchasing/schemas.py,ReceiveLineIn,schema,12,Purchasing,medium,112,119,2,1,1,1,3,2,0,1,1
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::ReceiveIn::class::1,purchasing/schemas.py,ReceiveIn,schema,12,Purchasing,medium,122,130,3,1,2,1,5,2,0,0,2
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::LineOut::class::1,purchasing/schemas.py,LineOut,schema,12,Purchasing,medium,133,138,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,purchasing/schemas.py::OrderOut::class::1,purchasing/schemas.py,OrderOut,schema,12,Purchasing,medium,141,151,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,reports/schemas.py::MostBorrowedItemOut::class::1,reports/schemas.py,MostBorrowedItemOut,schema,10,Reports,medium,10,15,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,reports/schemas.py::MostBorrowedOut::class::1,reports/schemas.py,MostBorrowedOut,schema,10,Reports,medium,18,24,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,reports/schemas.py::OverdueItemOut::class::1,reports/schemas.py,OverdueItemOut,schema,10,Reports,medium,27,37,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,reports/schemas.py::OverduePage::class::1,reports/schemas.py,OverduePage,schema,10,Reports,medium,40,41,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,reports/schemas.py::MonthlySummaryOut::class::1,reports/schemas.py,MonthlySummaryOut,schema,10,Reports,medium,44,57,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,reports/schemas.py::InventoryItemOut::class::1,reports/schemas.py,InventoryItemOut,schema,10,Reports,medium,60,63,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,reports/schemas.py::InventoryOut::class::1,reports/schemas.py,InventoryOut,schema,10,Reports,medium,66,67,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,reservations/models.py::Reservation::class::1,reservations/models.py,Reservation,orm,6,Reservations,complex,16,34,1,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,reservations/schemas.py::ReservationCreateIn::class::1,reservations/schemas.py,ReservationCreateIn,schema,6,Reservations,complex,16,19,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,reservations/schemas.py::ReservationOut::class::1,reservations/schemas.py,ReservationOut,schema,6,Reservations,complex,22,34,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,reservations/schemas.py::ExpiredOut::class::1,reservations/schemas.py,ExpiredOut,schema,6,Reservations,complex,37,38,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,rooms/models.py::Room::class::1,rooms/models.py,Room,orm,15,Study rooms,complex,16,31,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,rooms/models.py::RoomBookingParticipant::class::1,rooms/models.py,RoomBookingParticipant,orm,15,Study rooms,complex,34,38,0,0,1,0,0,2,0,1,1
+v0-ai-baseline-ct,1.0,rooms/models.py::RoomBooking::class::1,rooms/models.py,RoomBooking,orm,15,Study rooms,complex,41,83,6,5,3,2,9,2,0,0,3
+v0-ai-baseline-ct,1.0,rooms/models.py::RoomBan::class::1,rooms/models.py,RoomBan,orm,15,Study rooms,complex,86,102,2,1,2,1,1,2,0,0,2
+v0-ai-baseline-ct,1.0,rooms/rules.py::RoomRules::class::1,rooms/rules.py,RoomRules,plain,15,Study rooms,complex,24,30,0,0,0,0,0,0,0,0,0
+v0-ai-baseline-ct,1.0,rooms/schemas.py::_FeatureCheck::class::1,rooms/schemas.py,_FeatureCheck,plain,15,Study rooms,complex,107,111,1,1,0,1,3,0,2,2,0
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomCreateIn::class::1,rooms/schemas.py,RoomCreateIn,schema,15,Study rooms,complex,114,131,2,1,2,1,5,2,0,0,2
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomPatchIn::class::1,rooms/schemas.py,RoomPatchIn,schema,15,Study rooms,complex,134,143,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomOut::class::1,rooms/schemas.py,RoomOut,schema,15,Study rooms,complex,146,158,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,rooms/schemas.py::SlotOut::class::1,rooms/schemas.py,SlotOut,schema,15,Study rooms,complex,178,182,0,0,0,0,0,1,0,3,0
+v0-ai-baseline-ct,1.0,rooms/schemas.py::AvailabilityOut::class::1,rooms/schemas.py,AvailabilityOut,schema,15,Study rooms,complex,185,189,0,0,1,0,0,1,0,1,1
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomBookingCreateIn::class::1,rooms/schemas.py,RoomBookingCreateIn,schema,15,Study rooms,complex,203,227,5,2,1,2,7,2,0,0,1
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomBookingPatchIn::class::1,rooms/schemas.py,RoomBookingPatchIn,schema,15,Study rooms,complex,230,237,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomBookingOut::class::1,rooms/schemas.py,RoomBookingOut,schema,15,Study rooms,complex,240,258,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,rooms/schemas.py::ProcessOut::class::1,rooms/schemas.py,ProcessOut,schema,15,Study rooms,complex,284,287,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomRemindersOut::class::1,rooms/schemas.py,RoomRemindersOut,schema,15,Study rooms,complex,290,291,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomBanCreateIn::class::1,rooms/schemas.py,RoomBanCreateIn,schema,15,Study rooms,complex,294,297,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomBanOut::class::1,rooms/schemas.py,RoomBanOut,schema,15,Study rooms,complex,300,311,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomUsageOut::class::1,rooms/schemas.py,RoomUsageOut,schema,15,Study rooms,complex,330,339,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,rooms/schemas.py::RoomSummaryOut::class::1,rooms/schemas.py,RoomSummaryOut,schema,15,Study rooms,complex,342,345,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,search/schemas.py::SearchItemOut::class::1,search/schemas.py,SearchItemOut,schema,9,Search,simple,10,13,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,staff/models.py::StaffProfile::class::1,staff/models.py,StaffProfile,orm,19,Staff and shifts,complex,17,28,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/models.py::BranchHours::class::1,staff/models.py,BranchHours,orm,19,Staff and shifts,complex,31,37,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/models.py::Closure::class::1,staff/models.py,Closure,orm,19,Staff and shifts,complex,40,48,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/models.py::Shift::class::1,staff/models.py,Shift,orm,19,Staff and shifts,complex,51,82,4,4,2,2,7,2,0,0,2
+v0-ai-baseline-ct,1.0,staff/models.py::LeaveRequest::class::1,staff/models.py,LeaveRequest,orm,19,Staff and shifts,complex,85,100,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,staff/schedule.py::BranchSchedule::class::1,staff/schedule.py,BranchSchedule,plain,19,Staff and shifts,complex,22,49,7,3,0,1,4,0,0,0,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::StaffCreateIn::class::1,staff/schemas.py,StaffCreateIn,schema,19,Staff and shifts,complex,25,31,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::StaffPatchIn::class::1,staff/schemas.py,StaffPatchIn,schema,19,Staff and shifts,complex,34,39,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::HoursIn::class::1,staff/schemas.py,HoursIn,schema,19,Staff and shifts,complex,42,45,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::ClosureIn::class::1,staff/schemas.py,ClosureIn,schema,19,Staff and shifts,complex,48,50,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::ShiftCreateIn::class::1,staff/schemas.py,ShiftCreateIn,schema,19,Staff and shifts,complex,53,58,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::ShiftPatchIn::class::1,staff/schemas.py,ShiftPatchIn,schema,19,Staff and shifts,complex,61,66,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::CopyWeekIn::class::1,staff/schemas.py,CopyWeekIn,schema,19,Staff and shifts,complex,69,72,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::LeaveCreateIn::class::1,staff/schemas.py,LeaveCreateIn,schema,19,Staff and shifts,complex,75,79,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::DecisionIn::class::1,staff/schemas.py,DecisionIn,schema,19,Staff and shifts,complex,82,83,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::StaffOut::class::1,staff/schemas.py,StaffOut,schema,19,Staff and shifts,complex,89,99,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::HoursOut::class::1,staff/schemas.py,HoursOut,schema,19,Staff and shifts,complex,102,106,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::ClosureOut::class::1,staff/schemas.py,ClosureOut,schema,19,Staff and shifts,complex,109,114,0,0,0,0,0,1,1,1,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::ClosureCreatedOut::class::1,staff/schemas.py,ClosureCreatedOut,schema,19,Staff and shifts,complex,117,121,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::OpenDayOut::class::1,staff/schemas.py,OpenDayOut,schema,19,Staff and shifts,complex,124,129,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::OpenDaysOut::class::1,staff/schemas.py,OpenDaysOut,schema,19,Staff and shifts,complex,132,134,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::ShiftOut::class::1,staff/schemas.py,ShiftOut,schema,19,Staff and shifts,complex,137,151,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::CopySkippedOut::class::1,staff/schemas.py,CopySkippedOut,schema,19,Staff and shifts,complex,154,156,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::CopyWeekOut::class::1,staff/schemas.py,CopyWeekOut,schema,19,Staff and shifts,complex,159,161,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::LeaveOut::class::1,staff/schemas.py,LeaveOut,schema,19,Staff and shifts,complex,164,177,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::LeaveBalanceOut::class::1,staff/schemas.py,LeaveBalanceOut,schema,19,Staff and shifts,complex,180,186,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::ProcessOut::class::1,staff/schemas.py,ProcessOut,schema,19,Staff and shifts,complex,189,191,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::StaffHoursOut::class::1,staff/schemas.py,StaffHoursOut,schema,19,Staff and shifts,complex,194,201,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::SlotOut::class::1,staff/schemas.py,SlotOut,schema,19,Staff and shifts,complex,204,207,0,0,0,0,0,1,0,3,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::CoverageOut::class::1,staff/schemas.py,CoverageOut,schema,19,Staff and shifts,complex,210,215,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,staff/schemas.py::MissingDayOut::class::1,staff/schemas.py,MissingDayOut,schema,19,Staff and shifts,complex,218,220,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,staff/schemas.py::CoverageRangeOut::class::1,staff/schemas.py,CoverageRangeOut,schema,19,Staff and shifts,complex,223,225,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,suggestions/models.py::Suggestion::class::1,suggestions/models.py,Suggestion,orm,25,Purchase suggestions,complex,18,46,1,1,3,1,1,2,0,0,3
+v0-ai-baseline-ct,1.0,suggestions/models.py::Support::class::1,suggestions/models.py,Support,orm,25,Purchase suggestions,complex,49,57,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::_IsbnCheck::class::1,suggestions/schemas.py,_IsbnCheck,plain,25,Purchase suggestions,complex,36,40,2,1,0,1,3,0,2,2,0
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::SuggestIn::class::1,suggestions/schemas.py,SuggestIn,schema,25,Purchase suggestions,complex,43,50,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::SuggestPatchIn::class::1,suggestions/schemas.py,SuggestPatchIn,schema,25,Purchase suggestions,complex,53,61,0,0,2,0,0,2,0,0,2
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::SupportIn::class::1,suggestions/schemas.py,SupportIn,schema,25,Purchase suggestions,complex,64,65,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::ApproveIn::class::1,suggestions/schemas.py,ApproveIn,schema,25,Purchase suggestions,complex,68,77,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::ApprovalPatchIn::class::1,suggestions/schemas.py,ApprovalPatchIn,schema,25,Purchase suggestions,complex,80,88,1,1,1,1,3,2,0,0,1
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::RejectIn::class::1,suggestions/schemas.py,RejectIn,schema,25,Purchase suggestions,complex,91,94,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::MergeIn::class::1,suggestions/schemas.py,MergeIn,schema,25,Purchase suggestions,complex,97,98,0,0,1,0,0,2,0,0,1
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::OrderIn::class::1,suggestions/schemas.py,OrderIn,schema,25,Purchase suggestions,complex,101,110,2,1,1,1,5,2,0,0,1
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::SuggestionOut::class::1,suggestions/schemas.py,SuggestionOut,schema,25,Purchase suggestions,complex,113,140,0,0,0,0,0,1,0,3,0
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::SupporterOut::class::1,suggestions/schemas.py,SupporterOut,schema,25,Purchase suggestions,complex,143,148,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::MemberSuggestionsOut::class::1,suggestions/schemas.py,MemberSuggestionsOut,schema,25,Purchase suggestions,complex,151,153,0,0,1,0,0,1,0,0,1
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::ProcessOut::class::1,suggestions/schemas.py,ProcessOut,schema,25,Purchase suggestions,complex,156,158,0,0,0,0,0,1,0,0,0
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::RejectedCountsOut::class::1,suggestions/schemas.py,RejectedCountsOut,schema,25,Purchase suggestions,complex,161,166,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::TopOut::class::1,suggestions/schemas.py,TopOut,schema,25,Purchase suggestions,complex,169,172,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::SuggestionReportOut::class::1,suggestions/schemas.py,SuggestionReportOut,schema,25,Purchase suggestions,complex,175,185,0,0,2,0,0,1,0,0,2
+v0-ai-baseline-ct,1.0,suggestions/schemas.py::SuggestionSummaryOut::class::1,suggestions/schemas.py,SuggestionSummaryOut,schema,25,Purchase suggestions,complex,188,191,0,0,0,0,0,1,0,1,0
+v0-ai-baseline-ct,1.0,suggestions/service.py::Viewer::class::1,suggestions/service.py,Viewer,plain,25,Purchase suggestions,complex,32,41,1,1,0,1,1,0,0,0,0
