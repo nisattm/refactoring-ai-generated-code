@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
-from pydantic import BaseModel
 
+from lms.api.common import fields_of, patch_fields, require_own_or_staff
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
@@ -48,15 +48,8 @@ OutgoingId = Annotated[int, Path(ge=1)]
 MemberId = Annotated[int, Path(ge=1)]
 
 
-def _fields_of(body: BaseModel) -> dict[str, Any]:
-    """The parsed values of a request body (``model_dump`` would serialize amounts to strings)."""
-    return {name: getattr(body, name) for name in type(body).model_fields}
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own interlibrary requests can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own interlibrary requests can be accessed")
 
 
 def _out(request: IllRequest, now) -> RequestOut:  # noqa: ANN001
@@ -69,7 +62,7 @@ def _out(request: IllRequest, now) -> RequestOut:  # noqa: ANN001
 @router.post("/ill-partners", response_model=PartnerOut, status_code=201)
 def create_partner(body: PartnerCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> PartnerOut:
     now = local_now(request.app.state.settings.clock)
-    return partners.to_out(db, partners.create_partner(db, now, admin.user, **_fields_of(body)))
+    return partners.to_out(db, partners.create_partner(db, now, admin.user, **fields_of(body)))
 
 
 @router.get("/ill-partners", response_model=Page[PartnerOut])
@@ -104,7 +97,7 @@ def update_partner(
     partner_id: PartnerId, body: PartnerPatchIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> PartnerOut:
     now = local_now(request.app.state.settings.clock)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     partner = partners.get_partner_or_404(db, partner_id)
     return partners.to_out(db, partners.update_partner(db, now, admin.user, partner, fields))
 

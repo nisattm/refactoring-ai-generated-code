@@ -9,19 +9,19 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, Request
 from sqlalchemy.orm import Session
 
+from lms.api.common import optional_date, patch_fields, report_range, require_own_or_staff
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
 from lms.core.money import format_amount
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.members.models import Member
 from lms.members.service import get_member_or_404
 from lms.printing import jobs, packs, printers, quota
 from lms.printing import reports as printing_reports
 from lms.printing.models import Printer, PrintJob
-from lms.printing.rules import FREE_PAGES, MAX_REPORT_DAYS
+from lms.printing.rules import FREE_PAGES
 from lms.printing.schemas import (
     FailIn,
     JobStatus,
@@ -57,18 +57,8 @@ def _now(request: Request) -> datetime.datetime:
 
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25: a member may only address their own jobs, packs and quota."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own print jobs and packs can be accessed")
-
-
-def _opt_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
+    """A member may only address their own jobs, packs and quota."""
+    require_own_or_staff(principal, member_id, "Only your own print jobs and packs can be accessed")
 
 
 def _job_out(db: Session, job: PrintJob) -> PrintJobOut:
@@ -110,7 +100,7 @@ def update_printer(
     printer_id: PrinterId, body: PrinterPatchIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> PrinterOut:
     printer = printers.get_printer_or_404(db, printer_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     return printer_out(printers.update_printer(db, _now(request), admin.user, printer, fields))
 
 
@@ -173,8 +163,8 @@ def list_jobs(
         status=status,
         printer_id=printer_id,
         branch_id=branch_id,
-        first=_opt_date("from", first),
-        last=_opt_date("to", to),
+        first=optional_date("from", first),
+        last=optional_date("to", to),
     )
     return paginate(db, stmt, page, lambda j: _job_out(db, j))
 
@@ -197,8 +187,8 @@ def list_member_jobs(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> Page[PrintJobOut]:
-    start = _opt_date("from", first)
-    end = _opt_date("to", to)
+    start = optional_date("from", first)
+    end = optional_date("to", to)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = jobs.job_list_stmt(member_id=member.id, status=status, printer_id=printer_id, first=start, last=end)
@@ -312,21 +302,5 @@ def printing_report(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[PrintingReportOut]:
-    problems: list[dict[str, str]] = []
-    dates: dict[str, datetime.date] = {}
-    for name, raw in (("from", first), ("to", to)):
-        if raw is None:
-            problems.append({"field": name, "problem": "field required"})
-            continue
-        try:
-            dates[name] = parse_date(raw.strip())
-        except ValueError:
-            problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-    if problems:
-        raise ValidationFailed(problems)
-    start, end = dates["from"], dates["to"]
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > MAX_REPORT_DAYS:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     return paginate_sequence(printing_reports.printing_report(db, start, end, branch_id), page)

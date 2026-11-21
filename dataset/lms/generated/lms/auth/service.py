@@ -13,7 +13,8 @@ from lms.audit.service import changes, record
 from lms.auth.deps import hash_token
 from lms.auth.models import AuthSession, User
 from lms.auth.passwords import hash_password, verify_password
-from lms.core.errors import ApiError, Conflict, Forbidden, NotFound
+from lms.core.errors import ApiError, Conflict, Forbidden
+from lms.core.lookup import get_or_404
 from lms.core.settings import Settings
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
@@ -205,10 +206,7 @@ def create_user(db: Session, now: datetime.datetime, actor: User, email: str, fu
 
 
 def get_user_or_404(db: Session, user_id: int) -> User:
-    user = db.get(User, user_id)
-    if user is None:
-        raise NotFound(f"User {user_id} does not exist", details={"resource": "user", "id": user_id})
-    return user
+    return get_or_404(db, User, user_id, "User", "user")
 
 
 def update_user(db: Session, now: datetime.datetime, actor: User, user: User, fields: dict[str, object]) -> User:

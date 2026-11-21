@@ -17,6 +17,7 @@ from lms.catalog.isbn import normalize_isbn
 from lms.catalog.models import Book
 from lms.catalog.service import is_lendable
 from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
@@ -45,12 +46,7 @@ STAFF = Viewer()
 
 
 def get_suggestion_or_404(db: Session, suggestion_id: int) -> Suggestion:
-    suggestion = db.get(Suggestion, suggestion_id)
-    if suggestion is None:
-        raise NotFound(
-            f"Suggestion {suggestion_id} does not exist", details={"resource": "suggestion", "id": suggestion_id}
-        )
-    return suggestion
+    return get_or_404(db, Suggestion, suggestion_id, "Suggestion", "suggestion")
 
 
 def _weight_case() -> Any:

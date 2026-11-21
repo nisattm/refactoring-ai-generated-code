@@ -7,13 +7,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, Response
 
+from lms.api.common import own_member, patch_fields
 from lms.auth.deps import AnyUser, CurrentPrincipal, Principal, StaffOnly, require_roles
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, NotFound, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate
 from lms.catalog.models import Book
-from lms.members.models import Member
 from lms.members.service import get_member_or_404
 from lms.purchasing.schemas import OrderOut
 from lms.purchasing.service import order_response
@@ -51,14 +51,6 @@ def _is_member(principal: Principal) -> bool:
     return principal.user.role == "member"
 
 
-def _own_member(db: SessionDep, principal: Principal) -> Member:
-    """The member behind a ``member`` user."""
-    member = db.get(Member, principal.user.member_id) if principal.user.member_id is not None else None
-    if member is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member
-
-
 def _viewer(principal: Principal, *, hide_member_id: bool = False) -> service.Viewer:
     if _is_member(principal):
         return service.Viewer(member_id=principal.user.member_id, hide_member_id=hide_member_id)
@@ -88,7 +80,7 @@ def suggest(body: SuggestIn, request: Request, db: SessionDep, principal: Curren
         raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
     service.check_year(body.publication_year, now.date())
     branch = service.require_known_branch(db, body.branch_id)
-    member = _own_member(db, principal) if _is_member(principal) else service.get_member_or_reference_404(db, body.member_id)
+    member = own_member(db, principal) if _is_member(principal) else service.get_member_or_reference_404(db, body.member_id)
     suggestion = service.suggest(
         db,
         now,
@@ -136,7 +128,7 @@ def update_suggestion(
     suggestion_id: SuggestionId, body: SuggestPatchIn, request: Request, db: SessionDep, principal: MemberOnly
 ) -> SuggestionOut:
     now = _now(request)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     nulls = [name for name in ("title", "author_text", "reason", "branch_id") if name in fields and fields[name] is None]
     if nulls:
         raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])
@@ -173,7 +165,7 @@ def support_suggestion(
     body: SupportIn | None = None,
 ) -> SuggestionOut:
     suggestion = service.get_suggestion_or_404(db, suggestion_id)
-    member = _own_member(db, principal)
+    member = own_member(db, principal)
     reserve = body.reserve_on_arrival if body is not None else True
     service.support(db, _now(request), principal.user, member, suggestion, reserve)
     return service.to_out(db, suggestion, _viewer(principal))
@@ -182,7 +174,7 @@ def support_suggestion(
 @router.delete("/suggestions/{suggestion_id}/support", status_code=204)
 def stop_supporting(suggestion_id: SuggestionId, request: Request, db: SessionDep, principal: MemberOnly) -> Response:
     suggestion = service.get_suggestion_or_404(db, suggestion_id)
-    service.remove_support(db, _now(request), principal.user, _own_member(db, principal), suggestion)
+    service.remove_support(db, _now(request), principal.user, own_member(db, principal), suggestion)
     return Response(status_code=204)
 
 
@@ -237,7 +229,7 @@ def approve_suggestion(
 def change_approval(
     suggestion_id: SuggestionId, body: ApprovalPatchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> SuggestionOut:
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     nulls = [name for name, value in fields.items() if value is None]
     if nulls:
         raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])

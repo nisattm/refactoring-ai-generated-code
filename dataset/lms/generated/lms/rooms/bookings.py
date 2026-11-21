@@ -14,7 +14,8 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.calendar import add_working_days, is_working_day
 from lms.core.clock import LOCAL_TZ
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, ValidationFailed, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.events.queries import room_event_conflict
 from lms.fines import service as fines
@@ -51,12 +52,7 @@ _HALF_HOUR = datetime.timedelta(minutes=30)
 
 
 def get_booking_or_404(db: Session, booking_id: int) -> RoomBooking:
-    booking = db.get(RoomBooking, booking_id)
-    if booking is None:
-        raise NotFound(
-            f"Room booking {booking_id} does not exist", details={"resource": "room_booking", "id": booking_id}
-        )
-    return booking
+    return get_or_404(db, RoomBooking, booking_id, "Room booking", "room_booking")
 
 
 def _member_or_404(db: Session, field: str, member_id: int) -> Member:

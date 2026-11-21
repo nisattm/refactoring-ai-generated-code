@@ -12,7 +12,8 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.clock import LOCAL_TZ
-from lms.core.errors import NotFound, reference_not_found
+from lms.core.errors import reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.core.timeutil import format_datetime
 from lms.equipment import capacity
@@ -47,13 +48,7 @@ from lms.staff.schedule import load_schedule
 
 
 def get_reservation_or_404(db: Session, reservation_id: int) -> EquipmentReservation:
-    reservation = db.get(EquipmentReservation, reservation_id)
-    if reservation is None:
-        raise NotFound(
-            f"Equipment reservation {reservation_id} does not exist",
-            details={"resource": "equipment_reservation", "id": reservation_id},
-        )
-    return reservation
+    return get_or_404(db, EquipmentReservation, reservation_id, "Equipment reservation", "equipment_reservation")
 
 
 def booked_count(db: Session, member_id: int) -> int:

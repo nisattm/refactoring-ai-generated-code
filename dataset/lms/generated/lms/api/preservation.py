@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import patch_fields
 from lms.auth.deps import AdminOnly, StaffOnly
 from lms.branches.models import Branch
 from lms.catalog.service import get_copy_or_404
@@ -132,7 +133,7 @@ def get_job(job_id: JobId, request: Request, db: SessionDep, _: StaffOnly) -> Jo
 @router.patch("/repair-jobs/{job_id}", response_model=JobOut)
 def update_job(job_id: JobId, body: JobPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> JobOut:
     now = _now(request)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     job = jobs.update_job(db, now, staff.user, jobs.get_job_or_404(db, job_id), fields)
     return jobs.job_out(db, job, now.date())
 

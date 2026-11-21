@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.errors import Conflict, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.money import ZERO, format_amount
 from lms.core.timeutil import format_datetime
 from lms.equipment import capacity
@@ -46,10 +47,7 @@ from lms.staff.schedule import load_schedule
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> EquipmentLoan:
-    loan = db.get(EquipmentLoan, loan_id)
-    if loan is None:
-        raise NotFound(f"Equipment loan {loan_id} does not exist", details={"resource": "equipment_loan", "id": loan_id})
-    return loan
+    return get_or_404(db, EquipmentLoan, loan_id, "Equipment loan", "equipment_loan")
 
 
 def error(code: str, message: str, **details: Any) -> Conflict:

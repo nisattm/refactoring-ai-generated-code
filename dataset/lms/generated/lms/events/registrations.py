@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 
 from lms.audit.service import record
 from lms.auth.models import User
-from lms.core.errors import Conflict, NotFound
+from lms.core.errors import Conflict
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.events import queries
 from lms.events.lifecycle import issue_fee, mark_cancelled, promote_waiting, waive_fee
@@ -35,13 +36,7 @@ def _error(code: str, message: str, **details: Any) -> Conflict:
 
 
 def get_registration_or_404(db: Session, registration_id: int) -> EventRegistration:
-    reg = db.get(EventRegistration, registration_id)
-    if reg is None:
-        raise NotFound(
-            f"Event registration {registration_id} does not exist",
-            details={"resource": "event_registration", "id": registration_id},
-        )
-    return reg
+    return get_or_404(db, EventRegistration, registration_id, "Event registration", "event_registration")
 
 
 def to_out(db: Session, reg: EventRegistration, event: Event | None = None) -> RegistrationOut:

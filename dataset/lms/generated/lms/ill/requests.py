@@ -14,7 +14,8 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.branches.service import require_active_branch
 from lms.catalog.models import Book, Copy
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, ValidationFailed, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.money import ZERO, format_amount
 from lms.fines import service as fines
 from lms.fines.schemas import BLOCKING_DEBT
@@ -28,12 +29,7 @@ from lms.notifications.service import notify_ill
 
 
 def get_request_or_404(db: Session, request_id: int) -> IllRequest:
-    request = db.get(IllRequest, request_id)
-    if request is None:
-        raise NotFound(
-            f"Interlibrary request {request_id} does not exist", details={"resource": "ill_request", "id": request_id}
-        )
-    return request
+    return get_or_404(db, IllRequest, request_id, "Interlibrary request", "ill_request")
 
 
 def _invalid_status(request: IllRequest) -> Conflict:

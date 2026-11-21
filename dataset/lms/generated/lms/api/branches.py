@@ -7,6 +7,7 @@ from typing import Annotated
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import patch_fields
 from lms.auth.deps import AdminOnly, AnyUser
 from lms.branches import service
 from lms.branches.models import Branch
@@ -50,5 +51,5 @@ def update_branch(
 ) -> BranchOut:
     now = local_now(request.app.state.settings.clock)
     branch = service.get_branch_or_404(db, branch_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     return branch_out(service.update_branch(db, now, admin.user, branch, fields))

@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from lms.auth.models import User
-from lms.core.errors import NotFound
+from lms.core.lookup import get_or_404
 from lms.digital import state
 from lms.digital.models import DigitalHold, DigitalLoan, DigitalResource
 from lms.digital.queue import cancel_hold, move_queue
@@ -18,10 +18,7 @@ from lms.members.models import Member
 
 
 def get_hold_or_404(db: Session, hold_id: int) -> DigitalHold:
-    hold = db.get(DigitalHold, hold_id)
-    if hold is None:
-        raise NotFound(f"Digital hold {hold_id} does not exist", details={"resource": "digital_hold", "id": hold_id})
-    return hold
+    return get_or_404(db, DigitalHold, hold_id, "Digital hold", "digital_hold")
 
 
 def place_hold(

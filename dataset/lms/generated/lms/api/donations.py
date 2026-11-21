@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import optional_date, own_member, patch_fields
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, NotFound, ValidationFailed, reference_not_found
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.donations import donors as donor_service
 from lms.donations import offers, receiving, review
 from lms.donations.models import Donation, Donor
@@ -45,25 +44,8 @@ DonationId = Annotated[int, Path(ge=1)]
 MemberId = Annotated[int, Path(ge=1)]
 
 
-def _optional_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
-
-
 def _is_member(principal: Principal) -> bool:
     return principal.user.role == "member"
-
-
-def _own_member(db: SessionDep, principal: Principal) -> Member:
-    """The member behind a ``member`` user."""
-    member = db.get(Member, principal.user.member_id) if principal.user.member_id is not None else None
-    if member is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member
 
 
 def _require_own(db: SessionDep, principal: Principal, donation: Donation, *, hide: bool) -> None:
@@ -114,7 +96,7 @@ def get_donor(donor_id: DonorId, request: Request, db: SessionDep, _: StaffOnly)
 @router.patch("/donors/{donor_id}", response_model=DonorOut)
 def update_donor(donor_id: DonorId, body: DonorPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> DonorOut:
     now = local_now(request.app.state.settings.clock)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     nulls = [name for name in ("name", "anonymous", "is_active") if name in fields and fields[name] is None]
     if nulls:
         raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])
@@ -158,7 +140,7 @@ def offer_donation(body: DonationCreateIn, request: Request, db: SessionDep, pri
     if _is_member(principal):
         if body.donor_id is not None:
             raise ValidationFailed.single("donor_id", "members offer for themselves and must not send donor_id")
-        member = _own_member(db, principal)
+        member = own_member(db, principal)
     elif body.donor_id is None:
         raise ValidationFailed.single("donor_id", "donor_id is required for librarians and admins")
     donation = offers.offer(
@@ -189,8 +171,8 @@ def list_donations(
         status=status,
         donor_id=donor_id,
         branch_id=branch_id,
-        first=_optional_date("from", first),
-        last=_optional_date("to", to),
+        first=optional_date("from", first),
+        last=optional_date("to", to),
     )
     return paginate(db, stmt, page, lambda d: offers.to_out(db, d))
 
@@ -223,7 +205,7 @@ def update_donation(
     donation_id: DonationId, body: DonationPatchIn, request: Request, db: SessionDep, principal: CurrentPrincipal
 ) -> DonationOut:
     now = local_now(request.app.state.settings.clock)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     nulls = [name for name, value in fields.items() if value is None]
     if nulls:
         raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])

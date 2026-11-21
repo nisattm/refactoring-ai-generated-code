@@ -7,12 +7,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 
+from lms.api.common import own_member, patch_fields
 from lms.auth.deps import AnyUser, Principal, StaffOnly, require_roles
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, NotFound, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.members.models import Member
 from lms.messaging import announcements, process, threads, usage
 from lms.messaging.models import Thread
 from lms.messaging.schemas import (
@@ -51,13 +51,6 @@ def _is_member(principal: Principal) -> bool:
     return principal.user.role == "member"
 
 
-def _own_member(db: SessionDep, principal: Principal) -> Member:
-    member = db.get(Member, principal.user.member_id) if principal.user.member_id is not None else None
-    if member is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member
-
-
 def _announcement_not_found(announcement_id: int) -> NotFound:
     return NotFound(
         f"Announcement {announcement_id} does not exist",
@@ -90,7 +83,7 @@ def list_announcements(
 ) -> FeedPage | Page[AnnouncementOut]:
     now = _now(request)
     if _is_member(principal):
-        member = _own_member(db, principal)
+        member = own_member(db, principal)
         feed = usage.live_for_member(db, now, member)
         seen = usage.read_ids(db, member.id)
         chunk = paginate_sequence(feed, page)
@@ -113,7 +106,7 @@ def get_announcement(
     announcement = announcements.get_announcement_or_404(db, announcement_id)
     if not _is_member(principal):
         return announcements.announcement_out(announcement, now)
-    member = _own_member(db, principal)
+    member = own_member(db, principal)
     if not announcements.member_visible(announcement, member, now):
         raise _announcement_not_found(announcement_id)
     announcements.mark_read(db, now, announcement, member)
@@ -130,7 +123,7 @@ def update_announcement(
 ) -> AnnouncementOut:
     now = _now(request)
     announcement = announcements.get_announcement_or_404(db, announcement_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     announcements.update_announcement(db, now, staff.user, announcement, fields)
     return announcements.announcement_out(announcement, now)
 
@@ -165,7 +158,7 @@ def read_announcement(
 ) -> ReadOut:
     now = _now(request)
     announcement = announcements.get_announcement_or_404(db, announcement_id)
-    member = _own_member(db, principal)
+    member = own_member(db, principal)
     if not announcements.member_visible(announcement, member, now):
         raise _announcement_not_found(announcement_id)
     return announcements.read_out(announcement, announcements.mark_read(db, now, announcement, member))
@@ -192,7 +185,7 @@ def _thread_for(db: SessionDep, thread_id: int, principal: Principal, *, hide: b
 @router.post("/threads", response_model=ThreadOut, status_code=201, response_model_exclude_unset=True)
 def create_thread(body: ThreadCreateIn, request: Request, db: SessionDep, principal: MemberOnly) -> ThreadOut:
     now = _now(request)
-    member = _own_member(db, principal)
+    member = own_member(db, principal)
     thread = threads.create_thread(
         db, now, request.app.state.settings.holidays, principal.user, member, body.model_dump()
     )
@@ -214,7 +207,7 @@ def list_threads(
 ) -> Page[ThreadOut]:
     now = _now(request)
     if _is_member(principal):
-        own = _own_member(db, principal)
+        own = own_member(db, principal)
         stmt = threads.list_stmt(now, staff=False, member_id=own.id, status=status)
         return paginate(db, stmt, page, lambda t: threads.to_out(db, now, t, staff=False))
     assignee: int | None = None

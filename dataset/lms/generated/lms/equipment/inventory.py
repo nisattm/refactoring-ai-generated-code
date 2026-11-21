@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.service import require_active_branch
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, ValidationFailed, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
@@ -29,17 +30,11 @@ from lms.notifications.service import notify_equipment
 
 
 def get_type_or_404(db: Session, type_id: int) -> EquipmentType:
-    equipment_type = db.get(EquipmentType, type_id)
-    if equipment_type is None:
-        raise NotFound(f"Equipment type {type_id} does not exist", details={"resource": "equipment_type", "id": type_id})
-    return equipment_type
+    return get_or_404(db, EquipmentType, type_id, "Equipment type", "equipment_type")
 
 
 def get_item_or_404(db: Session, item_id: int) -> EquipmentItem:
-    item = db.get(EquipmentItem, item_id)
-    if item is None:
-        raise NotFound(f"Equipment item {item_id} does not exist", details={"resource": "equipment_item", "id": item_id})
-    return item
+    return get_or_404(db, EquipmentItem, item_id, "Equipment item", "equipment_item")
 
 
 def type_or_reference_404(db: Session, field: str, type_id: int) -> EquipmentType:

@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import patch_fields
 from lms.auth.deps import StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
@@ -67,7 +68,7 @@ def update_supplier(
 ) -> SupplierOut:
     now = local_now(request.app.state.settings.clock)
     supplier = service.get_supplier_or_404(db, supplier_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     return supplier_out(service.update_supplier(db, now, staff.user, supplier, fields))
 
 
@@ -105,7 +106,7 @@ def get_order(order_id: OrderId, db: SessionDep, _: StaffOnly) -> OrderOut:
 def update_order(order_id: OrderId, body: OrderPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
     now = local_now(request.app.state.settings.clock)
     order = service.get_order_or_404(db, order_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     return _order(db, service.update_order(db, now, staff.user, order, fields))
 
 

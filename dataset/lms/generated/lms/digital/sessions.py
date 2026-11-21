@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from lms.auth.models import User
 from lms.core.clock import LOCAL_TZ
-from lms.core.errors import NotFound
+from lms.core.lookup import get_or_404
 from lms.core.timeutil import format_datetime
 from lms.digital import state
 from lms.digital.models import DigitalResource, DigitalSession
@@ -19,10 +19,7 @@ from lms.members.models import Member
 
 
 def get_session_or_404(db: Session, session_id: int) -> DigitalSession:
-    session = db.get(DigitalSession, session_id)
-    if session is None:
-        raise NotFound(f"Digital session {session_id} does not exist", details={"resource": "digital_session", "id": session_id})
-    return session
+    return get_or_404(db, DigitalSession, session_id, "Digital session", "digital_session")
 
 
 def open_session(

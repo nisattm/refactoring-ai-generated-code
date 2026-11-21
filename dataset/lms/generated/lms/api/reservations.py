@@ -8,6 +8,7 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 from sqlalchemy.orm import Session
 
+from lms.api.common import require_own_or_staff
 from lms.auth.deps import CurrentPrincipal, Principal, StaffOnly
 from lms.catalog.models import Book
 from lms.core.clock import local_now
@@ -33,9 +34,8 @@ BookId = Annotated[int, Path(ge=1)]
 
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25: a member may only address their own reservations."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own reservations can be accessed")
+    """A member may only address their own reservations."""
+    require_own_or_staff(principal, member_id, "Only your own reservations can be accessed")
 
 
 def _page_out(db: Session, stmt: sa.Select[tuple[Reservation]], page) -> Page[ReservationOut]:  # noqa: ANN001

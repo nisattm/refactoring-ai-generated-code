@@ -14,10 +14,10 @@ from lms.branches.models import Branch
 from lms.core.errors import (
     Conflict,
     Forbidden,
-    NotFound,
     ValidationFailed,
     reference_not_found,
 )
+from lms.core.lookup import get_or_404
 from lms.events.queries import open_event_ids_of_staff
 from lms.staff import leave as leave_service
 from lms.staff import shifts
@@ -31,10 +31,7 @@ _FIELDS = ("home_branch_id", "employment", "weekly_hours", "annual_leave_days", 
 
 
 def get_profile_or_404(db: Session, staff_id: int) -> StaffProfile:
-    profile = db.get(StaffProfile, staff_id)
-    if profile is None:
-        raise NotFound(f"Staff profile {staff_id} does not exist", details={"resource": "staff", "id": staff_id})
-    return profile
+    return get_or_404(db, StaffProfile, staff_id, "Staff profile", "staff")
 
 
 def profile_of_user(db: Session, user_id: int) -> StaffProfile | None:

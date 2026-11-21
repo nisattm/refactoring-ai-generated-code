@@ -15,7 +15,8 @@ from lms.branches.service import require_active_branch
 from lms.catalog.models import Book, Copy
 from lms.catalog.release import release_copy
 from lms.catalog.status import invalid_status, set_status
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, ValidationFailed, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.ill import partners
 from lms.ill.models import IllOutgoing
@@ -24,12 +25,7 @@ from lms.ill.schemas import OutgoingOut, outgoing_out
 
 
 def get_outgoing_or_404(db: Session, outgoing_id: int) -> IllOutgoing:
-    outgoing = db.get(IllOutgoing, outgoing_id)
-    if outgoing is None:
-        raise NotFound(
-            f"Outgoing request {outgoing_id} does not exist", details={"resource": "ill_outgoing", "id": outgoing_id}
-        )
-    return outgoing
+    return get_or_404(db, IllOutgoing, outgoing_id, "Outgoing request", "ill_outgoing")
 
 
 def _invalid_status(outgoing: IllOutgoing) -> Conflict:

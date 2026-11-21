@@ -11,7 +11,8 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from lms.audit.service import record
-from lms.core.errors import Conflict, NotFound
+from lms.core.errors import Conflict
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.digital.models import DigitalHold, DigitalLicense, DigitalLoan, DigitalResource, DigitalSession
 from lms.digital.rules import DEBT_BLOCK
@@ -24,12 +25,7 @@ def error(code: str, message: str, **details: Any) -> Conflict:
 
 
 def get_resource_or_404(db: Session, resource_id: int) -> DigitalResource:
-    resource = db.get(DigitalResource, resource_id)
-    if resource is None:
-        raise NotFound(
-            f"Digital resource {resource_id} does not exist", details={"resource": "digital_resource", "id": resource_id}
-        )
-    return resource
+    return get_or_404(db, DigitalResource, resource_id, "Digital resource", "digital_resource")
 
 
 def audit(

@@ -23,6 +23,7 @@ from lms.catalog.schemas import (
 )
 from lms.catalog.status import GONE_STATUSES, invalid_status, set_status
 from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
 from lms.courses.usage import book_has_items
@@ -34,25 +35,15 @@ from lms.preservation.usage import expected_back, require_no_open_job
 from lms.suggestions import usage as suggestion_usage
 
 
-def _not_found(resource: str, resource_id: int) -> NotFound:
-    return NotFound(f"{resource.capitalize()} {resource_id} does not exist", details={"resource": resource, "id": resource_id})
-
-
 # --- authors and publishers ---------------------------------------------------
 
 
 def get_author_or_404(db: Session, author_id: int) -> Author:
-    author = db.get(Author, author_id)
-    if author is None:
-        raise _not_found("author", author_id)
-    return author
+    return get_or_404(db, Author, author_id, "Author", "author")
 
 
 def get_publisher_or_404(db: Session, publisher_id: int) -> Publisher:
-    publisher = db.get(Publisher, publisher_id)
-    if publisher is None:
-        raise _not_found("publisher", publisher_id)
-    return publisher
+    return get_or_404(db, Publisher, publisher_id, "Publisher", "publisher")
 
 
 def create_author(db: Session, name: str) -> Author:
@@ -109,10 +100,7 @@ def delete_publisher(db: Session, publisher: Publisher) -> None:
 
 
 def get_book_or_404(db: Session, book_id: int) -> Book:
-    book = db.get(Book, book_id)
-    if book is None:
-        raise _not_found("book", book_id)
-    return book
+    return get_or_404(db, Book, book_id, "Book", "book")
 
 
 def check_publication_year(year: int, today: datetime.date) -> None:
@@ -313,10 +301,7 @@ def book_out(db: Session, book: Book) -> BookOut:
 
 
 def get_copy_or_404(db: Session, copy_id: int) -> Copy:
-    copy = db.get(Copy, copy_id)
-    if copy is None:
-        raise _not_found("copy", copy_id)
-    return copy
+    return get_or_404(db, Copy, copy_id, "Copy", "copy")
 
 
 def get_copy_by_barcode_or_404(db: Session, barcode: str) -> Copy:

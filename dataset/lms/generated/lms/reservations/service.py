@@ -19,7 +19,8 @@ from lms.branches.service import start_transfer
 from lms.catalog.models import Book, Copy
 from lms.catalog.status import GONE_STATUSES, set_status
 from lms.core.calendar import add_working_days
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.errors import Conflict, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.courses.placement import place_on_release
 from lms.loans.models import Loan
 from lms.members.models import Member
@@ -31,13 +32,7 @@ HOLD_WORKING_DAYS = 3
 
 
 def get_reservation_or_404(db: Session, reservation_id: int) -> Reservation:
-    reservation = db.get(Reservation, reservation_id)
-    if reservation is None:
-        raise NotFound(
-            f"Reservation {reservation_id} does not exist",
-            details={"resource": "reservation", "id": reservation_id},
-        )
-    return reservation
+    return get_or_404(db, Reservation, reservation_id, "Reservation", "reservation")
 
 
 _NOTIFIED_EVENTS = frozenset({"reservation_ready", "reservation_in_transit", "reservation_expired"})

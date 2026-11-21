@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 
 from lms.audit.service import changes, record
 from lms.auth.models import User
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.errors import Conflict, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.core.text import normalize
 from lms.ill.models import IllOutgoing, IllPartner, IllRequest
@@ -18,10 +19,7 @@ from lms.ill.schemas import PartnerOut, partner_out
 
 
 def get_partner_or_404(db: Session, partner_id: int) -> IllPartner:
-    partner = db.get(IllPartner, partner_id)
-    if partner is None:
-        raise NotFound(f"Partner {partner_id} does not exist", details={"resource": "ill_partner", "id": partner_id})
-    return partner
+    return get_or_404(db, IllPartner, partner_id, "Partner", "ill_partner")
 
 
 def require_partner(db: Session, partner_id: int) -> IllPartner:

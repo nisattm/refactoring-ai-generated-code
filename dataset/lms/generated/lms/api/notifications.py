@@ -6,10 +6,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 
+from lms.api.common import require_own_or_staff
 from lms.auth.deps import CurrentPrincipal, Principal, StaffOnly, require_roles
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden
 from lms.core.pagination import Page, PageDep, paginate
 from lms.members.service import get_member_or_404
 from lms.notifications import service
@@ -31,9 +31,8 @@ MemberOnly = Annotated[Principal, Depends(require_roles("member"))]
 
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25: a member may only address their own notifications."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own notifications can be accessed")
+    """A member may only address their own notifications."""
+    require_own_or_staff(principal, member_id, "Only your own notifications can be accessed")
 
 
 @router.get("/members/{member_id}/notifications", response_model=Page[NotificationOut])

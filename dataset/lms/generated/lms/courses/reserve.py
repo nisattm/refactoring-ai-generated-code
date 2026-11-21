@@ -12,7 +12,8 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.catalog.models import Copy
 from lms.catalog.status import invalid_status
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.errors import Conflict, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.courses import placement
 from lms.courses.models import Course, ReadingListItem, ReserveLoan
 from lms.courses.schemas import PlacedCopyOut
@@ -24,10 +25,7 @@ def _error(code: str, message: str, **details: object) -> Conflict:
 
 
 def get_item_or_404(db: Session, item_id: int) -> ReadingListItem:
-    item = db.get(ReadingListItem, item_id)
-    if item is None:
-        raise NotFound(f"Reading list item {item_id} does not exist", details={"resource": "reading_list_item", "id": item_id})
-    return item
+    return get_or_404(db, ReadingListItem, item_id, "Reading list item", "reading_list_item")
 
 
 def has_open_loan(db: Session, copy_id: int) -> ReserveLoan | None:

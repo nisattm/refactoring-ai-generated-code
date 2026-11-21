@@ -12,16 +12,14 @@ from lms.access.rules import MAX_BAN_DAYS
 from lms.access.usage import open_visit_of_member
 from lms.audit.service import record
 from lms.auth.models import User
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.lookup import get_or_404
 from lms.members.models import Member
 from lms.notifications.service import notify_access
 
 
 def get_ban_or_404(db: Session, ban_id: int) -> AccessBan:
-    ban = db.get(AccessBan, ban_id)
-    if ban is None:
-        raise NotFound(f"Access ban {ban_id} does not exist", details={"resource": "access_ban", "id": ban_id})
-    return ban
+    return get_or_404(db, AccessBan, ban_id, "Access ban", "access_ban")
 
 
 def create_ban(

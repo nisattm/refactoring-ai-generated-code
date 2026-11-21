@@ -15,6 +15,7 @@ from lms.branches.models import Branch
 from lms.catalog.models import Book, Copy
 from lms.catalog.status import set_status
 from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.core.timeutil import format_datetime
 from lms.courses import accrual
@@ -41,10 +42,7 @@ def _error(code: str, message: str, **details: Any) -> Conflict:
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> ReserveLoan:
-    loan = db.get(ReserveLoan, loan_id)
-    if loan is None:
-        raise NotFound(f"Reserve loan {loan_id} does not exist", details={"resource": "reserve_loan", "id": loan_id})
-    return loan
+    return get_or_404(db, ReserveLoan, loan_id, "Reserve loan", "reserve_loan")
 
 
 def to_out(db: Session, loan: ReserveLoan, now: datetime.datetime) -> ReserveLoanOut:

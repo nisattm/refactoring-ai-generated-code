@@ -7,6 +7,7 @@ from typing import Annotated
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request, Response
 
+from lms.api.common import patch_fields
 from lms.auth import service
 from lms.auth.deps import AdminOnly, CurrentPrincipal
 from lms.auth.models import User
@@ -67,7 +68,7 @@ def get_user(user_id: UserId, db: SessionDep, principal: CurrentPrincipal) -> Us
 def update_user(user_id: UserId, body: UserPatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> UserOut:
     now = local_now(request.app.state.settings.clock)
     user = service.get_user_or_404(db, user_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     return user_out(service.update_user(db, now, admin.user, user, fields))
 
 

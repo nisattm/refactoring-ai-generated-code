@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request, Response
 
+from lms.api.common import date_param, patch_fields
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, StaffOnly
 from lms.branches.service import get_branch_or_404
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, NotFound, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.staff import hours as hours_service
 from lms.staff import leave as leave_service
 from lms.staff import profiles
@@ -58,18 +57,6 @@ BranchId = Annotated[int, Path(ge=1)]
 ClosureId = Annotated[int, Path(ge=1)]
 ShiftId = Annotated[int, Path(ge=1)]
 LeaveId = Annotated[int, Path(ge=1)]
-
-
-def _date_param(name: str, raw: str | None, problems: list[dict[str, str]], *, required: bool = False) -> datetime.date | None:
-    if raw is None:
-        if required:
-            problems.append({"field": name, "problem": "field required"})
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-        return None
 
 
 def _shift_out(db: SessionDep, shift: Shift) -> ShiftOut:
@@ -132,7 +119,7 @@ def get_staff(staff_id: StaffId, db: SessionDep, staff: StaffOnly) -> StaffOut:
 def update_staff(staff_id: StaffId, body: StaffPatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> StaffOut:
     now = local_now(request.app.state.settings.clock)
     profile = profiles.get_profile_or_404(db, staff_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     if any(value is None for value in fields.values()):
         raise ValidationFailed(
             [{"field": name, "problem": "value must not be null"} for name, value in fields.items() if value is None]
@@ -201,8 +188,8 @@ def list_closures(
     to: Annotated[str | None, Query()] = None,
 ) -> Page[ClosureOut]:
     problems: list[dict[str, str]] = []
-    start = _date_param("from", first, problems)
-    end = _date_param("to", to, problems)
+    start = date_param("from", first, problems)
+    end = date_param("to", to, problems)
     if problems:
         raise ValidationFailed(problems)
     stmt = hours_service.closure_list_stmt(branch_id=branch_id, first=start, last=end)
@@ -219,8 +206,8 @@ def open_days(
     to: Annotated[str | None, Query()] = None,
 ) -> OpenDaysOut:
     problems: list[dict[str, str]] = []
-    start = _date_param("from", first, problems, required=True)
-    end = _date_param("to", to, problems, required=True)
+    start = date_param("from", first, problems, required=True)
+    end = date_param("to", to, problems, required=True)
     if problems:
         raise ValidationFailed(problems)
     assert start is not None and end is not None
@@ -282,8 +269,8 @@ def list_shifts(
     to: Annotated[str | None, Query()] = None,
 ) -> Page[ShiftOut]:
     problems: list[dict[str, str]] = []
-    start = _date_param("from", first, problems)
-    end = _date_param("to", to, problems)
+    start = date_param("from", first, problems)
+    end = date_param("to", to, problems)
     if problems:
         raise ValidationFailed(problems)
     if staff.user.role != "admin":
@@ -300,7 +287,7 @@ def update_shift(shift_id: ShiftId, body: ShiftPatchIn, request: Request, db: Se
     settings = request.app.state.settings
     now = local_now(settings.clock)
     shift = shift_service.get_shift_or_404(db, shift_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     if any(value is None for value in fields.values()):
         raise ValidationFailed(
             [{"field": name, "problem": "value must not be null"} for name, value in fields.items() if value is None]
@@ -435,8 +422,8 @@ def staff_hours_report(
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[StaffHoursOut]:
     problems: list[dict[str, str]] = []
-    start = _date_param("from", first, problems, required=True)
-    end = _date_param("to", to, problems, required=True)
+    start = date_param("from", first, problems, required=True)
+    end = date_param("to", to, problems, required=True)
     if problems:
         raise ValidationFailed(problems)
     assert start is not None and end is not None
@@ -460,9 +447,9 @@ def branch_coverage_report(
 ) -> CoverageOut | CoverageRangeOut:
     holidays = request.app.state.settings.holidays
     problems: list[dict[str, str]] = []
-    one_day = _date_param("date", day, problems)
-    start = _date_param("from", first, problems)
-    end = _date_param("to", to, problems)
+    one_day = date_param("date", day, problems)
+    start = date_param("from", first, problems)
+    end = date_param("to", to, problems)
     if problems:
         raise ValidationFailed(problems)
     if one_day is not None:

@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 
 from lms.audit.service import changes, record
 from lms.auth.models import User
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.lookup import get_or_404
 from lms.core.money import ZERO, format_amount
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
@@ -22,10 +23,7 @@ from lms.members.models import Member
 
 
 def get_donor_or_404(db: Session, donor_id: int) -> Donor:
-    donor = db.get(Donor, donor_id)
-    if donor is None:
-        raise NotFound(f"Donor {donor_id} does not exist", details={"resource": "donor", "id": donor_id})
-    return donor
+    return get_or_404(db, Donor, donor_id, "Donor", "donor")
 
 
 def donor_out(donor: Donor, year_value) -> DonorOut:

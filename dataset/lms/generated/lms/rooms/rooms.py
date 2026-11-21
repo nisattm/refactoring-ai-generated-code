@@ -15,7 +15,8 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.branches.service import require_active_branch
 from lms.core.calendar import is_working_day
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.lookup import get_or_404
 from lms.events.queries import events_using_room
 from lms.rooms.lifecycle import cancel_booking
 from lms.rooms.models import Room, RoomBooking
@@ -34,10 +35,7 @@ _SLOT = datetime.timedelta(minutes=30)
 
 
 def get_room_or_404(db: Session, room_id: int) -> Room:
-    room = db.get(Room, room_id)
-    if room is None:
-        raise NotFound(f"Room {room_id} does not exist", details={"resource": "room", "id": room_id})
-    return room
+    return get_or_404(db, Room, room_id, "Room", "room")
 
 
 def _snapshot(room: Room) -> dict[str, Any]:

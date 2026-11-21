@@ -7,6 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, Response
 
+from lms.api.common import own_member, patch_fields
 from lms.auth.deps import AnyUser, Principal, StaffOnly, require_roles
 from lms.catalog.models import Book
 from lms.core.clock import local_now
@@ -72,13 +73,6 @@ def _visible_program(db: SessionDep, program_id: int, principal: Principal) -> P
     return program
 
 
-def _own_member(db: SessionDep, principal: Principal) -> Member:
-    member = db.get(Member, principal.user.member_id) if principal.user.member_id is not None else None
-    if member is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member
-
-
 def _require_own(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25."""
     if _is_member(principal) and member_id != principal.user.member_id:
@@ -138,7 +132,7 @@ def update_program(
     program_id: ProgramId, body: ProgramPatchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> ProgramOut:
     program = programs.get_program_or_404(db, program_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     programs.update_program(db, _now(request), staff.user, program, fields)
     return programs.to_out(db, program)
 
@@ -198,7 +192,7 @@ def _target_member(db: SessionDep, principal: Principal, member_id: int | None) 
     if _is_member(principal):
         if member_id is not None:
             raise ValidationFailed.single("member_id", "members act for themselves and must not send member_id")
-        return _own_member(db, principal)
+        return own_member(db, principal)
     if member_id is None:
         raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
     member = db.get(Member, member_id)

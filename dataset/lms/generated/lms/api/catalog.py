@@ -7,6 +7,7 @@ from typing import Annotated
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request, Response
 
+from lms.api.common import patch_fields
 from lms.auth.deps import AnyUser, StaffOnly
 from lms.catalog import service
 from lms.catalog.isbn import normalize_isbn
@@ -167,7 +168,7 @@ def get_book(book_id: BookId, db: SessionDep, _: AnyUser) -> BookOut:
 @router.patch("/books/{book_id}", response_model=BookOut)
 def update_book(book_id: BookId, body: BookPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> BookOut:
     now = _now(request)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     if "publication_year" in fields:
         service.check_publication_year(fields["publication_year"], now.date())
     book = service.get_book_or_404(db, book_id)
@@ -240,7 +241,7 @@ def get_copy(copy_id: CopyId, db: SessionDep, _: AnyUser) -> CopyOut:
 
 @router.patch("/copies/{copy_id}", response_model=CopyOut)
 def update_copy(copy_id: CopyId, body: CopyPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> CopyOut:
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     copy = service.get_copy_or_404(db, copy_id)
     return copy_out(service.update_copy(db, _now(request), staff.user, copy, fields))
 

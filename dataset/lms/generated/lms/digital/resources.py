@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes
 from lms.auth.models import User
 from lms.catalog.models import Book
-from lms.core.errors import NotFound, ValidationFailed
+from lms.core.errors import ValidationFailed
+from lms.core.lookup import get_or_404
 from lms.core.text import normalize
 from lms.digital import state
 from lms.digital.models import DigitalHold, DigitalLicense, DigitalResource
@@ -180,10 +181,7 @@ def calendar(db: Session, resource: DigitalResource, first: datetime.date, last:
 
 
 def get_license_or_404(db: Session, license_id: int) -> DigitalLicense:
-    lic = db.get(DigitalLicense, license_id)
-    if lic is None:
-        raise NotFound(f"Digital license {license_id} does not exist", details={"resource": "digital_license", "id": license_id})
-    return lic
+    return get_or_404(db, DigitalLicense, license_id, "Digital license", "digital_license")
 
 
 def _copies_problem(resource: DigitalResource, copies: int) -> dict[str, str] | None:

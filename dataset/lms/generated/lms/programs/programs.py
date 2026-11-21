@@ -12,7 +12,8 @@ from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.catalog.models import Book
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.core.text import normalize
 from lms.notifications.service import notify_program
@@ -24,10 +25,7 @@ PUBLISHED_FIELDS = ("description", "ends_on", "max_participants")
 
 
 def get_program_or_404(db: Session, program_id: int) -> Program:
-    program = db.get(Program, program_id)
-    if program is None:
-        raise NotFound(f"Program {program_id} does not exist", details={"resource": "program", "id": program_id})
-    return program
+    return get_or_404(db, Program, program_id, "Program", "program")
 
 
 def _status_error(program: Program) -> Conflict:

@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.errors import Conflict, reference_not_found
+from lms.core.lookup import get_or_404
 from lms.core.timeutil import format_datetime
 from lms.preservation import jobs
 from lms.preservation.models import RepairJob, Shipment
@@ -19,12 +20,7 @@ from lms.purchasing.models import Supplier
 
 
 def get_shipment_or_404(db: Session, shipment_id: int) -> Shipment:
-    shipment = db.get(Shipment, shipment_id)
-    if shipment is None:
-        raise NotFound(
-            f"Shipment {shipment_id} does not exist", details={"resource": "repair_shipment", "id": shipment_id}
-        )
-    return shipment
+    return get_or_404(db, Shipment, shipment_id, "Shipment", "repair_shipment")
 
 
 def shipment_out(db: Session, shipment: Shipment) -> ShipmentOut:

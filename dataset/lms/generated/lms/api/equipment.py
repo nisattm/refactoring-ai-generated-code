@@ -4,18 +4,17 @@ from __future__ import annotations
 
 import datetime
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
-from pydantic import BaseModel
 
+from lms.api.common import date_param, fields_of, optional_date, own_member_id, patch_fields, require_own_or_staff
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
+from lms.core.errors import ValidationFailed, reference_not_found
 from lms.core.pagination import Page, PageDep, paginate
-from lms.core.timeutil import parse_date
 from lms.equipment import inventory, lending
 from lms.equipment import reservations as reservation_service
 from lms.equipment.models import EquipmentLoan, EquipmentTraining, EquipmentType
@@ -58,31 +57,8 @@ ReservationId = Annotated[int, Path(ge=1)]
 MemberId = Annotated[int, Path(ge=1)]
 
 
-def _optional_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
-
-
-def _fields_of(body: BaseModel) -> dict[str, Any]:
-    """The parsed values of a request body (``model_dump`` would serialize amounts to strings)."""
-    return {name: getattr(body, name) for name in type(body).model_fields}
-
-
-def _own_member_id(principal: Principal) -> int:
-    member_id = principal.user.member_id
-    if member_id is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member_id
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own equipment data can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own equipment data can be accessed")
 
 
 def _loan_out(db: SessionDep, loan: EquipmentLoan, now: datetime.datetime) -> EquipmentLoanOut:
@@ -101,7 +77,7 @@ def _type_out(db: SessionDep, equipment_type: EquipmentType) -> TypeOut:
 @router.post("/equipment-types", response_model=TypeOut, status_code=201)
 def create_type(body: TypeCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> TypeOut:
     now = local_now(request.app.state.settings.clock)
-    equipment_type = inventory.create_type(db, now, admin.user, **_fields_of(body))
+    equipment_type = inventory.create_type(db, now, admin.user, **fields_of(body))
     return _type_out(db, equipment_type)
 
 
@@ -123,7 +99,7 @@ def get_type(type_id: TypeId, db: SessionDep, _: AnyUser) -> TypeOut:
 @router.patch("/equipment-types/{type_id}", response_model=TypeOut)
 def update_type(type_id: TypeId, body: TypePatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> TypeOut:
     now = local_now(request.app.state.settings.clock)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     problems = type_range_problems(None, fields.get("period"), fields.get("hourly_late_fee"), fields.get("max_open_per_member"))
     if problems:
         raise ValidationFailed(problems)
@@ -144,14 +120,7 @@ def type_availability(
     problems: list[dict[str, str]] = []
     if branch_id is None:
         problems.append({"field": "branch_id", "problem": "field required"})
-    day: datetime.date | None = None
-    if date is None:
-        problems.append({"field": "date", "problem": "field required"})
-    else:
-        try:
-            day = parse_date(date.strip())
-        except ValueError:
-            problems.append({"field": "date", "problem": "expected a valid date in the form YYYY-MM-DD"})
+    day = date_param("date", date, problems, required=True)
     if problems:
         raise ValidationFailed(problems)
     assert branch_id is not None and day is not None
@@ -167,7 +136,7 @@ def type_availability(
 @router.post("/equipment-items", response_model=ItemOut, status_code=201)
 def create_item(body: ItemCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> ItemOut:
     now = local_now(request.app.state.settings.clock)
-    return item_out(inventory.create_item(db, now, admin.user, **_fields_of(body)))
+    return item_out(inventory.create_item(db, now, admin.user, **fields_of(body)))
 
 
 @router.get("/equipment-items", response_model=Page[ItemOut])
@@ -193,7 +162,7 @@ def get_item(item_id: ItemId, db: SessionDep, _: StaffOnly) -> ItemOut:
 def update_item(item_id: ItemId, body: ItemPatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> ItemOut:
     now = local_now(request.app.state.settings.clock)
     item = inventory.get_item_or_404(db, item_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     return item_out(inventory.update_item(db, now, admin.user, item, fields))
 
 
@@ -344,7 +313,7 @@ def create_reservation(
     if principal.user.role == "member":
         if body.member_id is not None:
             raise ValidationFailed.single("member_id", "members reserve for themselves and must not send member_id")
-        member_id = _own_member_id(principal)
+        member_id = own_member_id(principal)
     else:
         if body.member_id is None:
             raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
@@ -379,8 +348,8 @@ def list_reservations(
         status=status,
         type_id=type_id,
         branch_id=branch_id,
-        first=_optional_date("from", first),
-        last=_optional_date("to", to),
+        first=optional_date("from", first),
+        last=optional_date("to", to),
     )
     return paginate(db, stmt, page, reservation_out)
 
@@ -404,8 +373,8 @@ def list_member_reservations(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> Page[ReservationOut]:
-    first_date = _optional_date("from", first)
-    last_date = _optional_date("to", to)
+    first_date = optional_date("from", first)
+    last_date = optional_date("to", to)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = reservation_service.reservation_list_stmt(
