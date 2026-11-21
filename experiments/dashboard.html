@@ -184,6 +184,8 @@ function renderDetail() {
       <div><span>5-hour window</span><b>${fmt(w.start, 0)}% → ${w.end === null || w.end === undefined ? "–" : fmt(w.end, 0) + "%"}</b></div>
       <div><span>Account</span><b>${esc(d.account)}</b></div>
       <div><span>Model</span><b>${esc(d.model)} · ${esc(d.effort)}</b></div>
+      ${d.roles ? `<div><span>Subagent calls</span><b>${Object.entries(d.roles.subagent_calls || {}).map(([r, n]) => `${esc(r)} ${n}`).join(" · ") || "none"}</b></div>
+      <div><span>Test command runs</span><b>${d.roles.test_runs}${d.budget ? " of " + d.budget.test_runs : ""}</b></div>` : ""}
     </div>
     ${d.stop_reason && d.status === "finished" ? `<p class="note">Stopped because: ${esc(d.stop_reason)}</p>` : ""}
   </div>`;
@@ -207,13 +209,14 @@ function renderProblems(d) {
   const items = [];
   if (d.status === "finished" && d.valid === false) items.push(...d.reasons.map(r => `Invalid run: ${esc(r)}`));
   const reverts = d.approach !== "single";
+  const dropped = d.approach === "multiagent" ? " → round not kept" : " → round reverted";
   if (d.outcome === "failed" && !reverts) items.push(...d.reasons.map(r => `Run failed: ${esc(r)}`));
   (d.calls_detail || []).forEach(c => (c.invalid || []).forEach(r => items.push(`Call ${c.number}: ${esc(r)}`)));
   (d.rounds_detail || []).forEach(r => {
     if (r.regressions.length) items.push(`${reverts ? "Round " + r.round + ": " : "Tests: "}${r.regressions.length} test regression(s) – ` +
       r.regressions.map(x => `${esc(x.case)}${x.module ? " (module " + esc(x.module) + ")" : ""}`).join(", ") +
-      (reverts && r.accepted === false ? " → round reverted" : ""));
-    if (r.api_changed) items.push(`Round ${r.round}: API changed (${esc(r.api_change_kind || "unclassified")})${reverts && r.accepted === false ? " → round reverted" : ""}`);
+      (reverts && r.accepted === false ? dropped : ""));
+    if (r.api_changed) items.push(`Round ${r.round}: API changed (${esc(r.api_change_kind || "unclassified")})${reverts && r.accepted === false ? dropped : ""}`);
     (r.problems || []).forEach(p => items.push(`Round ${r.round}: ${esc(p)}`));
   });
   const seen = new Set();
@@ -264,12 +267,12 @@ function renderRounds(d) {
     const changes = METRICS.map(([m, label, digits]) => {
       const v = r.metrics[m]; return v ? delta(m, v.delta, digits, v.status) : "–"; }).join(" ");
     const why = r.accepted === false ? esc((r.accept_reasons || []).join("; ")) : "";
-    return `<tr><td>${r.round}</td><td>${r.call}</td><td>${verdict}${why ? `<div class="note">${why}</div>` : ""}</td>
+    return `<tr><td>${r.round}</td><td>${r.source ? esc(r.source) : r.call}</td><td>${verdict}${why ? `<div class="note">${why}</div>` : ""}</td>
       <td class="num">${r.regressions.length}</td><td class="num">${changes}</td><td class="num">${mins(r.wall_s)}</td></tr>
       ${r.feedback ? `<tr><td></td><td colspan="5"><details><summary>Feedback sent to the model</summary><pre>${esc(r.feedback)}</pre></details></td></tr>` : ""}`;
   }).join("");
   return `<div class="panel"><h2>Rounds</h2><table>
-    <tr><th>Round</th><th>Call</th><th>Decision</th><th class="num">Regressions</th><th class="num">CC · Cog · MI · Dup · Smells (vs start)</th><th class="num">Measured in</th></tr>
+    <tr><th>Round</th><th>${d.approach === "multiagent" ? "From" : "Call"}</th><th>Decision</th><th class="num">Regressions</th><th class="num">CC · Cog · MI · Dup · Smells (vs start)</th><th class="num">Measured in</th></tr>
     ${rows}</table></div>`;
 }
 

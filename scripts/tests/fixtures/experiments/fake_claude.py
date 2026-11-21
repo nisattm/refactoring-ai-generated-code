@@ -33,7 +33,8 @@ def main() -> int:
 
     emit({"type": "rate_limit_event", "rate_limit_info": {"status": "allowed", "rateLimitType": "five_hour",
                                                           "utilization": 0.05}})
-    emit({"type": "system", "subtype": "init", "session_id": session_id, "tools": spec.get("tools", TOOLS),
+    offered = args[args.index("--tools") + 1].split(",") if "--tools" in args else TOOLS
+    emit({"type": "system", "subtype": "init", "session_id": session_id, "tools": spec.get("tools", offered),
           "model": spec.get("model", "claude-sonnet-5-5"), "claude_code_version": spec.get("version", "9.9.9"),
           "apiKeySource": "none"})
     for rel, content in spec.get("write", {}).items():
@@ -48,6 +49,39 @@ def main() -> int:
                                                         "input": {"file_path": "/work/INTERFACE.md"}}]}})
     if spec.get("subagents"):
         emit({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Task", "input": {}}]}})
+    spawned = spec.get("subagents", 0)
+    # Multi-Agent: "steps" of the orchestrator; tool uses of a subagent carry its call id as parent_tool_use_id
+    for i, step in enumerate(spec.get("steps", [])):
+        if "agent" in step:
+            spawned += 1
+            call_id = f"agent-{number}-{i}"
+            emit({"type": "assistant", "parent_tool_use_id": None, "message": {"content": [{"type": "tool_use",
+                  "id": call_id, "name": step.get("tool", "Agent"),
+                  "input": {"subagent_type": step["agent"], "prompt": "task"}}]}})
+            emit({"type": "assistant", "parent_tool_use_id": call_id, "message": {"content": [
+                {"type": "tool_use", "id": f"{call_id}-r", "name": "Read", "input": {"file_path": "/work/lms/__init__.py"}}]}})
+            for rel, content in step.get("write", {}).items():
+                path = Path(rel)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content, encoding="utf-8")
+                emit({"type": "assistant", "parent_tool_use_id": call_id, "message": {"content": [
+                    {"type": "tool_use", "id": f"{call_id}-w", "name": step.get("write_tool", "Write"),
+                     "input": {"file_path": f"/work/{rel}"}}]}})
+        elif "test" in step:
+            allowed = args[args.index("--allowedTools") + 1:]
+            rule = next(a for a in allowed if a.startswith("Bash("))
+            command = step.get("command") or rule[len("Bash("):-1]
+            emit({"type": "assistant", "parent_tool_use_id": None, "message": {"content": [{"type": "tool_use",
+                  "id": f"bash-{number}-{i}", "name": "Bash", "input": {"command": command}}]}})
+            if not step.get("command"):
+                import shlex
+                import subprocess
+                subprocess.run(shlex.split(command), check=False, stdout=subprocess.DEVNULL)
+        elif "orchestrator_write" in step:
+            for rel, content in step["orchestrator_write"].items():
+                Path(rel).write_text(content, encoding="utf-8")
+                emit({"type": "assistant", "parent_tool_use_id": None, "message": {"content": [{"type": "tool_use",
+                      "id": f"ow-{number}-{i}", "name": "Edit", "input": {"file_path": f"/work/{rel}"}}]}})
     if spec.get("no_result"):
         print("Claude usage limit reached", file=sys.stderr)
         return 1
@@ -68,7 +102,7 @@ def main() -> int:
     emit({"type": "result", "subtype": "success", "is_error": False, "result": spec.get("text", "Done."),
           "session_id": session_id, "terminal_reason": "completed", "num_turns": 3, "duration_ms": 1000,
           "total_cost_usd": totals["usd"], "modelUsage": usage,
-          "subagent_stats": {"spawned": spec.get("subagents", 0)},
+          "subagent_stats": {"spawned": spawned},
           "permission_denials": [{"tool_name": name, "tool_use_id": f"t{i}", "tool_input": {}}
                                  for i, name in enumerate(spec.get("denied", []))]})
     return 0

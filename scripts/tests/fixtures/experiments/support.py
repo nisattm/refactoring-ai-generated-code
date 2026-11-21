@@ -75,6 +75,12 @@ def make_project(root: Path) -> dict:
     (prompts / "iterative-round-1.md").write_text("Round {round} of {max_rounds}. Refactor lms/.\n")
     (prompts / "iterative-round-n.md").write_text("Round {round} of {max_rounds}.\n{reverted}\n{feedback}\n"
                                                   "Write REFACTORING_DONE when done. Keep {other} braces.\n")
+    multi = prompts / "multiagent"
+    multi.mkdir()
+    (multi / "orchestrator.md").write_text("Lead the refactoring. Run `{test_command}` at most {max_test_runs} times; call "
+                                           "the refactoring subagent at most {max_refactoring_calls} times.\n")
+    for role in ("analyzer", "refactoring", "reviewer"):
+        (multi / f"{role}.md").write_text(f"---\ndescription: The {role} of lms/.\n---\nYou are the {role}.\n")
     interface = root / "INTERFACE.md"
     interface.write_text("# Interface\n")
     (root / "metrics").mkdir()
