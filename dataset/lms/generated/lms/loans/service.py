@@ -16,6 +16,7 @@ from lms.catalog.models import Copy
 from lms.catalog.release import release_copy
 from lms.catalog.status import set_status
 from lms.core.calendar import next_working_day
+from lms.core.db import get_or_404
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.core.money import format_amount
 from lms.fines.service import (
@@ -33,15 +34,26 @@ from lms.reservations import service as reservations
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> Loan:
-    loan = db.get(Loan, loan_id)
-    if loan is None:
-        raise NotFound(f"Loan {loan_id} does not exist", details={"resource": "loan", "id": loan_id})
-    return loan
+    return get_or_404(db, Loan, loan_id, "loan")
 
 
 def due_date_after(start: datetime.date, loan_period_days: int, holidays: Container[datetime.date]) -> datetime.date:
     """LIB-LOAN-03, LIB-LOAN-08: the next working day on or after ``start`` + the loan period."""
     return next_working_day(start + datetime.timedelta(days=loan_period_days), holidays)
+
+
+def _require_open(loan: Loan) -> None:
+    if loan.status != "open":
+        raise Conflict("The loan is not open", code="LOAN_NOT_OPEN", details={"status": loan.status})
+
+
+def _charge_late_fee(db: Session, now: datetime.datetime, actor: User, loan: Loan) -> None:
+    """Late fee for ``loan.late_days`` (none if the loan was not late)."""
+    if loan.late_days > 0:
+        create_fee(
+            db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="late_fee",
+            amount=late_fee_amount(loan.late_days, loan.daily_fee),
+        )
 
 
 # --- lending -------------------------------------------------------------------
@@ -143,8 +155,7 @@ def renew(
     member = db.get(Member, loan.member_id)
     copy = db.get(Copy, loan.copy_id)
     assert member is not None and copy is not None
-    if loan.status != "open":
-        raise Conflict("The loan is not open", code="LOAN_NOT_OPEN", details={"status": loan.status})
+    _require_open(loan)
     if member.status == "passive":
         raise Conflict("The member is passive", code="MEMBER_PASSIVE")
     if today > member.valid_until:
@@ -197,8 +208,7 @@ def return_loan(
     branch = db.get(Branch, branch_id)
     if branch is None:
         raise reference_not_found("branch_id", branch_id)
-    if loan.status != "open":
-        raise Conflict("The loan is not open", code="LOAN_NOT_OPEN", details={"status": loan.status})
+    _require_open(loan)
     if not branch.is_active:
         raise Conflict(
             f"Branch {branch.code} is inactive", code="BRANCH_INACTIVE", details={"field": "branch_id", "id": branch_id}
@@ -235,11 +245,7 @@ def return_loan(
         },
     )
     notify_loan(db, now, "loan_returned", loan)
-    if loan.late_days > 0:
-        create_fee(
-            db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="late_fee",
-            amount=late_fee_amount(loan.late_days, loan.daily_fee),
-        )
+    _charge_late_fee(db, now, actor, loan)
     copy.current_branch_id = branch_id
     if condition == "damaged":
         assert damage_fee is not None
@@ -254,8 +260,7 @@ def report_lost(
     db: Session, now: datetime.datetime, actor: User, holidays: Container[datetime.date], loan: Loan
 ) -> Loan:
     """LIB-LOAN-13, LIB-FEE-04."""
-    if loan.status != "open":
-        raise Conflict("The loan is not open", code="LOAN_NOT_OPEN", details={"status": loan.status})
+    _require_open(loan)
     copy = db.get(Copy, loan.copy_id)
     assert copy is not None
     today = now.date()
@@ -273,11 +278,7 @@ def report_lost(
         details={"member_id": loan.member_id, "copy_id": loan.copy_id, "late_days": loan.late_days},
     )
     notify_loan(db, now, "loan_lost", loan)
-    if loan.late_days > 0:
-        create_fee(
-            db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="late_fee",
-            amount=late_fee_amount(loan.late_days, loan.daily_fee),
-        )
+    _charge_late_fee(db, now, actor, loan)
     create_fee(db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="lost_book", amount=copy.price)
     create_fee(
         db, now, actor, member_id=loan.member_id, loan_id=loan.id, kind="lost_processing", amount=LOST_PROCESSING_FEE

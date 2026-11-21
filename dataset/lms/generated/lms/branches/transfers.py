@@ -14,16 +14,14 @@ from lms.branches.models import Branch, Transfer
 from lms.branches.service import start_transfer
 from lms.catalog.models import Copy
 from lms.catalog.status import invalid_status
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict, reference_not_found
 from lms.reservations import service as reservations
 from lms.reservations.models import Reservation
 
 
 def get_transfer_or_404(db: Session, transfer_id: int) -> Transfer:
-    transfer = db.get(Transfer, transfer_id)
-    if transfer is None:
-        raise NotFound(f"Transfer {transfer_id} does not exist", details={"resource": "transfer", "id": transfer_id})
-    return transfer
+    return get_or_404(db, Transfer, transfer_id, "transfer")
 
 
 def relocate(

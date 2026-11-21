@@ -6,10 +6,10 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import now_of, settings_of
 from lms.auth.deps import StaffOnly
 from lms.branches import transfers as service
 from lms.branches.schemas import ReceivedOut, TransferCreateIn, TransferOut, transfer_out
-from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.pagination import Page, PageDep, paginate
 
@@ -20,19 +20,22 @@ TransferId = Annotated[int, Path(ge=1)]
 
 @router.post("", response_model=TransferOut, status_code=201)
 def create_transfer(body: TransferCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> TransferOut:
-    settings = request.app.state.settings
-    now = local_now(settings.clock)
     transfer = service.relocate(
-        db, now, staff.user, settings.holidays, copy_id=body.copy_id, to_branch_id=body.to_branch_id
+        db,
+        now_of(request),
+        staff.user,
+        settings_of(request).holidays,
+        copy_id=body.copy_id,
+        to_branch_id=body.to_branch_id,
     )
     return transfer_out(transfer)
 
 
 @router.post("/process-arrivals", response_model=ReceivedOut)
 def process_arrivals(request: Request, db: SessionDep, staff: StaffOnly) -> ReceivedOut:
-    settings = request.app.state.settings
-    now = local_now(settings.clock)
-    return ReceivedOut(received=service.process_arrivals(db, now, staff.user, settings.holidays))
+    return ReceivedOut(
+        received=service.process_arrivals(db, now_of(request), staff.user, settings_of(request).holidays)
+    )
 
 
 @router.get("", response_model=Page[TransferOut])

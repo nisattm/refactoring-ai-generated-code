@@ -10,6 +10,11 @@ def normalize(text: str) -> str:
     return text.translate(_TURKISH_I).casefold()
 
 
+def search_needle(q: str | None) -> str:
+    """Normalized ``q`` filter (LIB-COM-30); empty when there is no filter."""
+    return normalize(q.strip()) if q is not None else ""
+
+
 def is_valid_email(email: str) -> bool:
     """LIB-COM-17: exactly one ``@``, something before it, a domain with a dot after it."""
     if email.count("@") != 1:

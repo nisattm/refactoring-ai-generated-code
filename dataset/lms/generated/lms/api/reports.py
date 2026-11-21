@@ -7,8 +7,8 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, Request, Response
 
+from lms.api.common import CSV_TYPE, settings_of, today_of
 from lms.auth.deps import StaffOnly
-from lms.core.clock import today as clock_today
 from lms.core.db import SessionDep
 from lms.core.errors import ValidationFailed
 from lms.core.money import format_amount
@@ -26,7 +26,6 @@ from lms.reports.schemas import (
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 MAX_SPAN_DAYS = 365
-CSV_TYPE = "text/csv; charset=utf-8"
 MOST_BORROWED_COLUMNS = ("rank", "book_id", "title", "isbn", "loan_count")
 OVERDUE_COLUMNS = tuple(OverdueItemOut.model_fields)
 
@@ -84,12 +83,12 @@ def overdue(
     branch_id: Annotated[int | None, Query()] = None,
     format: Annotated[Format, Query()] = "json",
 ):
-    settings = request.app.state.settings
-    day = clock_today(settings.clock)
+    holidays = settings_of(request).holidays
+    day = today_of(request)
     if format == "csv":
-        return _csv_response(OVERDUE_COLUMNS, service.overdue_items(db, day, settings.holidays, branch_id, None))
-    total, total_accrued = service.overdue_total(db, day, settings.holidays, branch_id)
-    items = service.overdue_items(db, day, settings.holidays, branch_id, page)
+        return _csv_response(OVERDUE_COLUMNS, service.overdue_items(db, day, holidays, branch_id, None))
+    total, total_accrued = service.overdue_total(db, day, holidays, branch_id)
+    items = service.overdue_items(db, day, holidays, branch_id, page)
     return OverduePage(
         items=items,
         page=page.page,
@@ -108,7 +107,7 @@ def monthly_summary(
     month: Annotated[int, Query(ge=1, le=12)],
     branch_id: Annotated[int | None, Query()] = None,
 ) -> MonthlySummaryOut:
-    day = clock_today(request.app.state.settings.clock)
+    day = today_of(request)
     if (year, month) > (day.year, day.month):
         raise ValidationFailed.single("month", "the month must not be after the current month")
     return service.monthly_summary(db, year, month, branch_id)

@@ -16,7 +16,7 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.catalog.models import Book, Copy
 from lms.core.calendar import add_working_days
-from lms.core.errors import NotFound
+from lms.core.db import get_or_404
 from lms.core.money import format_amount
 from lms.fines.models import Fee
 from lms.loans.models import Loan
@@ -25,13 +25,7 @@ from lms.reservations.models import Reservation
 
 
 def get_notification_or_404(db: Session, notification_id: int) -> Notification:
-    notification = db.get(Notification, notification_id)
-    if notification is None:
-        raise NotFound(
-            f"Notification {notification_id} does not exist",
-            details={"resource": "notification", "id": notification_id},
-        )
-    return notification
+    return get_or_404(db, Notification, notification_id, "notification")
 
 
 def _create(

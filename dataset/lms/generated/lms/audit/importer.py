@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from collections.abc import Container
+from collections.abc import Container, Iterator
 from typing import Any
 
 import sqlalchemy as sa
@@ -124,10 +124,27 @@ def _check_unique(
         seen.add(value)
 
 
-def _check_consistency(
-    parsed: dict[str, list[Any]], data: Any, today: datetime.date, problems: _Problems
-) -> None:
-    ids = {name: _raw_ids(data, name) for name in LISTS}
+def _valid_records(parsed: dict[str, list[Any]], name: str) -> Iterator[tuple[int, Any]]:
+    """``(index, record)`` of the records of list ``name`` that passed validation."""
+    return ((index, rec) for index, rec in enumerate(parsed[name]) if rec is not None)
+
+
+class _References:
+    """Checks that an id refers to a record of the document (``ids`` holds the raw ids of every list)."""
+
+    def __init__(self, ids: dict[str, set[int]], problems: _Problems) -> None:
+        self._ids = ids
+        self._problems = problems
+
+    def has(self, target: str, value: int) -> bool:
+        return value in self._ids[target]
+
+    def check(self, name: str, index: int, field: str, value: int | None, target: str) -> None:
+        if value is not None and not self.has(target, value):
+            self._problems.add(_path(name, index, field), f"{target} id {value} does not exist")
+
+
+def _check_uniqueness(parsed: dict[str, list[Any]], problems: _Problems) -> None:
     for name in LISTS:
         _check_unique(parsed, name, lambda r: r.id, "id", "id is used more than once", problems)
 
@@ -145,26 +162,26 @@ def _check_consistency(
         problems,
     )
 
-    def ref(name: str, index: int, field: str, value: int | None, target: str) -> None:
-        if value is not None and value not in ids[target]:
-            problems.add(_path(name, index, field), f"{target} id {value} does not exist")
 
-    for index, book in enumerate(parsed["books"]):
-        if book is None:
-            continue
-        ref("books", index, "publisher_id", book.publisher_id, "publishers")
+def _check_books(
+    parsed: dict[str, list[Any]], refs: _References, today: datetime.date, problems: _Problems
+) -> None:
+    for index, book in _valid_records(parsed, "books"):
+        refs.check("books", index, "publisher_id", book.publisher_id, "publishers")
         for author_id in book.author_ids:
-            if author_id not in ids["authors"]:
+            if not refs.has("authors", author_id):
                 problems.add(_path("books", index, "author_ids"), f"author {author_id} does not exist")
         if book.publication_year > today.year:
             problems.add(_path("books", index, "publication_year"), f"publication_year must not be after {today.year}")
 
-    for index, copy in enumerate(parsed["copies"]):
-        if copy is None:
-            continue
-        ref("copies", index, "book_id", copy.book_id, "books")
-        ref("copies", index, "home_branch_id", copy.home_branch_id, "branches")
-        ref("copies", index, "current_branch_id", copy.current_branch_id, "branches")
+
+def _check_copies(
+    parsed: dict[str, list[Any]], refs: _References, today: datetime.date, problems: _Problems
+) -> None:
+    for index, copy in _valid_records(parsed, "copies"):
+        refs.check("copies", index, "book_id", copy.book_id, "books")
+        refs.check("copies", index, "home_branch_id", copy.home_branch_id, "branches")
+        refs.check("copies", index, "current_branch_id", copy.current_branch_id, "branches")
         if copy.acquired_on > today:
             problems.add(_path("copies", index, "acquired_on"), "acquired_on must not be after today")
         if copy.current_branch_id is None and copy.status in ("available", "on_loan", "damaged"):
@@ -172,26 +189,24 @@ def _check_consistency(
                 _path("copies", index, "current_branch_id"), f"a copy with status {copy.status} needs a current branch"
             )
 
-    members: dict[int, Any] = {}
-    for index, member in enumerate(parsed["members"]):
-        if member is None:
-            continue
-        members[member.id] = member
-        ref("members", index, "home_branch_id", member.home_branch_id, "branches")
+
+def _check_members(parsed: dict[str, list[Any]], refs: _References, problems: _Problems) -> None:
+    for index, member in _valid_records(parsed, "members"):
+        refs.check("members", index, "home_branch_id", member.home_branch_id, "branches")
         for issue in type_field_problems(member.membership_type, member.phone, member.university_id):
             problems.add(_path("members", index, issue["field"]), issue["problem"])
         if member.valid_until < member.membership_start:
             problems.add(_path("members", index, "valid_until"), "valid_until must not be before membership_start")
 
-    copies = {copy.id: copy for copy in parsed["copies"] if copy is not None}
+
+def _check_loans(parsed: dict[str, list[Any]], refs: _References, problems: _Problems) -> None:
+    copies = {copy.id: copy for _, copy in _valid_records(parsed, "copies")}
     open_or_lost_copies: set[int] = set()
-    for index, loan in enumerate(parsed["loans"]):
-        if loan is None:
-            continue
-        ref("loans", index, "copy_id", loan.copy_id, "copies")
-        ref("loans", index, "member_id", loan.member_id, "members")
-        ref("loans", index, "branch_id", loan.branch_id, "branches")
-        ref("loans", index, "return_branch_id", loan.return_branch_id, "branches")
+    for index, loan in _valid_records(parsed, "loans"):
+        refs.check("loans", index, "copy_id", loan.copy_id, "copies")
+        refs.check("loans", index, "member_id", loan.member_id, "members")
+        refs.check("loans", index, "branch_id", loan.branch_id, "branches")
+        refs.check("loans", index, "return_branch_id", loan.return_branch_id, "branches")
         if loan.due_date < loan.loan_date:
             problems.add(_path("loans", index, "due_date"), "due_date must not be before loan_date")
         if loan.status == "returned":
@@ -219,6 +234,17 @@ def _check_consistency(
                 _path("loans", index, "copy_id"),
                 "the copy of a lost loan must have status lost and no current branch",
             )
+
+
+def _check_consistency(
+    parsed: dict[str, list[Any]], data: Any, today: datetime.date, problems: _Problems
+) -> None:
+    refs = _References({name: _raw_ids(data, name) for name in LISTS}, problems)
+    _check_uniqueness(parsed, problems)
+    _check_books(parsed, refs, today, problems)
+    _check_copies(parsed, refs, today, problems)
+    _check_members(parsed, refs, problems)
+    _check_loans(parsed, refs, problems)
 
 
 # --- writing ------------------------------------------------------------------------------

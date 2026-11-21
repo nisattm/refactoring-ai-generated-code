@@ -7,6 +7,7 @@ from typing import Annotated
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request, Response
 
+from lms.api.common import now_of, provided_fields, settings_of
 from lms.auth.deps import AnyUser, StaffOnly
 from lms.catalog import service
 from lms.catalog.isbn import normalize_isbn
@@ -26,11 +27,10 @@ from lms.catalog.schemas import (
     copy_out,
 )
 from lms.catalog.status import CopyStatus
-from lms.core.clock import local_now, today
 from lms.core.db import SessionDep
 from lms.core.errors import ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate
-from lms.core.text import normalize
+from lms.core.text import search_needle
 
 router = APIRouter(tags=["catalog"])
 
@@ -40,12 +40,8 @@ BookId = Annotated[int, Path(ge=1)]
 CopyId = Annotated[int, Path(ge=1)]
 
 
-def _now(request: Request):  # noqa: ANN202
-    return local_now(request.app.state.settings.clock)
-
-
 def _name_search(stmt: sa.Select, model: type[Author] | type[Publisher], q: str | None) -> sa.Select:
-    needle = normalize(q.strip()) if q is not None else ""
+    needle = search_needle(q)
     if needle:
         stmt = stmt.where(model.name_key.contains(needle, autoescape=True))
     return stmt
@@ -124,7 +120,7 @@ def delete_publisher(publisher_id: PublisherId, db: SessionDep, _: StaffOnly) ->
 
 @router.post("/books", response_model=BookOut, status_code=201)
 def create_book(body: BookCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> BookOut:
-    now = _now(request)
+    now = now_of(request)
     service.check_publication_year(body.publication_year, now.date())
     book = service.create_book(db, now, staff.user, **body.model_dump())
     return service.book_out(db, book)
@@ -165,8 +161,8 @@ def get_book(book_id: BookId, db: SessionDep, _: AnyUser) -> BookOut:
 
 @router.patch("/books/{book_id}", response_model=BookOut)
 def update_book(book_id: BookId, body: BookPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> BookOut:
-    now = _now(request)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    now = now_of(request)
+    fields = provided_fields(body)
     if "publication_year" in fields:
         service.check_publication_year(fields["publication_year"], now.date())
     book = service.get_book_or_404(db, book_id)
@@ -175,7 +171,7 @@ def update_book(book_id: BookId, body: BookPatchIn, request: Request, db: Sessio
 
 @router.delete("/books/{book_id}", status_code=204)
 def delete_book(book_id: BookId, request: Request, db: SessionDep, staff: StaffOnly) -> Response:
-    service.delete_book(db, _now(request), staff.user, service.get_book_or_404(db, book_id))
+    service.delete_book(db, now_of(request), staff.user, service.get_book_or_404(db, book_id))
     return Response(status_code=204)
 
 
@@ -184,7 +180,7 @@ def delete_book(book_id: BookId, request: Request, db: SessionDep, staff: StaffO
 
 @router.post("/books/{book_id}/copies", response_model=CopyOut, status_code=201)
 def add_copy(book_id: BookId, body: CopyCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> CopyOut:
-    now = _now(request)
+    now = now_of(request)
     acquired_on = body.acquired_on if body.acquired_on is not None else now.date()
     service.check_acquired_on(acquired_on, now.date())
     book = service.get_book_or_404(db, book_id)
@@ -198,7 +194,7 @@ def add_copy(book_id: BookId, body: CopyCreateIn, request: Request, db: SessionD
         price=body.price,
         acquired_on=acquired_on,
         shelf_location=body.shelf_location,
-        holidays=request.app.state.settings.holidays,
+        holidays=settings_of(request).holidays,
     )
     return copy_out(copy)
 
@@ -233,18 +229,18 @@ def get_copy(copy_id: CopyId, db: SessionDep, _: AnyUser) -> CopyOut:
 
 @router.patch("/copies/{copy_id}", response_model=CopyOut)
 def update_copy(copy_id: CopyId, body: CopyPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> CopyOut:
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = provided_fields(body)
     copy = service.get_copy_or_404(db, copy_id)
-    return copy_out(service.update_copy(db, _now(request), staff.user, copy, fields))
+    return copy_out(service.update_copy(db, now_of(request), staff.user, copy, fields))
 
 
 @router.post("/copies/{copy_id}/withdraw", response_model=CopyOut)
 def withdraw_copy(copy_id: CopyId, body: WithdrawIn, request: Request, db: SessionDep, staff: StaffOnly) -> CopyOut:
     copy = service.get_copy_or_404(db, copy_id)
-    return copy_out(service.withdraw_copy(db, _now(request), staff.user, copy, body.reason))
+    return copy_out(service.withdraw_copy(db, now_of(request), staff.user, copy, body.reason))
 
 
 @router.post("/copies/{copy_id}/repair", response_model=CopyOut)
 def repair_copy(copy_id: CopyId, request: Request, db: SessionDep, staff: StaffOnly) -> CopyOut:
     copy = service.get_copy_or_404(db, copy_id)
-    return copy_out(service.repair_copy(db, _now(request), staff.user, copy, request.app.state.settings.holidays))
+    return copy_out(service.repair_copy(db, now_of(request), staff.user, copy, settings_of(request).holidays))

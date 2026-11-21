@@ -4,21 +4,24 @@ from __future__ import annotations
 
 import weakref
 from collections.abc import Iterator
+from typing import Annotated, TypeVar
 
 import sqlalchemy as sa
-from typing import Annotated
-
 from fastapi import Depends, Request
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from lms.core.errors import resource_not_found
 from lms.core.text import normalize
 
 
 class Base(DeclarativeBase):
     """Base of all ORM models. Models set ``__table_args__ = {"sqlite_autoincrement": True}``
     so that ids are never reused (LIB-COM-14)."""
+
+
+ModelT = TypeVar("ModelT", bound=Base)
 
 
 def create_db_engine(database_url: str) -> sa.Engine:
@@ -73,6 +76,14 @@ def create_schema(engine: sa.Engine) -> None:
     import lms.reservations.models  # noqa: F401
 
     Base.metadata.create_all(engine)
+
+
+def get_or_404(db: Session, model: type[ModelT], resource_id: int, resource: str, label: str | None = None) -> ModelT:
+    """Load a row by primary key or raise ``404 NOT_FOUND`` for the addressed resource."""
+    row = db.get(model, resource_id)
+    if row is None:
+        raise resource_not_found(resource, resource_id, label)
+    return row
 
 
 def get_session(request: Request) -> Iterator[Session]:
