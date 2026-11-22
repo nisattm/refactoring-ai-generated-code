@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import posixpath
 import re
 import shlex
 import shutil
@@ -104,9 +105,22 @@ def can_change_files(command: str) -> bool:
 
 
 def inside_work(tool: str, data: dict) -> bool:
-    """Whether a Read / Glob / Grep / Edit / Write call targets the model's folder (no path: the working folder)."""
-    path = str(data.get("file_path") or data.get("path") or "/work")
-    return path == "/work" or path.startswith("/work/") or not path.startswith("/")
+    """Whether a Read / Glob / Grep / Edit / Write call targets the model's folder (no path: the working folder).
+    A Glob pattern can hold the folder itself (``/engine/**/*`` without ``path``, pilot-m01), so it is checked too;
+    relative paths are resolved against /work (``../engine`` is outside)."""
+    targets = [data.get("file_path") or data.get("path") or ""]
+    if tool == "Glob":
+        targets.append(data.get("pattern") or "")
+    return all(_in_work(str(t)) for t in targets)
+
+
+def _in_work(path: str) -> bool:
+    if not path:
+        return True
+    if path.startswith("~"):
+        return False
+    full = posixpath.normpath(posixpath.join("/work", path))
+    return full == "/work" or full.startswith("/work/")
 
 
 def blocked_or_broken(denials: list, test_command: str) -> tuple[list[str], list[str]]:

@@ -122,6 +122,9 @@ def test_invalid_runs(tmp_path, monkeypatch, steps, reason):
     ("Bash", {"command": "ls /"}),
     ("Read", {"file_path": "/exp-tests/test_secret.py"}),
     ("Glob", {"pattern": "**/*.py", "path": "/engine"}),
+    ("Glob", {"pattern": "/engine/**/*"}),                      # pilot-m01: the folder is in the pattern
+    ("Read", {"file_path": "../engine/experiments/feedback_tests.py"}),
+    ("Grep", {"pattern": "def ", "path": "~/x"}),
 ])
 def test_blocked_attempts_are_counted_not_invalid(tmp_path, monkeypatch, denied, data):
     _, toolkit, code, rec = start(tmp_path, monkeypatch, [REFACTOR, {"denied": denied, "input": data}, {"test": True}])
@@ -133,6 +136,8 @@ def test_blocked_attempts_are_counted_not_invalid(tmp_path, monkeypatch, denied,
 @pytest.mark.parametrize("denied, data, parent", [
     ("Edit", {"file_path": "/work/lms/loans/service.py"}, None),
     ("Read", {"file_path": "lms/__init__.py"}, None),
+    ("Glob", {"pattern": "lms/**/*.py"}, None),
+    ("Glob", {"pattern": "/work/lms/**/*.py"}, None),
     ("Bash", {"command": "TEST"}, None),
     ("Agent", {"subagent_type": "analyzer"}, None),
 ])
