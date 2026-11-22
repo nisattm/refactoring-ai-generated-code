@@ -448,6 +448,14 @@ def parse_stream(text: str) -> dict:
             "final_text": (result or {}).get("result") or (texts[-1] if texts else "")}
 
 
+def said_done(text: str | None) -> bool:
+    """The end marker counts only at the end of the last non-empty line of the final message, as the prompt asks
+    (W4); a sentence that only mentions REFACTORING_DONE ("I will not write REFACTORING_DONE yet") does not stop a
+    run. Markdown around it (**, `, a final period) is allowed."""
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    return bool(lines) and lines[-1].strip("*_`>#. ").endswith(DONE_MARKER)
+
+
 def check_call(parsed: dict, stderr: str, expected_version: str | None, tools: tuple = TOOLS,
                subagents_allowed: bool = False, denials_invalid: bool = True) -> tuple[str, list[str]]:
     """Status of a call (``ok``, ``limit`` or ``error``) and the reasons that make the run invalid (W9, W10)."""
@@ -804,7 +812,7 @@ class Run:
             "subagents_spawned": (result.get("subagent_stats") or {}).get("spawned"),
             "permission_denials": denied_tools(result.get("permission_denials") or []),
             "terminal_reason": result.get("terminal_reason"), "is_error": result.get("is_error"),
-            "num_turns": result.get("num_turns"), "done_marker": DONE_MARKER in (parsed["final_text"] or ""),
+            "num_turns": result.get("num_turns"), "done_marker": said_done(parsed["final_text"]),
             "outside_lms_changes": n_outside, "hidden_files": hidden,
             "rate_limit": parsed["rate_limit"],
             "usd_raw": raw, "usd_diff": diff, "summary_raw": summary, "summary": share,
