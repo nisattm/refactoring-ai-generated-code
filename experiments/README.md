@@ -35,7 +35,11 @@ python experiments/run_iterative.py --start-ref ce03f54 --baseline results/basel
 - `--account` is a label only (W14: the experiment accounts are not the development accounts).
 - `--baseline` must be the measurement of the start ref (its `summary.json` `code_sha`) with the same `--tests-modules`.
 - `--dry-run` checks the inputs and prints the Claude Code command; `--help` lists all options.
-- The run lock `.run.lock` is held for the whole run (W13); another run or `measure_baseline.sh` waits.
+- The run lock `.run.lock` is held for the whole run, except while Claude Code runs in Single and Iterative (W13,
+  ADR 004 addendum point 1): it is taken again before the code is tested or measured, so the tests and measurements of
+  two runs never overlap, while a second run's Claude call can run in parallel. Multi-Agent holds it during the call as
+  well, because its feedback tests run inside the call. Another run or `measure_baseline.sh` waits for it; the wait
+  after a call is in `run.json` (`lock_wait_s`) and has no time limit, so a finished call is never lost.
 
 Exit codes: 0 valid run (any outcome) · 1 invalid run, repeat it (W10) · 2 usage error · 3 lock not free ·
 5 usage-limit cut.

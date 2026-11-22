@@ -265,3 +265,18 @@ def test_feedback_tests_without_regression_and_budget(tmp_path, capsys):
     feedback_tests.main(["--config", str(config)])                          # third run, max_runs = 2
     assert capsys.readouterr().out.strip().splitlines()[-1] == feedback_tests.BUDGET_TEXT.format(max_runs=2)
     assert sorted(p.name for p in (tmp_path / "state" / "snapshots").iterdir()) == ["01", "02"]
+
+
+def test_run_lock_stays_held_during_the_orchestrator_call(tmp_path, monkeypatch):
+    # the feedback tests run inside the call, so W13 does not apply to Multi-Agent (ADR 005)
+    lock = tmp_path / ".run.lock"
+    seen, real_run = [], common.subprocess.run
+
+    def spy(cmd, *args, **kwargs):
+        if "fake_claude.py" in " ".join(map(str, cmd)):
+            seen.append(lock.exists())
+        return real_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(common.subprocess, "run", spy)
+    _, _, code, rec = start(tmp_path, monkeypatch, [REFACTOR, {"test": True}])
+    assert code == 0 and seen == [True] and rec["calls"][0]["lock_released"] is False

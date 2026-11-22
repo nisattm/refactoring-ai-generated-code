@@ -26,6 +26,7 @@ The work folder (``--work-root``, a temporary folder by default) is outside the 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import datetime as dt
 import getpass
@@ -213,13 +214,18 @@ def tag_code(repo: Path, start_sha: str, lms_dir: Path, tag: str, message: str) 
 # --- run lock (W13) -----------------------------------------------------------------------------------------------
 
 class RunLock:
-    """``.run.lock`` in the repository root, same format as scripts/measure_baseline.sh; held for the whole run."""
+    """``.run.lock`` in the repository root, same format as scripts/measure_baseline.sh. Held for the whole run,
+    except during a Claude Code call that runs no tests (W13, ADR 004 addendum point 1): ``released()``."""
 
     def __init__(self, path: Path, what: str, wait: int = 21600, poll: int = 60, log=print):
         self.path, self.what, self.wait, self.poll, self.log = path, what, wait, poll, log
         self.held = False
 
     def __enter__(self) -> "RunLock":
+        return self.acquire(self.wait)
+
+    def acquire(self, wait: int | None) -> "RunLock":
+        """Take the lock; ``wait`` seconds at most (None: no limit, used after a call so that its result is kept)."""
         waited = 0
         user = os.environ.get("USER") or os.environ.get("USERNAME") or getpass.getuser()
         text = (f"who={user}@{socket.gethostname()}\nwhat={self.what}\n"
@@ -228,10 +234,11 @@ class RunLock:
             try:
                 fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             except FileExistsError:
-                if waited >= self.wait:
+                if wait is not None and waited >= wait:
                     held = self.path.read_text(encoding="utf-8", errors="replace") if self.path.exists() else ""
                     raise EngineError(f"{self.path} is still held after {waited} s:\n{held}", EXIT_LOCK) from None
-                self.log(f"waiting for {self.path}")
+                if waited == 0:
+                    self.log(f"waiting for {self.path}")
                 time.sleep(self.poll)
                 waited += self.poll
                 continue
@@ -244,6 +251,23 @@ class RunLock:
         if self.held and self.path.exists() and f"pid={os.getpid()}\n" in self.path.read_text(encoding="utf-8"):
             self.path.unlink()
         self.held = False
+
+    @contextlib.contextmanager
+    def released(self):
+        """W13: free the lock while Claude Code runs and take it again before the code is tested or measured, so
+        that the tests and measurements of two runs never overlap. Yields a dict; ``wait_s`` is the time spent
+        waiting for the lock afterwards (another run was measuring)."""
+        info = {"released": self.held, "wait_s": 0.0}
+        if not self.held:
+            yield info
+            return
+        self.__exit__()
+        try:
+            yield info
+        finally:
+            started = time.monotonic()
+            self.acquire(None)
+            info["wait_s"] = round(time.monotonic() - started, 1)
 
 
 # --- the model's workspace (W3) -----------------------------------------------------------------------------------
@@ -638,6 +662,7 @@ class Run:
     def __init__(self, approach: str, args, toolkit: Toolkit | None = None, log=print):
         self.approach, self.args, self.log = approach, args, log
         self.toolkit = toolkit or RealToolkit()
+        self.lock: RunLock | None = None      # set by the runner; released during a call that runs no tests (W13)
         self.repo = Path(args.repo).resolve()
         self.out_root = Path(args.out_root).resolve()
         self.out = self.out_root / approach / args.run_id
@@ -763,19 +788,25 @@ class Run:
                    "-v", f"{self.ws.model}:/work", "-v", f"{self.ws.session}:/session", *volumes, "-w", "/work",
                    self.settings["image"], "claude", *args]
             env, cwd = None, None
-        self.event(f"call {number} ({kind}) started")
-        started = time.monotonic()
-        timed_out = False
-        with (folder / "stream.jsonl").open("w", encoding="utf-8") as out, \
-                (folder / "stderr.txt").open("w", encoding="utf-8") as err:
-            try:
-                code = subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=out, stderr=err, env=env, cwd=cwd,
-                                      timeout=self.settings["call_timeout"], check=False).returncode
-            except subprocess.TimeoutExpired:
-                timed_out, code = True, None
-                if not self.settings["local"]:
-                    subprocess.run(["docker", "kill", name], capture_output=True, check=False)
-        wall = round(time.monotonic() - started, 1)
+        # W13: the lock is free while Claude Code runs, unless the call runs tests itself (Multi-Agent: hold_lock)
+        release = self.lock is not None and not setup.get("hold_lock")
+        lock_ctx = self.lock.released() if release else contextlib.nullcontext({"released": False, "wait_s": 0.0})
+        self.event(f"call {number} ({kind}) started" + ("; run lock released" if release else ""))
+        with lock_ctx as lock_info:
+            started = time.monotonic()
+            timed_out = False
+            with (folder / "stream.jsonl").open("w", encoding="utf-8") as out, \
+                    (folder / "stderr.txt").open("w", encoding="utf-8") as err:
+                try:
+                    code = subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=out, stderr=err, env=env, cwd=cwd,
+                                          timeout=self.settings["call_timeout"], check=False).returncode
+                except subprocess.TimeoutExpired:
+                    timed_out, code = True, None
+                    if not self.settings["local"]:
+                        subprocess.run(["docker", "kill", name], capture_output=True, check=False)
+            wall = round(time.monotonic() - started, 1)
+        if lock_info["wait_s"]:
+            self.event(f"run lock taken again after waiting {lock_info['wait_s']} s")
         parsed = parse_stream((folder / "stream.jsonl").read_text(encoding="utf-8", errors="replace"))
         stderr = (folder / "stderr.txt").read_text(encoding="utf-8", errors="replace")
         status, invalid = check_call(parsed, stderr, self.settings["expected_version"],
@@ -801,6 +832,7 @@ class Run:
         diff = share.get("usd") if isinstance(share.get("usd"), (int, float)) else None
         record = {
             "number": number, "kind": kind, "account": self.args.account, "started_at": now(), "wall_s": wall,
+            "lock_released": lock_info["released"], "lock_wait_s": lock_info["wait_s"],
             "exit_code": code, "status": status, "invalid": invalid, "session_in": session_id,
             "session_id": result.get("session_id") or (parsed["init"] or {}).get("session_id"),
             "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),

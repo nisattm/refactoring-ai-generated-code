@@ -273,7 +273,9 @@ def prepare(run: Run, test_command: str | None) -> dict:
     run.record.update({"test_command": command, "roles_allowed": {r: list(t) for r, t in ROLES.items()},
                        "budget": {"refactoring_calls": MAX_REFACTORING_CALLS, "test_runs": MAX_TEST_RUNS}})
     return {"prompt": prompt, "state": state,
+            # the feedback tests run inside the call, so the run lock stays held (W13 does not apply, ADR 005)
             "setup": {"args": args, "tools": INIT_TOOLS, "subagents_allowed": True, "denials_invalid": False,
+                      "hold_lock": True,
                       "volumes": volumes,
                       "env": {"BASH_DEFAULT_TIMEOUT_MS": BASH_TIMEOUT_MS, "BASH_MAX_TIMEOUT_MS": BASH_TIMEOUT_MS}}}
 
@@ -354,7 +356,8 @@ def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -
     try:
         if args.dry_run:
             return dry_run(run)
-        with common.RunLock(Path(args.lock_file), f"run_multiagent.py {args.run_id}", args.wait, args.poll):
+        with common.RunLock(Path(args.lock_file), f"run_multiagent.py {args.run_id}", args.wait, args.poll) as lock:
+            run.lock = lock
             return execute(run, args.test_command)
     except EngineError as exc:
         print(f"run_multiagent: {exc}", file=sys.stderr)
