@@ -302,3 +302,16 @@ def test_baseline_is_recorded_relative_to_the_repository(tmp_path):
     outside = tmp_path / "elsewhere"
     assert common.repo_relative(outside, repo) == str(outside)
     assert common.from_repo(str(outside), repo) == outside
+
+
+@pytest.mark.parametrize("text, done", [
+    ("All changes made.\nREFACTORING_DONE", True),
+    ("Done.\n\n**REFACTORING_DONE**\n", True),
+    ("`REFACTORING_DONE`.", True),
+    ("Nothing more to change. REFACTORING_DONE", True),
+    ("I will not write REFACTORING_DONE yet: two modules are left.", False),
+    ("REFACTORING_DONE\nBut wait, one more file needs a change.", False),
+    ("", False), (None, False),
+])
+def test_end_marker_only_on_the_last_line(text, done):
+    assert common.said_done(text) is done
