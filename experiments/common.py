@@ -988,7 +988,9 @@ def answered_calls(record: dict) -> int:
     return sum(1 for c in record["calls"] if c["status"] != "limit")
 
 
-def dry_run(run: Run) -> int:
+def dry_run(run: Run, args: list[str] | None = None, env: dict | None = None, mounts: tuple = ()) -> int:
+    """Check the inputs and print the Claude Code command. A runner with its own command (Multi-Agent) passes its
+    arguments, extra environment and extra mounts (``-v <name>:<path>[:ro]``); the default is the Single command."""
     run.check_inputs()
     sha = resolve_commit(run.repo, run.args.start_ref)
     print(f"start:     {run.args.start_ref} = {sha}")
@@ -996,7 +998,8 @@ def dry_run(run: Run) -> int:
     print(f"output:    {run.out}")
     print(f"lock:      {run.args.lock_file}")
     print("claude:    docker run --rm --env-file <env-file> -e CLAUDE_CONFIG_DIR=/session "
-          + " ".join(f"-e {k}={v}" for k, v in CLAUDE_ENV.items())
-          + f" -v <work>/model:/work -v <work>/session:/session -w /work {run.settings['image']} claude "
-          + " ".join(claude_args("<prompt>", run.settings["effort"], None)))
+          + " ".join(f"-e {k}={v}" for k, v in {**CLAUDE_ENV, **(env or {})}.items())
+          + " -v <work>/model:/work -v <work>/session:/session " + "".join(f"{m} " for m in mounts)
+          + f"-w /work {run.settings['image']} claude "
+          + " ".join(args if args is not None else claude_args("<prompt>", run.settings["effort"], None)))
     return EXIT_DONE
