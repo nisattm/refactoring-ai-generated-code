@@ -1,0 +1,32 @@
+run_label,schema_version,module_no,module_name,level,status,valid,files,sloc,units,mean_cc,max_cc,share_cc_high,mean_cognitive,max_cognitive,share_cognitive_high,mi_weighted,mi_mean,smells,smells_per_ksloc,duplication_pct,duplicated_lines
+pilot-m01b-rounds-r1,1.0,1,Core,simple,generated,1,17,555,65,1.9846,5,0.0000,1.0159,5,0.0000,61.9310,70.4767,11,19.8198,0.0000,0
+pilot-m01b-rounds-r1,1.0,2,Identity and access,complex,generated,1,9,514,38,2.6842,20,0.0263,1.7027,21,0.0270,52.5409,65.0442,7,13.6187,0.0000,0
+pilot-m01b-rounds-r1,1.0,3,Members,complex,generated,1,6,524,31,2.9032,14,0.0645,1.9355,13,0.0000,42.5220,58.6125,5,9.5420,0.0000,0
+pilot-m01b-rounds-r1,1.0,4,Catalog,complex,generated,1,8,737,71,2.1268,16,0.0423,1.2817,18,0.0141,41.5774,65.0077,10,13.5685,2.3715,24
+pilot-m01b-rounds-r1,1.0,5,Loans and returns,complex,generated,1,5,480,19,3.6316,11,0.0526,2.6316,9,0.0000,48.9017,64.8766,8,16.6667,6.9686,40
+pilot-m01b-rounds-r1,1.0,6,Reservations,complex,generated,1,5,495,30,2.8333,14,0.0333,2.0667,14,0.0000,39.8297,57.1164,8,16.1616,5.0955,32
+pilot-m01b-rounds-r1,1.0,7,Fines and payments,complex,generated,1,5,357,22,1.8182,6,0.0000,0.7727,6,0.0000,45.8880,56.8428,5,14.0056,2.5974,12
+pilot-m01b-rounds-r1,1.0,8,Notifications,medium,generated,1,5,299,24,1.7917,6,0.0000,0.9583,7,0.0000,60.8663,74.1527,3,10.0334,0.0000,0
+pilot-m01b-rounds-r1,1.0,9,Search,simple,generated,1,4,181,8,5.5000,25,0.2500,4.3750,29,0.1250,51.7406,75.7032,3,16.5746,0.0000,0
+pilot-m01b-rounds-r1,1.0,10,Reports,medium,generated,1,3,245,14,2.6429,6,0.0000,2.0833,5,0.0000,43.9804,64.0664,2,8.1633,0.0000,0
+pilot-m01b-rounds-r1,1.0,11,Branches and transfers,medium,generated,1,7,386,21,2.3810,8,0.0000,1.4286,10,0.0000,57.1062,67.3014,4,10.3627,0.0000,0
+pilot-m01b-rounds-r1,1.0,12,Purchasing,medium,generated,1,5,552,42,2.4762,16,0.0476,1.6429,19,0.0476,46.9402,67.9620,5,9.0580,1.9417,14
+pilot-m01b-rounds-r1,1.0,13,"Audit log, import, export",complex,generated,1,10,792,41,4.0488,36,0.0732,4.1500,63,0.0750,41.6510,62.6555,13,16.4141,1.0121,10
+pilot-m01b-rounds-r1,1.0,14,API layer,medium,generated,1,3,130,11,2.7273,9,0.0000,1.4000,6,0.0000,56.0979,70.8253,1,7.6923,0.0000,0
+pilot-m01b-rounds-r1,1.0,15,Study rooms,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,16,Equipment loans,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,17,Digital resources,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,18,Interlibrary loans,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,19,Staff and shifts,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,20,Events,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,21,Course reserves,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,22,Donations,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,23,Preservation,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,24,Inventory counts,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,25,Purchase suggestions,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,26,Reading programs,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,27,Announcements and messages,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,28,Member cards and building access,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,29,Printing and copying,complex,not generated,1,0,0,0,,,,,,,,,,,,0
+pilot-m01b-rounds-r1,1.0,api/reports.py,API router reports (module 10 and 15-28 reports),medium,generated,1,1,87,5,2.4000,5,0.0000,1.4000,4,0.0000,53.1396,53.1396,2,22.9885,0.0000,0
+pilot-m01b-rounds-r1,1.0,unassigned,unassigned,,unassigned,1,0,0,0,,,,,,,,,0,,,0

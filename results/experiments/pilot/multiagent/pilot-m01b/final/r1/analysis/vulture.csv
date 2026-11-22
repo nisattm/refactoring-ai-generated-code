@@ -1,0 +1,9 @@
+run_label,schema_version,path,line,kind,message,confidence
+pilot-m01b-final-r1,1.0,core/money.py,43,unused variable,unused variable 'handler',100
+pilot-m01b-final-r1,1.0,core/money.py,43,unused variable,unused variable 'source',100
+pilot-m01b-final-r1,1.0,core/money.py,64,unused variable,unused variable 'handler',100
+pilot-m01b-final-r1,1.0,core/money.py,64,unused variable,unused variable 'schema',100
+pilot-m01b-final-r1,1.0,core/money.py,77,unused variable,unused variable 'dialect',100
+pilot-m01b-final-r1,1.0,core/money.py,82,unused variable,unused variable 'dialect',100
+pilot-m01b-final-r1,1.0,core/timeutil.py,44,unused variable,unused variable 'dialect',100
+pilot-m01b-final-r1,1.0,core/timeutil.py,51,unused variable,unused variable 'dialect',100
