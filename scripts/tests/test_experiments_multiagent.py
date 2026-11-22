@@ -47,7 +47,7 @@ def test_success_with_three_roles(tmp_path, monkeypatch):
         {"agent": "analyzer"}, REFACTOR, {"test": True}, {"agent": "reviewer"}], text="REFACTORING_DONE")
     assert code == 0 and rec["outcome"] == "success" and rec["valid"] is True
     assert rec["roles"] == {"subagent_calls": {"analyzer": 1, "refactoring": 1, "reviewer": 1}, "test_runs": 1,
-                            "invalid": []}
+                            "blocked": [], "read_only_shell": [], "invalid": []}
     assert [r["source"] for r in rec["rounds"]] == ["test run 1"] and rec["best_round"] == 1
     assert support.run_git(project["repo"], "tag", "-l", "exp/multiagent/*") == "exp/multiagent/m1/r1"
     # the call: three subagents with their tools, the subagent tool offered, Bash only for the test command
@@ -58,7 +58,8 @@ def test_success_with_three_roles(tmp_path, monkeypatch):
                                                           "reviewer": ["Read", "Glob", "Grep"]}
     assert agents["analyzer"]["description"] == "The analyzer of lms/." and agents["reviewer"]["prompt"] == "You are the reviewer."
     assert args[args.index("--tools") + 1] == "Read,Glob,Grep,Edit,Write,Bash,Agent"
-    assert f"Bash({FAKE_TESTS})" in args and "--safe-mode" in args
+    assert f"Bash({FAKE_TESTS})" in args and "--safe-mode" not in args      # K1: it does not load subagents
+    assert "Agent(general-purpose)" in args and "Agent(Explore)" in args       # K6c: built-in types denied
     assert FAKE_TESTS in args[1] and "at most 3 times" in args[1]           # placeholders of the orchestrator prompt
     # measured: the round with the feedback tests, then best (= round 1 = last) with both sets
     assert [(m["label"].split("-", 1)[1], m["set"]) for m in toolkit.measured] == [("rounds-r1", "feedback"),
@@ -106,12 +107,62 @@ def test_no_change(tmp_path, monkeypatch):
     ([{"agent": "analyzer", "write": {"lms/a.py": "x = 1\n"}}], "analyzer subagent used Write"),
     ([REFACTOR] * 4, "Refactoring subagent called 4 times"),
     ([REFACTOR, {"test": True}, {"test": True}, {"test": True}, {"test": True}], "test command run 4 times"),
-    ([{"test": True, "command": "ls -la"}], "shell command(s) other than the test command"),
+    ([{"test": True, "command": "sed -i s/a/b/ lms/a.py"}], "shell command(s) that can change files ran"),
+    ([{"test": True, "command": "cat lms/a.py > lms/b.py"}], "shell command(s) that can change files ran"),
+    ([{"test": True, "command": "python -c 'print(1)'"}], "shell command(s) that can change files ran"),
 ])
 def test_invalid_runs(tmp_path, monkeypatch, steps, reason):
     _, toolkit, code, rec = start(tmp_path, monkeypatch, steps)
     assert code == common.EXIT_INVALID and rec["outcome"] == "invalid" and toolkit.measured == []
     assert any(reason in r for r in rec["reasons"]), rec["reasons"]
+
+
+@pytest.mark.parametrize("denied, data", [
+    ("Bash", {"command": "pytest -q"}),
+    ("Bash", {"command": "ls /"}),
+    ("Read", {"file_path": "/exp-tests/test_secret.py"}),
+    ("Glob", {"pattern": "**/*.py", "path": "/engine"}),
+])
+def test_blocked_attempts_are_counted_not_invalid(tmp_path, monkeypatch, denied, data):
+    _, toolkit, code, rec = start(tmp_path, monkeypatch, [REFACTOR, {"denied": denied, "input": data}, {"test": True}])
+    assert code == 0 and rec["outcome"] == "success" and rec["valid"] is True
+    assert len(rec["roles"]["blocked"]) == 1 and rec["roles"]["blocked"][0].startswith(denied)
+    assert support.read_runs(tmp_path)[0]["permission_denials"] == "1"
+
+
+@pytest.mark.parametrize("denied, data, parent", [
+    ("Edit", {"file_path": "/work/lms/loans/service.py"}, None),
+    ("Read", {"file_path": "lms/__init__.py"}, None),
+    ("Bash", {"command": "TEST"}, None),
+    ("Agent", {"subagent_type": "analyzer"}, None),
+])
+def test_denied_needed_call_means_a_broken_setup(tmp_path, monkeypatch, denied, data, parent):
+    if data.get("command") == "TEST":
+        data = {"command": FAKE_TESTS}
+    _, toolkit, code, rec = start(tmp_path, monkeypatch, [REFACTOR, {"denied": denied, "input": data, "parent": parent}])
+    assert code == common.EXIT_INVALID and toolkit.measured == []
+    assert any("broken setup" in r for r in rec["reasons"]), rec["reasons"]
+
+
+@pytest.mark.parametrize("command", ["find /work/lms -type f", "cat /work/lms/a.py", "ls -la lms", "grep -rn def lms | head -5"])
+def test_read_only_shell_in_work_is_counted_not_invalid(tmp_path, monkeypatch, command):
+    # K6b: Claude Code runs read-only commands inside /work on its own; same effect as Read / Glob / Grep
+    _, _, code, rec = start(tmp_path, monkeypatch, [REFACTOR, {"test": True, "command": command}, {"test": True}])
+    assert code == 0 and rec["valid"] is True and rec["roles"]["read_only_shell"] == [command]
+
+
+def test_built_in_subagent_denied_by_rule_is_counted_not_invalid(tmp_path, monkeypatch):
+    # K6c: the denial is only in the tool_result of the Agent call, not in permission_denials
+    _, _, code, rec = start(tmp_path, monkeypatch, [{"agent": "general-purpose", "refused": "rule"}, REFACTOR, {"test": True}])
+    assert code == 0 and rec["valid"] is True and rec["roles"]["blocked"] == ["Agent: general-purpose"]
+    assert "general-purpose" not in rec["roles"]["subagent_calls"]
+
+
+def test_role_that_cannot_be_started_means_a_broken_setup(tmp_path, monkeypatch):
+    # K1: with --safe-mode the roles were not loaded: "Agent type 'analyzer' not found"
+    _, toolkit, code, rec = start(tmp_path, monkeypatch, [{"agent": "analyzer", "refused": "missing"}, REFACTOR, {"test": True}])
+    assert code == common.EXIT_INVALID and toolkit.measured == []
+    assert any("subagent call failed (broken setup): analyzer" in r for r in rec["reasons"])
 
 
 def test_limit_cut_discards_the_run(tmp_path, monkeypatch):
