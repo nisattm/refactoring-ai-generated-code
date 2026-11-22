@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import weakref
 from collections.abc import Iterator
+from typing import Annotated, TypeVar
 
 import sqlalchemy as sa
-from typing import Annotated
-
 from fastapi import Depends, Request
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from lms.core.errors import resource_not_found
 from lms.core.text import normalize
 
 
@@ -21,10 +21,18 @@ class Base(DeclarativeBase):
     so that ids are never reused (LIB-COM-14)."""
 
 
+_ModelT = TypeVar("_ModelT", bound=Base)
+
+
+def _is_memory_sqlite(database_url: str) -> bool:
+    url = make_url(database_url)
+    return url.get_backend_name() == "sqlite" and url.database in (None, "", ":memory:")
+
+
 def create_db_engine(database_url: str) -> sa.Engine:
     url = make_url(database_url)
     kwargs: dict = {"connect_args": {"check_same_thread": False}}
-    if url.get_backend_name() == "sqlite" and url.database in (None, "", ":memory:"):
+    if _is_memory_sqlite(database_url):
         # In-memory database: all connections of one application must see the same data.
         kwargs["poolclass"] = StaticPool
     engine = sa.create_engine(url, **kwargs)
@@ -48,8 +56,7 @@ _MEMORY_ENGINES: dict[int, sa.Engine] = {}
 def get_engine(settings) -> sa.Engine:  # noqa: ANN001
     """The engine of ``settings``. An in-memory database exists once per ``Settings`` object, so that
     ``create_app`` and ``import_dataset`` / ``export_dataset`` called with the same settings see the same data."""
-    url = make_url(settings.database_url)
-    if url.get_backend_name() == "sqlite" and url.database in (None, "", ":memory:"):
+    if _is_memory_sqlite(settings.database_url):
         key = id(settings)
         engine = _MEMORY_ENGINES.get(key)
         if engine is None:
@@ -73,6 +80,21 @@ def create_schema(engine: sa.Engine) -> None:
     import lms.reservations.models  # noqa: F401
 
     Base.metadata.create_all(engine)
+
+
+def get_or_404(db: Session, model: type[_ModelT], resource_id: int, resource: str) -> _ModelT:
+    """The ``model`` row with primary key ``resource_id``, or ``404 NOT_FOUND`` for the addressed ``resource``."""
+    obj = db.get(model, resource_id)
+    if obj is None:
+        raise resource_not_found(resource, resource_id)
+    return obj
+
+
+def make_session_factory(settings) -> sessionmaker[Session]:  # noqa: ANN001
+    """Engine of ``settings`` with the schema created, and a session factory for it."""
+    engine = get_engine(settings)
+    create_schema(engine)
+    return sessionmaker(engine, expire_on_commit=False)
 
 
 def get_session(request: Request) -> Iterator[Session]:

@@ -20,10 +20,18 @@ class MembershipType:
 MEMBERSHIP_TYPES: dict[str, MembershipType] = {
     t.value: t
     for t in (
-        MembershipType("student", 365, 14, 5, 1, Decimal("2.00")),
-        MembershipType("academic", 365, 30, 10, 2, Decimal("1.00")),
-        MembershipType("staff", 365, 21, 7, 2, Decimal("1.00")),
-        MembershipType("guest", 90, 7, 2, 0, Decimal("5.00")),
+        MembershipType(
+            "student", validity_days=365, loan_period_days=14, loan_limit=5, max_renewals=1, daily_fee=Decimal("2.00")
+        ),
+        MembershipType(
+            "academic", validity_days=365, loan_period_days=30, loan_limit=10, max_renewals=2, daily_fee=Decimal("1.00")
+        ),
+        MembershipType(
+            "staff", validity_days=365, loan_period_days=21, loan_limit=7, max_renewals=2, daily_fee=Decimal("1.00")
+        ),
+        MembershipType(
+            "guest", validity_days=90, loan_period_days=7, loan_limit=2, max_renewals=0, daily_fee=Decimal("5.00")
+        ),
     )
 }
 

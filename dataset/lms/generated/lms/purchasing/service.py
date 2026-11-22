@@ -14,6 +14,7 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.catalog.models import Book
 from lms.catalog.service import add_copy
+from lms.core.db import get_or_404
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.core.money import format_amount
 from lms.core.text import normalize
@@ -24,10 +25,7 @@ from lms.purchasing.schemas import LineIn, ReceiveLineIn
 
 
 def get_supplier_or_404(db: Session, supplier_id: int) -> Supplier:
-    supplier = db.get(Supplier, supplier_id)
-    if supplier is None:
-        raise NotFound(f"Supplier {supplier_id} does not exist", details={"resource": "supplier", "id": supplier_id})
-    return supplier
+    return get_or_404(db, Supplier, supplier_id, "supplier")
 
 
 def _check_unique_name(db: Session, name: str, *, own_id: int | None = None) -> None:
@@ -96,12 +94,7 @@ def supplier_list_stmt(q: str | None, is_active: bool | None) -> sa.Select[tuple
 
 
 def get_order_or_404(db: Session, order_id: int) -> PurchaseOrder:
-    order = db.get(PurchaseOrder, order_id)
-    if order is None:
-        raise NotFound(
-            f"Purchase order {order_id} does not exist", details={"resource": "purchase_order", "id": order_id}
-        )
-    return order
+    return get_or_404(db, PurchaseOrder, order_id, "purchase_order")
 
 
 def order_lines(db: Session, order_id: int) -> list[PurchaseOrderLine]:

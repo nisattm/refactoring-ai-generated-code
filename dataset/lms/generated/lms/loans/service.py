@@ -16,6 +16,7 @@ from lms.catalog.models import Copy
 from lms.catalog.release import release_copy
 from lms.catalog.status import set_status
 from lms.core.calendar import next_working_day
+from lms.core.db import get_or_404
 from lms.core.errors import Conflict, NotFound, reference_not_found
 from lms.core.money import format_amount
 from lms.fines.service import (
@@ -33,10 +34,7 @@ from lms.reservations import service as reservations
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> Loan:
-    loan = db.get(Loan, loan_id)
-    if loan is None:
-        raise NotFound(f"Loan {loan_id} does not exist", details={"resource": "loan", "id": loan_id})
-    return loan
+    return get_or_404(db, Loan, loan_id, "loan")
 
 
 def due_date_after(start: datetime.date, loan_period_days: int, holidays: Container[datetime.date]) -> datetime.date:

@@ -15,7 +15,8 @@ from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.auth.passwords import hash_password
 from lms.branches.service import require_active_branch
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict, ValidationFailed
 from lms.core.money import ZERO
 from lms.core.text import normalize
 from lms.fines import service as fines
@@ -28,10 +29,7 @@ from lms.reservations import service as reservations
 
 
 def get_member_or_404(db: Session, member_id: int) -> Member:
-    member = db.get(Member, member_id)
-    if member is None:
-        raise NotFound(f"Member {member_id} does not exist", details={"resource": "member", "id": member_id})
-    return member
+    return get_or_404(db, Member, member_id, "member")
 
 
 def type_field_problems(membership_type: str, phone: str | None, university_id: str | None) -> list[dict[str, str]]:

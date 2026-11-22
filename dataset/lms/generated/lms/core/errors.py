@@ -56,6 +56,12 @@ class ValidationFailed(ApiError):
         return cls([{"field": field, "problem": problem}])
 
 
+def resource_not_found(resource: str, resource_id: Any) -> NotFound:
+    """The addressed resource (``resource`` is its snake_case name, e.g. ``purchase_order``) does not exist."""
+    label = resource.replace("_", " ").capitalize()
+    return NotFound(f"{label} {resource_id} does not exist", details={"resource": resource, "id": resource_id})
+
+
 def reference_not_found(field: str, value: Any) -> NotFound:
     """LIB-COM-29: a referenced entity does not exist."""
     return NotFound(f"{field} {value} does not exist", details={"field": field, "id": value})

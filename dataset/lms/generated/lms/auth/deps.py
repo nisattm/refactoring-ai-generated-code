@@ -69,6 +69,12 @@ def require_roles(*roles: str) -> Callable[[Principal], Principal]:
     return check
 
 
+def ensure_own_or_staff(principal: Principal, member_id: int, message: str) -> None:
+    """LIB-AUTH-25: a ``member`` user may only address their own records; staff may address all."""
+    if principal.user.role == "member" and principal.user.member_id != member_id:
+        raise Forbidden(message)
+
+
 AnyUser = CurrentPrincipal
 AdminOnly = Annotated[Principal, Depends(require_roles("admin"))]
 StaffOnly = Annotated[Principal, Depends(require_roles("librarian", "admin"))]

@@ -5,12 +5,11 @@ from __future__ import annotations
 from typing import Annotated
 
 import sqlalchemy as sa
-from fastapi import APIRouter, Path, Query, Request
+from fastapi import APIRouter, Query
 
-from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
-from lms.core.clock import local_now, today
+from lms.auth.deps import AdminOnly, CurrentPrincipal, StaffOnly, ensure_own_or_staff
+from lms.core.context import HolidaysDep, NowDep, PathId, TodayDep
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden
 from lms.core.pagination import Page, PageDep, paginate
 from lms.fines import service
 from lms.fines.models import Fee, Payment
@@ -30,14 +29,7 @@ from lms.members.service import get_member_or_404
 
 router = APIRouter(tags=["fines"])
 
-MemberId = Annotated[int, Path(ge=1)]
-FeeId = Annotated[int, Path(ge=1)]
-
-
-def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25: a member may only address their own fees and payments."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own fees and payments can be accessed")
+_OWN_FEES_ONLY = "Only your own fees and payments can be accessed"
 
 
 def _fee_stmt(
@@ -58,7 +50,7 @@ def _fee_stmt(
 
 @router.get("/members/{member_id}/fees", response_model=Page[FeeOut])
 def list_member_fees(
-    member_id: MemberId,
+    member_id: PathId,
     db: SessionDep,
     principal: CurrentPrincipal,
     page: PageDep,
@@ -67,7 +59,7 @@ def list_member_fees(
     loan_id: Annotated[int | None, Query()] = None,
 ) -> Page[FeeOut]:
     member = get_member_or_404(db, member_id)
-    _own_or_staff(principal, member.id)
+    ensure_own_or_staff(principal, member.id, _OWN_FEES_ONLY)
     return paginate(db, _fee_stmt(status, kind, loan_id, member.id), page, fee_out)
 
 
@@ -85,19 +77,19 @@ def list_fees(
 
 
 @router.get("/members/{member_id}/balance", response_model=BalanceOut)
-def get_balance(member_id: MemberId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> BalanceOut:
-    settings = request.app.state.settings
+def get_balance(
+    member_id: PathId, day: TodayDep, holidays: HolidaysDep, db: SessionDep, principal: CurrentPrincipal
+) -> BalanceOut:
     member = get_member_or_404(db, member_id)
-    _own_or_staff(principal, member.id)
+    ensure_own_or_staff(principal, member.id, _OWN_FEES_ONLY)
     return balance_out(
         service.outstanding_fees(db, member.id),
-        service.accrued_late_fees(db, member.id, today(settings.clock), settings.holidays),
+        service.accrued_late_fees(db, member.id, day, holidays),
     )
 
 
 @router.post("/members/{member_id}/payments", response_model=PaymentOut, status_code=201)
-def record_payment(member_id: MemberId, body: PaymentIn, request: Request, db: SessionDep, staff: StaffOnly) -> PaymentOut:
-    now = local_now(request.app.state.settings.clock)
+def record_payment(member_id: PathId, body: PaymentIn, now: NowDep, db: SessionDep, staff: StaffOnly) -> PaymentOut:
     member = get_member_or_404(db, member_id)
     payment, allocations = service.record_payment(db, now, staff.user, member.id, body.amount, body.method)
     return payment_out(payment, allocations)
@@ -105,16 +97,15 @@ def record_payment(member_id: MemberId, body: PaymentIn, request: Request, db: S
 
 @router.get("/members/{member_id}/payments", response_model=Page[PaymentOut])
 def list_member_payments(
-    member_id: MemberId, db: SessionDep, principal: CurrentPrincipal, page: PageDep
+    member_id: PathId, db: SessionDep, principal: CurrentPrincipal, page: PageDep
 ) -> Page[PaymentOut]:
     member = get_member_or_404(db, member_id)
-    _own_or_staff(principal, member.id)
+    ensure_own_or_staff(principal, member.id, _OWN_FEES_ONLY)
     stmt = sa.select(Payment).where(Payment.member_id == member.id).order_by(Payment.paid_at, Payment.id)
     return paginate(db, stmt, page, lambda p: payment_out(p, service.payment_allocations(db, p.id)))
 
 
 @router.post("/fees/{fee_id}/waive", response_model=FeeOut)
-def waive_fee(fee_id: FeeId, body: WaiveIn, request: Request, db: SessionDep, admin: AdminOnly) -> FeeOut:
-    now = local_now(request.app.state.settings.clock)
+def waive_fee(fee_id: PathId, body: WaiveIn, now: NowDep, db: SessionDep, admin: AdminOnly) -> FeeOut:
     fee = service.get_fee_or_404(db, fee_id)
     return fee_out(service.waive_fee(db, now, admin.user, fee, body.reason))

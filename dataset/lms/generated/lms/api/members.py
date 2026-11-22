@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import Annotated
 
 import sqlalchemy as sa
-from fastapi import APIRouter, Path, Query, Request
+from fastapi import APIRouter, Query
 
-from lms.auth.deps import CurrentPrincipal, Principal, StaffOnly
-from lms.core.clock import local_now, today
+from lms.auth.deps import CurrentPrincipal, StaffOnly, ensure_own_or_staff
+from lms.core.context import HolidaysDep, NowDep, PathId, TodayDep
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, NotFound
+from lms.core.errors import NotFound
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
 from lms.core.text import normalize
 from lms.fines.schemas import balance_out
@@ -29,29 +29,18 @@ from lms.members.schemas import (
 
 router = APIRouter(prefix="/members", tags=["members"])
 
-MemberId = Annotated[int, Path(ge=1)]
-
-
-def _today(request: Request):  # noqa: ANN202
-    return today(request.app.state.settings.clock)
-
-
-def _own_or_staff(principal: Principal, member: Member) -> None:
-    """LIB-AUTH-25: a member may only address their own record."""
-    if principal.user.role == "member" and principal.user.member_id != member.id:
-        raise Forbidden("Only your own member record can be accessed")
+_OWN_RECORD_ONLY = "Only your own member record can be accessed"
 
 
 @router.post("", response_model=MemberOut, status_code=201)
-def register_member(body: MemberCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
-    now = local_now(request.app.state.settings.clock)
+def register_member(body: MemberCreateIn, now: NowDep, db: SessionDep, staff: StaffOnly) -> MemberOut:
     member = service.register_member(db, now, staff.user, **body.model_dump())
     return member_out(member, now.date())
 
 
 @router.get("", response_model=Page[MemberOut])
 def list_members(
-    request: Request,
+    day: TodayDep,
     db: SessionDep,
     _: StaffOnly,
     page: PageDep,
@@ -61,7 +50,6 @@ def list_members(
     home_branch_id: Annotated[int | None, Query()] = None,
     membership_valid: Annotated[bool | None, Query()] = None,
 ) -> Page[MemberOut]:
-    day = _today(request)
     stmt = sa.select(Member).order_by(Member.id)
     if membership_type is not None:
         stmt = stmt.where(Member.membership_type == membership_type)
@@ -89,59 +77,54 @@ def list_members(
 
 
 @router.get("/me", response_model=MemberOut)
-def get_own_member(request: Request, db: SessionDep, principal: CurrentPrincipal) -> MemberOut:
+def get_own_member(day: TodayDep, db: SessionDep, principal: CurrentPrincipal) -> MemberOut:
     member_id = principal.user.member_id
     member = db.get(Member, member_id) if member_id is not None else None
     if member is None:
         raise NotFound("The authenticated user has no member record", details={"resource": "member"})
-    return member_out(member, _today(request))
+    return member_out(member, day)
 
 
 @router.get("/{member_id}", response_model=MemberOut)
-def get_member(member_id: MemberId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> MemberOut:
+def get_member(member_id: PathId, day: TodayDep, db: SessionDep, principal: CurrentPrincipal) -> MemberOut:
     member = service.get_member_or_404(db, member_id)
-    _own_or_staff(principal, member)
-    return member_out(member, _today(request))
+    ensure_own_or_staff(principal, member.id, _OWN_RECORD_ONLY)
+    return member_out(member, day)
 
 
 @router.patch("/{member_id}", response_model=MemberOut)
-def update_member(
-    member_id: MemberId, body: MemberPatchIn, request: Request, db: SessionDep, staff: StaffOnly
-) -> MemberOut:
-    now = local_now(request.app.state.settings.clock)
+def update_member(member_id: PathId, body: MemberPatchIn, now: NowDep, db: SessionDep, staff: StaffOnly) -> MemberOut:
     member = service.get_member_or_404(db, member_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    return member_out(service.update_member(db, now, staff.user, member, fields), now.date())
+    return member_out(service.update_member(db, now, staff.user, member, body.provided_fields()), now.date())
 
 
 @router.post("/{member_id}/renew-membership", response_model=MemberOut)
-def renew_membership(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
-    now = local_now(request.app.state.settings.clock)
+def renew_membership(member_id: PathId, now: NowDep, db: SessionDep, staff: StaffOnly) -> MemberOut:
     member = service.get_member_or_404(db, member_id)
     return member_out(service.renew_membership(db, now, staff.user, member), now.date())
 
 
 @router.post("/{member_id}/deactivate", response_model=MemberOut)
-def deactivate_member(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
-    settings = request.app.state.settings
-    now = local_now(settings.clock)
+def deactivate_member(
+    member_id: PathId, now: NowDep, holidays: HolidaysDep, db: SessionDep, staff: StaffOnly
+) -> MemberOut:
     member = service.get_member_or_404(db, member_id)
-    return member_out(service.deactivate_member(db, now, staff.user, settings.holidays, member), now.date())
+    return member_out(service.deactivate_member(db, now, staff.user, holidays, member), now.date())
 
 
 @router.post("/{member_id}/activate", response_model=MemberOut)
-def activate_member(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> MemberOut:
-    now = local_now(request.app.state.settings.clock)
+def activate_member(member_id: PathId, now: NowDep, db: SessionDep, staff: StaffOnly) -> MemberOut:
     member = service.get_member_or_404(db, member_id)
     return member_out(service.activate_member(db, now, staff.user, member), now.date())
 
 
 @router.get("/{member_id}/summary", response_model=MemberSummaryOut)
-def member_summary(member_id: MemberId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> MemberSummaryOut:
-    day = _today(request)
+def member_summary(
+    member_id: PathId, day: TodayDep, holidays: HolidaysDep, db: SessionDep, principal: CurrentPrincipal
+) -> MemberSummaryOut:
     member = service.get_member_or_404(db, member_id)
-    _own_or_staff(principal, member)
-    activity = service.member_activity(db, member, day, request.app.state.settings.holidays)
+    ensure_own_or_staff(principal, member.id, _OWN_RECORD_ONLY)
+    activity = service.member_activity(db, member, day, holidays)
     reasons = service.borrowing_blockers(member, activity, day)
     return MemberSummaryOut(
         member=member_out(member, day),

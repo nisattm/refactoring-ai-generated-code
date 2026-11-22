@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, FastAPI
 from pydantic import BaseModel
-from sqlalchemy.orm import sessionmaker
 
 from lms.api import (
     audit,
@@ -26,8 +25,8 @@ from lms.api import (
 )
 from lms.api.errors import register_error_handlers
 from lms.auth.bootstrap import ensure_bootstrap_admin
-from lms.core.clock import today
-from lms.core.db import create_schema, get_engine
+from lms.core.context import TodayDep
+from lms.core.db import make_session_factory
 from lms.core.settings import Settings
 
 API_PREFIX = "/api/v1"
@@ -41,21 +40,18 @@ class HealthOut(BaseModel):
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings if settings is not None else Settings()
 
-    engine = get_engine(settings)
-    create_schema(engine)
-    session_factory = sessionmaker(engine, expire_on_commit=False)
+    session_factory = make_session_factory(settings)
     with session_factory.begin() as session:
         ensure_bootstrap_admin(session, settings)
 
     app = FastAPI(title="Library Management System", version="0.7", docs_url=None, redoc_url=None)
     app.state.settings = settings
-    app.state.engine = engine
     app.state.session_factory = session_factory
     register_error_handlers(app)
 
     @app.get("/health", response_model=HealthOut, tags=["health"])
-    def health(request: Request) -> HealthOut:
-        return HealthOut(status="ok", today=today(request.app.state.settings.clock).isoformat())
+    def health(day: TodayDep) -> HealthOut:
+        return HealthOut(status="ok", today=day.isoformat())
 
     api = APIRouter(prefix=API_PREFIX)
     api.include_router(calendar.router)
