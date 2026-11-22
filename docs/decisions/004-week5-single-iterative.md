@@ -1,7 +1,7 @@
 # 004 – Week 5: Single and Iterative LLM runs
 
 **Date:** 2026-11-20
-**Status:** Proposed (draft for Nisa's approval). Decisions W1–W16 were agreed on 2026-11-17; the clarifications marked **(clarified 2026-11-20)** were found while writing this record and approved in the review of the draft; W9, W10 and W16 were completed with the results of the setup check (package B).
+**Status:** Accepted (2026-11-22, Nisa). Decisions W1–W16 were agreed on 2026-11-17; the clarifications marked **(clarified 2026-11-20)** were found while writing this record and approved in the review of the draft; W9, W10 and W16 were completed with the results of the setup check (package B). The addendum of 2026-11-22 closes the post-pilot decisions.
 
 ## Context
 
@@ -96,4 +96,8 @@ Source: the pilot summary `results/experiments/pilot/pilot-ozeti.md` (package B,
 1. **W13: the run lock is released during the Claude call from Week 6 on.** In the pilot the feedback tests of the pilot code (282 tests) were timed in Docker on one machine: 132 s and 125 s alone, 127 s and 123 s while the Claude call of `pilot-s02` was running. No slowdown was seen. From Week 6 on, `.run.lock` is released while Claude Code runs and taken again before the code is tested and measured; tests and measurements of two runs never overlap. Week 5 is not changed: its runs held the lock for the whole run. Package A changes the engine after the Multi-Agent pilot. Limits of this check: two timings per case, one machine, one parallel Single call, and only the pilot test set (the feedback set of the final code takes about 22.5 minutes alone). This is reported as a threat to validity.
 2. **Invalid runs are kept and repeated under a new run ID (completes W9 and W10).** Agreed by packages A and B on 21 November. The folder of an invalid run and its row in `runs.csv` are never deleted or overwritten. The repetition gets a new run ID made from the old one plus a letter (`s03` → `s03b`, then `s03c`). The engine already refuses an existing run folder or tag, so reusing an ID would need a deletion. All statistics use only rows with `valid=true`; the invalid runs are counted per approach (W10). In the pilot the first attempt of `pilot-i01` was deleted and restarted under the same ID, before this rule existed. It is not in `runs.csv` and is reported as one invalid Iterative start; `pilot-s01` → `pilot-s01b` already followed the rule.
 
-Still open after the pilot: the number of repetitions (W7: 5 or 8 per approach), the line limits of W2 (no feedback text was produced in the pilot, so they could not be checked) and the limit-cut rule (W6; no run reached the limit).
+Closed with the acceptance of this record (Nisa, 2026-11-22):
+
+3. **W7: 5 runs per approach, 8 if the budget allows.** The first 5 valid runs of every approach are made first; runs 6–8 follow for all three approaches only if the accounts have room for all of them, so that every approach ends with the same number of valid runs.
+4. **W2: the line limits stay as they are** (at most 6 lines per test, 60 lines in total, 15 tests). No feedback text was produced in the pilot, so the limits could not be checked; they are reviewed with the feedback texts of the first real Iterative and Multi-Agent runs, and a change is recorded in a new addendum.
+5. **W6: a run cut by the usage limit is discarded** (outcome `discarded_limit`, `valid=false`) and run again from the start under a new run ID (rule 2). Continuing a cut Iterative session on another account is not used, because it was not verified in the setup check; no pilot run reached the limit.
