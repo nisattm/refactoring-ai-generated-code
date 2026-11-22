@@ -170,6 +170,21 @@ def test_limit_cut_discards_the_run(tmp_path, monkeypatch):
     assert code == common.EXIT_LIMIT and rec["outcome"] == "discarded_limit"
 
 
+def test_dry_run_prints_the_multiagent_command(tmp_path, capsys):
+    project = support.make_project(tmp_path)
+    code = run_multiagent.main(support.argv(project, "m1", "--dry-run"), support.FakeToolkit())
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "--safe-mode" not in out                                          # K1
+    assert f"Bash({run_multiagent.TEST_COMMAND})" in out
+    assert "--agents" in out and '"analyzer"' in out and '"reviewer"' in out
+    assert "Agent(general-purpose)" in out and "Read(//exp-tests/**)" in out    # K4, K6c
+    assert "BASH_MAX_TIMEOUT_MS=3600000" in out and "/exp-state " in out        # K7
+    assert "role:      refactoring ['Read', 'Glob', 'Grep', 'Edit', 'Write']" in out
+    assert "{test_command}" not in out and run_multiagent.TEST_COMMAND in out.split("--- orchestrator prompt ---")[1]
+    assert not (tmp_path / "out" / "multiagent" / "m1").exists()               # nothing written
+
+
 def test_deny_rules_and_role_files(tmp_path):
     assert run_multiagent.deny_rules(["/exp-tests"]) == tuple(
         f"{t}(//exp-tests/**)" for t in ("Read", "Glob", "Grep", "Edit", "Write"))

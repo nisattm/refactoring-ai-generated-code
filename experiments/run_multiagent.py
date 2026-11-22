@@ -194,6 +194,35 @@ def tree_hash(folder: Path) -> str:
     return digest.hexdigest()
 
 
+def dry_run(run: Run) -> int:
+    """--dry-run: load the four prompt files, fill the orchestrator prompt and print the real Multi-Agent command
+    (the --agents JSON is shortened to its roles and tools; the full role prompts are printed below it)."""
+    run.check_inputs()
+    prompt = common.fill_prompt(common.load_prompt(run.prompts, "multiagent/orchestrator.md"),
+                                test_command=TEST_COMMAND, max_refactoring_calls=MAX_REFACTORING_CALLS,
+                                max_test_runs=MAX_TEST_RUNS)
+    left = [p for p in common.MULTIAGENT_PLACEHOLDERS if p in prompt]
+    if left:
+        raise EngineError(f"orchestrator.md: placeholders not filled: {', '.join(left)}")
+    if TEST_COMMAND not in prompt:
+        raise EngineError("orchestrator.md: the test command is not in the prompt ({test_command} missing)")
+    agents = json.loads(agents_json(run.prompts / "multiagent"))
+    short = "'" + json.dumps({r: {"tools": a["tools"], "model": a["model"]} for r, a in agents.items()}) + "'"
+    allowed = (*READ_TOOLS, *EDIT_TOOLS, SPAWN_TOOL, f"Bash({TEST_COMMAND})")
+    args = common.claude_args("<prompt>", run.settings["effort"], None, tools=ORCHESTRATOR_TOOLS, allowed=allowed,
+                              disallowed=deny_rules(MOUNTS.values()) + tuple(f"Agent({a})" for a in BUILTIN_AGENTS),
+                              extra=("--agents", short), safe_mode=SAFE_MODE)
+    mounts = tuple(f"-v <{name}>:{path}{'' if name == 'state' else ':ro'}" for name, path in MOUNTS.items())
+    common.dry_run(run, args, {"BASH_DEFAULT_TIMEOUT_MS": BASH_TIMEOUT_MS, "BASH_MAX_TIMEOUT_MS": BASH_TIMEOUT_MS},
+                   mounts)
+    print(f"budget:    {MAX_REFACTORING_CALLS} refactoring calls, {MAX_TEST_RUNS} test runs")
+    for role, agent in agents.items():
+        print(f"role:      {role} {agent['tools']} - {agent['description']}")
+    print("--- orchestrator prompt ---")
+    print(prompt)
+    return common.EXIT_DONE
+
+
 def prepare(run: Run, test_command: str | None) -> dict:
     """Agent state folder, config of the test command, the claude arguments and the docker mounts."""
     ws, local = run.ws, run.settings["local"]
@@ -310,7 +339,7 @@ def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -
     run = Run(APPROACH, args, toolkit)
     try:
         if args.dry_run:
-            return common.dry_run(run)
+            return dry_run(run)
         with common.RunLock(Path(args.lock_file), f"run_multiagent.py {args.run_id}", args.wait, args.poll):
             return execute(run, args.test_command)
     except EngineError as exc:
