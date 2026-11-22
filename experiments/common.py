@@ -392,12 +392,12 @@ def fixed_sentence(prompts: Path, name: str, default: str) -> str:
 # --- the Claude Code call (W9) --------------------------------------------------------------------------------------
 
 def claude_args(prompt: str, effort: str, session_id: str | None, tools: tuple = TOOLS, allowed: tuple | None = None,
-                disallowed: tuple = DISALLOWED_TOOLS, extra: tuple = ()) -> list[str]:
+                disallowed: tuple = DISALLOWED_TOOLS, extra: tuple = (), safe_mode: bool = True) -> list[str]:
     # --tools only offers the tools; in dontAsk mode a tool also needs --allowedTools, otherwise every Write is
     # denied and the call still ends with subtype "success" (setup check, Işıl, 20 November 2026)
     args = ["-p", prompt, "--model", MODEL, "--effort", effort, "--tools", ",".join(tools),
             "--allowedTools", *(allowed or tools), *(("--disallowedTools", *disallowed) if disallowed else ()),
-            *extra, *FIXED_FLAGS]
+            *extra, *(f for f in FIXED_FLAGS if safe_mode or f != "--safe-mode")]
     if session_id:
         args += ["--resume", session_id]
     return args
@@ -405,7 +405,7 @@ def claude_args(prompt: str, effort: str, session_id: str | None, tools: tuple =
 
 def parse_stream(text: str) -> dict:
     """Facts from a ``--output-format stream-json --verbose`` log: init event, result event, tool uses."""
-    init, result, uses, texts, rate_limit = None, None, [], [], None
+    init, result, uses, texts, rate_limit, tool_results = None, None, [], [], None, {}
     for line in text.splitlines():
         line = line.strip()
         if not line.startswith("{"):
@@ -419,6 +419,13 @@ def parse_stream(text: str) -> dict:
             init = event
         elif kind == "result":
             result = event
+        elif kind == "user":             # tool results: a denied subagent type only shows up here (K6c)
+            for block in (event.get("message") or {}).get("content") or []:
+                if isinstance(block, dict) and block.get("type") == "tool_result":
+                    content = block.get("content")
+                    text = content if isinstance(content, str) else " ".join(
+                        str(c.get("text") or "") for c in content or [] if isinstance(c, dict))
+                    tool_results[block.get("tool_use_id")] = {"is_error": bool(block.get("is_error")), "text": text[:500]}
         elif kind == "rate_limit_event":
             rate_limit = {k: v for k, v in event.items() if k not in ("type", "uuid")}
         elif kind == "assistant":
@@ -435,13 +442,14 @@ def parse_stream(text: str) -> dict:
     for u in uses:
         counts[u["name"]] = counts.get(u["name"], 0) + 1
     return {"init": init, "result": result, "tool_counts": counts, "rate_limit": rate_limit, "uses": uses,
+            "tool_results": tool_results,
             "files_read": paths("Read"), "files_written": paths("Edit", "Write"),
             "subagent_attempts": sum(counts.get(n, 0) for n in SUBAGENT_TOOLS),
             "final_text": (result or {}).get("result") or (texts[-1] if texts else "")}
 
 
 def check_call(parsed: dict, stderr: str, expected_version: str | None, tools: tuple = TOOLS,
-               subagents_allowed: bool = False) -> tuple[str, list[str]]:
+               subagents_allowed: bool = False, denials_invalid: bool = True) -> tuple[str, list[str]]:
     """Status of a call (``ok``, ``limit`` or ``error``) and the reasons that make the run invalid (W9, W10)."""
     init, result = parsed["init"], parsed["result"]
     invalid: list[str] = []
@@ -476,7 +484,7 @@ def check_call(parsed: dict, stderr: str, expected_version: str | None, tools: t
     denials = result.get("permission_denials")
     if not isinstance(denials, list):
         invalid.append("permission_denials missing: denied tool calls cannot be checked")
-    elif denials:
+    elif denials and denials_invalid:      # Multi-Agent classifies its denials itself (run_multiagent.blocked_or_broken)
         invalid.append(f"{len(denials)} denied tool call(s): {', '.join(denied_tools(denials))}")
     return "ok", invalid
 
@@ -763,7 +771,8 @@ class Run:
         parsed = parse_stream((folder / "stream.jsonl").read_text(encoding="utf-8", errors="replace"))
         stderr = (folder / "stderr.txt").read_text(encoding="utf-8", errors="replace")
         status, invalid = check_call(parsed, stderr, self.settings["expected_version"],
-                                     tools=setup.get("tools", TOOLS), subagents_allowed=setup.get("subagents_allowed", False))
+                                     tools=setup.get("tools", TOOLS), subagents_allowed=setup.get("subagents_allowed", False),
+                                     denials_invalid=setup.get("denials_invalid", True))
         self.last_parsed = parsed
         if timed_out:
             status, invalid = "error", [f"call timed out after {self.settings['call_timeout']} s"]

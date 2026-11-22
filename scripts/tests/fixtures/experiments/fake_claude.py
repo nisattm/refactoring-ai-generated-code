@@ -34,6 +34,8 @@ def main() -> int:
     emit({"type": "rate_limit_event", "rate_limit_info": {"status": "allowed", "rateLimitType": "five_hour",
                                                           "utilization": 0.05}})
     offered = args[args.index("--tools") + 1].split(",") if "--tools" in args else TOOLS
+    offered = ["Task" if t == "Agent" else t for t in offered]          # as Claude Code 2.1.308 lists it (K1)
+    denials = []
     emit({"type": "system", "subtype": "init", "session_id": session_id, "tools": spec.get("tools", offered),
           "model": spec.get("model", "claude-sonnet-5-5"), "claude_code_version": spec.get("version", "9.9.9"),
           "apiKeySource": "none"})
@@ -52,7 +54,15 @@ def main() -> int:
     spawned = spec.get("subagents", 0)
     # Multi-Agent: "steps" of the orchestrator; tool uses of a subagent carry its call id as parent_tool_use_id
     for i, step in enumerate(spec.get("steps", [])):
-        if "agent" in step:
+        if "agent" in step and step.get("refused"):     # K1 / K6c: the Agent call returns an error, nothing runs
+            call_id = f"agent-{number}-{i}"
+            emit({"type": "assistant", "parent_tool_use_id": None, "message": {"content": [{"type": "tool_use",
+                  "id": call_id, "name": "Agent", "input": {"subagent_type": step["agent"], "prompt": "task"}}]}})
+            text = (f"Agent type '{step['agent']}' has been denied by permission rule 'Agent({step['agent']})' from cliArg."
+                    if step["refused"] == "rule" else f"Agent type '{step['agent']}' not found. Available agents: claude")
+            emit({"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": call_id,
+                                                           "is_error": True, "content": text}]}})
+        elif "agent" in step:
             spawned += 1
             call_id = f"agent-{number}-{i}"
             emit({"type": "assistant", "parent_tool_use_id": None, "message": {"content": [{"type": "tool_use",
@@ -67,6 +77,12 @@ def main() -> int:
                 emit({"type": "assistant", "parent_tool_use_id": call_id, "message": {"content": [
                     {"type": "tool_use", "id": f"{call_id}-w", "name": step.get("write_tool", "Write"),
                      "input": {"file_path": f"/work/{rel}"}}]}})
+        elif "denied" in step:            # a call the permissions blocked: in the stream and in permission_denials
+            tool, data = step["denied"], step.get("input", {})
+            use_id = f"denied-{number}-{i}"
+            emit({"type": "assistant", "parent_tool_use_id": step.get("parent"), "message": {"content": [
+                {"type": "tool_use", "id": use_id, "name": tool, "input": data}]}})
+            denials.append({"tool_name": tool, "tool_use_id": use_id, "tool_input": data})
         elif "test" in step:
             allowed = args[args.index("--allowedTools") + 1:]
             rule = next(a for a in allowed if a.startswith("Bash("))
@@ -104,7 +120,7 @@ def main() -> int:
           "total_cost_usd": totals["usd"], "modelUsage": usage,
           "subagent_stats": {"spawned": spawned},
           "permission_denials": [{"tool_name": name, "tool_use_id": f"t{i}", "tool_input": {}}
-                                 for i, name in enumerate(spec.get("denied", []))]})
+                                 for i, name in enumerate(spec.get("denied", []))] + denials})
     return 0
 
 

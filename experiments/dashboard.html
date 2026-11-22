@@ -185,7 +185,9 @@ function renderDetail() {
       <div><span>Account</span><b>${esc(d.account)}</b></div>
       <div><span>Model</span><b>${esc(d.model)} · ${esc(d.effort)}</b></div>
       ${d.roles ? `<div><span>Subagent calls</span><b>${Object.entries(d.roles.subagent_calls || {}).map(([r, n]) => `${esc(r)} ${n}`).join(" · ") || "none"}</b></div>
-      <div><span>Test command runs</span><b>${d.roles.test_runs}${d.budget ? " of " + d.budget.test_runs : ""}</b></div>` : ""}
+      <div><span>Test command runs</span><b>${d.roles.test_runs}${d.budget ? " of " + d.budget.test_runs : ""}</b></div>
+      <div><span>Blocked attempts</span><b>${(d.roles.blocked || []).length}</b></div>
+      <div><span>Read-only shell commands</span><b>${(d.roles.read_only_shell || []).length}</b></div>` : ""}
     </div>
     ${d.stop_reason && d.status === "finished" ? `<p class="note">Stopped because: ${esc(d.stop_reason)}</p>` : ""}
   </div>`;
@@ -212,6 +214,7 @@ function renderProblems(d) {
   const dropped = d.approach === "multiagent" ? " → round not kept" : " → round reverted";
   if (d.outcome === "failed" && !reverts) items.push(...d.reasons.map(r => `Run failed: ${esc(r)}`));
   (d.calls_detail || []).forEach(c => (c.invalid || []).forEach(r => items.push(`Call ${c.number}: ${esc(r)}`)));
+  const notes = (d.roles && d.roles.blocked || []).map(b => `Blocked (counted, run stays valid): ${esc(b)}`);
   (d.rounds_detail || []).forEach(r => {
     if (r.regressions.length) items.push(`${reverts ? "Round " + r.round + ": " : "Tests: "}${r.regressions.length} test regression(s) – ` +
       r.regressions.map(x => `${esc(x.case)}${x.module ? " (module " + esc(x.module) + ")" : ""}`).join(", ") +
@@ -226,8 +229,9 @@ function renderProblems(d) {
       f.regressions.map(x => `${esc(x.case)}${x.module ? " (module " + esc(x.module) + ")" : ""}`).join(", "));
   });
   if (d.outcome === "failed" && reverts) items.push(...d.reasons.map(r => `Run failed: ${esc(r)}`));
-  if (!items.length) return "";
-  return `<div class="problem"><h2>Where it went wrong</h2><ul>${[...new Set(items)].map(i => `<li>${i}</li>`).join("")}</ul></div>`;
+  const blockedBox = notes.length ? `<div class="panel"><h2>Blocked attempts</h2><ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>` : "";
+  if (!items.length) return blockedBox;
+  return `<div class="problem"><h2>Where it went wrong</h2><ul>${[...new Set(items)].map(i => `<li>${i}</li>`).join("")}</ul></div>` + blockedBox;
 }
 
 function renderMetrics(d) {
