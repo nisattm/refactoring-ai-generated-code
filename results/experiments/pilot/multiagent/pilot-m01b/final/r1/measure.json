@@ -1,0 +1,26 @@
+{
+  "label": "pilot-m01b-final-r1",
+  "code_sha": "de3396775c39ecac0d94ffdb766d8e53c6b3d588",
+  "set": "both",
+  "steps": [
+    {
+      "name": "analyze",
+      "exit": 0,
+      "seconds": 26.6
+    },
+    {
+      "name": "tests",
+      "exit": 0,
+      "seconds": 311.7
+    },
+    {
+      "name": "compare",
+      "exit": 0,
+      "seconds": 9.2
+    }
+  ],
+  "problems": [],
+  "status": "ok",
+  "new_failures": [],
+  "api_change_kind": null
+}
