@@ -79,3 +79,31 @@ With `MSYS_NO_PATHCONV=1`, `--env-file ~/…/.env` fails ("cannot find the path"
 - 7: deliberate limit cut — which account?
 - 8: continue on another account.
 - Verify the `CLAUDE.md` fix once the engine is updated.
+
+## Multi-Agent (K1–K7)
+
+Date: 2026-11-22 · Run by: Işıl (own account; setup check, not an experiment) · Claude Code 2.1.308, `claude-sonnet-5-5`, effort `high`.
+Toy folder: `model/lms/a.py`, a secret test `exp-tests/test_secret.py` (`SECRET_TEST = 1`) mounted read-only at `/exp-tests`, a fake test command at `/engine/experiments/feedback_tests.py` (read-only). Command = the engine's Multi-Agent command (`run_multiagent.py`, #140):
+`--tools Read,Glob,Grep,Edit,Write,Bash,Agent --allowedTools Read Glob Grep Edit Write Agent "Bash(python /engine/experiments/feedback_tests.py)" --disallowedTools <Read/Glob/Grep/Edit/Write of //exp-tests/** and //engine/**> --agents <analyzer, refactoring, reviewer> --permission-mode dontAsk`, `BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000`.
+Raw logs: `raw/k1.jsonl` … `raw/k7.jsonl`.
+
+| # | Check | Result |
+|---|---|---|
+| K1 | `--agents` with `--safe-mode` | ❌ **Custom agents are not loaded with `--safe-mode`**: `init.agents` = claude, Explore, general-purpose, Plan; the call to `analyzer` fails ("no `analyzer` subagent"), `spawned: 0`. |
+| K1b | same, **without** `--safe-mode` | ✅ `init.agents` adds analyzer, refactoring, reviewer (and built-in statusline-setup); `TOOL Agent` with `subagent_type: "analyzer"`; the subagent's Glob/Read carry `parent_tool_use_id` = the Agent call's id; `spawned: 1`, `completed: 1`, `by_type: {analyzer: 1}`. |
+| K1c | `--safe-mode` + `.claude/agents/analyzer.md` instead of `--agents` | ❌ not loaded either. |
+| — | Tool name | `init.tools` lists **`Task`**, but the call is a `tool_use` named **`Agent`**; `--tools …,Agent` and `--allowedTools Agent` are accepted. A check that expects `Agent` in `init.tools` fails every run. |
+| K2 | Subagent tool list enforced | ✅ Analyzer (Read/Glob/Grep) asked to edit `lms/a.py`: no Edit/Write with a parent id, file unchanged, analyzer reports it cannot edit. `spawned: 1`. |
+| K3 | Bash limited to the test command | ✅ `python /engine/experiments/feedback_tests.py` runs ("FEEDBACK OK"); `ls /` denied (`decision_reason_type: "mode"`), in `permission_denials`. The model then listed `/` with Glob (`path: "/"`, `pattern: "*"`): only folder names, contents of `/exp-tests` stay closed (K4). |
+| K4 | Tests hidden | ✅ Read, Glob, Grep on `/exp-tests` by the main model and Read by the analyzer: all 4 denied (`rule`; Read: "File is in a directory that is denied by your permission settings"). **All 4, including the subagent's, are in the main `result.permission_denials`.** `SECRET_TEST` occurs 0 times in the log. |
+| K5 | Subagent model and cost (from k1b) | ✅ `modelUsage` keys: only `claude-sonnet-5-5`; `"model": "claude-sonnet-5-5"` in `--agents` accepted (no error); `total_cost_usd` = sum of `modelUsage.*.costUSD` (0.0296981). Main model and subagent share one `modelUsage` entry, so the subagent's share is not separate (k1b with subagent 0.0297 $, k1c without 0.0082 $). |
+| K6 | General-purpose subagent | It **runs**: `by_type: {general-purpose: 1}`, and it ran `find /work/lms -type f` with Bash, not denied. |
+| K6b | Which Bash commands pass | `find /work/lms -type f` and `cat /work/lms/a.py` **run without a denial** (Claude Code allows read-only commands inside the working folder). Denied: `cat /exp-tests/test_secret.py` (`subcommandResults`: the Read rule applies to Bash), `python -c "print(123)"` (`mode`), `ls /engine/experiments` (`subcommandResults`). `SECRET_TEST` 0 times. |
+| K6c | `--disallowedTools "Agent(general-purpose)"` | ✅ Blocks it: `spawned: 0`. ⚠️ **Not in `permission_denials`** and no `permission_denied` event. Only trace: the `tool_result` of the Agent call has `is_error: true` and content "Agent type 'general-purpose' has been denied by permission rule 'Agent(general-purpose)' from cliArg."; its `tool_result_meta.permission_decision` says `accept` (the Agent tool itself is allowed). |
+| K7 | Bash timeout | ✅ The test command slept 150 s and finished ("FEEDBACK OK AFTER 150 S"); no 120 s timeout. |
+
+Decisions (Fatima, 22 November):
+- Multi-Agent runs **without `--safe-mode`**; Single and Iterative keep it (consistent with the pilot). Risks are covered by the engine: empty config folder, no `.claude/` or `CLAUDE.md` in the working folder, a model-written `CLAUDE.md`/hidden file makes the run invalid.
+- Denied attempts (Bash other than the test command, the hidden folders, outside `/work`) are counted; the run stays valid. If the test command, reading/writing inside `/work` or a subagent call of the three roles is denied, the setup is broken: invalid.
+- Bash commands that run without a denial: read-only ones inside `/work` (`cat`, `find`, `ls`, `grep` …) are counted, the run stays valid; a command that can change files (`>`, `rm`, `mv`, `sed -i`, `python`, `git`, `find -delete` …) running without a denial makes the run invalid.
+- A general-purpose subagent makes the run invalid; the prompt names only the three roles (Aslınur). If K6c's rule is added to the engine, its denial must be read from the Agent call's `tool_result` (see K6c), not from `permission_denials`.
