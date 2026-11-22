@@ -168,3 +168,30 @@ def test_missing_detail_csv_of_the_baseline_stops_before_the_call(tmp_path, monk
     assert run_single.main(support.argv(project, "s1"), support.FakeToolkit()) == common.EXIT_USAGE
     assert "lacks functions.csv, classes.csv" in capsys.readouterr().err
     assert not list(tmp_path.glob("work-s1/session/fake-call-*.json"))     # no Claude call, no quota used
+
+
+def test_run_lock_is_free_during_the_call_and_held_for_the_measurement(tmp_path, monkeypatch):
+    # W13 (ADR 004 addendum point 1): another run may test or measure while Claude Code runs
+    lock = tmp_path / ".run.lock"
+    seen, real_run = [], common.subprocess.run
+
+    def spy(cmd, *args, **kwargs):
+        if "fake_claude.py" in " ".join(map(str, cmd)):
+            seen.append(lock.exists())
+        return real_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(common.subprocess, "run", spy)
+
+    class Toolkit(support.FakeToolkit):
+        def measure(self, *args, **kwargs):
+            seen.append(("measure", lock.exists()))
+            return super().measure(*args, **kwargs)
+
+    project = support.make_project(tmp_path)
+    support.scenario(monkeypatch, tmp_path, [{"write": {"lms/loans/service.py": BETTER,
+                                                        "lms/quality.json": quality(mean_cc=2.5)}}])
+    code = run_single.main(support.argv(project, "s1"), Toolkit())
+    record = json.loads((tmp_path / "out" / "single" / "s1" / "run.json").read_text())
+    assert code == 0 and seen == [False, ("measure", True)]
+    assert record["calls"][0]["lock_released"] is True and record["calls"][0]["lock_wait_s"] == 0.0
+    assert not lock.exists()

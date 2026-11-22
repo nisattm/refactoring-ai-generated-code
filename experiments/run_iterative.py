@@ -198,7 +198,8 @@ def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -
     try:
         if args.dry_run:
             return common.dry_run(run)
-        with common.RunLock(Path(args.lock_file), f"run_iterative.py {args.run_id}", args.wait, args.poll):
+        with common.RunLock(Path(args.lock_file), f"run_iterative.py {args.run_id}", args.wait, args.poll) as lock:
+            run.lock = lock
             if args.resume_run or args.discard_run:
                 if not (run.out / "state.json").is_file():
                     raise EngineError(f"no saved state in {run.out}")
