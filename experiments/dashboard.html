@@ -130,7 +130,7 @@ tr.case-row:hover td { background: var(--soft); }
 .app.with-guide .list { flex-direction: row; flex-wrap: wrap; max-height: 220px; overflow: auto; }
 .app.with-guide .item { flex: 1 1 230px; }
 .app.with-guide .item .sub + .sub { display: none; }
-.panel { overflow-x: auto; }
+@media (max-width: 900px) { .panel { overflow-x: auto; } }
 #drawer { display: none; }
 .app.with-guide #drawer { display: block; position: sticky; top: 0; height: 100vh; overflow: auto; background: var(--panel); border-left: 1px solid var(--line); }
 #drawer .dhead { position: sticky; top: 0; background: var(--panel); border-bottom: 1px solid var(--line); padding: 12px 16px 10px; z-index: 1; }
@@ -316,6 +316,11 @@ tr.grp td { font-weight: 650; background: var(--soft); }
 .sbar i { display: block; height: 12px; border-radius: 3px; background: #b3261e; opacity: .75; min-width: 2px; }
 .sbar b { text-align: right; font-variant-numeric: tabular-nums; }
 .hbar { height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; } .hbar i { display: block; height: 100%; background: #b36b00; opacity: .8; }
+/* table headers stay in view while their table scrolls past (below the top bar, and below the run tabs) */
+main table th { position: sticky; top: var(--hh); background: var(--panel); z-index: 3; box-shadow: 0 1px 0 var(--line); }
+main .cols table th { top: calc(var(--hh) + 46px); }
+main tr.grp td { position: static; }
+@media (max-width: 900px) { main table th { position: static; } }
 /* ---- Python code in colour ---------------------------------------------------------------------------------- */
 :root { --hk: #8a3fb3; --hs: #2e7d32; --hn: #b35900; --hc: #7a7f85; --hf: #1f5fa8; --hb: #00797a; --hd: #a3367a; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --hk: #d19af0; --hs: #9ccf7f; --hn: #f0a868; --hc: #8b9198; --hf: #7fb4f0; --hb: #5fd0cf; --hd: #f08fc5; } }
