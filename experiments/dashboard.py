@@ -497,6 +497,27 @@ def baselines(root: Path) -> list[dict]:
     return sorted(out, key=lambda b: (not b["final"], b["label"]))
 
 
+def baseline_facts(baseline_id: str) -> dict:
+    """Size, the five metrics, smells, modules and tests of one starting code (for the pilot → full comparison)."""
+    path = (REPO / baseline_id) if not Path(baseline_id).is_absolute() else Path(baseline_id)
+    summary = read_json(path / "summary.json") or {}
+    sec = summary.get("secondary") or {}
+    tests = read_csv_rows(path / "tests.csv")
+    modules = [r for r in read_csv_rows(path / "modules.csv") if r.get("status", "generated") == "generated"]
+    return {"label": summary.get("label"), "sloc": sec.get("sloc"), "files": sec.get("files"), "functions": sec.get("cc_units"),
+            "classes": sec.get("classes"), "clones": sec.get("clones"), "modules": len(modules), "tests": len(tests),
+            "primary": summary.get("primary") or {}}
+
+
+def growth(options: list[dict]) -> dict | None:
+    """The pilot code (commit ce03f54) next to the full code (v0-ai-baseline): how the starting code grew."""
+    pilot = next((b for b in options if b["code_sha"].startswith("ce03f54")), None)
+    full = next((b for b in options if b["final"] and not b["label"].endswith("-ct")), None)
+    if not pilot or not full:
+        return None
+    return {"pilot": baseline_facts(pilot["id"]), "full": baseline_facts(full["id"])}
+
+
 def analyzer_view(root: Path, baseline_id: str | None) -> dict:
     """What the code quality analyzer measured on a starting code: size, the five metrics, smells by type and where
     they are, every module, the tests at the start and the tool versions."""
@@ -522,7 +543,7 @@ def analyzer_view(root: Path, baseline_id: str | None) -> dict:
                                         "mean_cognitive", "mi_weighted", "smells", "smells_per_ksloc",
                                         "duplication_pct")}
                for row in read_csv_rows(path / "modules.csv") if row.get("status", "generated") == "generated"]
-    return {"baselines": options, "selected": chosen["id"], "label": summary.get("label"),
+    return {"baselines": options, "selected": chosen["id"], "label": summary.get("label"), "growth": growth(options),
             "code_sha": summary.get("code_sha"), "measured_at": summary.get("started_at"),
             "primary": summary.get("primary"), "smell_counts": summary.get("smell_counts"),
             "size": {k: sec.get(k) for k in ("files", "sloc", "loc", "cc_units", "classes", "clones")},

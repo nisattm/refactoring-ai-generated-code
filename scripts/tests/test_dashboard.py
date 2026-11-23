@@ -223,3 +223,12 @@ def test_analyzer_page_reads_the_starting_code(tmp_path, monkeypatch):
     assert [m["module_name"] for m in view["modules"]] == ["Core"]
     assert view["tests"]["feedback"]["passed"] == view["tests"]["feedback"]["total"] and view["failing"] == []
     assert any(b["id"] == str(folder) for b in view["baselines"])
+
+
+def test_growth_from_pilot_to_full_code():
+    # the repository holds both starting codes: the pilot (ce03f54) and the full code (v0-ai-baseline)
+    view = dashboard.analyzer_view(dashboard.REPO / "results" / "experiments", None)
+    g = view["growth"]
+    assert g["pilot"]["sloc"] < g["full"]["sloc"] and g["pilot"]["modules"] < g["full"]["modules"]
+    assert set(g["full"]["primary"]) >= {"mean_cc", "smell_count"}
+    assert dashboard.growth([]) is None

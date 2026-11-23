@@ -282,6 +282,22 @@ tr.grp td { font-weight: 650; background: var(--soft); }
 .atabs button small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 .atabs button.on { border-color: var(--accent); background: var(--accent-bg); box-shadow: inset 0 -3px 0 var(--accent); }
 .atabs .n { font-size: 12px; color: var(--muted); background: var(--soft); border-radius: 8px; padding: 0 6px; }
+.flow { display: flex; align-items: stretch; gap: 6px; margin: 6px 0 4px; flex-wrap: wrap; }
+.fstep { flex: 1 1 140px; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 6px 4px; }
+.fstep .fi { width: 46px; height: 46px; border-radius: 50%; background: var(--accent-bg); display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 6px; }
+.fstep b { font-size: 13.5px; } .fstep span:last-child { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.flow .arrow { align-self: center; font-size: 22px; color: var(--accent); margin-top: -26px; }
+.flownote { font-size: 12.5px; color: var(--muted); text-align: center; margin: 0 0 16px; }
+.lead2 { font-size: 13.5px; margin: 4px 0 12px; max-width: 900px; }
+.mdesc { display: block; font-size: 11.5px; color: var(--muted); }
+.grow { display: flex; align-items: center; gap: 18px; margin: 4px 0 14px; }
+.grow > div { border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; min-width: 150px; }
+.grow span { display: block; font-size: 12px; color: var(--muted); } .grow b { font-size: 24px; } .grow em { font-style: normal; color: var(--muted); font-size: 12px; margin-left: 6px; }
+.arrow.big { font-size: 30px; color: var(--accent); }
+.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 1000px) { .cols2 { grid-template-columns: 1fr; } }
+.howto { background: var(--soft); border-radius: 8px; padding: 10px 14px; margin: 8px 0 12px; font-size: 13px; }
+.howto ul { margin: 4px 0; padding-left: 18px; } .howto p { margin: 4px 0; } .howto li { margin: 3px 0; }
 .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 0 0 16px; }
 .steps > div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
 .steps .si { display: block; font-size: 20px; margin-bottom: 2px; }
@@ -953,14 +969,41 @@ function baseName(b) {
   if (/ce03f54/.test(b.label + b.code_sha)) return "Pilot code";
   return b.label;
 }
+function renderGrowth(a) {
+  const g = a.growth;
+  if (!g) return "";
+  const P = g.pilot, F = g.full;
+  const row = (label, p, f, digits = 0, note = "") => {
+    const ratio = typeof p === "number" && p ? f / p : null;
+    return `<tr><td>${label}${note ? `<span class="mdesc">${note}</span>` : ""}</td><td class="num">${typeof p === "number" ? (digits ? fmt(p, digits) : p.toLocaleString()) : "–"}</td>
+      <td class="num">${typeof f === "number" ? (digits ? fmt(f, digits) : f.toLocaleString()) : "–"}</td><td class="num">${ratio === null ? "–" : (digits ? (f - p > 0 ? "+" : "") + fmt(f - p, digits) : "×" + fmt(ratio, 1))}</td></tr>`;
+  };
+  const metricRows = METRICS.map(([m, label, digits]) => {
+    const p = P.primary[m], f = F.primary[m];
+    const worse = typeof p === "number" && typeof f === "number" && (HIGHER.has(m) ? f < p : f > p);
+    return `<tr><td>${label}<span class="mdesc">${METRIC_GUIDE[m].question}</span></td><td class="num">${fmt(p, digits)}</td><td class="num">${fmt(f, digits)}</td>
+      <td class="num"><span class="${worse ? "bad" : "good"}">${f - p > 0 ? "+" : ""}${fmt(f - p, digits)}</span></td></tr>`;
+  }).join("");
+  const x = (F.sloc / P.sloc).toFixed(1);
+  return `<div class="panel"><h2>From the pilot code to the full code</h2>
+    <p class="lead2">We first tested everything on an early, smaller version of the generated system (the <b>pilot code</b>, ${P.modules} modules). The real experiment uses the finished system (the <b>full code</b>, ${F.modules} modules), which is <b>${x} times bigger</b>. Its code quality is also worse at the start, which leaves more room for refactoring.</p>
+    <div class="grow"><div><span>Pilot code</span><b>${P.sloc.toLocaleString()}</b><em>lines</em></div><span class="arrow big">→</span><div><span>Full code</span><b>${F.sloc.toLocaleString()}</b><em>lines · ×${x}</em></div></div>
+    <div class="cols2"><table><tr><th>Size</th><th class="num">Pilot</th><th class="num">Full</th><th class="num">Growth</th></tr>
+      ${row("Lines of code", P.sloc, F.sloc)}${row("Files", P.files, F.files)}${row("Modules", P.modules, F.modules)}${row("Functions", P.functions, F.functions)}
+      ${row("Classes", P.classes, F.classes)}${row("Copy-pasted blocks", P.clones, F.clones)}${row("Test cases", P.tests, F.tests, 0, "feedback and held-out")}</table>
+    <table><tr><th>Quality at the start</th><th class="num">Pilot</th><th class="num">Full</th><th class="num">Change</th></tr>${metricRows}</table></div>
+    <p class="note">Red means the full code starts worse on that metric. A run on the pilot code and a run on the full code are therefore not compared by raw values, only by their change.</p></div>`;
+}
+
 function renderAnalyzer() {
   const a = state.analyzer;
   const head = `<div class="pagehead"><h1>Code Quality Analyzer</h1><p>Our analyzer reads the code with several free tools and turns their output into numbers. It measures the starting code once, and every refactoring result in exactly the same way, so before and after can be compared.</p></div>`;
   if (!a || !a.selected) return head + `<p class="empty">${a ? "No measurement of the starting code found." : "Loading…"}</p>`;
   const opts = a.baselines.map(b => `<option value="${esc(b.id)}" ${b.id === a.selected ? "selected" : ""}>${esc(baseName(b))} (${esc(b.label)}, ${b.sloc ? b.sloc.toLocaleString() + " lines" : "?"})</option>`).join("");
   const sz = a.size || {}, p = a.primary || {};
-  const steps = [["📄", "Reads the code", "Only the application code (lms/), not the web pages or tests."], ["🧮", "Runs the tools", Object.keys(a.tools || {}).filter(t => t !== "python").join(", ")],
-                 ["📏", "Computes 5 metrics", "Complexity, readability, maintainability, duplication, code smells."], ["🧪", "Runs the tests", "Feedback and held-out tests, to know what works at the start."]];
+  const steps = [["📄", "Reads the code", "only the application code (lms/)"], ["🧮", "Runs 7 free tools", "Radon, complexipy, jscpd, Ruff, Pylint …"],
+                 ["📏", "Computes 5 metrics", "complexity, readability, maintainability, duplication, smells"], ["🧪", "Runs the tests", "what works before refactoring"],
+                 ["📋", "Writes a report", "the numbers on this page"]];
   const metricTiles = METRICS.map(([m, label, digits]) => `<div class="fact" style="border-top:3px solid ${METRIC_GUIDE[m].color}"><b>${fmt(p[m], digits)}</b><span>${label}</span>
     <span class="desc" style="display:block">${METRIC_GUIDE[m].question}</span></div>`).join("");
   const counts = Object.entries(a.smell_counts || {}).sort((x, y) => y[1] - x[1]);
@@ -974,16 +1017,20 @@ function renderAnalyzer() {
       <table><tr><th>File</th><th>Function or class</th><th class="num">Line</th><th>Detail</th><th>Module</th></tr>
       ${where.slice(0, 200).map(x => `<tr><td class="id">${esc(x.path)}</td><td>${esc(x.unit || "–")}</td><td class="num">${esc(x.line)}</td><td class="muted">${esc(x.rule)}</td><td>${esc(x.module_name)}</td></tr>`).join("")}</table>
       ${where.length > 200 ? `<p class="note">First 200 shown.</p>` : ""}</div>` : "";
-  const mods = (a.modules || []).slice().sort((x, y) => Number(y.smells_per_ksloc) - Number(x.smells_per_ksloc));
+  const byDensity = state.modsort === "density";
+  const mods = (a.modules || []).slice().sort((x, y) => byDensity ? Number(y.smells_per_ksloc) - Number(x.smells_per_ksloc) : Number(x.module_no) - Number(y.module_no));
   const worst = Math.max(...mods.map(m => Number(m.smells_per_ksloc) || 0), 1);
-  const modRows = mods.map(m => `<tr><td>${esc(m.module_no)}. ${esc(m.module_name)}<span class="desc">${esc(m.level)} module · ${esc(m.files)} files</span></td>
+  const top3 = new Set((a.modules || []).slice().sort((x, y) => Number(y.smells_per_ksloc) - Number(x.smells_per_ksloc)).slice(0, 3).map(m => m.module_no));
+  const modRows = mods.map(m => `<tr><td>${esc(m.module_no)}. ${esc(m.module_name)}${top3.has(m.module_no) ? ` <span class="pill s-regression" title="One of the three modules with the most smells for their size">needs most work</span>` : ""}<span class="mdesc">${esc(m.level)} module · ${esc(m.files)} files</span></td>
     <td class="num">${Number(m.sloc).toLocaleString()}</td><td class="num">${fmt(m.mean_cc, 2)}</td><td class="num">${fmt(m.mi_weighted, 1)}</td>
     <td class="num">${fmt(m.duplication_pct, 2)}</td><td class="num">${esc(m.smells)}</td>
-    <td style="width:22%"><div class="hbar"><i style="width:${(Number(m.smells_per_ksloc) || 0) / worst * 100}%"></i></div><span class="desc">${fmt(m.smells_per_ksloc, 1)} per 1,000 lines</span></td></tr>`).join("");
+    <td style="width:22%"><div class="hbar"><i style="width:${(Number(m.smells_per_ksloc) || 0) / worst * 100}%"></i></div><span class="mdesc">${fmt(m.smells_per_ksloc, 1)} per 1,000 lines</span></td></tr>`).join("");
   const tests = Object.entries(a.tests || {}).sort().map(([set, c]) => `<div class="fact"><b>${c.passed || 0} / ${c.total}</b><span>${esc(SETNAME[set] || set)} pass at the start</span></div>`).join("");
   const failing = (a.failing || []).map(f => `<li><span class="id">${esc(f.case)}</span> ${esc(f.area || "")}: ${md(f.expected || "")} <span class="muted">(${esc(f.set === "heldout" ? "held-out" : f.set)}, ${esc(f.result)})</span></li>`).join("");
   return head + `<div class="toolbar"><label class="muted">Starting code</label><select id="base">${opts}</select></div>
-    <div class="steps">${steps.map(([i, t, d], n) => `<div><span class="si">${i}</span><b>${n + 1}. ${t}</b><span class="desc">${esc(d)}</span></div>`).join("")}</div>
+    <div class="flow" aria-label="How the analyzer works">${steps.map(([i, t, d], n) => `${n ? `<span class="arrow" aria-hidden="true">→</span>` : ""}<div class="fstep"><span class="fi">${i}</span><b>${t}</b><span>${esc(d)}</span></div>`).join("")}</div>
+    <p class="flownote">The same five steps run on the starting code and again on every refactoring result, so the two can be compared.</p>
+    ${renderGrowth(a)}
     <div class="panel"><h2>The starting code in numbers</h2><p class="lead">Measured ${esc(date(a.measured_at))} · commit ${esc((a.code_sha || "").slice(0, 12))}.</p>
       <div class="facts"><div class="fact"><b>${(sz.sloc || 0).toLocaleString()}</b><span>lines of code (${(sz.files || 0)} files)</span></div>
         <div class="fact"><b>${(sz.cc_units || 0).toLocaleString()}</b><span>functions</span></div><div class="fact"><b>${sz.classes ?? "–"}</b><span>classes</span></div>
@@ -992,7 +1039,15 @@ function renderAnalyzer() {
     <div class="panel"><h2>Code smells at the start</h2><p class="lead">${a.smells_total} findings of ${counts.filter(c => c[1]).length} types. Click a type to see where they are.${(a.not_measured || []).length ? ` ${a.not_measured.length} more types of the list cannot be measured reliably and are left out.` : ""}</p>
       <div class="sbars">${smellBars}</div></div>
     ${whereList}
-    <div class="panel"><h2>Modules</h2><p class="lead">Each part of the library system, sorted by code smells per 1,000 lines: the parts at the top need refactoring most.</p>
+    <div class="panel"><h2>Modules <span class="viewtoggle"><button data-modsort="number" class="${byDensity ? "" : "on"}">By number</button><button data-modsort="density" class="${byDensity ? "on" : ""}">Most problems first</button></span></h2>
+      <div class="howto"><b>How to read this table</b>
+        <p>The library system is built from ${mods.length} modules (loans, members, fees …). Each row is one module of the starting code.</p>
+        <ul><li><b>Lines</b>: how big the module is.</li>
+          <li><b>Complexity</b>: average paths per function, <span class="good">lower is better</span>; above about 5 a module's functions branch a lot.</li>
+          <li><b>Maintainability</b>: 0–100 score, <span class="good">higher is better</span>.</li>
+          <li><b>Duplication %</b>: share of copy-pasted code, <span class="good">lower is better</span>.</li>
+          <li><b>Smell density</b>: code smells per 1,000 lines. It is fair between big and small modules, so the longest bars show where the code has the most problems for its size. These modules are where refactoring can help most; the three worst are marked.</li></ul>
+        <p class="muted">Example: the API layer has the most smells in total (it is also by far the biggest module), but not the highest density.</p></div>
       <table><tr><th>Module</th><th class="num">Lines</th><th class="num">Complexity</th><th class="num">Maintainability</th><th class="num">Duplication %</th><th class="num">Smells</th><th>Smell density</th></tr>${modRows}</table></div>
     <div class="panel"><h2>Tests at the start</h2><p class="lead">Which tests already pass before any refactoring. A refactoring must keep all of these passing.</p>
       <div class="facts">${tests}</div>${failing ? `<h3>Already failing at the start (bugs of the generated code)</h3><ul>${failing}</ul>` : ""}</div>
@@ -1197,6 +1252,8 @@ document.addEventListener("click", e => {
   if (dr) { setDrawer(dr.dataset.drawer === "1" ? !state.guide : false); return; }
   const ap = e.target.closest("[data-approach]");
   if (ap) { state.approach = ap.dataset.approach; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
+  const ms = e.target.closest("[data-modsort]");
+  if (ms) { state.modsort = ms.dataset.modsort; render(); return; }
   const sm = e.target.closest("[data-smell]");
   if (sm) { state.smell = state.smell === sm.dataset.smell ? null : sm.dataset.smell; render(); return; }
   const v = e.target.closest("[data-view]");
