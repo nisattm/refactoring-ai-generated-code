@@ -7,125 +7,294 @@
 <style>
 :root {
   --bg: #f6f6f4; --panel: #ffffff; --ink: #1d1f21; --muted: #6b6f75; --line: #e3e3df; --soft: #f0f0ec;
-  --accent: #2f5d8a; --good: #2e7d4f; --good-bg: #e6f2ea; --bad: #b3261e; --bad-bg: #fbe9e7;
+  --accent: #2f5d8a; --accent-bg: #e8eef5; --good: #2e7d4f; --good-bg: #e6f2ea; --bad: #b3261e; --bad-bg: #fbe9e7;
   --warn: #8a5a00; --warn-bg: #fbf1dc; --live: #1f6fb2; --live-bg: #e4eff8;
   --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #17191b; --panel: #1f2225; --ink: #e6e6e3; --muted: #9aa0a6; --line: #33373b; --soft: #26292d;
-          --accent: #8db4dc; --good: #7cc49a; --good-bg: #1f3328; --bad: #f08a80; --bad-bg: #3a2220;
+          --accent: #8db4dc; --accent-bg: #1f2c3a; --good: #7cc49a; --good-bg: #1f3328; --bad: #f08a80; --bad-bg: #3a2220;
           --warn: #e0b45c; --warn-bg: #3a3020; --live: #8cc2ef; --live-bg: #1d2f3f; }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
-header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
-header h1 { font-size: 17px; font-weight: 600; margin: 0; }
-header .lock { font-size: 13px; color: var(--muted); }
-header .lock.on { color: var(--live); }
-header .spacer { flex: 1; }
-header select { font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink); }
-header .updated { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-nav { display: flex; gap: 2px; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
-nav button { font: inherit; border: 0; background: none; color: var(--muted); padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent; }
-nav button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
-nav button .n { font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: 400; }
-main { padding: 20px 24px; }
-.cols { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
-@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } main, header, nav { padding-left: 16px; padding-right: 16px; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; }
+a { color: var(--accent); }
+.app { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh;
+       background: linear-gradient(to right, var(--panel) 231px, var(--line) 231px, var(--line) 232px, var(--bg) 232px); }
+aside { background: var(--panel); border-right: 1px solid var(--line); padding: 16px 12px; position: sticky; top: 0; height: 100vh; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+aside .brand { font-weight: 600; font-size: 15px; padding: 0 8px; }
+aside .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+aside .sect { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 14px 8px 4px; }
+aside button.nav { display: flex; justify-content: space-between; align-items: center; width: 100%; font: inherit; text-align: left; border: 0; background: none; color: var(--ink); padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+aside button.nav:hover { background: var(--soft); }
+aside button.nav.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+aside button.nav .n { font-size: 12px; color: var(--muted); font-weight: 400; }
+aside button.nav small { display: block; font-size: 11.5px; color: var(--muted); font-weight: 400; }
+aside .foot { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
+aside .foot select { font: inherit; width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink); }
+.lock.on { color: var(--live); font-weight: 600; }
+main { padding: 22px 26px 40px; min-width: 0; }
+.pagehead h1 { font-size: 20px; margin: 0; font-weight: 600; }
+.pagehead p { margin: 4px 0 16px; color: var(--muted); max-width: 900px; }
+@media (max-width: 900px) {
+  .app { grid-template-columns: minmax(0, 1fr); background: var(--bg); }
+  .panel { overflow-x: auto; }
+  aside button.nav { gap: 6px; }
+  aside { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; border-right: 0; border-bottom: 1px solid var(--line); }
+  aside .sect, aside .brand small { display: none; }
+  aside button.nav { width: auto; }
+  aside button.nav small { display: none; }
+  aside .foot { margin: 0; border: 0; padding: 0 8px; flex-direction: row; width: 100%; }
+  main { padding: 16px; }
+}
+.cols { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .cols { grid-template-columns: minmax(0, 1fr); } }
 .list { display: flex; flex-direction: column; gap: 6px; }
 .item { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; cursor: pointer; }
 .item:hover { border-color: var(--muted); }
 .item.sel { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
-.item .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.item .id { font-family: var(--mono); font-size: 13px; }
-.item .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
-.tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; margin-left: 6px; }
-.badge { font-size: 12px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
-.b-success { background: var(--good-bg); color: var(--good); }
-.b-failed, .b-invalid { background: var(--bad-bg); color: var(--bad); }
-.b-no_improvement, .b-discarded_limit { background: var(--warn-bg); color: var(--warn); }
-.b-no_change, .b-other { background: var(--soft); color: var(--muted); }
+.item .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.item .name { font-weight: 600; }
+.item .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.id { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.chip { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; white-space: nowrap; cursor: help; }
+.badge { font-size: 12px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; cursor: help; }
+.b-success, .s-passed, .s-fixed { background: var(--good-bg); color: var(--good); }
+.b-failed, .b-invalid, .s-regression, .s-missing { background: var(--bad-bg); color: var(--bad); }
+.b-no_improvement, .b-discarded_limit, .s-failed_unconfirmed, .s-still_failing { background: var(--warn-bg); color: var(--warn); }
+.b-no_change, .b-other, .s-skipped { background: var(--soft); color: var(--muted); }
 .b-running { background: var(--live-bg); color: var(--live); }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; margin-bottom: 14px; }
-.panel h2 { font-size: 15px; margin: 0 0 10px; font-weight: 600; }
-.panel h3 { font-size: 13px; margin: 14px 0 6px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.panel h2 { font-size: 15px; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.lead { font-size: 12.5px; color: var(--muted); margin: 3px 0 12px; max-width: 900px; }
+.panel h3 { font-size: 12px; margin: 14px 0 6px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.q { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--line); font-size: 10.5px; color: var(--muted); text-decoration: none; cursor: pointer; font-weight: 600; flex: none; }
+.q:hover { border-color: var(--accent); color: var(--accent); }
 .title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.title .id { font-family: var(--mono); font-size: 16px; font-weight: 600; }
-.meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 18px; margin-top: 12px; }
-.meta div span { display: block; font-size: 12px; color: var(--muted); }
-.meta div b { font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.title .name { font-size: 18px; font-weight: 600; }
+.subtitle { color: var(--muted); margin-top: 2px; }
+.story { margin-top: 12px; padding: 10px 12px; border-radius: 6px; background: var(--soft); }
+.story.good { background: var(--good-bg); } .story.bad { background: var(--bad-bg); } .story.warn { background: var(--warn-bg); }
+.meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px 18px; margin-top: 14px; }
+.meta > div > span { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.meta b { font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.meta em { display: block; font-style: normal; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
 table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 12px; color: var(--muted); font-weight: 600; }
 td.num, th.num { text-align: right; }
+td .desc { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.35; max-width: 460px; }
 .good { color: var(--good); } .bad { color: var(--bad); } .muted { color: var(--muted); }
 .problem { background: var(--bad-bg); border: 1px solid var(--bad); border-radius: 6px; padding: 12px 14px; margin-bottom: 14px; }
-.problem h2 { color: var(--bad); font-size: 15px; margin: 0 0 6px; }
-.problem ul { margin: 4px 0 0; padding-left: 18px; }
+.problem h2 { color: var(--bad); font-size: 15px; margin: 0 0 2px; }
+.problem ul { margin: 6px 0 0; padding-left: 18px; }
+a.case { font-family: var(--mono); font-size: 12.5px; cursor: pointer; }
 .live { border-color: var(--live); }
-.live h2 { color: var(--live); display: flex; align-items: center; gap: 8px; }
+.live h2 { color: var(--live); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); animation: pulse 1.4s infinite; }
 @keyframes pulse { 50% { opacity: .25; } }
 .actions { font-family: var(--mono); font-size: 12.5px; max-height: 260px; overflow: auto; }
 .actions div { padding: 2px 0; border-bottom: 1px dashed var(--line); }
 .actions .tool { display: inline-block; width: 52px; color: var(--muted); }
-pre { font-family: var(--mono); font-size: 12px; background: var(--soft); padding: 10px; border-radius: 4px; white-space: pre-wrap; margin: 6px 0 0; max-height: 240px; overflow: auto; }
+pre { font-family: var(--mono); font-size: 12px; background: var(--soft); padding: 10px; border-radius: 4px; white-space: pre-wrap; margin: 6px 0 0; max-height: 320px; overflow: auto; }
 .timeline { font-size: 13px; max-height: 280px; overflow: auto; }
 .timeline div { display: grid; grid-template-columns: 70px 1fr; gap: 8px; padding: 3px 0; }
 .timeline .t { color: var(--muted); font-family: var(--mono); font-size: 12px; }
 .empty { color: var(--muted); padding: 40px 0; text-align: center; }
 details summary { cursor: pointer; color: var(--accent); font-size: 13px; margin-top: 6px; }
 .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+/* tests */
+.sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.setbox { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+.setbox b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; border-radius: 3px; background: var(--soft); overflow: hidden; display: flex; margin-top: 6px; }
+.bar i { display: block; height: 100%; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.toolbar button { font: inherit; font-size: 12.5px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 3px 10px; border-radius: 14px; cursor: pointer; }
+.toolbar button.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+.toolbar input, .toolbar select { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink); }
+.toolbar input { flex: 1; min-width: 180px; }
+tr.case-row { cursor: pointer; }
+tr.case-row:hover td { background: var(--soft); }
+.pill { font-size: 11.5px; padding: 1px 7px; border-radius: 10px; white-space: nowrap; }
+.casebox { background: var(--soft); border-radius: 6px; padding: 10px 12px; font-size: 13px; }
+.casebox dl { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; margin: 0; }
+.casebox dt { color: var(--muted); }
+.casebox dd { margin: 0; }
+/* charts */
+.charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 14px; }
+.chart { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px 6px; }
+.chart .ct { font-size: 12.5px; font-weight: 600; }
+.chart .cs { font-size: 11px; color: var(--muted); }
+.chart svg { display: block; width: 100%; height: auto; margin-top: 4px; }
+.chart text { font: 10.5px "Segoe UI", system-ui, sans-serif; fill: var(--muted); }
+.chart text.v { fill: var(--ink); font-weight: 600; }
+.viewtoggle { display: inline-flex; gap: 4px; margin-left: auto; }
+.viewtoggle button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); padding: 2px 10px; border-radius: 12px; cursor: pointer; }
+.viewtoggle button.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+/* guide */
+.guide { display: grid; grid-template-columns: 210px 1fr; gap: 24px; align-items: start; }
+.guide .toc { position: sticky; top: 16px; font-size: 13px; display: flex; flex-direction: column; gap: 2px; }
+.guide .toc a { text-decoration: none; padding: 3px 8px; border-radius: 4px; color: var(--ink); }
+.guide .toc a:hover { background: var(--soft); }
+.guide section { scroll-margin-top: 16px; }
+.guide h2 { font-size: 16px; }
+.guide p, .guide li { max-width: 860px; }
+.guide dl { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 8px 0 0; }
+.guide dt { font-weight: 600; }
+.guide dd { margin: 0; }
+@media (max-width: 900px) { .guide { grid-template-columns: 1fr; } .guide .toc { position: static; } .guide dl, .casebox dl { grid-template-columns: 1fr; } }
+.flash { animation: flash 1.6s; }
+@keyframes flash { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
 </style>
 </head>
 <body>
-<header>
-  <h1>Refactoring Experiments</h1>
-  <span id="lock" class="lock">–</span>
-  <span class="spacer"></span>
-  <label class="updated">Runs
-    <select id="include">
-      <option value="all">all</option>
-      <option value="real">experiments only</option>
-      <option value="pilot">pilot only</option>
-    </select>
-  </label>
-  <span id="updated" class="updated"></span>
-</header>
-<nav id="tabs"></nav>
+<div class="app">
+<aside>
+  <div class="brand">Refactoring Experiments<small>How well do three ways of using Claude refactor AI-generated code?</small></div>
+  <div class="sect">Runs by approach</div>
+  <div id="nav-runs"></div>
+  <div class="sect">Results</div>
+  <button class="nav" data-view="compare">Comparison<small></small></button>
+  <div class="sect">Help</div>
+  <button class="nav" data-view="guide">Guide<small></small></button>
+  <div class="foot">
+    <span id="lock" class="lock">–</span>
+    <label>Show
+      <select id="include">
+        <option value="all">All runs</option>
+        <option value="real">Study runs only</option>
+        <option value="pilot">Trial runs only (pilot, scale)</option>
+      </select>
+    </label>
+    <span id="updated"></span>
+  </div>
+</aside>
 <main id="main"><p class="empty">Loading…</p></main>
+</div>
 
 <script>
-const TABS = [["single", "Single LLM"], ["iterative", "Iterative LLM"], ["multiagent", "Multi-Agent"], ["compare", "Comparison"]];
-const METRICS = [["mean_cc", "Cyclomatic complexity", 2], ["mean_cognitive", "Cognitive complexity", 2],
-                 ["mi_weighted", "Maintainability index", 1], ["duplication_pct", "Duplication %", 2], ["smell_count", "Code smells", 0]];
+// ---- vocabulary: every label on the page and its explanation ---------------------------------------------------
+const APPROACH = {
+  single: { name: "Single LLM", short: "One prompt, one pass",
+            what: "Claude gets one prompt and refactors the code in one call. It cannot run tests and gets no feedback. This is the baseline approach." },
+  iterative: { name: "Iterative LLM", short: "Up to 3 rounds with test feedback",
+               what: "Claude works in one conversation for up to 3 code-changing rounds. After each round our engine runs the feedback tests and tells Claude which tests broke; a round that makes things worse is undone." },
+  multiagent: { name: "Multi-Agent", short: "Analyzer, Refactoring, Reviewer",
+                what: "An orchestrator uses three Claude subagents: the Analyzer lists what to improve, the Refactoring agent changes the code, the Reviewer approves or rejects. The orchestrator may run the feedback tests (at most 3 times)." },
+};
+const VIEWS = ["single", "iterative", "multiagent"];
+const KIND = {
+  "": { label: "Study run", tip: "A run of the real experiment on the full code. Only these runs count in the study results." },
+  pilot: { label: "Pilot run", tip: "Trial run on the smaller pilot code to test the engine before the study. Not part of the study results." },
+  scale: { label: "Scale trial", tip: "Trial on the full code to see whether one run fits in the usage limit of a Claude Pro account. Not part of the study results." },
+};
+const CODE = {
+  ce03f54: { label: "Pilot code", tip: "An earlier, smaller version of the AI-generated Library Management System (commit ce03f54, about 6,400 lines of code, modules 1–14)." },
+  "v0-ai-baseline": { label: "Full LMS code", tip: "The final AI-generated Library Management System (tag v0-ai-baseline, about 30,000 lines of code). The real experiment starts from this code." },
+};
+const OUTCOME = {
+  success: ["Successful", "No test that passed at the start fails now, no quality metric got worse and at least one improved, and the API is unchanged."],
+  no_improvement: ["No improvement", "Nothing broke, but the code did not get better by our rule: no metric improved enough, or one got worse."],
+  no_change: ["No change", "Claude did not change any file of the application."],
+  failed: ["Failed", "The refactoring broke something: a test that passed at the start now fails, the API changed, or the code no longer loads."],
+  invalid: ["Invalid", "The run does not count because of a technical problem (setup, tool permissions, a crash), not because of the code Claude wrote. It is repeated under a new ID."],
+  discarded_limit: ["Stopped by usage limit", "The Claude account reached its usage limit during the run. The run does not count and is repeated."],
+};
+const METRICS = [
+  ["mean_cc", "Cyclomatic complexity", 2, "Average number of independent paths through a function (if, for, while, and, or …). Lower is better.", "Radon"],
+  ["mean_cognitive", "Cognitive complexity", 2, "Average effort to read a function; nesting is punished more than in cyclomatic complexity. Lower is better.", "complexipy"],
+  ["mi_weighted", "Maintainability index", 1, "0–100 score combining size, complexity and Halstead volume, averaged over files weighted by size. Higher is better.", "Radon"],
+  ["duplication_pct", "Duplication %", 2, "Share of the code that is copy-pasted (blocks of at least 5 lines and 50 tokens). Lower is better.", "jscpd"],
+  ["smell_count", "Code smells", 0, "Number of design and logic problems from a fixed list of 23 smell types (long method, large class, too many parameters, deep nesting …). Lower is better.", "Ruff, Pylint, own AST checks"],
+];
+const THRESHOLD = { mean_cc: "0.01", mean_cognitive: "0.01", mi_weighted: "0.1", duplication_pct: "0.05 points", smell_count: "1" };
 const HIGHER = new Set(["mi_weighted"]);
-const OUTCOME = { success: "Successful", no_improvement: "No improvement", no_change: "No change", failed: "Failed",
-                  invalid: "Invalid", discarded_limit: "Usage limit" };
-let state = { tab: "iterative", key: null, include: "all", runs: [], compare: {}, detail: null };
-try { const saved = JSON.parse(localStorage.getItem("dash") || "{}"); Object.assign(state, saved); } catch (e) {}
+const TEST_STATUS = {
+  regression: ["Broke", "Passed at the start, fails now, and failed again in two repetitions: a real regression caused by the refactoring."],
+  failed_unconfirmed: ["Failed once", "Passed at the start and failed in this measurement, but passed when repeated, so it is not counted as a regression (unstable test)."],
+  missing: ["Missing", "The test did not report a result (for example the code did not load)."],
+  still_failing: ["Failed at start", "Already failed in the starting code (a bug of the generated code), so it is not blamed on the refactoring."],
+  fixed: ["Fixed", "Failed at the start and passes now."],
+  passed: ["Passed", "Passed at the start and still passes."],
+  skipped: ["Skipped", "Skipped by the test itself."],
+};
+const SETNAME = { feedback: "Feedback tests", heldout: "Held-out tests" };
+const SETTIP = { feedback: "Tests whose results Iterative and Multi-Agent may see during refactoring.",
+                 heldout: "Hidden tests that no approach ever sees; they check the final result only, so overfitting to the feedback tests shows up here." };
+const FIELD = {
+  started: "When the engine started the run.",
+  code: "The code Claude was asked to refactor.",
+  calls: "Claude Code calls made in this run; for Iterative and Multi-Agent also the measured rounds and how many were kept.",
+  time: "Time Claude spent working (all calls), without the time our engine spent measuring.",
+  cost: "What the tokens would cost at Anthropic's API list prices. We pay a flat Claude Pro subscription, so this is a size measure, not a bill.",
+  window: "Share of the account's 5-hour usage limit at the start and after the last call. A run may only start below 10 %.",
+  account: "Anonymous label of the Claude Pro account that ran it (exp-1, exp-2 …).",
+  model: "Claude model and reasoning effort; the same in every run.",
+  subagents: "How often the orchestrator called each subagent.",
+  testruns: "How often the orchestrator ran the feedback test command, and the budget.",
+  blocked: "Attempts to use something outside the rules (a hidden folder, another command). They were refused; the run stays valid.",
+  shell: "Harmless read-only shell commands (like ls) inside the project folder. Counted only.",
+  id: "Technical ID of the run: approach letter (s, i, m) and number; a trailing letter (b, c) marks a repeat of an invalid run.",
+};
+
+let state = { view: "single", key: null, include: "all", runs: [], compare: {}, detail: null,
+              tests: null, testsKey: null, tm: null, tf: "problems", ts: "all", tq: "", tall: false, open: new Set() };
+try { const saved = JSON.parse(localStorage.getItem("dash2") || "{}"); Object.assign(state, saved, { open: new Set() }); } catch (e) {}
+if (!["single", "iterative", "multiagent", "compare", "guide"].includes(state.view)) state.view = "single";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
 const fmt = (v, d = 2) => (v === null || v === undefined || v === "") ? "–" : Number(v).toFixed(d);
 const time = iso => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 const date = iso => iso ? new Date(iso).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
-const mins = s => s ? `${Math.round(s / 60)} min` : "–";
-function save() { try { localStorage.setItem("dash", JSON.stringify({ tab: state.tab, key: state.key, include: state.include })); } catch (e) {} }
+const mins = s => s ? (s < 60 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`) : "–";
+const q = (anchor, tip) => `<a class="q" data-guide="${anchor}" title="${esc(tip || "Explain")}">?</a>`;
+function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv })); } catch (e) {} }
+
+// ---- names that explain themselves -----------------------------------------------------------------------------
+function kindOf(run) {
+  if (/^scale/.test(run.run_id || "")) return KIND.scale;
+  return KIND[run.group] || { label: run.group ? run.group[0].toUpperCase() + run.group.slice(1) + " run" : "Study run", tip: "Trial run; not part of the study results." };
+}
+function codeOf(run) {
+  const c = CODE[run.start_ref] || { label: `Code ${run.start_sha || run.start_ref || "?"}`, tip: "Starting commit of this run." };
+  return c;
+}
+function numberOf(run) {
+  const m = /(\d+)([a-z]?)$/.exec(run.run_id || "");
+  return m ? { n: Number(m[1]), repeat: m[2] || "" } : { n: null, repeat: "" };
+}
+function repeatOf(run) {
+  const { repeat } = numberOf(run);
+  if (!repeat) return null;
+  const prev = repeat === "b" ? run.run_id.slice(0, -1) : run.run_id.slice(0, -1) + String.fromCharCode(repeat.charCodeAt(0) - 1);
+  return state.runs.find(r => r.run_id === prev && r.approach === run.approach) || { run_id: prev };
+}
+function runName(run) {
+  const { n, repeat } = numberOf(run);
+  return `${kindOf(run).label}${n !== null ? " " + n : ""}${repeat ? " (repeat)" : ""}`;
+}
 function badge(run) {
-  if (run.status === "running") return `<span class="badge b-running">Running</span>`;
-  if (run.status === "limit_cut") return `<span class="badge b-discarded_limit">Stopped at usage limit</span>`;
+  if (run.status === "running") return `<span class="badge b-running" title="The run is in progress.">Running</span>`;
+  if (run.status === "limit_cut") return `<span class="badge b-discarded_limit" title="${esc(OUTCOME.discarded_limit[1])}">Stopped by usage limit</span>`;
   if (run.status !== "finished") return `<span class="badge b-other">${esc(run.status || "?")}</span>`;
-  return `<span class="badge b-${esc(run.outcome)}">${esc(OUTCOME[run.outcome] || run.outcome)}</span>`;
+  const o = OUTCOME[run.outcome] || [run.outcome, ""];
+  return `<span class="badge b-${esc(run.outcome)}" title="${esc(o[1])}">${esc(o[0])}</span>`;
 }
 function delta(metric, d, digits, status) {
   if (d === null || d === undefined) return `<span class="muted">–</span>`;
   const better = HIGHER.has(metric) ? d > 0 : d < 0, same = Math.abs(d) < 1e-9;
-  // compare.py's verdict decides the colour when it is known (its thresholds, D17); "same" stays grey
   const cls = status ? ({ improved: "good", worse: "bad" }[status] || "muted") : (same ? "muted" : (better ? "good" : "bad"));
   return `<span class="${cls}">${d > 0 ? "+" : ""}${Number(d).toFixed(digits)}</span>`;
 }
+function verdictWord(status) {
+  return { improved: `<span class="good">better</span>`, worse: `<span class="bad">worse</span>`, same: `<span class="muted">same</span>` }[status] || "–";
+}
 
-async function load() {
+// ---- data ------------------------------------------------------------------------------------------------------
+let lastSig = "";
+async function load(force) {
   try {
     const res = await fetch(`/api/runs?include=${state.include}`);
     const data = await res.json();
@@ -133,65 +302,112 @@ async function load() {
     const lock = document.getElementById("lock");
     lock.textContent = data.lock ? `● Running now: ${data.lock.what}` : "No run in progress";
     lock.className = "lock" + (data.lock ? " on" : "");
-    if (state.key && state.tab !== "compare") {
+    if (state.key && VIEWS.includes(state.view)) {
       const r = await fetch(`/api/run?key=${encodeURIComponent(state.key)}`);
       state.detail = r.ok ? await r.json() : null;
+      const running = state.detail && state.detail.status === "running";
+      if (state.detail && (force || state.testsKey !== state.key + "|" + state.tm || running)) {
+        const t = await fetch(`/api/tests?key=${encodeURIComponent(state.key)}${state.tm ? "&m=" + encodeURIComponent(state.tm) : ""}`);
+        state.tests = t.ok ? await t.json() : null;
+        if (state.tests) { state.tm = state.tests.selected; state.testsKey = state.key + "|" + state.tm; }
+      }
     }
     document.getElementById("updated").textContent = "Updated " + new Date().toLocaleTimeString();
-    render();
+    const sig = JSON.stringify([state.view, state.key, state.runs, state.detail, state.tests && state.tests.selected, state.tests && state.tests.counts]);
+    if (force || sig !== lastSig) { lastSig = sig; render(); }
   } catch (e) {
     document.getElementById("updated").textContent = "Dashboard server not reachable";
   }
 }
 
-function render() {
-  document.getElementById("tabs").innerHTML = TABS.map(([id, label]) => {
-    const n = id === "compare" ? "" : `<span class="n">${state.runs.filter(r => r.approach === id).length}</span>`;
-    return `<button class="${state.tab === id ? "active" : ""}" data-tab="${id}">${label}${n}</button>`;
+// ---- layout ----------------------------------------------------------------------------------------------------
+function renderNav() {
+  document.getElementById("nav-runs").innerHTML = VIEWS.map(id => {
+    const n = state.runs.filter(r => r.approach === id).length;
+    return `<button class="nav ${state.view === id ? "active" : ""}" data-view="${id}"><span>${APPROACH[id].name}<small>${APPROACH[id].short}</small></span><span class="n">${n}</span></button>`;
   }).join("");
+  document.querySelectorAll("aside button.nav[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === state.view));
+}
+
+function render() {
+  renderNav();
   const main = document.getElementById("main");
-  if (state.tab === "compare") { main.innerHTML = renderCompare(); return; }
-  const runs = state.runs.filter(r => r.approach === state.tab);
+  if (state.view === "guide") { main.innerHTML = renderGuide(); return; }
+  if (state.view === "compare") { main.innerHTML = renderCompare(); return; }
+  const a = APPROACH[state.view];
+  const head = `<div class="pagehead"><h1>${a.name}</h1><p>${esc(a.what)} ${q("approaches", "How the three approaches differ")}</p></div>`;
+  const runs = state.runs.filter(r => r.approach === state.view);
   if (!runs.length) {
-    main.innerHTML = `<p class="empty">No ${esc(TABS.find(t => t[0] === state.tab)[1])} runs yet. They appear here as soon as the engine starts one.</p>`;
+    main.innerHTML = head + `<p class="empty">No ${esc(a.name)} runs yet. They appear here as soon as the engine starts one.</p>`;
     return;
   }
-  if (!runs.some(r => r.key === state.key)) { state.key = runs[0].key; state.detail = null; save(); load(); }
-  main.innerHTML = `<div class="cols"><div class="list">${runs.map(renderItem).join("")}</div><div>${renderDetail()}</div></div>`;
+  if (!runs.some(r => r.key === state.key)) { state.key = runs[0].key; state.detail = null; state.tests = null; state.tm = null; save(); load(true); }
+  main.innerHTML = head + `<div class="cols"><div class="list">${runs.map(renderItem).join("")}</div><div>${renderDetail()}</div></div>`;
+  renderTestsBody();
 }
 
 function renderItem(run) {
+  const kind = kindOf(run), code = codeOf(run);
   const cc = run.deltas && run.deltas.mean_cc, ccStatus = (run.metric_status || {}).mean_cc;
   return `<div class="item ${run.key === state.key ? "sel" : ""}" data-key="${esc(run.key)}">
-    <div class="top"><span class="id">${esc(run.run_id)}${run.group ? `<span class="tag">${esc(run.group)}</span>` : ""}</span>${badge(run)}</div>
-    <div class="sub">${esc(date(run.started_at))} · ${run.calls} call${run.calls === 1 ? "" : "s"} · ${run.usd ? "$" + fmt(run.usd) : "–"}${cc !== null && cc !== undefined ? " · CC " + delta("mean_cc", cc, 2, ccStatus) : ""}</div>
+    <div class="top"><span class="name">${esc(runName(run))}</span>${badge(run)}</div>
+    <div class="sub"><span title="${esc(code.tip)}">${esc(code.label)}</span> · ${esc(date(run.started_at))} · <span class="id" title="${esc(FIELD.id)}">${esc(run.run_id)}</span></div>
+    <div class="sub">${mins(run.claude_s)} of Claude work${run.usd ? " · $" + fmt(run.usd) : ""}${cc !== null && cc !== undefined ? " · complexity " + delta("mean_cc", cc, 2, ccStatus) : ""}</div>
     ${run.status === "running" ? `<div class="sub">${esc(run.current)}</div>` : ""}
   </div>`;
+}
+
+// ---- one run ---------------------------------------------------------------------------------------------------
+function story(d) {
+  const out = d.outcome, rep = repeatOf(d);
+  const repeated = state.runs.find(r => r.approach === d.approach && r.run_id !== d.run_id && repeatOf(r) && repeatOf(r).run_id === d.run_id);
+  const tail = repeated ? ` It was repeated as ${esc(runName(repeated))} (${esc(repeated.run_id)}).` : "";
+  const head = rep ? `This run repeats ${esc(rep.run_id)}, which did not count. ` : "";
+  if (d.status === "running") return [`${head}The run is in progress: ${esc(d.current)}`, ""];
+  if (d.status === "limit_cut" || out === "discarded_limit") return [`${head}The Claude account reached its usage limit before Claude finished, so the run does not count.${tail}`, "warn"];
+  if (out === "invalid") return [`${head}This run does not count because of a technical problem, not because of Claude's code: ${esc((d.reasons || [])[0] || "")}.${tail}`, "bad"];
+  const lastFacts = (d.final || {}).best || (d.final || {}).last || (d.final || {}).round1;
+  const statusOf = Object.values(d.metric_status || {}).some(Boolean) ? d.metric_status
+    : Object.fromEntries(Object.entries((lastFacts || {}).metrics || {}).map(([m, v]) => [m, v && v.status]));
+  const changed = Object.entries(statusOf || {}).filter(([, s]) => s === "improved").map(([m]) => (METRICS.find(x => x[0] === m) || [, m])[1].toLowerCase());
+  const worse = Object.entries(statusOf || {}).filter(([, s]) => s === "worse").map(([m]) => (METRICS.find(x => x[0] === m) || [, m])[1].toLowerCase());
+  const tests = d.regressions ? `${d.regressions} test(s) that passed at the start now fail` : "every test that passed at the start still passes";
+  if (out === "success") return [`${head}Claude refactored the code and ${tests}. Improved: ${changed.join(", ") || "–"}${worse.length ? "; worse: " + worse.join(", ") : ""}. The result counts as a successful refactoring.`, "good"];
+  if (out === "no_improvement") return [`${head}Nothing broke (${tests}), but the code did not improve by our rule${worse.length ? ": " + worse.join(", ") + " got worse" : ""}. The starting code stays the best result.`, "warn"];
+  if (out === "no_change") return [`${head}Claude did not change the application code.`, ""];
+  if (out === "failed") return [`${head}The refactoring broke something: ${esc((d.reasons || []).join("; ") || tests)}.`, "bad"];
+  return [head, ""];
 }
 
 function renderDetail() {
   const d = state.detail;
   if (!d || d.key !== state.key) return `<div class="panel"><p class="muted">Loading…</p></div>`;
-  const w = d.window || {};
-  let html = `<div class="panel"><div class="title"><span class="id">${esc(d.run_id)}</span>${badge(d)}
-      ${d.group ? `<span class="tag">${esc(d.group)}</span>` : ""}</div>
+  const w = d.window || {}, kind = kindOf(d), code = codeOf(d), [text, tone] = story(d);
+  const field = (label, tip, value, note = "") => `<div><span>${label} ${tip ? `<a class="q" title="${esc(tip)}">?</a>` : ""}</span><b>${value}</b>${note ? `<em>${note}</em>` : ""}</div>`;
+  const roles = d.roles ? [
+    field("Subagent calls", FIELD.subagents, Object.entries(d.roles.subagent_calls || {}).map(([r, n]) => `${esc(r)} ${n}`).join(" · ") || "none"),
+    field("Test command runs", FIELD.testruns, `${d.roles.test_runs}${d.budget ? " of " + d.budget.test_runs : ""}`),
+    field("Blocked attempts", FIELD.blocked, (d.roles.blocked || []).length),
+    field("Read-only shell commands", FIELD.shell, (d.roles.read_only_shell || []).length)].join("") : "";
+  let html = `<div class="panel">
+    <div class="title"><span class="name">${esc(APPROACH[d.approach].name)} · ${esc(runName(d))}</span>${badge(d)}
+      <span class="chip" title="${esc(kind.tip)}">${esc(kind.label)}</span><span class="id" title="${esc(FIELD.id)}">${esc(d.run_id)}</span></div>
+    <div class="subtitle">${esc(code.label)}${d.tests_modules ? `, tests of modules ${esc(d.tests_modules)}` : ""} · ${esc(kind.tip)}</div>
+    ${text ? `<div class="story ${tone}">${text} ${q("outcomes", "What the outcomes mean")}</div>` : ""}
     <div class="meta">
-      <div><span>Started</span><b>${esc(date(d.started_at))}</b></div>
-      <div><span>Start code</span><b>${esc(/^[0-9a-f]{40}$/.test(d.start_ref || "") ? d.start_sha : d.start_ref)}${d.tests_modules ? " · modules " + esc(d.tests_modules) : ""}</b></div>
-      <div><span>${d.approach === "single" ? "Calls" : "Calls / rounds"}</span><b>${d.approach === "single" ? d.calls : `${d.calls} / ${d.rounds} (${d.accepted} accepted)`}</b></div>
-      <div><span>Claude time</span><b>${mins(d.claude_s)}</b></div>
-      <div><span>Cost (list price)</span><b>${d.usd ? "$" + fmt(d.usd) : "–"}</b></div>
-      <div><span>5-hour window</span><b>${fmt(w.start, 0)}% → ${w.end === null || w.end === undefined ? "–" : fmt(w.end, 0) + "%"}</b></div>
-      <div><span>Account</span><b>${esc(d.account)}</b></div>
-      <div><span>Model</span><b>${esc(d.model)} · ${esc(d.effort)}</b></div>
-      ${d.roles ? `<div><span>Subagent calls</span><b>${Object.entries(d.roles.subagent_calls || {}).map(([r, n]) => `${esc(r)} ${n}`).join(" · ") || "none"}</b></div>
-      <div><span>Test command runs</span><b>${d.roles.test_runs}${d.budget ? " of " + d.budget.test_runs : ""}</b></div>
-      <div><span>Blocked attempts</span><b>${(d.roles.blocked || []).length}</b></div>
-      <div><span>Read-only shell commands</span><b>${(d.roles.read_only_shell || []).length}</b></div>` : ""}
+      ${field("Started", FIELD.started, esc(date(d.started_at)))}
+      ${field("Start code", FIELD.code, esc(code.label), esc(/^[0-9a-f]{40}$/.test(d.start_ref || "") ? d.start_sha : d.start_ref))}
+      ${field(d.approach === "single" ? "Claude calls" : "Calls / rounds", FIELD.calls, d.approach === "single" ? d.calls : `${d.calls} / ${d.rounds} (${d.accepted} kept)`)}
+      ${field("Claude time", FIELD.time, mins(d.claude_s))}
+      ${field("Cost (list price)", FIELD.cost, d.usd ? "$" + fmt(d.usd) : "–", "size measure, not a bill")}
+      ${field("5-hour usage window", FIELD.window, `${fmt(w.start, 0)}% → ${w.end === null || w.end === undefined ? "–" : fmt(w.end, 0) + "%"}`, w.used !== null && w.used !== undefined ? `this run used ${fmt(w.used, 0)} points` : "")}
+      ${field("Account", FIELD.account, esc(d.account))}
+      ${field("Model", FIELD.model, `${esc(d.model)} · ${esc(d.effort)}`)}
+      ${roles}
     </div>
     ${d.stop_reason && d.status === "finished" ? `<p class="note">Stopped because: ${esc(d.stop_reason)}</p>` : ""}
   </div>`;
-  html += renderLive(d) + renderProblems(d) + renderMetrics(d) + renderRounds(d) + renderCalls(d) + renderTimeline(d);
+  html += renderLive(d) + renderProblems(d) + renderMetrics(d) + renderTests(d) + renderRounds(d) + renderCalls(d) + renderTimeline(d);
   return html;
 }
 
@@ -201,37 +417,39 @@ function renderLive(d) {
   const actions = (l.actions || []).slice().reverse().map(a =>
     `<div><span class="tool">${esc(a.tool)}</span>${esc(a.target)}</div>`).join("") || `<div class="muted">No tool call yet.</div>`;
   return `<div class="panel live"><h2><span class="dot"></span>Live${l.call ? ` · call ${l.call}` : ""}</h2>
+    <p class="lead">What Claude is doing right now, read from the log of the running call.</p>
     <div><b>Now:</b> ${esc(d.current)}</div>
-    ${l.call ? `<h3>Latest model actions</h3><div class="actions">${actions}</div>
+    ${l.call ? `<h3>Latest actions of Claude</h3><div class="actions">${actions}</div>
     ${l.text ? `<h3>Latest message</h3><pre>${esc(l.text)}</pre>` : ""}` : ""}
   </div>`;
 }
 
+const caseLink = x => `<a class="case" data-case="${esc(x.case)}" title="Show this test">${esc(x.case)}</a>${x.module ? " (module " + esc(x.module) + ")" : ""}`;
 function renderProblems(d) {
   const items = [];
-  if (d.status === "finished" && d.valid === false) items.push(...d.reasons.map(r => `Invalid run: ${esc(r)}`));
+  if (d.status === "finished" && d.valid === false) items.push(...d.reasons.map(r => `Run does not count: ${esc(r)}`));
   const reverts = d.approach !== "single";
-  const dropped = d.approach === "multiagent" ? " → round not kept" : " → round reverted";
+  const dropped = d.approach === "multiagent" ? " → round not kept" : " → round undone";
   if (d.outcome === "failed" && !reverts) items.push(...d.reasons.map(r => `Run failed: ${esc(r)}`));
   (d.calls_detail || []).forEach(c => (c.invalid || []).forEach(r => items.push(`Call ${c.number}: ${esc(r)}`)));
-  const notes = (d.roles && d.roles.blocked || []).map(b => `Blocked (counted, run stays valid): ${esc(b)}`);
+  const notes = (d.roles && d.roles.blocked || []).map(b => esc(b));
   (d.rounds_detail || []).forEach(r => {
-    if (r.regressions.length) items.push(`${reverts ? "Round " + r.round + ": " : "Tests: "}${r.regressions.length} test regression(s) – ` +
-      r.regressions.map(x => `${esc(x.case)}${x.module ? " (module " + esc(x.module) + ")" : ""}`).join(", ") +
-      (reverts && r.accepted === false ? dropped : ""));
-    if (r.api_changed) items.push(`Round ${r.round}: API changed (${esc(r.api_change_kind || "unclassified")})${reverts && r.accepted === false ? dropped : ""}`);
+    if (r.regressions.length) items.push(`${reverts ? "Round " + r.round + ": " : ""}${r.regressions.length} test(s) broke – ` +
+      r.regressions.map(caseLink).join(", ") + (reverts && r.accepted === false ? dropped : ""));
+    if (r.api_changed) items.push(`Round ${r.round}: the REST API changed (${esc(r.api_change_kind || "unclassified")})${reverts && r.accepted === false ? dropped : ""}`);
     (r.problems || []).forEach(p => items.push(`Round ${r.round}: ${esc(p)}`));
   });
   const seen = new Set();
   Object.values(d.final || {}).forEach(f => {
     if (seen.has(f.round)) return; seen.add(f.round);
-    if (reverts && (f.regressions || []).length) items.push(`Final measurement of round ${f.round} (feedback and held-out): ` +
-      f.regressions.map(x => `${esc(x.case)}${x.module ? " (module " + esc(x.module) + ")" : ""}`).join(", "));
+    if (reverts && (f.regressions || []).length) items.push(`Final check of round ${f.round} (feedback and held-out tests): ` + f.regressions.map(caseLink).join(", "));
   });
   if (d.outcome === "failed" && reverts) items.push(...d.reasons.map(r => `Run failed: ${esc(r)}`));
-  const blockedBox = notes.length ? `<div class="panel"><h2>Blocked attempts</h2><ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>` : "";
+  const blockedBox = notes.length ? `<div class="panel"><h2>Blocked attempts ${q("validity", "What counts as blocked")}</h2>
+    <p class="lead">Claude tried to use something the rules do not allow; the attempt was refused and counted. The run stays valid.</p>
+    <ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>` : "";
   if (!items.length) return blockedBox;
-  return `<div class="problem"><h2>Where it went wrong</h2><ul>${[...new Set(items)].map(i => `<li>${i}</li>`).join("")}</ul></div>` + blockedBox;
+  return `<div class="problem"><h2>Where it went wrong</h2><p class="lead">Click a test ID to see the test and its error below.</p><ul>${[...new Set(items)].map(i => `<li>${i}</li>`).join("")}</ul></div>` + blockedBox;
 }
 
 function renderMetrics(d) {
@@ -240,99 +458,332 @@ function renderMetrics(d) {
   const cols = [["Start", d.start_metrics]];
   let ref = null;
   if (f.best) {
-    if (f.round1 && f.round1.round !== f.best.round) cols.push(["Round 1", after(f.round1.metrics)]);
-    cols.push([d.approach === "single" ? "After" : `Best${d.best_round ? " (round " + d.best_round + ")" : ""}`, after(f.best.metrics)]);
-    if (f.last && f.last.round !== f.best.round) cols.push([`Last (round ${f.last.round})`, after(f.last.metrics)]);
+    if (f.round1 && f.round1.round !== f.best.round) cols.push(["Round 1", after(f.round1.metrics), f.round1.metrics]);
+    cols.push([d.approach === "single" ? "After" : `Best${d.best_round ? " (round " + d.best_round + ")" : ""}`, after(f.best.metrics), f.best.metrics]);
+    if (f.last && f.last.round !== f.best.round) cols.push([`Last (round ${f.last.round})`, after(f.last.metrics), f.last.metrics]);
     ref = f.best.metrics;
-  } else if ((d.rounds_detail || []).length) {          // running, or no accepted round: the latest round so far
+  } else if (f.last || f.round1) {
+    const x = f.last || f.round1;
+    cols.push([`Round ${x.round} (not kept)`, after(x.metrics), x.metrics]);
+    ref = x.metrics;
+  } else if ((d.rounds_detail || []).length) {
     const last = d.rounds_detail[d.rounds_detail.length - 1];
-    cols.push([`Round ${last.round}${d.status === "running" ? " (so far)" : ""}`, after(last.metrics)]);
+    cols.push([`Round ${last.round}${d.status === "running" ? " (so far)" : ""}`, after(last.metrics), last.metrics]);
     ref = last.metrics;
   }
   if (cols.length === 1 && d.status === "finished") return "";
-  const rows = METRICS.map(([m, label, digits]) => {
+  const rows = METRICS.map(([m, label, digits, desc, tool]) => {
     const v = ref && ref[m];
-    return `<tr><td>${label}</td>${cols.map(([, vals]) => `<td class="num">${fmt(vals && vals[m], digits)}</td>`).join("")}
-      <td class="num">${v ? delta(m, v.delta, digits, v.status) : "–"}</td></tr>`;
+    return `<tr><td>${label}<span class="desc">${esc(desc)} Tool: ${esc(tool)}.</span></td>${cols.map(([, vals]) => `<td class="num">${fmt(vals && vals[m], digits)}</td>`).join("")}
+      <td class="num">${v ? delta(m, v.delta, digits, v.status) : "–"}</td>
+      <td class="num" title="A change smaller than ${THRESHOLD[m]} counts as the same.">${v ? verdictWord(v.status) : "–"}</td></tr>`;
   }).join("");
-  const who = d.approach === "single" ? "The result" : "Best result";
-  const succ = f.best ? (f.best.run_successful ? `<span class="good">meets the success rule</span>` :
-    `<span class="bad">does not meet the success rule</span>${(f.best.reasons || []).length ? ": " + esc(f.best.reasons.join("; ")) : ""}`) : "";
-  return `<div class="panel"><h2>Quality metrics</h2>
-    <table><tr><th>Metric</th>${cols.map(([l]) => `<th class="num">${l}</th>`).join("")}<th class="num">Change</th></tr>${rows}</table>
-    ${succ ? `<p class="note">${who} ${succ}.</p>` : ""}
-    <p class="note">Lower is better, except the maintainability index. Tests: feedback and held-out sets, measured in the starting project.</p></div>`;
+  const best = f.best;
+  const succ = best ? (best.run_successful ? `<span class="good">meets the success rule</span>` :
+    `<span class="bad">does not meet the success rule</span>${(best.reasons || []).length ? ": " + esc(best.reasons.join("; ")) : ""}`) : "";
+  const statusCols = cols.map(([l, , st]) => st);
+  const shortOf = l => l.replace(/^Best.*/, "Best").replace(/^Last.*/, "Last").replace(/ \(.*\)$/, "").replace("Round ", "R");
+  const charts = METRICS.map(([m, label, digits]) => metricChart(m, label, digits,
+    cols.map(([l, vals], i) => ({ label: l, short: shortOf(l), v: vals && typeof vals[m] === "number" ? vals[m] : null,
+                                  status: i > 0 && statusCols[i] ? (statusCols[i][m] || {}).status : null })))).join("");
+  const mode = state.mv || "both";
+  const toggle = `<span class="viewtoggle">${["both", "table", "chart"].map(v => `<button data-mv="${v}" class="${mode === v ? "on" : ""}">${{ both: "Table + chart", table: "Table", chart: "Chart" }[v]}</button>`).join("")}</span>`;
+  return `<div class="panel"><h2>Code quality ${q("metrics", "What each metric measures")}${toggle}</h2>
+    <p class="lead">The five primary metrics of the study, measured on the application code (lms/) before and after refactoring with the same tools. The decision column uses fixed thresholds: smaller changes count as "same". In the charts the first bar is the starting code; green is better, red is worse.</p>
+    ${mode !== "chart" ? `<table><tr><th>Metric</th>${cols.map(([l]) => `<th class="num">${l}</th>`).join("")}<th class="num">Change</th><th class="num">Decision</th></tr>${rows}</table>` : ""}
+    ${mode !== "table" ? `<div class="charts">${charts}</div>` : ""}
+    ${succ ? `<p class="note">${d.approach === "single" ? "The result" : "The best result"} ${succ}. ${q("success", "The success rule")}</p>` : ""}
+    <p class="note">Successful = no test that passed at the start fails now, no metric is worse, at least one is better, and the API is unchanged.</p></div>`;
 }
 
+// ---- charts (inline SVG, no library) -----------------------------------------------------------------------------
+// One small chart per metric, each with its own scale: the five metrics have very different units.
+function metricChart(metric, label, digits, bars) {
+  const vals = bars.map(b => b.v).filter(v => typeof v === "number");
+  if (!vals.length) return "";
+  const W = 220, H = 120, top = 16, bottom = 22, left = 4, right = 4;
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  // zoom in around the values so small changes are visible, but say so: the axis does not start at zero
+  const pad = (hi - lo) * 0.6 || Math.abs(hi) * 0.05 || 1;
+  const min = Math.max(0, lo - pad), max = hi + pad * 0.4;
+  const bw = Math.min(40, (W - left - right) / bars.length - 10);
+  const step = (W - left - right) / bars.length;
+  const y = v => top + (H - top - bottom) * (1 - (v - min) / (max - min || 1));
+  const base = bars[0] && typeof bars[0].v === "number" ? bars[0].v : null;
+  const higher = HIGHER.has(metric);
+  const rects = bars.map((b, i) => {
+    if (typeof b.v !== "number") return "";
+    const x = left + i * step + (step - bw) / 2, yy = y(b.v);
+    let color = "var(--muted)";
+    if (i > 0 && base !== null) {
+      const st = b.status;
+      color = st === "improved" ? "var(--good)" : st === "worse" ? "var(--bad)" : (b.v === base ? "var(--muted)" : ((higher ? b.v > base : b.v < base) ? "var(--good)" : "var(--bad)"));
+      if (st === "same") color = "var(--muted)";
+    } else if (i === 0) color = "var(--accent)";
+    return `<rect x="${x}" y="${yy}" width="${bw}" height="${H - bottom - yy}" rx="2" fill="${color}" opacity="${i === 0 ? 0.55 : 0.85}"><title>${esc(b.label)}: ${Number(b.v).toFixed(digits)}</title></rect>
+      <text class="v" x="${x + bw / 2}" y="${yy - 4}" text-anchor="middle">${Number(b.v).toFixed(digits)}</text>
+      <text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(b.short || b.label)}</text>`;
+  }).join("");
+  return `<div class="chart"><div class="ct">${esc(label)}</div><div class="cs">${higher ? "higher is better" : "lower is better"} · axis zoomed</div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}"><line x1="0" x2="${W}" y1="${H - bottom}" y2="${H - bottom}" stroke="var(--line)"/>${rects}</svg></div>`;
+}
+
+// Mean change per approach for one metric: bars from a zero line, green = better, red = worse.
+function changeChart(metric, label, digits, values) {
+  const W = 220, H = 140, mid = 66, span = 44;
+  const nums = values.map(v => v.v).filter(v => typeof v === "number");
+  const m = Math.max(...nums.map(Math.abs), 1e-9);
+  const higher = HIGHER.has(metric), step = W / values.length, bw = Math.min(44, step - 16);
+  const bars = values.map((b, i) => {
+    const x = i * step + (step - bw) / 2;
+    if (typeof b.v !== "number") return `<text x="${x + bw / 2}" y="${mid - 4}" text-anchor="middle">no data</text><text x="${x + bw / 2}" y="${H - 4}" text-anchor="middle">${esc(b.short)}</text>`;
+    const h = Math.abs(b.v) / m * span, good = higher ? b.v > 0 : b.v < 0;
+    const yy = b.v >= 0 ? mid - h : mid;
+    return `<rect x="${x}" y="${yy}" width="${bw}" height="${Math.max(h, 1)}" rx="2" fill="${b.v === 0 ? "var(--muted)" : good ? "var(--good)" : "var(--bad)"}" opacity=".85"><title>${esc(b.label)}: ${b.v > 0 ? "+" : ""}${Number(b.v).toFixed(digits)}</title></rect>
+      <text class="v" x="${x + bw / 2}" y="${b.v >= 0 ? yy - 4 : yy + h + 11}" text-anchor="middle">${b.v > 0 ? "+" : ""}${Number(b.v).toFixed(digits)}</text>
+      <text x="${x + bw / 2}" y="${H - 4}" text-anchor="middle">${esc(b.short)}</text>`;
+  }).join("");
+  return `<div class="chart"><div class="ct">${esc(label)}</div><div class="cs">mean change · ${higher ? "higher" : "lower"} is better</div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}"><line x1="0" x2="${W}" y1="${mid}" y2="${mid}" stroke="var(--line)"/>${bars}</svg></div>`;
+}
+
+// Success rate per approach, 0–100 %.
+function rateChart(rates) {
+  const W = 220, H = 120, top = 16, bottom = 22, step = W / rates.length, bw = Math.min(44, step - 16);
+  const y = v => top + (H - top - bottom) * (1 - v / 100);
+  const bars = rates.map((r, i) => {
+    const x = i * step + (step - bw) / 2;
+    const label = `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(r.short)}</text>`;
+    if (r.v === null) return `<text x="${x + bw / 2}" y="${H - bottom - 6}" text-anchor="middle">no data</text>` + label;
+    return `<rect x="${x}" y="${y(r.v)}" width="${bw}" height="${Math.max(H - bottom - y(r.v), 1)}" rx="2" fill="var(--accent)" opacity=".8"><title>${esc(r.label)}: ${r.v} %</title></rect>
+      <text class="v" x="${x + bw / 2}" y="${y(r.v) - 4}" text-anchor="middle">${r.v} %</text>` + label;
+  }).join("");
+  return `<div class="chart"><div class="ct">Success rate</div><div class="cs">share of valid runs that were successful</div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Success rate"><line x1="0" x2="${W}" y1="${H - bottom}" y2="${H - bottom}" stroke="var(--line)"/>${bars}</svg></div>`;
+}
+
+// ---- tests -----------------------------------------------------------------------------------------------------
+function renderTests(d) {
+  const t = state.tests;
+  if (!t || !t.measurements || !t.measurements.length) {
+    return `<div class="panel"><h2>Tests ${q("tests", "Feedback and held-out tests")}</h2>
+      <p class="lead">No test results for this run: ${d.valid === false ? "it stopped before its code was measured." : "nothing has been measured yet."}</p></div>`;
+  }
+  const sets = Object.entries(t.counts || {}).sort().map(([s, c]) => {
+    const bad = c.regression + c.missing, warn = c.failed_unconfirmed + c.still_failing, ok = c.passed + c.fixed;
+    const pct = n => c.total ? (100 * n / c.total) : 0;
+    return `<div class="setbox" title="${esc(SETTIP[s] || "")}"><div class="muted">${esc(SETNAME[s] || s)}</div>
+      <b>${ok} / ${c.total}</b> pass now
+      <div class="bar"><i style="width:${pct(ok)}%;background:var(--good)"></i><i style="width:${pct(warn)}%;background:var(--warn)"></i><i style="width:${pct(bad)}%;background:var(--bad)"></i></div>
+      <div class="note">${c.regression ? `<span class="bad">${c.regression} broke</span> · ` : ""}${c.still_failing ? `${c.still_failing} failed already at the start · ` : ""}${c.fixed ? `${c.fixed} fixed · ` : ""}${c.failed_unconfirmed ? `${c.failed_unconfirmed} failed once (unstable) · ` : ""}${c.missing ? `<span class="bad">${c.missing} missing</span> · ` : ""}${esc(SETTIP[s] || "")}</div></div>`;
+  }).join("");
+  const opts = t.measurements.map(m => `<option value="${esc(m.folder)}" ${m.folder === t.selected ? "selected" : ""}>${esc(m.label)}</option>`).join("");
+  const problems = t.cases.filter(c => !["passed", "fixed", "skipped"].includes(c.status)).length;
+  const btn = (id, label) => `<button data-tf="${id}" class="${state.tf === id ? "on" : ""}">${label}</button>`;
+  return `<div class="panel" id="tests-panel"><h2>Tests ${q("tests", "Feedback and held-out tests")}</h2>
+    <p class="lead">Every test case of the measurement: its result in the starting code and after refactoring. Click a row to see what the test checks and, if it failed, why.</p>
+    <div class="toolbar"><label class="muted">Measurement</label><select id="tm">${opts}</select></div>
+    <div class="sets">${sets}</div>
+    <div class="toolbar">
+      ${btn("problems", `Problems (${problems})`)}${btn("all", `All (${t.cases.length})`)}${btn("changed", "Changed result")}${btn("passed", "Passed")}
+      <select id="ts"><option value="all">Both sets</option><option value="feedback" ${state.ts === "feedback" ? "selected" : ""}>Feedback only</option><option value="heldout" ${state.ts === "heldout" ? "selected" : ""}>Held-out only</option></select>
+      <input id="tq" type="search" placeholder="Search test ID, module, requirement or text…" value="${esc(state.tq)}">
+    </div>
+    <div id="tests-body"></div>
+    ${!t.messages_here ? `<p class="note">The error texts of failed tests are kept only on the computer that ran this run (the JUnit reports are not committed). Open the dashboard there to see them.</p>` : ""}
+    ${!t.start_known ? `<p class="note">The starting results were not found, so "Broke" and "Failed at start" cannot be told apart here.</p>` : ""}
+  </div>`;
+}
+
+function renderTestsBody() {
+  const body = document.getElementById("tests-body");
+  const t = state.tests;
+  if (!body || !t) return;
+  const query = state.tq.trim().toLowerCase();
+  let cases = t.cases.filter(c => state.ts === "all" || c.set === state.ts);
+  if (state.tf === "problems") cases = cases.filter(c => !["passed", "fixed", "skipped"].includes(c.status));
+  else if (state.tf === "passed") cases = cases.filter(c => c.status === "passed");
+  else if (state.tf === "changed") cases = cases.filter(c => c.start && c.after && c.start !== c.after);
+  if (query) cases = cases.filter(c => [c.case, c.module, c.area, c.requirement, c.input, c.expected, c.message, c.type].join(" ").toLowerCase().includes(query));
+  if (!cases.length) {
+    body.innerHTML = `<p class="muted">${state.tf === "problems" && !query ? "No problems: every test that passed at the start still passes." : "No test matches."}</p>`;
+    return;
+  }
+  const limit = state.tall ? cases.length : 150;
+  const rows = cases.slice(0, limit).map(c => {
+    const [label, tip] = TEST_STATUS[c.status] || [c.status, ""];
+    const open = state.open.has(c.case);
+    const detail = open ? `<tr><td colspan="6"><div class="casebox"><dl>
+        <dt>Area</dt><dd>${esc(c.area || "module " + c.module)}</dd>
+        ${c.requirement ? `<dt>Requirement</dt><dd>${esc(c.requirement)}</dd>` : ""}
+        <dt>Test type</dt><dd>${esc(c.type || "–")} · ${esc(SETNAME[c.set] || c.set)}</dd>
+        ${c.input ? `<dt>Input</dt><dd>${md(c.input)}</dd>` : ""}
+        ${c.expected ? `<dt>Expected</dt><dd>${md(c.expected)}</dd>` : ""}
+        <dt>Result</dt><dd>${esc(c.start || "–")} at the start → ${esc(c.after || "–")} now. ${esc(tip)}${c.flaky ? " This test is on the list of unstable tests and is left out of the comparison." : ""}</dd>
+      </dl>${c.message ? `<h3>Why it failed</h3><pre>${esc(c.message)}</pre>` : (["passed", "fixed", "skipped"].includes(c.status) ? "" : `<p class="note">Error text not available here (see the note below the table).</p>`)}</div></td></tr>` : "";
+    return `<tr class="case-row" data-open="${esc(c.case)}" id="case-${esc(c.case)}"><td><span class="pill s-${esc(c.status)}" title="${esc(tip)}">${esc(label)}</span></td>
+      <td><span class="id">${esc(c.case)}</span></td><td>${esc(c.area || "module " + c.module)}</td><td title="${esc(SETTIP[c.set] || "")}">${esc(c.set === "heldout" ? "held-out" : c.set)}</td>
+      <td>${esc(c.type)}</td><td class="muted">${esc(c.start || "–")} → ${esc(c.after || "–")}</td></tr>${detail}`;
+  }).join("");
+  body.innerHTML = `<table><tr><th>Status</th><th>Test</th><th>Area</th><th>Set</th><th>Type</th><th>Start → now</th></tr>${rows}</table>
+    ${cases.length > limit ? `<p class="note">${limit} of ${cases.length} shown. <a href="#" data-tall="1">Show all</a></p>` : ""}`;
+}
+
+function showCase(id) {
+  state.tf = "all"; state.tq = id; state.open.add(id); state.ts = "all";
+  render();
+  const row = document.getElementById("case-" + id);
+  const target = row || document.getElementById("tests-panel");
+  if (target) { target.scrollIntoView({ behavior: "smooth", block: "center" }); target.classList.add("flash"); }
+}
+
+// ---- rounds, calls, timeline -------------------------------------------------------------------------------------
 function renderRounds(d) {
   if (!(d.rounds_detail || []).length || d.approach === "single") return "";
   const rows = d.rounds_detail.map(r => {
-    const verdict = r.accepted === true ? `<span class="good">accepted</span>` : r.accepted === false ? `<span class="bad">rejected</span>` : "–";
-    const changes = METRICS.map(([m, label, digits]) => {
-      const v = r.metrics[m]; return v ? delta(m, v.delta, digits, v.status) : "–"; }).join(" ");
+    const verdict = r.accepted === true ? `<span class="good">kept</span>` : r.accepted === false ? `<span class="bad">${d.approach === "multiagent" ? "not kept" : "undone"}</span>` : "–";
+    const changes = METRICS.map(([m, , digits]) => { const v = r.metrics[m]; return v ? delta(m, v.delta, digits, v.status) : "–"; }).join(" · ");
     const why = r.accepted === false ? esc((r.accept_reasons || []).join("; ")) : "";
-    return `<tr><td>${r.round}</td><td>${r.source ? esc(r.source) : r.call}</td><td>${verdict}${why ? `<div class="note">${why}</div>` : ""}</td>
-      <td class="num">${r.regressions.length}</td><td class="num">${changes}</td><td class="num">${mins(r.wall_s)}</td></tr>
-      ${r.feedback ? `<tr><td></td><td colspan="5"><details><summary>Feedback sent to the model</summary><pre>${esc(r.feedback)}</pre></details></td></tr>` : ""}`;
+    return `<tr><td>${r.round}</td><td>${r.source ? esc(r.source) : "call " + r.call}</td><td>${verdict}${why ? `<div class="note">${why}</div>` : ""}</td>
+      <td class="num">${r.regressions.length ? `<span class="bad">${r.regressions.length}</span>` : 0}</td><td class="num">${changes}</td><td class="num">${mins(r.wall_s)}</td></tr>
+      ${r.feedback ? `<tr><td></td><td colspan="5"><details><summary>Test feedback Claude received after this round</summary><pre>${esc(r.feedback)}</pre></details></td></tr>` : ""}`;
   }).join("");
-  return `<div class="panel"><h2>Rounds</h2><table>
-    <tr><th>Round</th><th>${d.approach === "multiagent" ? "From" : "Call"}</th><th>Decision</th><th class="num">Regressions</th><th class="num">CC · Cog · MI · Dup · Smells (vs start)</th><th class="num">Measured in</th></tr>
+  const lead = d.approach === "multiagent"
+    ? "Every time the orchestrator ran the feedback tests, the code at that moment was saved and measured as a round. The best round is kept; a round that breaks a test or makes a metric worse than the best so far is not kept."
+    : "Each round is one Claude call that changed the code, measured right after. A round that breaks a feedback test or makes a metric worse than the best so far is undone, and Claude is told why.";
+  return `<div class="panel"><h2>Rounds ${q("rounds", "Rounds and the keep rule")}</h2><p class="lead">${lead}</p><table>
+    <tr><th>Round</th><th>${d.approach === "multiagent" ? "From" : "Call"}</th><th>Decision</th><th class="num">Tests broken</th><th class="num">Complexity · Cognitive · MI · Duplication · Smells (vs start)</th><th class="num">Measured in</th></tr>
     ${rows}</table></div>`;
 }
 
 function renderCalls(d) {
   if (!(d.calls_detail || []).length) return "";
-  const rows = d.calls_detail.map(c => `<tr><td>${c.number}</td><td>${esc(c.kind)}</td>
-    <td>${c.status === "ok" ? "ok" : `<span class="bad">${esc(c.status)}</span>`}</td>
+  const kindName = { single: "single prompt", "round-1": "first prompt", "round-n": "follow-up with test feedback", orchestrator: "orchestrator" };
+  const rows = d.calls_detail.map(c => `<tr><td>${c.number}</td><td>${esc(kindName[c.kind] || c.kind)}</td>
+    <td>${c.status === "ok" ? "finished" : `<span class="bad">${esc(c.status === "limit" ? "usage limit" : c.status)}</span>`}</td>
     <td class="num">${mins(c.wall_s)}</td><td class="num">${c.turns ?? "–"}</td><td class="num">${c.files_read}</td>
     <td class="num">${c.files_written}</td><td class="num">${c.usd !== null && c.usd !== undefined ? "$" + fmt(c.usd) : "–"}</td>
     <td>${c.done_marker ? "yes" : ""}</td></tr>
     ${c.written.length ? `<tr><td></td><td colspan="8"><details><summary>Files changed in call ${c.number} (${c.files_written})</summary><pre>${esc(c.written.join("\n"))}</pre></details></td></tr>` : ""}`).join("");
-  return `<div class="panel"><h2>Claude calls</h2><table>
-    <tr><th>#</th><th>Prompt</th><th>Status</th><th class="num">Time</th><th class="num">Turns</th><th class="num">Files read</th><th class="num">Files changed</th><th class="num">Cost</th><th>Said done</th></tr>
+  return `<div class="panel"><h2>Claude calls ${q("cost", "Time, turns and cost")}</h2>
+    <p class="lead">Each row is one run of Claude Code. Turns = model steps (each tool use is one); cost is at API list price.</p><table>
+    <tr><th>#</th><th>Prompt</th><th>Status</th><th class="num">Time</th><th class="num">Turns</th><th class="num">Files read</th><th class="num">Files changed</th><th class="num">Cost</th><th title="Claude wrote REFACTORING_DONE at the end">Said done</th></tr>
     ${rows}</table></div>`;
 }
 
 function renderTimeline(d) {
   const events = (d.events || []).slice().reverse();
   if (!events.length) return "";
-  return `<div class="panel"><h2>Timeline</h2><div class="timeline">${events.map(e =>
+  return `<div class="panel"><h2>Timeline</h2><p class="lead">What the engine did, newest first.</p><div class="timeline">${events.map(e =>
     `<div><span class="t">${esc(time(e.at))}</span><span>${esc(e.text)}</span></div>`).join("")}</div></div>`;
 }
 
+// ---- comparison ------------------------------------------------------------------------------------------------
 function renderCompare() {
   const c = state.compare || {};
-  const names = { single: "Single LLM", iterative: "Iterative LLM", multiagent: "Multi-Agent" };
-  const ids = ["single", "iterative", "multiagent"];
-  const row = (label, fn) => `<tr><td>${label}</td>${ids.map(id => `<td class="num">${fn(c[id] || {})}</td>`).join("")}</tr>`;
+  const row = (label, fn, tip) => `<tr><td${tip ? ` title="${esc(tip)}"` : ""}>${label}${tip ? `<span class="desc">${esc(tip)}</span>` : ""}</td>${VIEWS.map(id => `<td class="num">${fn(c[id] || {})}</td>`).join("")}</tr>`;
   const rate = a => a.valid ? `${a.success} / ${a.valid} (${Math.round(100 * a.success / a.valid)}%)` : "–";
-  let html = `<div class="panel"><h2>Comparison of the approaches</h2><table>
-    <tr><th></th>${ids.map(id => `<th class="num">${names[id]}</th>`).join("")}</tr>
-    ${row("Finished runs (valid)", a => a.runs ? `${a.runs} (${a.valid})` : "0")}
-    ${row("Successful runs", rate)}
-    ${["failed", "no_improvement", "no_change", "invalid", "discarded_limit"].map(o => row(OUTCOME[o], a => (a.outcomes || {})[o] || 0)).join("")}
-    <tr><th colspan="4">Mean change of the best result vs the start (valid runs)</th></tr>
-    ${METRICS.map(([m, label, digits]) => row(label, a => delta(m, (a.deltas || {})[m], digits))).join("")}
-    <tr><th colspan="4">Cost per valid run</th></tr>
-    ${row("Cost (list price)", a => a.usd !== null && a.usd !== undefined ? "$" + fmt(a.usd) : "–")}
-    ${row("Claude time", a => a.claude_min !== null && a.claude_min !== undefined ? fmt(a.claude_min, 0) + " min" : "–")}
-    ${row("5-hour window used", a => a.window_used !== null && a.window_used !== undefined ? fmt(a.window_used, 0) + " %" : "–")}
+  const scope = { all: "all runs, including trial runs", real: "study runs only", pilot: "trial runs only" }[state.include];
+  return `<div class="pagehead"><h1>Comparison</h1><p>The three approaches side by side, over the finished runs (${scope}; change it at the bottom left). Only valid runs enter the means. ${q("compare", "How to read the comparison")}</p></div>
+  <div class="panel"><table>
+    <tr><th></th>${VIEWS.map(id => `<th class="num">${APPROACH[id].name}</th>`).join("")}</tr>
+    ${row("Finished runs (valid)", a => a.runs ? `${a.runs} (${a.valid})` : "0", "Runs that ended; in brackets those that count.")}
+    ${row("Successful runs", rate, OUTCOME.success[1])}
+    ${["failed", "no_improvement", "no_change", "invalid", "discarded_limit"].map(o => row(OUTCOME[o][0], a => (a.outcomes || {})[o] || 0, OUTCOME[o][1])).join("")}
+    <tr><th colspan="4">Mean change of the kept result vs the starting code (valid runs)</th></tr>
+    ${METRICS.map(([m, label, digits, desc]) => row(label, a => delta(m, (a.deltas || {})[m], digits), desc)).join("")}
+    <tr><th colspan="4">Effort per valid run</th></tr>
+    ${row("Cost (list price)", a => a.usd !== null && a.usd !== undefined ? "$" + fmt(a.usd) : "–", FIELD.cost)}
+    ${row("Claude time", a => a.claude_min !== null && a.claude_min !== undefined ? fmt(a.claude_min, 0) + " min" : "–", FIELD.time)}
+    ${row("5-hour window used", a => a.window_used !== null && a.window_used !== undefined ? fmt(a.window_used, 0) + " %" : "–", FIELD.window)}
   </table>
-  <p class="note">A run is successful when no test that passed at the start fails, no primary metric is worse, at least one improved and the API is unchanged (ADR 003). Pilot runs use the pilot code (modules 1–14) and are not comparable with the real runs; choose "experiments only" above for the study results.</p></div>`;
-  return html;
+  <p class="note">Trial runs (pilot code, scale trials) test the engine and are not comparable with the study runs; choose "Study runs only" for the study results.</p></div>
+  <div class="panel"><h2>Charts</h2><p class="lead">Mean change of each primary metric per approach (valid runs). Each metric has its own scale. "no data" means no valid finished run yet.</p>
+    <div class="charts">${METRICS.map(([m, label, digits]) => changeChart(m, label, digits, VIEWS.map(id => ({
+      label: APPROACH[id].name, short: { single: "Single", iterative: "Iterative", multiagent: "Multi-Agent" }[id],
+      v: ((c[id] || {}).deltas || {})[m] ?? null })))).join("")}
+    ${(() => { const rates = VIEWS.map(id => { const a = c[id] || {}; return { label: APPROACH[id].name, short: { single: "Single", iterative: "Iterative", multiagent: "Multi-Agent" }[id], v: a.valid ? Math.round(100 * a.success / a.valid) : null }; });
+      return rateChart(rates); })()}
+    </div></div>`;
 }
 
+// ---- guide -----------------------------------------------------------------------------------------------------
+function renderGuide() {
+  const S = [
+    ["overview", "What this dashboard shows", `<p>The study asks how well Claude refactors code that an AI generated: a Library Management System (LMS) written by Claude Code. Three ways of using Claude are compared on the same code, with the same model, the same instruction ("improve the structure, do not change the behavior") and the same tests. Every run is measured with the same tools before and after.</p>
+      <p>This page only reads the files the experiment engine writes; it never changes them. While a run is in progress it shows Claude's latest actions live.</p>`],
+    ["approaches", "The three approaches", `<dl>${VIEWS.map(id => `<dt>${APPROACH[id].name}</dt><dd>${esc(APPROACH[id].what)}</dd>`).join("")}</dl>
+      <p class="note">Iterative and Multi-Agent get the same test feedback in the same format (test ID and a short error), so a difference between them comes from one conversation versus three roles, not from extra information. Both have the same budget of 3 code-changing rounds.</p>`],
+    ["runs", "Kinds of runs and their names", `<dl>${Object.values(KIND).map(k => `<dt>${k.label}</dt><dd>${esc(k.tip)}</dd>`).join("")}
+      ${Object.values(CODE).map(k => `<dt>${k.label}</dt><dd>${esc(k.tip)}</dd>`).join("")}
+      <dt>Run ID</dt><dd>${esc(FIELD.id)} Example: <span class="id">pilot-s01b</span> is the repeat of pilot Single run 1.</dd>
+      <dt>Repeat</dt><dd>A run that did not count (invalid or stopped by the usage limit) is never deleted; it is repeated under a new ID and both stay visible.</dd></dl>`],
+    ["outcomes", "Outcomes", `<dl>${Object.values(OUTCOME).map(([l, t]) => `<dt>${l}</dt><dd>${esc(t)}</dd>`).join("")}</dl>`],
+    ["metrics", "The five quality metrics", `<p>Measured on the Python application code (<code>lms/</code>) only; the web interface and tests are excluded. The same tool versions are used for every measurement.</p>
+      <table><tr><th>Metric</th><th>What it measures</th><th>Tool</th><th>"Same" if the change is below</th></tr>
+      ${METRICS.map(([m, l, , d, tool]) => `<tr><td>${l}</td><td>${esc(d)}</td><td>${esc(tool)}</td><td>${THRESHOLD[m]}</td></tr>`).join("")}</table>
+      <p class="note">Many other metrics (size, class design, coupling, architecture) are measured too and reported in the study, but only these five decide success.</p>`],
+    ["success", "When is a refactoring successful?", `<p>All of these must hold, compared with the starting code:</p><ol>
+      <li>No test that passed at the start fails now (feedback and held-out tests checked separately; a failure must repeat twice to count).</li>
+      <li>No primary metric got worse.</li><li>At least one primary metric improved.</li>
+      <li>The REST API is unchanged (same OpenAPI schema), and the code still loads.</li></ol>
+      <p>Tests that already failed in the starting code (bugs of the generated code) are reported separately and never count against the refactoring.</p>`],
+    ["tests", "Tests: feedback and held-out", `<dl>
+      <dt>${SETNAME.feedback}</dt><dd>${esc(SETTIP.feedback)}</dd><dt>${SETNAME.heldout}</dt><dd>${esc(SETTIP.heldout)}</dd>
+      <dt>Test ID</dt><dd><span class="id">T-LOAN-03-b</span>: area (loans), requirement number (03), case letter (b). Each case comes from the requirements of the LMS; its input and expected result are shown when you open a row.</dd>
+      ${Object.values(TEST_STATUS).map(([l, t]) => `<dt>${l}</dt><dd>${esc(t)}</dd>`).join("")}
+      <dt>Error text</dt><dd>The full error of a failed test is in the test report on the computer that ran the run; the dashboard shows it there. Reports are not committed to the repository.</dd></dl>`],
+    ["rounds", "Rounds and the keep rule", `<p>A round is one version of the code that was measured. Iterative measures after every Claude call that changed code; Multi-Agent saves and measures the code every time the orchestrator runs the tests.</p>
+      <p>A round is kept only if no feedback test that passed at the start fails, no metric is worse than in the best version so far, and the API is unchanged. Otherwise Iterative undoes it and tells Claude which tests broke; Multi-Agent simply keeps the earlier best. At the end the best round is checked again with all tests, including the held-out tests.</p>`],
+    ["cost", "Time, cost and usage limits", `<dl><dt>Claude time</dt><dd>${esc(FIELD.time)}</dd><dt>Cost (list price)</dt><dd>${esc(FIELD.cost)}</dd>
+      <dt>5-hour usage window</dt><dd>${esc(FIELD.window)} A Claude Pro account also has a weekly limit.</dd><dt>Account</dt><dd>${esc(FIELD.account)}</dd></dl>`],
+    ["validity", "When a run does not count", `<p>A run is invalid when the setup, not the model, went wrong: Claude got the wrong tools, used a different model or version, changed protected files, a call crashed, or the engine could not measure. These checks run after every call. Invalid runs are repeated under a new ID.</p>
+      <dl><dt>Blocked attempt</dt><dd>${esc(FIELD.blocked)}</dd><dt>Read-only shell command</dt><dd>${esc(FIELD.shell)}</dd></dl>`],
+    ["compare", "Reading the comparison", `<p>The comparison counts finished runs per approach. Success rates and mean metric changes use valid runs only. Trial runs are useful to check the engine, but they ran on the smaller pilot code or were cut by the usage limit, so look at "Study runs only" for the results of the study.</p>`],
+  ];
+  return `<div class="pagehead"><h1>Guide</h1><p>What every part of this dashboard means. The <span class="q" style="display:inline-flex">?</span> buttons on the other pages jump here.</p></div>
+    <div class="guide"><nav class="toc">${S.map(([id, t]) => `<a href="#g-${id}" data-goto="${id}">${t}</a>`).join("")}</nav>
+    <div>${S.map(([id, t, body]) => `<section class="panel" id="g-${id}"><h2>${t}</h2>${body}</section>`).join("")}</div></div>`;
+}
+
+function goGuide(anchor) {
+  state.view = "guide"; save(); render();
+  const el = document.getElementById("g-" + anchor);
+  if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.classList.add("flash"); }
+}
+
+// ---- events ----------------------------------------------------------------------------------------------------
 document.addEventListener("click", e => {
-  const tab = e.target.closest("[data-tab]");
-  if (tab) { state.tab = tab.dataset.tab; state.key = null; state.detail = null; save(); render(); load(); return; }
+  const g = e.target.closest("[data-guide]");
+  if (g) { e.preventDefault(); goGuide(g.dataset.guide); return; }
+  const go = e.target.closest("[data-goto]");
+  if (go) { e.preventDefault(); const el = document.getElementById("g-" + go.dataset.goto); if (el) { el.scrollIntoView({ behavior: "smooth" }); el.classList.add("flash"); } return; }
+  const v = e.target.closest("[data-view]");
+  if (v) { state.view = v.dataset.view; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
   const item = e.target.closest("[data-key]");
-  if (item) { state.key = item.dataset.key; state.detail = null; save(); render(); load(); }
+  if (item) { state.key = item.dataset.key; state.detail = null; state.tests = null; state.tm = null; state.tq = ""; state.open.clear(); save(); render(); load(true); return; }
+  const c = e.target.closest("[data-case]");
+  if (c) { e.preventDefault(); showCase(c.dataset.case); return; }
+  const mv = e.target.closest("[data-mv]");
+  if (mv) { state.mv = mv.dataset.mv; save(); render(); return; }
+  const f = e.target.closest("[data-tf]");
+  if (f) { state.tf = f.dataset.tf; state.tall = false; save(); document.querySelectorAll("[data-tf]").forEach(b => b.classList.toggle("on", b.dataset.tf === state.tf)); renderTestsBody(); return; }
+  const o = e.target.closest("[data-open]");
+  if (o) { const id = o.dataset.open; state.open.has(id) ? state.open.delete(id) : state.open.add(id); renderTestsBody(); return; }
+  if (e.target.closest("[data-tall]")) { e.preventDefault(); state.tall = true; renderTestsBody(); }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "tq") { state.tq = e.target.value; state.tall = false; renderTestsBody(); }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "ts") { state.ts = e.target.value; save(); renderTestsBody(); }
+  if (e.target.id === "tm") { state.tm = e.target.value; state.testsKey = null; state.open.clear(); load(true); }
 });
 const include = document.getElementById("include");
 include.value = state.include;
-include.addEventListener("change", () => { state.include = include.value; state.key = null; save(); load(); });
-load();
-setInterval(load, 3000);
+include.addEventListener("change", () => { state.include = include.value; state.key = null; save(); load(true); });
+load(true);
+setInterval(() => load(false), 3000);
 </script>
 </body>
 </html>

@@ -107,11 +107,21 @@ feedback, API change, subagent, limit cut (discard and resume), changes outside 
 python experiments/dashboard.py            # opens http://localhost:8765
 ```
 
-A local, read-only page for the runs under `results/experiments/`: one tab per approach (Single, Iterative,
-Multi-Agent) and a comparison tab. A running run shows the current step and the latest actions of the model (from the
-`stream.jsonl` of the running call); every run shows where it went wrong (invalid checks, test regressions with their
-module, API changes, reverted rounds and the feedback the model got), the quality metrics of the start, round 1, the
-best and the last round, the rounds, the calls and a timeline. The comparison counts finished runs per approach
-(outcomes, success rate, mean change of the primary metrics, cost, Claude time, window used); pilot runs can be shown or
-hidden. It never writes a file, listens on 127.0.0.1 only and needs only the standard library (no Docker). A
-Multi-Agent run appears in its tab as soon as its engine writes the same `run.json`.
+A local, read-only page for the runs under `results/experiments/`, made to be read by someone who does not know the
+engine:
+
+- **Left menu:** one page per approach (Single, Iterative, Multi-Agent), the comparison and a **Guide** that explains
+  every term, metric, outcome and rule. The `?` buttons on the other pages jump to the right Guide section; every field
+  also explains itself on hover.
+- **Run names:** a run is shown as its kind and number ("Pilot run 2", "Scale trial 1", "Study run 3", "(repeat)")
+  with the code it started from ("Pilot code", "Full LMS code"); the technical ID (`pilot-s02`) stays next to it.
+- **One run:** a plain-language summary of what happened, the quality metrics as a table and as one small chart per
+  metric (start, round 1, best, last), the rounds, the Claude calls, a timeline, and a live view of a running call.
+- **Tests:** every test case of a measurement (choose the final check or a round), its result at the start and now,
+  filters (problems, all, changed, passed), search, and on click what the test checks (requirement, input, expected,
+  from `dataset/lms/tests/cases/*.md`) and why it failed. The error text comes from the JUnit reports, which are not
+  committed, so it is shown only on the computer that ran the run.
+- **Comparison:** outcomes, success rate, mean change of the five metrics, cost, Claude time and window per approach,
+  as a table and as charts; trial runs can be shown or hidden.
+
+It never writes a file, listens on 127.0.0.1 only and needs only the standard library (no Docker).

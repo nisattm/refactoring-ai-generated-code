@@ -19,6 +19,7 @@ import re
 import sys
 import threading
 import webbrowser
+import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path, PurePosixPath
 from urllib.parse import parse_qs, urlparse
@@ -27,6 +28,10 @@ REPO = Path(__file__).resolve().parents[1]
 APPROACHES = ("single", "iterative", "multiagent")
 PRIMARY = ("mean_cc", "mean_cognitive", "mi_weighted", "duplication_pct", "smell_count")
 HIGHER_IS_BETTER = {"mi_weighted"}
+CASES_DIR = REPO / "dataset" / "lms" / "tests" / "cases"
+CASE_ID = re.compile(r"T-[A-Z0-9]+(?:-[A-Za-z0-9]+)+")
+SETS = ("feedback", "heldout")
+MESSAGE_CHARS = 1500
 SKIP_DIRS = {"calls", "rounds", "final", "analysis", "tests", "compare", "raw", "openapi", "repeat1", "repeat2"}
 TAIL_BYTES = 400_000
 
@@ -94,6 +99,25 @@ def short_path(path: str) -> str:
     return re.sub(r"^/work/", "", path)
 
 
+def rel_folder(value: str | None) -> str:
+    """A measurement folder of run.json (``final\\r1`` on Windows) as a POSIX path relative to the run folder."""
+    return str(value or "").replace("\\", "/").strip("/")
+
+
+def repo_path(value: str | None) -> Path | None:
+    """A path recorded in run.json: relative to the repository, or absolute on the computer that ran the run (early
+    pilot runs). An absolute path that does not exist here is mapped to the repository from its ``results/`` part."""
+    if not value:
+        return None
+    path = Path(str(value).replace("\\", "/"))
+    if not path.is_absolute() and not re.match(r"^[A-Za-z]:/", path.as_posix()):
+        return REPO / path
+    if path.exists():
+        return path
+    parts = PurePosixPath(path.as_posix()).parts
+    return REPO.joinpath(*parts[parts.index("results"):]) if "results" in parts else None
+
+
 def test_modules(folder: Path) -> dict[str, str]:
     """Case ID -> module, from the tests.csv of a measurement folder."""
     path = folder / "tests" / "tests.csv"
@@ -102,6 +126,78 @@ def test_modules(folder: Path) -> dict[str, str]:
             return {row["case"]: row.get("module", "") for row in csv.DictReader(handle)}
     except (OSError, KeyError, csv.Error):
         return {}
+
+
+def read_cases_csv(path: Path) -> dict[str, dict]:
+    """Case ID -> row of a tests.csv written by run_tests.py (case, module, table, type, set, result)."""
+    try:
+        with path.open(newline="", encoding="utf-8") as handle:
+            return {row["case"]: row for row in csv.DictReader(handle) if row.get("case")}
+    except (OSError, KeyError, csv.Error):
+        return {}
+
+
+_CATALOG: dict[str, dict] = {}
+
+
+def case_catalog(cases_dir: Path = CASES_DIR) -> dict[str, dict]:
+    """Case ID -> what the test checks, from the case tables ``dataset/lms/tests/cases/*.md`` (title, requirement,
+    type, input, expected). Read once per folder."""
+    key = str(cases_dir)
+    if key in _CATALOG:
+        return _CATALOG[key]
+    catalog: dict[str, dict] = {}
+    for md in sorted(cases_dir.glob("*.md")) if cases_dir.is_dir() else []:
+        try:
+            lines = md.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        title = next((line.lstrip("# ").removeprefix("Test cases: ").strip() for line in lines if line.startswith("# ")),
+                     md.stem)
+        for line in lines:
+            cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.startswith("|") else []
+            if len(cells) >= 6 and CASE_ID.fullmatch(cells[0]):
+                catalog[cells[0]] = {"area": title, "requirement": cells[1], "type": cells[2], "input": cells[3],
+                                     "expected": cells[4]}
+    _CATALOG[key] = catalog
+    return catalog
+
+
+def junit_messages(folder: Path) -> dict[str, str]:
+    """Case ID -> failure or error text from the JUnit reports in ``folder`` (``<set>.junit.xml``). These reports are
+    not committed, so they exist only on the computer that ran the measurement."""
+    messages: dict[str, str] = {}
+    for name in SETS:
+        path = folder / f"{name}.junit.xml"
+        if not path.is_file():
+            continue
+        try:
+            root = ET.parse(path).getroot()
+        except (ET.ParseError, OSError):
+            continue
+        for case in root.iter("testcase"):
+            for child in case:
+                if child.tag in ("failure", "error"):
+                    cid = case_id_of(case.get("name") or "")
+                    text = (child.get("message") or "").strip()
+                    body = (child.text or "").strip()
+                    if body and body not in text:
+                        text = (text + "\n\n" + body).strip()
+                    if cid and cid not in messages:
+                        messages[cid] = text[:MESSAGE_CHARS]
+                    break
+    return messages
+
+
+def case_id_of(test_name: str) -> str:
+    """``test_t_loan_05_c[x]`` -> ``T-LOAN-05-c`` (same rule as scripts/run_tests.py)."""
+    name = test_name.split("[", 1)[0]
+    if not name.startswith("test_t_"):
+        return name
+    parts = name[len("test_t_"):].split("_")
+    if parts and len(parts[-1]) == 1 and parts[-1].isalpha() and len(parts) >= 3:
+        return "T-" + "-".join(p.upper() for p in parts[:-1]) + "-" + parts[-1]
+    return "T-" + "-".join(p.upper() for p in parts)
 
 
 def read_text(path: Path, limit: int = 4000) -> str:
@@ -155,7 +251,7 @@ def summary(key: str, folder: Path) -> dict | None:
         "window": window_used(record), "start_metrics": {m: start.get(m) for m in PRIMARY},
         "best_metrics": {m: (best.get("primary", {}).get(m) or {}).get("after") for m in PRIMARY},
         "deltas": deltas, "metric_status": status, "current": events[-1]["text"] if events else "",
-        "regressions": best.get("regressions"),
+        "regressions": best.get("regressions"), "tests_modules": record.get("tests_modules"),
     }
 
 
@@ -168,7 +264,7 @@ def detail(key: str, folder: Path) -> dict | None:
     rounds = []
     for entry in record.get("rounds", []):
         facts = entry.get("facts") or {}
-        mfolder = folder / facts.get("folder", f"rounds/r{entry.get('round')}")
+        mfolder = folder / (rel_folder(facts.get("folder")) or f"rounds/r{entry.get('round')}")
         modules = test_modules(mfolder) if facts.get("regression_cases") else {}
         rounds.append({
             "round": entry.get("round"), "call": entry.get("call"), "tag": entry.get("tag"),
@@ -182,7 +278,7 @@ def detail(key: str, folder: Path) -> dict | None:
         })
     final = {}
     for name, facts in (record.get("final") or {}).items():
-        mfolder = folder / facts.get("folder", "")
+        mfolder = folder / rel_folder(facts.get("folder"))
         modules = test_modules(mfolder) if facts.get("regression_cases") else {}
         final[name] = {"round": facts.get("round"), "run_successful": facts.get("run_successful"),
                        "reasons": facts.get("reasons", []), "metrics": metrics_of(facts),
@@ -215,6 +311,98 @@ def detail(key: str, folder: Path) -> dict | None:
     return out
 
 
+def measurements(record: dict) -> list[dict]:
+    """The measurement folders of a run, newest decision first: the final checks (feedback and held-out tests) and
+    the round checks (feedback tests only)."""
+    found: dict[str, dict] = {}
+    names = {"best": "best result", "round1": "round 1", "last": "last round"}
+    for name, facts in (record.get("final") or {}).items():
+        folder = rel_folder(facts.get("folder"))
+        if not folder:
+            continue
+        entry = found.setdefault(folder, {"folder": folder, "kind": "final", "round": facts.get("round"),
+                                          "roles": [], "regressions": facts.get("regression_cases") or []})
+        entry["roles"].append(names.get(name, name))
+    for entry in record.get("rounds") or []:
+        facts = entry.get("facts") or {}
+        folder = rel_folder(facts.get("folder")) or f"rounds/r{entry.get('round')}"
+        found.setdefault(folder, {"folder": folder, "kind": "round", "round": entry.get("round"), "roles": [],
+                                  "regressions": facts.get("regression_cases") or [], "accepted": entry.get("accepted")})
+    for entry in found.values():
+        sets = "feedback and held-out tests" if entry["kind"] == "final" else "feedback tests"
+        if entry["kind"] == "final":
+            what = f"Final check of round {entry['round']}" if entry["round"] else "Final check"
+        else:
+            what = f"Round {entry['round']}"
+        roles = f" ({', '.join(entry['roles'])})" if entry["roles"] else ""
+        entry["label"] = f"{what}{roles}: {sets}"
+    return sorted(found.values(), key=lambda e: (e["kind"] != "final", "best result" not in e["roles"],
+                                                 -(e["round"] or 0)))
+
+
+STATUS_ORDER = ("regression", "failed_unconfirmed", "missing", "still_failing", "fixed", "passed", "skipped")
+
+
+def tests_view(folder: Path, measurement: str | None = None, cases_dir: Path = CASES_DIR) -> dict | None:
+    """Every test case of one measurement of a run: its result at the start and after refactoring, what it checks
+    and, where the JUnit report is on this computer, why it failed."""
+    record = read_json(folder / "run.json")
+    if not isinstance(record, dict):
+        return None
+    options = measurements(record)
+    chosen = next((m for m in options if m["folder"] == measurement), options[0] if options else None)
+    out = {"measurements": options, "selected": chosen["folder"] if chosen else None, "cases": [], "counts": {},
+           "messages_here": False, "start_known": False}
+    if not chosen:
+        return out
+    mfolder = (folder / chosen["folder"]).resolve()
+    if folder.resolve() not in mfolder.parents:
+        return None
+    after = read_cases_csv(mfolder / "tests" / "tests.csv")
+    baseline = repo_path(record.get("baseline"))
+    start = read_cases_csv(baseline / "tests.csv") if baseline else {}
+    flaky = set()
+    if baseline and (baseline / "flaky.txt").is_file():
+        flaky = {line.split()[0] for line in read_text(baseline / "flaky.txt", 200_000).splitlines()
+                 if line.strip() and not line.startswith("#")}
+    messages = junit_messages(mfolder / "tests")
+    for name in ("repeat1", "repeat2"):
+        for cid, text in junit_messages(mfolder / name).items():
+            messages.setdefault(cid, text)
+    regressions = set(chosen.get("regressions") or [])
+    catalog = case_catalog(cases_dir)
+    cases = []
+    for cid, row in after.items():
+        before = (start.get(cid) or {}).get("result")
+        result = row.get("result") or ""
+        ok_now = result == "passed"
+        if cid in regressions:
+            status = "regression"
+        elif result == "missing":
+            status = "missing"
+        elif result == "skipped":
+            status = "skipped"
+        elif ok_now:
+            status = "fixed" if before and before != "passed" else "passed"
+        elif before == "passed":
+            status = "failed_unconfirmed"
+        else:
+            status = "still_failing"
+        info = catalog.get(cid, {})
+        cases.append({"case": cid, "module": row.get("module", ""), "table": row.get("table", ""),
+                      "type": row.get("type", ""), "set": row.get("set", ""), "start": before, "after": result,
+                      "status": status, "flaky": cid in flaky, "message": messages.get(cid, ""), **info})
+    cases.sort(key=lambda c: (STATUS_ORDER.index(c["status"]), c["set"], c["case"]))
+    counts: dict[str, dict] = {}
+    for c in cases:
+        bucket = counts.setdefault(c["set"], {"total": 0, **{k: 0 for k in STATUS_ORDER}})
+        bucket["total"] += 1
+        bucket[c["status"]] += 1
+    out.update({"cases": cases, "counts": counts, "messages_here": bool(messages) or not any(
+        c["status"] in ("regression", "failed_unconfirmed", "still_failing") for c in cases), "start_known": bool(start)})
+    return out
+
+
 def compare_approaches(summaries: list[dict]) -> dict:
     """Per approach: runs, valid runs, successes, mean change of the primary metrics, cost, time, window."""
     table = {}
@@ -227,7 +415,10 @@ def compare_approaches(summaries: list[dict]) -> dict:
             "success": sum(1 for s in valid if s["outcome"] == "success"),
             "outcomes": {o: sum(1 for s in runs if s["outcome"] == o) for o in
                          ("success", "no_improvement", "no_change", "failed", "invalid", "discarded_limit")},
-            "deltas": {m: mean([s["deltas"][m] for s in valid if isinstance(s["deltas"].get(m), (int, float))])
+            # a valid run that kept no round keeps the starting code: its change is 0, not "unknown"
+            "deltas": {m: mean([s["deltas"][m] if isinstance(s["deltas"].get(m), (int, float)) else 0.0
+                                for s in valid if s["status"] == "finished" and (
+                                    isinstance(s["deltas"].get(m), (int, float)) or not s["accepted"])])
                        for m in PRIMARY},
             "usd": mean([s["usd"] for s in valid]), "claude_min": mean([s["claude_s"] / 60 for s in valid]),
             "window_used": mean([s["window"]["used"] for s in valid if isinstance(s["window"]["used"], (int, float))]),
@@ -247,8 +438,8 @@ def lock_info(lock: Path) -> dict | None:
 # --- web server --------------------------------------------------------------------------------------------------
 
 class Dashboard:
-    def __init__(self, root: Path, lock: Path):
-        self.root, self.lock = root, lock
+    def __init__(self, root: Path, lock: Path, cases_dir: Path = CASES_DIR):
+        self.root, self.lock, self.cases_dir = root, lock, cases_dir
 
     def runs(self, include: str) -> dict:
         found = find_runs(self.root)
@@ -264,6 +455,10 @@ class Dashboard:
     def run(self, key: str) -> dict | None:
         folder = find_runs(self.root).get(key)
         return detail(key, folder) if folder else None
+
+    def tests(self, key: str, measurement: str | None) -> dict | None:
+        folder = find_runs(self.root).get(key)
+        return tests_view(folder, measurement, self.cases_dir) if folder else None
 
 
 def handler_for(board: Dashboard):
@@ -287,6 +482,12 @@ def handler_for(board: Dashboard):
             elif url.path == "/api/runs":
                 data = board.runs((query.get("include") or ["all"])[0])
                 self.send(200, json.dumps(data).encode("utf-8"), "application/json")
+            elif url.path == "/api/tests":
+                data = board.tests((query.get("key") or [""])[0], (query.get("m") or [None])[0])
+                if data is None:
+                    self.send(404, b'{"error": "unknown run"}', "application/json")
+                else:
+                    self.send(200, json.dumps(data).encode("utf-8"), "application/json")
             elif url.path == "/api/run":
                 data = board.run((query.get("key") or [""])[0])
                 if data is None:

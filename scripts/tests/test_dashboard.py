@@ -119,3 +119,55 @@ def test_http_server_is_read_only_json(tmp_path, monkeypatch):
         server.server_close()
     after = sorted((p.as_posix(), p.stat().st_mtime_ns) for p in root.rglob("*") if p.is_file())
     assert before == after                                                   # nothing was written
+
+
+def test_tests_view_lists_every_case_with_its_story(tmp_path, monkeypatch):
+    # the instructor asked to see which test passed or failed and why, inside the dashboard (2026-11-23)
+    root = make_runs(tmp_path, monkeypatch)
+    cases = tmp_path / "cases"
+    cases.mkdir()
+    (cases / "a.md").write_text("# Test cases: module 1 (Area A)\n\n| ID | Requirement | Type | Input | Expected | Set |\n"
+                                "| --- | --- | --- | --- | --- | --- |\n"
+                                "| T-A-01-b | LIB-A-01 | Error | `GET /x` | `404` | held-out |\n")
+    folder = root / "single" / "s02"
+    record = json.loads((folder / "run.json").read_text())
+    final = dashboard.rel_folder(record["final"]["best"]["folder"])
+    (folder / final / "tests" / "heldout.junit.xml").write_text(
+        '<testsuite><testcase name="test_t_a_01_b"><failure message="assert 500 == 404">trace</failure></testcase>'
+        '<testcase name="test_t_a_01_a"/></testsuite>')
+    view = dashboard.tests_view(folder, None, cases)
+    assert view["selected"] == final and view["start_known"] and view["messages_here"]
+    broke = view["cases"][0]                                   # problems first
+    assert broke["case"] == "T-A-01-b" and broke["status"] == "regression" and broke["start"] == "passed"
+    assert broke["expected"] == "`404`" and broke["area"] == "module 1 (Area A)" and "assert 500 == 404" in broke["message"]
+    assert view["counts"]["heldout"]["regression"] == 1 and all(c["status"] == "passed" for c in view["cases"][1:])
+    assert "Final check" in view["measurements"][0]["label"]
+    assert dashboard.tests_view(folder, "../../..", cases)["selected"] == final     # unknown folder: the default
+
+
+def test_iterative_measurements_and_paths(tmp_path, monkeypatch):
+    root = make_runs(tmp_path, monkeypatch)
+    record = json.loads((root / "iterative" / "i01" / "run.json").read_text())
+    labels = [m["label"] for m in dashboard.measurements(record)]
+    assert labels[0].startswith("Final check of round 2 (best result") and "Round 1: feedback tests" in labels
+    view = dashboard.tests_view(root / "iterative" / "i01", "rounds/r1")
+    assert [c["case"] for c in view["cases"] if c["status"] == "regression"] == ["T-A-02-a"]
+    assert dashboard.rel_folder("final\\r1") == "final/r1"
+    assert dashboard.repo_path("C:/Users/x/repo/results/baseline/trial/b") == dashboard.REPO / "results/baseline/trial/b"
+    assert dashboard.repo_path("results/a") == dashboard.REPO / "results/a"
+
+
+def test_tests_endpoint(tmp_path, monkeypatch):
+    root = make_runs(tmp_path, monkeypatch)
+    server = dashboard.ThreadingHTTPServer(("127.0.0.1", 0), dashboard.handler_for(
+        dashboard.Dashboard(root, tmp_path / ".run.lock", tmp_path / "no-cases")))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+    try:
+        data = json.loads(urllib.request.urlopen(base + "/api/tests?key=single/s02").read())
+        assert data["counts"]["heldout"]["regression"] == 1
+        page = urllib.request.urlopen(base + "/").read().decode("utf-8")
+        assert "Guide" in page and "When is a refactoring successful?" in page and "metricChart" in page
+    finally:
+        server.shutdown()
+        server.server_close()
