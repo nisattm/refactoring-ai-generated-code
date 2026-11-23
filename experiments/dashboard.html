@@ -296,6 +296,14 @@ tr.grp td { font-weight: 650; background: var(--soft); }
 .arrow.big { font-size: 30px; color: var(--accent); }
 .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 1000px) { .cols2 { grid-template-columns: 1fr; } }
+.gchart { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.glegend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+.glegend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.grow2 { display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: center; }
+.grow2 > span { font-size: 13px; }
+.gb { display: flex; align-items: center; gap: 8px; height: 16px; margin: 2px 0; }
+.gb i { display: block; height: 12px; border-radius: 3px; min-width: 2px; }
+.gb b { font-size: 12px; font-weight: 600; white-space: nowrap; } .gb em { font-style: normal; color: var(--muted); font-weight: 400; }
 .howto { background: var(--soft); border-radius: 8px; padding: 10px 14px; margin: 8px 0 12px; font-size: 13px; }
 .howto ul { margin: 4px 0; padding-left: 18px; } .howto p { margin: 4px 0; } .howto li { margin: 3px 0; }
 .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 0 0 16px; }
@@ -425,7 +433,7 @@ const time = iso => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit"
 const date = iso => iso ? new Date(iso).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
 const mins = s => s ? (s < 60 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`) : "–";
 const q = (anchor, tip) => `<a class="q" data-guide="${anchor}" title="${esc(tip || "Explain")}">?</a>`;
-function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, approach: state.approach, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp, theme: state.theme, rtab: state.rtab, metric: state.metric })); } catch (e) {} }
+function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, approach: state.approach, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp, theme: state.theme, rtab: state.rtab, metric: state.metric, gv: state.gv })); } catch (e) {} }
 
 // ---- names that explain themselves -----------------------------------------------------------------------------
 function kindOf(run) {
@@ -985,13 +993,27 @@ function renderGrowth(a) {
       <td class="num"><span class="${worse ? "bad" : "good"}">${f - p > 0 ? "+" : ""}${fmt(f - p, digits)}</span></td></tr>`;
   }).join("");
   const x = (F.sloc / P.sloc).toFixed(1);
-  return `<div class="panel"><h2>From the pilot code to the full code</h2>
+  const mode = state.gv || "table";
+  const toggle = `<span class="viewtoggle">${["table", "chart", "both"].map(v => `<button data-gv="${v}" class="${mode === v ? "on" : ""}">${{ table: "Table", chart: "Chart", both: "Table + chart" }[v]}</button>`).join("")}</span>`;
+  // size: one bar pair per row, each row on its own scale (the full code's bar is always the longer one)
+  const sizes = [["Lines of code", P.sloc, F.sloc], ["Files", P.files, F.files], ["Modules", P.modules, F.modules], ["Functions", P.functions, F.functions],
+                 ["Classes", P.classes, F.classes], ["Copy-pasted blocks", P.clones, F.clones], ["Test cases", P.tests, F.tests]];
+  const sizeChart = `<div class="gchart"><div class="glegend"><span><i style="background:#8aa7c4"></i>Pilot code</span><span><i style="background:var(--accent)"></i>Full code</span></div>
+    ${sizes.map(([l, p, f]) => { const m = Math.max(p || 0, f || 0, 1); return `<div class="grow2"><span>${l}</span><div>
+      <div class="gb"><i style="width:${(p || 0) / m * 100}%;background:#8aa7c4"></i><b>${(p ?? 0).toLocaleString()}</b></div>
+      <div class="gb"><i style="width:${(f || 0) / m * 100}%;background:var(--accent)"></i><b>${(f ?? 0).toLocaleString()} <em>×${p ? (f / p).toFixed(1) : "–"}</em></b></div></div></div>`; }).join("")}</div>`;
+  const qualCharts = `<div class="charts">${METRICS.map(([m, label, digits]) => {
+    const p = P.primary[m], f = F.primary[m], worse = HIGHER.has(m) ? f < p : f > p;
+    return metricChart(m, label, digits, [{ label: "Pilot code", short: "Pilot", v: p }, { label: "Full code", short: "Full", v: f, status: worse ? "worse" : "improved" }]);
+  }).join("")}</div>`;
+  return `<div class="panel"><h2>From the pilot code to the full code ${toggle}</h2>
     <p class="lead2">We first tested everything on an early, smaller version of the generated system (the <b>pilot code</b>, ${P.modules} modules). The real experiment uses the finished system (the <b>full code</b>, ${F.modules} modules), which is <b>${x} times bigger</b>. Its code quality is also worse at the start, which leaves more room for refactoring.</p>
     <div class="grow"><div><span>Pilot code</span><b>${P.sloc.toLocaleString()}</b><em>lines</em></div><span class="arrow big">→</span><div><span>Full code</span><b>${F.sloc.toLocaleString()}</b><em>lines · ×${x}</em></div></div>
-    <div class="cols2"><table><tr><th>Size</th><th class="num">Pilot</th><th class="num">Full</th><th class="num">Growth</th></tr>
+    ${mode !== "chart" ? `<div class="cols2"><table><tr><th>Size</th><th class="num">Pilot</th><th class="num">Full</th><th class="num">Growth</th></tr>
       ${row("Lines of code", P.sloc, F.sloc)}${row("Files", P.files, F.files)}${row("Modules", P.modules, F.modules)}${row("Functions", P.functions, F.functions)}
       ${row("Classes", P.classes, F.classes)}${row("Copy-pasted blocks", P.clones, F.clones)}${row("Test cases", P.tests, F.tests, 0, "feedback and held-out")}</table>
-    <table><tr><th>Quality at the start</th><th class="num">Pilot</th><th class="num">Full</th><th class="num">Change</th></tr>${metricRows}</table></div>
+    <table><tr><th>Quality at the start</th><th class="num">Pilot</th><th class="num">Full</th><th class="num">Change</th></tr>${metricRows}</table></div>` : ""}
+    ${mode !== "table" ? `<h3>Size</h3>${sizeChart}<h3>Quality at the start</h3><p class="note" style="margin-top:0">First bar: pilot code; second bar: full code. Red = the full code starts worse.</p>${qualCharts}` : ""}
     <p class="note">Red means the full code starts worse on that metric. A run on the pilot code and a run on the full code are therefore not compared by raw values, only by their change.</p></div>`;
 }
 
@@ -1252,6 +1274,8 @@ document.addEventListener("click", e => {
   if (dr) { setDrawer(dr.dataset.drawer === "1" ? !state.guide : false); return; }
   const ap = e.target.closest("[data-approach]");
   if (ap) { state.approach = ap.dataset.approach; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
+  const gvb = e.target.closest("[data-gv]");
+  if (gvb) { state.gv = gvb.dataset.gv; save(); render(); return; }
   const ms = e.target.closest("[data-modsort]");
   if (ms) { state.modsort = ms.dataset.modsort; render(); return; }
   const sm = e.target.closest("[data-smell]");
