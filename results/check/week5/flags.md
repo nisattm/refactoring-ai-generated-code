@@ -17,8 +17,8 @@ Toy workspace: `model/lms/a.py` containing `def f(x):  return x*2`. Raw stream-j
 | 4 | Subagents | ✅ `subagent_stats.spawned = 0` in every call |
 | 5 | `--resume <session_id>` with the same session folder | ✅ Works; same `session_id`, model remembers the previous turn |
 | 6 | Is `total_cost_usd` cumulative across resumed calls? | ✅ **Yes** (W16) |
-| 7 | Limit-cut example | Not done yet — needs an account decision |
-| 8 | Continue on another account | Not done yet |
+| 7 | Limit-cut example | ✅ `scale-m01` (2026-11-22): the call ended with `is_error: true`, **`subtype: "success"`**, `api_error_status: 429`, `terminal_reason: "api_error"`, result text "You've hit your session limit"; `permission_denials` and `subagent_stats` are present. The engine classifies it as `limit` from `api_error_status` (not from `subtype`) → `discarded_limit` |
+| 8 | Continue on another account | Not tested; not used (ADR 004 addendum point 5: a cut run is discarded) |
 
 ## Required engine changes (proposals for `experiments/common.py`)
 
@@ -76,7 +76,6 @@ With `MSYS_NO_PATHCONV=1`, `--env-file ~/…/.env` fails ("cannot find the path"
 
 ## Open
 
-- 7: deliberate limit cut — which account?
 - 8: continue on another account.
 - Verify the `CLAUDE.md` fix once the engine is updated.
 
