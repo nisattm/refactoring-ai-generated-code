@@ -110,9 +110,9 @@ python experiments/dashboard.py            # opens http://localhost:8765
 A local, read-only page for the runs under `results/experiments/`, made to be read by someone who does not know the
 engine:
 
-- **Left menu:** one page per approach (Single, Iterative, Multi-Agent), the comparison and a **Guide** that explains
+- **Menu bar at the top** (it stays in view; the run list on the left stays in view while the run scrolls): one page per approach (Single, Iterative, Multi-Agent), the comparison and a **Guide** that explains
   every term, metric, outcome and rule. The Guide opens beside the page, so both can be read together; the `?` buttons
-  jump to the right section, and every field explains itself on hover. "Show explanations" hides the short help lines.
+  jump to the right section, and every field explains itself on hover. "Show explanations" hides the short help lines; the theme button switches between auto, light and dark. Test code is shown in colour.
 - **Run names:** a run is shown as its kind and number ("Pilot run 2", "Scale trial 1", "Study run 3", "(repeat)")
   with the code it started from ("Pilot code", "Full LMS code"); the technical ID (`pilot-s02`) stays next to it.
 - **One run:** a plain-language summary of what happened, "What the refactoring changed" (files and lines, size,

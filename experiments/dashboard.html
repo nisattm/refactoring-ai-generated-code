@@ -11,11 +11,12 @@
   --warn: #8a5a00; --warn-bg: #fbf1dc; --live: #1f6fb2; --live-bg: #e4eff8;
   --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #17191b; --panel: #1f2225; --ink: #e6e6e3; --muted: #9aa0a6; --line: #33373b; --soft: #26292d;
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #17191b; --panel: #1f2225; --ink: #e6e6e3; --muted: #9aa0a6; --line: #33373b; --soft: #26292d;
+          --accent: #8db4dc; --accent-bg: #1f2c3a; --good: #7cc49a; --good-bg: #1f3328; --bad: #f08a80; --bad-bg: #3a2220;
+          --warn: #e0b45c; --warn-bg: #3a3020; --live: #8cc2ef; --live-bg: #1d2f3f; } }
+:root[data-theme="dark"] { --bg: #17191b; --panel: #1f2225; --ink: #e6e6e3; --muted: #9aa0a6; --line: #33373b; --soft: #26292d;
           --accent: #8db4dc; --accent-bg: #1f2c3a; --good: #7cc49a; --good-bg: #1f3328; --bad: #f08a80; --bad-bg: #3a2220;
           --warn: #e0b45c; --warn-bg: #3a3020; --live: #8cc2ef; --live-bg: #1d2f3f; }
-}
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; }
 a { color: var(--accent); }
@@ -229,6 +230,39 @@ body.noexp .lead, body.noexp .desc, body.noexp .meta em, body.noexp .cs, body.no
 @media (max-width: 900px) { .guide { grid-template-columns: 1fr; } .guide .toc { position: static; } .guide dl, .casebox dl { grid-template-columns: 1fr; } }
 .flash { animation: flash 1.6s; }
 @keyframes flash { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+/* ---- top bar layout (2026-11-23): the menu is a bar fixed at the top; the run list stays in view ---------------- */
+:root { --hh: 56px; }
+.app, .app.with-guide { display: grid; grid-template-columns: minmax(0, 1fr); background: var(--bg); min-height: 100vh; }
+.app.with-guide { grid-template-columns: minmax(0, 1fr) min(40vw, 580px); }
+aside { grid-column: 1 / -1; position: sticky; top: 0; z-index: 20; height: auto; overflow: visible; flex-direction: row; flex-wrap: wrap;
+        align-items: center; gap: 4px 6px; padding: 8px 18px; border-right: 0; border-bottom: 1px solid var(--line);
+        box-shadow: 0 1px 8px rgba(0,0,0,.06); }
+aside .brand { padding: 0 14px 0 0; margin-right: 6px; border-right: 1px solid var(--line); white-space: nowrap; }
+aside .brand small, aside .sect, aside button.nav small { display: none; }
+aside #nav-runs { display: flex; gap: 4px; flex-wrap: wrap; }
+aside button.nav { width: auto; gap: 8px; padding: 6px 12px; border-radius: 16px; white-space: nowrap; }
+aside button.nav .n { background: var(--soft); border-radius: 8px; padding: 0 6px; }
+aside button.nav.active .n { background: var(--panel); }
+aside .foot { margin: 0 0 0 auto; padding: 0; border: 0; flex-direction: row; align-items: center; gap: 14px; flex-wrap: wrap; }
+aside .foot label { display: flex; align-items: center; gap: 6px; }
+aside .foot select { width: auto; max-width: 160px; padding: 3px 6px; }
+aside .foot { gap: 10px; }
+aside .foot #updated { display: none; }
+.app.with-guide #drawer { top: var(--hh); height: calc(100vh - var(--hh)); grid-column: 2; grid-row: 2; }
+.app main { grid-column: 1; grid-row: 2; }
+.app:not(.with-guide) .list { position: sticky; top: calc(var(--hh) + 14px); max-height: calc(100vh - var(--hh) - 28px); overflow: auto; padding-right: 2px; }
+#drawer .dhead { top: 0; }
+@media (max-width: 1200px) { .app.with-guide { grid-template-columns: minmax(0, 1fr); } .app.with-guide #drawer { position: fixed; top: var(--hh); height: calc(100vh - var(--hh)); grid-column: auto; grid-row: auto; } }
+@media (max-width: 900px) { aside { position: relative; } aside .foot { margin-left: 0; width: 100%; } .app:not(.with-guide) .list { position: static; max-height: none; }
+  .app.with-guide #drawer { top: 0; height: 100vh; } }
+/* ---- Python code in colour ---------------------------------------------------------------------------------- */
+:root { --hk: #8a3fb3; --hs: #2e7d32; --hn: #b35900; --hc: #7a7f85; --hf: #1f5fa8; --hb: #00797a; --hd: #a3367a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --hk: #d19af0; --hs: #9ccf7f; --hn: #f0a868; --hc: #8b9198; --hf: #7fb4f0; --hb: #5fd0cf; --hd: #f08fc5; } }
+:root[data-theme="dark"] { --hk: #d19af0; --hs: #9ccf7f; --hn: #f0a868; --hc: #8b9198; --hf: #7fb4f0; --hb: #5fd0cf; --hd: #f08fc5; }
+.hl-k { color: var(--hk); font-weight: 600; } .hl-s { color: var(--hs); } .hl-n { color: var(--hn); }
+.hl-c { color: var(--hc); font-style: italic; } .hl-f { color: var(--hf); font-weight: 600; } .hl-b { color: var(--hb); } .hl-d { color: var(--hd); }
+pre.code span.l.hit .hl-k, pre.code span.l.hit .hl-s, pre.code span.l.hit .hl-n, pre.code span.l.hit .hl-f, pre.code span.l.hit .hl-b { color: var(--bad); }
 </style>
 </head>
 <body>
@@ -240,15 +274,16 @@ body.noexp .lead, body.noexp .desc, body.noexp .meta em, body.noexp .cs, body.no
   <div class="sect">Results</div>
   <button class="nav" data-view="compare">Comparison<small></small></button>
   <div class="sect">Help</div>
-  <button class="nav" data-drawer="1" id="guide-btn"><span>Guide<small>Opens beside the page</small></span><span class="n">⇥</span></button>
+  <button class="nav" data-drawer="1" id="guide-btn" title="Opens beside the page"><span>📘 Guide</span></button>
   <div class="foot">
+    <button class="nav" id="theme" title="Switch between light and dark">◐ Auto</button>
     <label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="exp"> Show explanations</label>
     <span id="lock" class="lock">–</span>
     <label>Show
       <select id="include">
         <option value="all">All runs</option>
         <option value="real">Study runs only</option>
-        <option value="pilot">Trial runs only (pilot, scale)</option>
+        <option value="pilot">Trial runs only</option>
       </select>
     </label>
     <span id="updated"></span>
@@ -335,7 +370,7 @@ const time = iso => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit"
 const date = iso => iso ? new Date(iso).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
 const mins = s => s ? (s < 60 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`) : "–";
 const q = (anchor, tip) => `<a class="q" data-guide="${anchor}" title="${esc(tip || "Explain")}">?</a>`;
-function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp })); } catch (e) {} }
+function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp, theme: state.theme })); } catch (e) {} }
 
 // ---- names that explain themselves -----------------------------------------------------------------------------
 function kindOf(run) {
@@ -409,7 +444,7 @@ async function load(force) {
 function renderNav() {
   document.getElementById("nav-runs").innerHTML = VIEWS.map(id => {
     const n = state.runs.filter(r => r.approach === id).length;
-    return `<button class="nav ${state.view === id ? "active" : ""}" data-view="${id}"><span>${APPROACH[id].name}<small>${APPROACH[id].short}</small></span><span class="n">${n}</span></button>`;
+    return `<button class="nav ${state.view === id ? "active" : ""}" data-view="${id}" title="${esc(APPROACH[id].short)}"><span>${APPROACH[id].name}</span><span class="n">${n}</span></button>`;
   }).join("");
   document.querySelectorAll("aside button.nav[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === state.view));
 }
@@ -761,6 +796,32 @@ function failingLines(message) {
   for (const m of String(message || "").matchAll(/test_[a-z0-9_]+\.py:(\d+)/g)) out.add(Number(m[1]));
   return out;
 }
+// A small Python highlighter (keywords, strings, numbers, comments, names), enough for the test code.
+const PY_KW = new Set("False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield".split(" "));
+const PY_BI = new Set("len range print str int float dict list set tuple isinstance sum min max any all sorted enumerate zip open self client".split(" "));
+const PY_TOKEN = /("""[\s\S]*?"""|'\'\'[\s\S]*?'\'\'|[rbfu]{0,2}"(?:\\.|[^"\\\n])*"|[rbfu]{0,2}'(?:\\.|[^'\\\n])*')|(#[^\n]*)|(\b\d+(?:\.\d+)?\b)|(@[A-Za-z_][\w.]*)|([A-Za-z_]\w*)/g;
+function highlight(code) {
+  // returns one HTML string per line; a token that spans lines (docstring) is split at the line ends
+  const parts = []; let last = 0, prevWord = "";
+  for (const m of code.matchAll(PY_TOKEN)) {
+    if (m.index > last) parts.push(["", code.slice(last, m.index)]);
+    let cls = "";
+    if (m[1]) cls = "hl-s"; else if (m[2]) cls = "hl-c"; else if (m[3]) cls = "hl-n"; else if (m[4]) cls = "hl-d";
+    else if (m[5]) cls = PY_KW.has(m[5]) ? "hl-k" : (prevWord === "def" || prevWord === "class") ? "hl-f" : PY_BI.has(m[5]) ? "hl-b" : "";
+    if (m[5]) prevWord = m[5];
+    parts.push([cls, m[0]]);
+    last = m.index + m[0].length;
+  }
+  if (last < code.length) parts.push(["", code.slice(last)]);
+  const lines = [""];
+  for (const [cls, text] of parts) {
+    text.split("\n").forEach((piece, i) => {
+      if (i > 0) lines.push("");
+      if (piece) lines[lines.length - 1] += cls ? `<span class="${cls}">${esc(piece)}</span>` : esc(piece);
+    });
+  }
+  return lines;
+}
 const CODE_CACHE = {};
 function codeBlock(c) {
   const key = c.set + "|" + c.case, code = CODE_CACHE[key];
@@ -774,7 +835,7 @@ function codeBlock(c) {
   if (code === null) return `<h3>Test code</h3><p class="note">Loading…</p>`;
   if (!code) return `<h3>Test code</h3><p class="note">The code of this test was not found in dataset/lms/tests.</p>`;
   const hits = failingLines(c.message);
-  const body = code.code.split("\n").map((l, i) => `<span class="l${hits.has(code.line + i) ? " hit" : ""}" data-n="${code.line + i}">${esc(l) || " "}</span>`).join("");
+  const body = highlight(code.code).map((l, i) => `<span class="l${hits.has(code.line + i) ? " hit" : ""}" data-n="${code.line + i}">${l || " "}</span>`).join("");
   return `<h3>Test code <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${esc(code.file)}${hits.size ? " · the line where it failed is red" : ""}</span></h3><pre class="code">${body}</pre>`;
 }
 
@@ -905,7 +966,7 @@ function renderGuide() {
       <div class="mtop"><span class="micon">${g.icon}</span><div><b>${label}</b><div class="mq">${g.question}</div></div>
         <span class="mdir ${HIGHER.has(m) ? "up" : "down"}">${HIGHER.has(m) ? "▲ higher is better" : "▼ lower is better"}</span></div>
       <p>${g.plain}</p><p class="analogy">${g.analogy}</p>
-      ${g.before ? `<div class="ba"><div><span>Before</span><pre>${esc(g.before)}</pre></div><div><span>After refactoring</span><pre>${esc(g.after)}</pre></div></div>` : ""}
+      ${g.before ? `<div class="ba"><div><span>Before</span><pre>${highlight(g.before).join("\n")}</pre></div><div><span>After refactoring</span><pre>${highlight(g.after).join("\n")}</pre></div></div>` : ""}
       <dl><dt>Why we measure it</dt><dd>${g.why}</dd><dt>Unit</dt><dd>${g.unit} · ${g.typical}</dd>
         <dt>Measured with</dt><dd>${esc(tool)}</dd><dt>Counts as "same"</dt><dd>if the change is smaller than ${THRESHOLD[m]}</dd></dl></div>`;
   }).join("");
@@ -998,6 +1059,21 @@ document.addEventListener("change", e => {
   if (e.target.id === "ts") { state.ts = e.target.value; save(); renderTestsBody(); }
   if (e.target.id === "tm") { state.tm = e.target.value; state.testsKey = null; state.open.clear(); load(true); }
 });
+const bar = document.querySelector("aside");
+const setBar = () => document.documentElement.style.setProperty("--hh", bar.offsetHeight + "px");
+try { new ResizeObserver(setBar).observe(bar); } catch (e) {}
+setBar(); addEventListener("resize", setBar);
+// theme: auto (follows the computer), light or dark; remembered in this browser
+const THEMES = ["auto", "light", "dark"], THEME_LABEL = { auto: "◐ Auto", light: "☀ Light", dark: "☾ Dark" };
+function applyTheme() {
+  const t = THEMES.includes(state.theme) ? state.theme : "auto";
+  if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t);
+  document.getElementById("theme").textContent = THEME_LABEL[t];
+}
+document.getElementById("theme").addEventListener("click", () => {
+  state.theme = THEMES[(THEMES.indexOf(state.theme || "auto") + 1) % THEMES.length]; save(); applyTheme();
+});
+applyTheme();
 const exp = document.getElementById("exp");
 exp.checked = !state.noexp;
 document.body.classList.toggle("noexp", !!state.noexp);
