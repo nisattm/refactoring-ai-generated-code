@@ -171,3 +171,21 @@ def test_tests_endpoint(tmp_path, monkeypatch):
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_test_code_and_log_fallback(tmp_path):
+    # clicking a test shows its code (from the repository) and, without a JUnit report, the pytest log section
+    tests = tmp_path / "dataset" / "lms" / "tests"
+    (tests / "heldout").mkdir(parents=True)
+    (tests / "heldout" / "test_a.py").write_text('import pytest\n\n\n@pytest.mark.x\ndef test_t_a_01_b(client):\n'
+                                                 '    """T-A-01-b"""\n    assert client.get("/x").status_code == 404\n')
+    code = dashboard.test_source("T-A-01-b", "heldout", tests)
+    assert code["line"] == 4 and code["code"].startswith("@pytest.mark.x") and "status_code == 404" in code["code"]
+    assert dashboard.test_source("T-A-01-b", "../x", tests) is None and dashboard.test_source("x", "heldout", tests) is None
+    log = tmp_path / "out"
+    log.mkdir()
+    (log / "heldout.log").write_text("F\n=== FAILURES ===\n____ test_t_a_01_b ____\n>   assert 500 == 404\nE   boom\n"
+                                     "=== short test summary info ===\n")
+    assert "E   boom" in dashboard.log_messages(log)["T-A-01-b"]
+    real = dashboard.test_source("T-INV-20-a", "heldout")
+    assert real["file"] == "dataset/lms/tests/heldout/test_inventory.py" and "def test_t_inv_20_a" in real["code"]

@@ -64,9 +64,9 @@ main { padding: 22px 26px 40px; min-width: 0; }
 .b-no_improvement, .b-discarded_limit, .s-failed_unconfirmed, .s-still_failing { background: var(--warn-bg); color: var(--warn); }
 .b-no_change, .b-other, .s-skipped { background: var(--soft); color: var(--muted); }
 .b-running { background: var(--live-bg); color: var(--live); }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; margin-bottom: 14px; }
-.panel h2 { font-size: 15px; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.lead { font-size: 12.5px; color: var(--muted); margin: 3px 0 12px; max-width: 900px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
+.panel h2 { font-size: 16px; margin: 0; font-weight: 650; display: flex; align-items: center; gap: 8px; letter-spacing: -.005em; }
+.lead { font-size: 12.5px; color: var(--muted); margin: 4px 0 14px; max-width: 760px; line-height: 1.45; }
 .panel h3 { font-size: 12px; margin: 14px 0 6px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
 .q { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--line); font-size: 10.5px; color: var(--muted); text-decoration: none; cursor: pointer; font-weight: 600; flex: none; }
 .q:hover { border-color: var(--accent); color: var(--accent); }
@@ -76,14 +76,15 @@ main { padding: 22px 26px 40px; min-width: 0; }
 .story { margin-top: 12px; padding: 10px 12px; border-radius: 6px; background: var(--soft); }
 .story.good { background: var(--good-bg); } .story.bad { background: var(--bad-bg); } .story.warn { background: var(--warn-bg); }
 .meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px 18px; margin-top: 14px; }
-.meta > div > span { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.meta > div > span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 1px; }
 .meta b { font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .meta em { display: block; font-style: normal; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
 table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 12px; color: var(--muted); font-weight: 600; }
 td.num, th.num { text-align: right; }
-td .desc { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.35; max-width: 460px; }
+td .desc { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.35; max-width: 420px; margin-top: 1px; }
+th, td { padding: 8px 8px; }
 .good { color: var(--good); } .bad { color: var(--bad); } .muted { color: var(--muted); }
 .problem { background: var(--bad-bg); border: 1px solid var(--bad); border-radius: 6px; padding: 12px 14px; margin-bottom: 14px; }
 .problem h2 { color: var(--bad); font-size: 15px; margin: 0 0 2px; }
@@ -121,6 +122,34 @@ tr.case-row:hover td { background: var(--soft); }
 .casebox dl { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; margin: 0; }
 .casebox dt { color: var(--muted); }
 .casebox dd { margin: 0; }
+/* guide drawer: opens beside the page so both can be read together */
+.app.with-guide { grid-template-columns: 232px minmax(0, 1fr) min(40vw, 580px); }
+/* with the guide open the page gets narrower: the run list moves above the run as compact cards */
+.app.with-guide .cols { grid-template-columns: minmax(0, 1fr); }
+.app.with-guide .list { flex-direction: row; flex-wrap: wrap; max-height: 220px; overflow: auto; }
+.app.with-guide .item { flex: 1 1 230px; }
+.app.with-guide .item .sub + .sub { display: none; }
+.panel { overflow-x: auto; }
+#drawer { display: none; }
+.app.with-guide #drawer { display: block; position: sticky; top: 0; height: 100vh; overflow: auto; background: var(--panel); border-left: 1px solid var(--line); }
+#drawer .dhead { position: sticky; top: 0; background: var(--panel); border-bottom: 1px solid var(--line); padding: 12px 16px 10px; z-index: 1; }
+#drawer .dhead .row { display: flex; align-items: center; gap: 8px; }
+#drawer .dhead h1 { font-size: 16px; margin: 0; flex: 1; }
+#drawer .dhead button.close { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 4px; cursor: pointer; padding: 1px 9px; }
+#drawer .toc { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+#drawer .toc a { font-size: 12px; text-decoration: none; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line); color: var(--ink); }
+#drawer .toc a:hover { border-color: var(--accent); color: var(--accent); }
+#drawer .dbody { padding: 6px 16px 40px; }
+#drawer section { padding: 14px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 110px; }
+#drawer section h2 { font-size: 14.5px; margin: 0 0 6px; }
+#drawer dl { display: grid; grid-template-columns: 150px 1fr; gap: 6px 12px; margin: 6px 0 0; font-size: 13px; }
+#drawer dt { font-weight: 600; }
+#drawer dd { margin: 0; }
+#drawer p, #drawer li { font-size: 13px; }
+#drawer table td, #drawer table th { font-size: 12.5px; }
+@media (max-width: 1200px) { .app.with-guide { grid-template-columns: 232px minmax(0, 1fr); } .app.with-guide #drawer { position: fixed; right: 0; top: 0; width: min(92vw, 560px); z-index: 10; box-shadow: -8px 0 24px rgba(0,0,0,.18); } }
+.hint { border-bottom: 1px dotted var(--muted); cursor: help; }
+body.noexp .lead, body.noexp .desc, body.noexp .meta em, body.noexp .cs, body.noexp .pagehead p { display: none; }
 /* charts */
 .charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 14px; }
 .chart { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px 6px; }
@@ -157,8 +186,9 @@ tr.case-row:hover td { background: var(--soft); }
   <div class="sect">Results</div>
   <button class="nav" data-view="compare">Comparison<small></small></button>
   <div class="sect">Help</div>
-  <button class="nav" data-view="guide">Guide<small></small></button>
+  <button class="nav" data-drawer="1" id="guide-btn"><span>Guide<small>Opens beside the page</small></span><span class="n">⇥</span></button>
   <div class="foot">
+    <label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="exp"> Show explanations</label>
     <span id="lock" class="lock">–</span>
     <label>Show
       <select id="include">
@@ -171,6 +201,7 @@ tr.case-row:hover td { background: var(--soft); }
   </div>
 </aside>
 <main id="main"><p class="empty">Loading…</p></main>
+<div id="drawer"></div>
 </div>
 
 <script>
@@ -202,11 +233,11 @@ const OUTCOME = {
   discarded_limit: ["Stopped by usage limit", "The Claude account reached its usage limit during the run. The run does not count and is repeated."],
 };
 const METRICS = [
-  ["mean_cc", "Cyclomatic complexity", 2, "Average number of independent paths through a function (if, for, while, and, or …). Lower is better.", "Radon"],
-  ["mean_cognitive", "Cognitive complexity", 2, "Average effort to read a function; nesting is punished more than in cyclomatic complexity. Lower is better.", "complexipy"],
-  ["mi_weighted", "Maintainability index", 1, "0–100 score combining size, complexity and Halstead volume, averaged over files weighted by size. Higher is better.", "Radon"],
-  ["duplication_pct", "Duplication %", 2, "Share of the code that is copy-pasted (blocks of at least 5 lines and 50 tokens). Lower is better.", "jscpd"],
-  ["smell_count", "Code smells", 0, "Number of design and logic problems from a fixed list of 23 smell types (long method, large class, too many parameters, deep nesting …). Lower is better.", "Ruff, Pylint, own AST checks"],
+  ["mean_cc", "Cyclomatic complexity", 2, "Average number of independent paths through a function (if, for, while, and, or …). Lower is better.", "Radon", "Paths through a function · lower is better"],
+  ["mean_cognitive", "Cognitive complexity", 2, "Average effort to read a function; nesting is punished more than in cyclomatic complexity. Lower is better.", "complexipy", "Reading effort · lower is better"],
+  ["mi_weighted", "Maintainability index", 1, "0–100 score combining size, complexity and Halstead volume, averaged over files weighted by size. Higher is better.", "Radon", "0–100 score · higher is better"],
+  ["duplication_pct", "Duplication %", 2, "Share of the code that is copy-pasted (blocks of at least 5 lines and 50 tokens). Lower is better.", "jscpd", "Copy-pasted code · lower is better"],
+  ["smell_count", "Code smells", 0, "Number of design and logic problems from a fixed list of 23 smell types (long method, large class, too many parameters, deep nesting …). Lower is better.", "Ruff, Pylint, own AST checks", "Design and logic problems · lower is better"],
 ];
 const THRESHOLD = { mean_cc: "0.01", mean_cognitive: "0.01", mi_weighted: "0.1", duplication_pct: "0.05 points", smell_count: "1" };
 const HIGHER = new Set(["mi_weighted"]);
@@ -241,7 +272,7 @@ const FIELD = {
 let state = { view: "single", key: null, include: "all", runs: [], compare: {}, detail: null,
               tests: null, testsKey: null, tm: null, tf: "problems", ts: "all", tq: "", tall: false, open: new Set() };
 try { const saved = JSON.parse(localStorage.getItem("dash2") || "{}"); Object.assign(state, saved, { open: new Set() }); } catch (e) {}
-if (!["single", "iterative", "multiagent", "compare", "guide"].includes(state.view)) state.view = "single";
+if (!["single", "iterative", "multiagent", "compare"].includes(state.view)) state.view = "single";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
@@ -250,7 +281,7 @@ const time = iso => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit"
 const date = iso => iso ? new Date(iso).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
 const mins = s => s ? (s < 60 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`) : "–";
 const q = (anchor, tip) => `<a class="q" data-guide="${anchor}" title="${esc(tip || "Explain")}">?</a>`;
-function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv })); } catch (e) {} }
+function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp })); } catch (e) {} }
 
 // ---- names that explain themselves -----------------------------------------------------------------------------
 function kindOf(run) {
@@ -332,7 +363,6 @@ function renderNav() {
 function render() {
   renderNav();
   const main = document.getElementById("main");
-  if (state.view === "guide") { main.innerHTML = renderGuide(); return; }
   if (state.view === "compare") { main.innerHTML = renderCompare(); return; }
   const a = APPROACH[state.view];
   const head = `<div class="pagehead"><h1>${a.name}</h1><p>${esc(a.what)} ${q("approaches", "How the three approaches differ")}</p></div>`;
@@ -383,7 +413,7 @@ function renderDetail() {
   const d = state.detail;
   if (!d || d.key !== state.key) return `<div class="panel"><p class="muted">Loading…</p></div>`;
   const w = d.window || {}, kind = kindOf(d), code = codeOf(d), [text, tone] = story(d);
-  const field = (label, tip, value, note = "") => `<div><span>${label} ${tip ? `<a class="q" title="${esc(tip)}">?</a>` : ""}</span><b>${value}</b>${note ? `<em>${note}</em>` : ""}</div>`;
+  const field = (label, tip, value, note = "") => `<div><span><span class="${tip ? "hint" : ""}" title="${esc(tip || "")}">${label}</span></span><b>${value}</b>${note ? `<em>${note}</em>` : ""}</div>`;
   const roles = d.roles ? [
     field("Subagent calls", FIELD.subagents, Object.entries(d.roles.subagent_calls || {}).map(([r, n]) => `${esc(r)} ${n}`).join(" · ") || "none"),
     field("Test command runs", FIELD.testruns, `${d.roles.test_runs}${d.budget ? " of " + d.budget.test_runs : ""}`),
@@ -417,7 +447,7 @@ function renderLive(d) {
   const actions = (l.actions || []).slice().reverse().map(a =>
     `<div><span class="tool">${esc(a.tool)}</span>${esc(a.target)}</div>`).join("") || `<div class="muted">No tool call yet.</div>`;
   return `<div class="panel live"><h2><span class="dot"></span>Live${l.call ? ` · call ${l.call}` : ""}</h2>
-    <p class="lead">What Claude is doing right now, read from the log of the running call.</p>
+    <p class="lead">What Claude is doing right now.</p>
     <div><b>Now:</b> ${esc(d.current)}</div>
     ${l.call ? `<h3>Latest actions of Claude</h3><div class="actions">${actions}</div>
     ${l.text ? `<h3>Latest message</h3><pre>${esc(l.text)}</pre>` : ""}` : ""}
@@ -472,9 +502,9 @@ function renderMetrics(d) {
     ref = last.metrics;
   }
   if (cols.length === 1 && d.status === "finished") return "";
-  const rows = METRICS.map(([m, label, digits, desc, tool]) => {
+  const rows = METRICS.map(([m, label, digits, desc, tool, short]) => {
     const v = ref && ref[m];
-    return `<tr><td>${label}<span class="desc">${esc(desc)} Tool: ${esc(tool)}.</span></td>${cols.map(([, vals]) => `<td class="num">${fmt(vals && vals[m], digits)}</td>`).join("")}
+    return `<tr><td title="${esc(desc + " Tool: " + tool + ".")}">${label}<span class="desc">${esc(short)}</span></td>${cols.map(([, vals]) => `<td class="num">${fmt(vals && vals[m], digits)}</td>`).join("")}
       <td class="num">${v ? delta(m, v.delta, digits, v.status) : "–"}</td>
       <td class="num" title="A change smaller than ${THRESHOLD[m]} counts as the same.">${v ? verdictWord(v.status) : "–"}</td></tr>`;
   }).join("");
@@ -489,7 +519,7 @@ function renderMetrics(d) {
   const mode = state.mv || "both";
   const toggle = `<span class="viewtoggle">${["both", "table", "chart"].map(v => `<button data-mv="${v}" class="${mode === v ? "on" : ""}">${{ both: "Table + chart", table: "Table", chart: "Chart" }[v]}</button>`).join("")}</span>`;
   return `<div class="panel"><h2>Code quality ${q("metrics", "What each metric measures")}${toggle}</h2>
-    <p class="lead">The five primary metrics of the study, measured on the application code (lms/) before and after refactoring with the same tools. The decision column uses fixed thresholds: smaller changes count as "same". In the charts the first bar is the starting code; green is better, red is worse.</p>
+    <p class="lead">The five metrics that decide success, before and after refactoring. Green is better, red is worse.</p>
     ${mode !== "chart" ? `<table><tr><th>Metric</th>${cols.map(([l]) => `<th class="num">${l}</th>`).join("")}<th class="num">Change</th><th class="num">Decision</th></tr>${rows}</table>` : ""}
     ${mode !== "table" ? `<div class="charts">${charts}</div>` : ""}
     ${succ ? `<p class="note">${d.approach === "single" ? "The result" : "The best result"} ${succ}. ${q("success", "The success rule")}</p>` : ""}
@@ -581,7 +611,7 @@ function renderTests(d) {
   const problems = t.cases.filter(c => !["passed", "fixed", "skipped"].includes(c.status)).length;
   const btn = (id, label) => `<button data-tf="${id}" class="${state.tf === id ? "on" : ""}">${label}</button>`;
   return `<div class="panel" id="tests-panel"><h2>Tests ${q("tests", "Feedback and held-out tests")}</h2>
-    <p class="lead">Every test case of the measurement: its result in the starting code and after refactoring. Click a row to see what the test checks and, if it failed, why.</p>
+    <p class="lead">Every test, at the start and now. Click a row to see the test code, what it checks and why it failed.</p>
     <div class="toolbar"><label class="muted">Measurement</label><select id="tm">${opts}</select></div>
     <div class="sets">${sets}</div>
     <div class="toolbar">
@@ -620,13 +650,29 @@ function renderTestsBody() {
         ${c.input ? `<dt>Input</dt><dd>${md(c.input)}</dd>` : ""}
         ${c.expected ? `<dt>Expected</dt><dd>${md(c.expected)}</dd>` : ""}
         <dt>Result</dt><dd>${esc(c.start || "–")} at the start → ${esc(c.after || "–")} now. ${esc(tip)}${c.flaky ? " This test is on the list of unstable tests and is left out of the comparison." : ""}</dd>
-      </dl>${c.message ? `<h3>Why it failed</h3><pre>${esc(c.message)}</pre>` : (["passed", "fixed", "skipped"].includes(c.status) ? "" : `<p class="note">Error text not available here (see the note below the table).</p>`)}</div></td></tr>` : "";
+      </dl>${c.message ? `<h3>Why it failed</h3><pre>${esc(c.message)}</pre>` : (["passed", "fixed", "skipped"].includes(c.status) ? "" : `<p class="note">Error text not available here (see the note below the table).</p>`)}
+      ${codeBlock(c)}</div></td></tr>` : "";
     return `<tr class="case-row" data-open="${esc(c.case)}" id="case-${esc(c.case)}"><td><span class="pill s-${esc(c.status)}" title="${esc(tip)}">${esc(label)}</span></td>
       <td><span class="id">${esc(c.case)}</span></td><td>${esc(c.area || "module " + c.module)}</td><td title="${esc(SETTIP[c.set] || "")}">${esc(c.set === "heldout" ? "held-out" : c.set)}</td>
       <td>${esc(c.type)}</td><td class="muted">${esc(c.start || "–")} → ${esc(c.after || "–")}</td></tr>${detail}`;
   }).join("");
   body.innerHTML = `<table><tr><th>Status</th><th>Test</th><th>Area</th><th>Set</th><th>Type</th><th>Start → now</th></tr>${rows}</table>
     ${cases.length > limit ? `<p class="note">${limit} of ${cases.length} shown. <a href="#" data-tall="1">Show all</a></p>` : ""}`;
+}
+
+const CODE_CACHE = {};
+function codeBlock(c) {
+  const key = c.set + "|" + c.case, code = CODE_CACHE[key];
+  if (code === undefined) {
+    CODE_CACHE[key] = null;
+    fetch(`/api/testcode?case=${encodeURIComponent(c.case)}&set=${encodeURIComponent(c.set)}`)
+      .then(r => r.ok ? r.json() : false).then(j => { CODE_CACHE[key] = j || false; renderTestsBody(); })
+      .catch(() => { CODE_CACHE[key] = false; renderTestsBody(); });
+    return `<h3>Test code</h3><p class="note">Loading…</p>`;
+  }
+  if (code === null) return `<h3>Test code</h3><p class="note">Loading…</p>`;
+  if (!code) return `<h3>Test code</h3><p class="note">The code of this test was not found in dataset/lms/tests.</p>`;
+  return `<h3>Test code <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${esc(code.file)}, line ${code.line}</span></h3><pre>${esc(code.code)}</pre>`;
 }
 
 function showCase(id) {
@@ -649,8 +695,8 @@ function renderRounds(d) {
       ${r.feedback ? `<tr><td></td><td colspan="5"><details><summary>Test feedback Claude received after this round</summary><pre>${esc(r.feedback)}</pre></details></td></tr>` : ""}`;
   }).join("");
   const lead = d.approach === "multiagent"
-    ? "Every time the orchestrator ran the feedback tests, the code at that moment was saved and measured as a round. The best round is kept; a round that breaks a test or makes a metric worse than the best so far is not kept."
-    : "Each round is one Claude call that changed the code, measured right after. A round that breaks a feedback test or makes a metric worse than the best so far is undone, and Claude is told why.";
+    ? "Code saved and measured each time the orchestrator ran the tests; the best round is kept."
+    : "One round per Claude call that changed code; a round that makes things worse is undone.";
   return `<div class="panel"><h2>Rounds ${q("rounds", "Rounds and the keep rule")}</h2><p class="lead">${lead}</p><table>
     <tr><th>Round</th><th>${d.approach === "multiagent" ? "From" : "Call"}</th><th>Decision</th><th class="num">Tests broken</th><th class="num">Complexity · Cognitive · MI · Duplication · Smells (vs start)</th><th class="num">Measured in</th></tr>
     ${rows}</table></div>`;
@@ -666,7 +712,7 @@ function renderCalls(d) {
     <td>${c.done_marker ? "yes" : ""}</td></tr>
     ${c.written.length ? `<tr><td></td><td colspan="8"><details><summary>Files changed in call ${c.number} (${c.files_written})</summary><pre>${esc(c.written.join("\n"))}</pre></details></td></tr>` : ""}`).join("");
   return `<div class="panel"><h2>Claude calls ${q("cost", "Time, turns and cost")}</h2>
-    <p class="lead">Each row is one run of Claude Code. Turns = model steps (each tool use is one); cost is at API list price.</p><table>
+    <p class="lead">One row per Claude Code call.</p><table>
     <tr><th>#</th><th>Prompt</th><th>Status</th><th class="num">Time</th><th class="num">Turns</th><th class="num">Files read</th><th class="num">Files changed</th><th class="num">Cost</th><th title="Claude wrote REFACTORING_DONE at the end">Said done</th></tr>
     ${rows}</table></div>`;
 }
@@ -691,14 +737,14 @@ function renderCompare() {
     ${row("Successful runs", rate, OUTCOME.success[1])}
     ${["failed", "no_improvement", "no_change", "invalid", "discarded_limit"].map(o => row(OUTCOME[o][0], a => (a.outcomes || {})[o] || 0, OUTCOME[o][1])).join("")}
     <tr><th colspan="4">Mean change of the kept result vs the starting code (valid runs)</th></tr>
-    ${METRICS.map(([m, label, digits, desc]) => row(label, a => delta(m, (a.deltas || {})[m], digits), desc)).join("")}
+    ${METRICS.map(([m, label, digits, desc, , short]) => row(label, a => delta(m, (a.deltas || {})[m], digits), short)).join("")}
     <tr><th colspan="4">Effort per valid run</th></tr>
     ${row("Cost (list price)", a => a.usd !== null && a.usd !== undefined ? "$" + fmt(a.usd) : "–", FIELD.cost)}
     ${row("Claude time", a => a.claude_min !== null && a.claude_min !== undefined ? fmt(a.claude_min, 0) + " min" : "–", FIELD.time)}
     ${row("5-hour window used", a => a.window_used !== null && a.window_used !== undefined ? fmt(a.window_used, 0) + " %" : "–", FIELD.window)}
   </table>
   <p class="note">Trial runs (pilot code, scale trials) test the engine and are not comparable with the study runs; choose "Study runs only" for the study results.</p></div>
-  <div class="panel"><h2>Charts</h2><p class="lead">Mean change of each primary metric per approach (valid runs). Each metric has its own scale. "no data" means no valid finished run yet.</p>
+  <div class="panel"><h2>Charts</h2><p class="lead">Mean change per approach (valid runs); each chart has its own scale.</p>
     <div class="charts">${METRICS.map(([m, label, digits]) => changeChart(m, label, digits, VIEWS.map(id => ({
       label: APPROACH[id].name, short: { single: "Single", iterative: "Iterative", multiagent: "Multi-Agent" }[id],
       v: ((c[id] || {}).deltas || {})[m] ?? null })))).join("")}
@@ -741,15 +787,22 @@ function renderGuide() {
       <dl><dt>Blocked attempt</dt><dd>${esc(FIELD.blocked)}</dd><dt>Read-only shell command</dt><dd>${esc(FIELD.shell)}</dd></dl>`],
     ["compare", "Reading the comparison", `<p>The comparison counts finished runs per approach. Success rates and mean metric changes use valid runs only. Trial runs are useful to check the engine, but they ran on the smaller pilot code or were cut by the usage limit, so look at "Study runs only" for the results of the study.</p>`],
   ];
-  return `<div class="pagehead"><h1>Guide</h1><p>What every part of this dashboard means. The <span class="q" style="display:inline-flex">?</span> buttons on the other pages jump here.</p></div>
-    <div class="guide"><nav class="toc">${S.map(([id, t]) => `<a href="#g-${id}" data-goto="${id}">${t}</a>`).join("")}</nav>
-    <div>${S.map(([id, t, body]) => `<section class="panel" id="g-${id}"><h2>${t}</h2>${body}</section>`).join("")}</div></div>`;
+  return `<div class="dhead"><div class="row"><h1>Guide</h1><button class="close" data-drawer="0" title="Close the guide">Close ✕</button></div>
+    <nav class="toc">${S.map(([id, t]) => `<a href="#g-${id}" data-goto="${id}">${t}</a>`).join("")}</nav></div>
+    <div class="dbody">${S.map(([id, t, body]) => `<section id="g-${id}"><h2>${t}</h2>${body}</section>`).join("")}</div>`;
 }
 
+function setDrawer(open) {
+  state.guide = open; save();
+  document.querySelector(".app").classList.toggle("with-guide", open);
+  document.getElementById("guide-btn").classList.toggle("active", open);
+  const d = document.getElementById("drawer");
+  if (open && !d.innerHTML) d.innerHTML = renderGuide();
+}
 function goGuide(anchor) {
-  state.view = "guide"; save(); render();
+  setDrawer(true);
   const el = document.getElementById("g-" + anchor);
-  if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.classList.add("flash"); }
+  if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
 }
 
 // ---- events ----------------------------------------------------------------------------------------------------
@@ -757,7 +810,9 @@ document.addEventListener("click", e => {
   const g = e.target.closest("[data-guide]");
   if (g) { e.preventDefault(); goGuide(g.dataset.guide); return; }
   const go = e.target.closest("[data-goto]");
-  if (go) { e.preventDefault(); const el = document.getElementById("g-" + go.dataset.goto); if (el) { el.scrollIntoView({ behavior: "smooth" }); el.classList.add("flash"); } return; }
+  if (go) { e.preventDefault(); goGuide(go.dataset.goto); return; }
+  const dr = e.target.closest("[data-drawer]");
+  if (dr) { setDrawer(dr.dataset.drawer === "1" ? !state.guide : false); return; }
   const v = e.target.closest("[data-view]");
   if (v) { state.view = v.dataset.view; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
   const item = e.target.closest("[data-key]");
@@ -779,6 +834,11 @@ document.addEventListener("change", e => {
   if (e.target.id === "ts") { state.ts = e.target.value; save(); renderTestsBody(); }
   if (e.target.id === "tm") { state.tm = e.target.value; state.testsKey = null; state.open.clear(); load(true); }
 });
+const exp = document.getElementById("exp");
+exp.checked = !state.noexp;
+document.body.classList.toggle("noexp", !!state.noexp);
+exp.addEventListener("change", () => { state.noexp = !exp.checked; document.body.classList.toggle("noexp", state.noexp); save(); });
+setDrawer(!!state.guide);
 const include = document.getElementById("include");
 include.value = state.include;
 include.addEventListener("change", () => { state.include = include.value; state.key = null; save(); load(true); });

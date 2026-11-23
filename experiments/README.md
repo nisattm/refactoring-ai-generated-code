@@ -111,16 +111,17 @@ A local, read-only page for the runs under `results/experiments/`, made to be re
 engine:
 
 - **Left menu:** one page per approach (Single, Iterative, Multi-Agent), the comparison and a **Guide** that explains
-  every term, metric, outcome and rule. The `?` buttons on the other pages jump to the right Guide section; every field
-  also explains itself on hover.
+  every term, metric, outcome and rule. The Guide opens beside the page, so both can be read together; the `?` buttons
+  jump to the right section, and every field explains itself on hover. "Show explanations" hides the short help lines.
 - **Run names:** a run is shown as its kind and number ("Pilot run 2", "Scale trial 1", "Study run 3", "(repeat)")
   with the code it started from ("Pilot code", "Full LMS code"); the technical ID (`pilot-s02`) stays next to it.
 - **One run:** a plain-language summary of what happened, the quality metrics as a table and as one small chart per
   metric (start, round 1, best, last), the rounds, the Claude calls, a timeline, and a live view of a running call.
 - **Tests:** every test case of a measurement (choose the final check or a round), its result at the start and now,
-  filters (problems, all, changed, passed), search, and on click what the test checks (requirement, input, expected,
-  from `dataset/lms/tests/cases/*.md`) and why it failed. The error text comes from the JUnit reports, which are not
-  committed, so it is shown only on the computer that ran the run.
+  filters (problems, all, changed, passed), search, and on click the test code (`dataset/lms/tests/<set>/`), what the
+  test checks (requirement, input, expected, from `dataset/lms/tests/cases/*.md`) and why it failed. The error text
+  comes from the JUnit reports or the pytest logs, which are not committed, so it is shown only on the computer that ran
+  the run.
 - **Comparison:** outcomes, success rate, mean change of the five metrics, cost, Claude time and window per approach,
   as a table and as charts; trial runs can be shown or hidden.
 

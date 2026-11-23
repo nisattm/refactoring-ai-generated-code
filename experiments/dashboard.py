@@ -12,6 +12,7 @@ Linux) without Docker.
 from __future__ import annotations
 
 import argparse
+import ast
 import csv
 import json
 import os
@@ -28,7 +29,8 @@ REPO = Path(__file__).resolve().parents[1]
 APPROACHES = ("single", "iterative", "multiagent")
 PRIMARY = ("mean_cc", "mean_cognitive", "mi_weighted", "duplication_pct", "smell_count")
 HIGHER_IS_BETTER = {"mi_weighted"}
-CASES_DIR = REPO / "dataset" / "lms" / "tests" / "cases"
+TESTS_DIR = REPO / "dataset" / "lms" / "tests"
+CASES_DIR = TESTS_DIR / "cases"
 CASE_ID = re.compile(r"T-[A-Z0-9]+(?:-[A-Za-z0-9]+)+")
 SETS = ("feedback", "heldout")
 MESSAGE_CHARS = 1500
@@ -187,6 +189,46 @@ def junit_messages(folder: Path) -> dict[str, str]:
                         messages[cid] = text[:MESSAGE_CHARS]
                     break
     return messages
+
+
+def log_messages(folder: Path) -> dict[str, str]:
+    """Case ID -> the failure section of the pytest output ``<set>.log`` (fallback when there is no JUnit report)."""
+    messages: dict[str, str] = {}
+    for name in SETS:
+        text = read_text(folder / f"{name}.log", 2_000_000)
+        for match in re.finditer(r"^_{3,} (test_\S+?)(?:\[[^\]]*\])? _{3,}$\n(.*?)(?=^_{3,} test_|^={3,}|\Z)", text,
+                                 re.M | re.S):
+            messages.setdefault(case_id_of(match.group(1)), match.group(2).strip()[-MESSAGE_CHARS:])
+    return messages
+
+
+_SOURCES: dict[str, dict] = {}
+
+
+def test_source(case: str, test_set: str, tests_dir: Path = TESTS_DIR) -> dict | None:
+    """The code of the test function of a case (``T-INV-20-a`` -> ``test_t_inv_20_a``) in the feedback or held-out
+    folder, with its file and line. These files are in the repository, so this works on every computer."""
+    if not CASE_ID.fullmatch(case or "") or test_set not in SETS:
+        return None
+    key = f"{tests_dir}|{test_set}"
+    if key not in _SOURCES:
+        index: dict[str, dict] = {}
+        for path in sorted((tests_dir / test_set).glob("test_*.py")):
+            try:
+                text = path.read_text(encoding="utf-8")
+                tree = ast.parse(text)
+            except (OSError, SyntaxError, ValueError):
+                continue
+            lines = text.splitlines()
+            for node in tree.body:
+                if isinstance(node, ast.FunctionDef) and node.name.startswith("test_t_"):
+                    first = min([d.lineno for d in node.decorator_list] + [node.lineno])
+                    index[node.name] = {"file": path.relative_to(tests_dir.parent.parent.parent).as_posix()
+                                        if tests_dir.parent.parent.parent in path.parents else path.name,
+                                        "line": first, "code": "\n".join(lines[first - 1:node.end_lineno])}
+        _SOURCES[key] = index
+    name = "test_" + case.lower().replace("-", "_")
+    return _SOURCES[key].get(name)
 
 
 def case_id_of(test_name: str) -> str:
@@ -365,10 +407,11 @@ def tests_view(folder: Path, measurement: str | None = None, cases_dir: Path = C
     if baseline and (baseline / "flaky.txt").is_file():
         flaky = {line.split()[0] for line in read_text(baseline / "flaky.txt", 200_000).splitlines()
                  if line.strip() and not line.startswith("#")}
-    messages = junit_messages(mfolder / "tests")
-    for name in ("repeat1", "repeat2"):
-        for cid, text in junit_messages(mfolder / name).items():
-            messages.setdefault(cid, text)
+    messages: dict[str, str] = {}
+    for name in ("tests", "repeat1", "repeat2"):
+        for source in (junit_messages, log_messages):
+            for cid, text in source(mfolder / name).items():
+                messages.setdefault(cid, text)
     regressions = set(chosen.get("regressions") or [])
     catalog = case_catalog(cases_dir)
     cases = []
@@ -438,8 +481,8 @@ def lock_info(lock: Path) -> dict | None:
 # --- web server --------------------------------------------------------------------------------------------------
 
 class Dashboard:
-    def __init__(self, root: Path, lock: Path, cases_dir: Path = CASES_DIR):
-        self.root, self.lock, self.cases_dir = root, lock, cases_dir
+    def __init__(self, root: Path, lock: Path, cases_dir: Path = CASES_DIR, tests_dir: Path = TESTS_DIR):
+        self.root, self.lock, self.cases_dir, self.tests_dir = root, lock, cases_dir, tests_dir
 
     def runs(self, include: str) -> dict:
         found = find_runs(self.root)
@@ -455,6 +498,9 @@ class Dashboard:
     def run(self, key: str) -> dict | None:
         folder = find_runs(self.root).get(key)
         return detail(key, folder) if folder else None
+
+    def code(self, case: str, test_set: str) -> dict | None:
+        return test_source(case, test_set, self.tests_dir)
 
     def tests(self, key: str, measurement: str | None) -> dict | None:
         folder = find_runs(self.root).get(key)
@@ -482,6 +528,10 @@ def handler_for(board: Dashboard):
             elif url.path == "/api/runs":
                 data = board.runs((query.get("include") or ["all"])[0])
                 self.send(200, json.dumps(data).encode("utf-8"), "application/json")
+            elif url.path == "/api/testcode":
+                data = board.code((query.get("case") or [""])[0], (query.get("set") or [""])[0])
+                self.send(200 if data else 404, json.dumps(data or {"error": "no test code"}).encode("utf-8"),
+                          "application/json")
             elif url.path == "/api/tests":
                 data = board.tests((query.get("key") or [""])[0], (query.get("m") or [None])[0])
                 if data is None:
