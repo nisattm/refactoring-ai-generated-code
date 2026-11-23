@@ -1,0 +1,648 @@
+{
+  "approach": "single",
+  "run_id": "scale-s01",
+  "repetition": "",
+  "start_ref": "v0-ai-baseline",
+  "start_sha": "3bd14129262d562e9f66eb899737119ce7d6c586",
+  "start_state_commit": "f4cd28653717e493161ca625ede65dd7bd773981",
+  "baseline": "results/baseline/final/v0-ai-baseline-ct",
+  "baseline_primary": {
+    "mean_cc": 3.0129,
+    "mean_cognitive": 2.1321,
+    "mi_weighted": 38.2452,
+    "duplication_pct": 2.9526,
+    "smell_count": 360
+  },
+  "tests_modules": null,
+  "test_files": null,
+  "account": "exp-3",
+  "accounts_used": [
+    "exp-3"
+  ],
+  "window_pct_start": 7.0,
+  "work_root": "/var/folders/96/19lkscgs54g41r11dlw9r3080000gn/T/exp-scale-s01-c0cvrpu0",
+  "image": "refactoring-env",
+  "image_id": "sha256:9d423f119a8cd6714eac526bbc1ba03c2f7cc67232e4b62abdfe5fdc77e8222e",
+  "model": "claude-sonnet-5-5",
+  "effort": "high",
+  "flags": [
+    "--model",
+    "claude-sonnet-5-5",
+    "--effort",
+    "high",
+    "--tools",
+    "Read,Edit,Write,Glob,Grep",
+    "--allowedTools",
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "--disallowedTools",
+    "Task",
+    "Agent",
+    "--safe-mode",
+    "--permission-mode",
+    "dontAsk",
+    "--output-format",
+    "stream-json",
+    "--verbose"
+  ],
+  "env": {
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1"
+  },
+  "expected_version": "2.1.308",
+  "host": {
+    "os": "macOS-15.7.7-arm64-arm-64bit-Mach-O",
+    "python": "3.13.5"
+  },
+  "interface_sha256": "7439376ee370a92ebd5df3094b5f0da0d855dec6c5f058a06a7e7e84438a0250",
+  "test_hashes_sha256": "9f34ca10e408e2b95d8730ab323079bfbab5a0bdca5b687a9036b1c6b615ce8f",
+  "started_at": "2026-11-22T01:33:07+03:00",
+  "finished_at": "2026-11-22T02:06:00+03:00",
+  "status": "finished",
+  "calls": [
+    {
+      "number": 1,
+      "kind": "single",
+      "account": "exp-3",
+      "started_at": "2026-11-22T01:41:22+03:00",
+      "wall_s": 494.3,
+      "exit_code": 0,
+      "status": "ok",
+      "invalid": [],
+      "session_in": null,
+      "session_id": "4f015c85-f846-42e9-b37b-ea806d4dddbf",
+      "prompt_sha256": "1b7f15ace699d297b781832a1f053554b67876988490fcd51547bedfd9a5dae8",
+      "claude_code_version": "2.1.308",
+      "api_key_source": "none",
+      "tools": [
+        "Edit",
+        "Glob",
+        "Grep",
+        "Read",
+        "Write"
+      ],
+      "tool_counts": {
+        "Glob": 1,
+        "Read": 99,
+        "Grep": 42,
+        "Write": 2,
+        "Edit": 234
+      },
+      "files_read": [
+        "/session/projects/-work/4f015c85-f846-42e9-b37b-ea806d4dddbf/tool-results/toolu_01KBmYtTviwgkYdHDTrvZgMW.txt",
+        "/work/INTERFACE.md",
+        "/work/lms/access/bans.py",
+        "/work/lms/access/cards.py",
+        "/work/lms/access/passes.py",
+        "/work/lms/access/usage.py",
+        "/work/lms/api/access.py",
+        "/work/lms/api/app.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/branches.py",
+        "/work/lms/api/catalog.py",
+        "/work/lms/api/courses.py",
+        "/work/lms/api/digital.py",
+        "/work/lms/api/donations.py",
+        "/work/lms/api/equipment.py",
+        "/work/lms/api/errors.py",
+        "/work/lms/api/events.py",
+        "/work/lms/api/fines.py",
+        "/work/lms/api/ill.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/messaging.py",
+        "/work/lms/api/notifications.py",
+        "/work/lms/api/preservation.py",
+        "/work/lms/api/printing.py",
+        "/work/lms/api/programs.py",
+        "/work/lms/api/purchasing.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/rooms.py",
+        "/work/lms/api/staff.py",
+        "/work/lms/api/suggestions.py",
+        "/work/lms/api/users.py",
+        "/work/lms/auth/deps.py",
+        "/work/lms/auth/service.py",
+        "/work/lms/branches/service.py",
+        "/work/lms/branches/transfers.py",
+        "/work/lms/catalog/service.py",
+        "/work/lms/core/__init__.py",
+        "/work/lms/core/calendar.py",
+        "/work/lms/core/clock.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/errors.py",
+        "/work/lms/core/money.py",
+        "/work/lms/core/pagination.py",
+        "/work/lms/core/schemas.py",
+        "/work/lms/core/text.py",
+        "/work/lms/core/timeutil.py",
+        "/work/lms/courses/courses.py",
+        "/work/lms/courses/loans.py",
+        "/work/lms/courses/reserve.py",
+        "/work/lms/digital/holds.py",
+        "/work/lms/digital/lending.py",
+        "/work/lms/digital/resources.py",
+        "/work/lms/digital/sessions.py",
+        "/work/lms/digital/state.py",
+        "/work/lms/donations/donors.py",
+        "/work/lms/donations/offers.py",
+        "/work/lms/equipment/inventory.py",
+        "/work/lms/equipment/lending.py",
+        "/work/lms/equipment/reservations.py",
+        "/work/lms/events/events.py",
+        "/work/lms/events/registrations.py",
+        "/work/lms/events/usage.py",
+        "/work/lms/fines/service.py",
+        "/work/lms/ill/outgoing.py",
+        "/work/lms/ill/partners.py",
+        "/work/lms/ill/requests.py",
+        "/work/lms/ill/usage.py",
+        "/work/lms/inventory/counts.py",
+        "/work/lms/inventory/usage.py",
+        "/work/lms/loans/service.py",
+        "/work/lms/members/service.py",
+        "/work/lms/messaging/announcements.py",
+        "/work/lms/messaging/threads.py",
+        "/work/lms/notifications/service.py",
+        "/work/lms/preservation/jobs.py",
+        "/work/lms/preservation/shipments.py",
+        "/work/lms/printing/jobs.py",
+        "/work/lms/printing/printers.py",
+        "/work/lms/printing/usage.py",
+        "/work/lms/programs/entries.py",
+        "/work/lms/programs/programs.py",
+        "/work/lms/purchasing/service.py",
+        "/work/lms/reservations/service.py",
+        "/work/lms/rooms/bans.py",
+        "/work/lms/rooms/bookings.py",
+        "/work/lms/rooms/rooms.py",
+        "/work/lms/staff/leave.py",
+        "/work/lms/staff/profiles.py",
+        "/work/lms/staff/shifts.py",
+        "/work/lms/suggestions/service.py"
+      ],
+      "files_written": [
+        "/work/lms/access/bans.py",
+        "/work/lms/access/passes.py",
+        "/work/lms/api/access.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/branches.py",
+        "/work/lms/api/catalog.py",
+        "/work/lms/api/common.py",
+        "/work/lms/api/courses.py",
+        "/work/lms/api/digital.py",
+        "/work/lms/api/donations.py",
+        "/work/lms/api/equipment.py",
+        "/work/lms/api/events.py",
+        "/work/lms/api/fines.py",
+        "/work/lms/api/ill.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/messaging.py",
+        "/work/lms/api/notifications.py",
+        "/work/lms/api/preservation.py",
+        "/work/lms/api/printing.py",
+        "/work/lms/api/programs.py",
+        "/work/lms/api/purchasing.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/rooms.py",
+        "/work/lms/api/staff.py",
+        "/work/lms/api/suggestions.py",
+        "/work/lms/api/users.py",
+        "/work/lms/auth/service.py",
+        "/work/lms/branches/service.py",
+        "/work/lms/branches/transfers.py",
+        "/work/lms/catalog/service.py",
+        "/work/lms/core/lookup.py",
+        "/work/lms/courses/courses.py",
+        "/work/lms/courses/loans.py",
+        "/work/lms/courses/reserve.py",
+        "/work/lms/digital/holds.py",
+        "/work/lms/digital/lending.py",
+        "/work/lms/digital/resources.py",
+        "/work/lms/digital/sessions.py",
+        "/work/lms/digital/state.py",
+        "/work/lms/donations/donors.py",
+        "/work/lms/donations/offers.py",
+        "/work/lms/equipment/inventory.py",
+        "/work/lms/equipment/lending.py",
+        "/work/lms/equipment/reservations.py",
+        "/work/lms/events/events.py",
+        "/work/lms/events/registrations.py",
+        "/work/lms/fines/service.py",
+        "/work/lms/ill/outgoing.py",
+        "/work/lms/ill/partners.py",
+        "/work/lms/ill/requests.py",
+        "/work/lms/inventory/counts.py",
+        "/work/lms/loans/service.py",
+        "/work/lms/members/service.py",
+        "/work/lms/messaging/announcements.py",
+        "/work/lms/messaging/threads.py",
+        "/work/lms/notifications/service.py",
+        "/work/lms/preservation/jobs.py",
+        "/work/lms/preservation/shipments.py",
+        "/work/lms/printing/jobs.py",
+        "/work/lms/printing/printers.py",
+        "/work/lms/programs/entries.py",
+        "/work/lms/programs/programs.py",
+        "/work/lms/purchasing/service.py",
+        "/work/lms/reservations/service.py",
+        "/work/lms/rooms/bans.py",
+        "/work/lms/rooms/bookings.py",
+        "/work/lms/rooms/rooms.py",
+        "/work/lms/staff/leave.py",
+        "/work/lms/staff/profiles.py",
+        "/work/lms/staff/shifts.py",
+        "/work/lms/suggestions/service.py"
+      ],
+      "subagent_attempts": 0,
+      "subagents_spawned": 0,
+      "permission_denials": [],
+      "terminal_reason": "completed",
+      "is_error": false,
+      "num_turns": 379,
+      "done_marker": true,
+      "outside_lms_changes": 0,
+      "hidden_files": [],
+      "rate_limit": {
+        "rate_limit_info": {
+          "status": "allowed",
+          "resetsAt": 1795317600,
+          "rateLimitType": "five_hour",
+          "overageStatus": "rejected",
+          "overageDisabledReason": "org_level_disabled",
+          "isUsingOverage": false,
+          "unifiedWindows": {
+            "five_hour": {
+              "utilization": 0.26,
+              "resetsAt": 1795317600
+            },
+            "seven_day": {
+              "utilization": 0.21,
+              "resetsAt": 1795586400
+            }
+          }
+        },
+        "session_id": "4f015c85-f846-42e9-b37b-ea806d4dddbf"
+      },
+      "usd_raw": 2.585969700000001,
+      "usd_diff": 2.585969700000001,
+      "summary_raw": {
+        "input_tokens": 136,
+        "output_tokens": 72757,
+        "cache_write_tokens": 240804,
+        "cache_write_1h_tokens": 240804,
+        "cache_read_tokens": 8949117,
+        "thinking_tokens": 10457,
+        "total_input_tokens": 9190057,
+        "usd": 2.585969700000001,
+        "usd_recomputed": 2.5859697,
+        "duration_s": 492.128,
+        "api_duration_s": 489.984,
+        "num_turns": 379,
+        "subagents_spawned": 0,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "4f015c85-f846-42e9-b37b-ea806d4dddbf",
+        "note": ""
+      },
+      "summary": {
+        "input_tokens": 136,
+        "output_tokens": 72757,
+        "cache_write_tokens": 240804,
+        "cache_write_1h_tokens": 240804,
+        "cache_read_tokens": 8949117,
+        "thinking_tokens": 10457,
+        "total_input_tokens": 9190057,
+        "usd": 2.585969700000001,
+        "usd_recomputed": 2.5859697,
+        "duration_s": 492.128,
+        "api_duration_s": 489.984,
+        "num_turns": 379,
+        "subagents_spawned": 0,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "4f015c85-f846-42e9-b37b-ea806d4dddbf",
+        "note": ""
+      },
+      "tokens_raw": {
+        "input_tokens": 136,
+        "output_tokens": 72757,
+        "cache_write_tokens": 240804,
+        "cache_read_tokens": 8949117,
+        "thinking_tokens": 10457
+      },
+      "tokens": {
+        "input_tokens": 136,
+        "output_tokens": 72757,
+        "cache_write_tokens": 240804,
+        "cache_read_tokens": 8949117,
+        "thinking_tokens": 10457
+      }
+    }
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "call": 1,
+      "state_commit": "9746262461d2f38d84701989016cd1448bcce353",
+      "tag": "exp/single/scale-s01/r1",
+      "code_sha": "2295f9180aad05cf5ecd170bf7c0b30cfaa4d561",
+      "accepted": true,
+      "facts": {
+        "status": "ok",
+        "problems": [],
+        "round_accepted": true,
+        "run_successful": true,
+        "reasons": [],
+        "accept_reasons": [],
+        "regressions": 0,
+        "regressions_by_set": {
+          "feedback": 0,
+          "heldout": 0
+        },
+        "regression_cases": [],
+        "api_changed": false,
+        "api_loads": true,
+        "api_change_kind": null,
+        "invalid_metrics": [],
+        "primary": {
+          "duplication_pct": {
+            "before": 2.9526,
+            "after": 2.0832,
+            "delta": -0.8694,
+            "status": "improved"
+          },
+          "mean_cc": {
+            "before": 3.0129,
+            "after": 2.9187,
+            "delta": -0.0942,
+            "status": "improved"
+          },
+          "mean_cognitive": {
+            "before": 2.1321,
+            "after": 2.0328,
+            "delta": -0.0993,
+            "status": "improved"
+          },
+          "mi_weighted": {
+            "before": 38.2452,
+            "after": 39.4801,
+            "delta": 1.2349,
+            "status": "improved"
+          },
+          "smell_count": {
+            "before": 360,
+            "after": 348,
+            "delta": -12.0,
+            "status": "improved"
+          }
+        },
+        "wall_s": 1477.8,
+        "folder": "rounds/r1"
+      }
+    }
+  ],
+  "final": {
+    "best": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 2.9526,
+          "after": 2.0832,
+          "delta": -0.8694,
+          "status": "improved"
+        },
+        "mean_cc": {
+          "before": 3.0129,
+          "after": 2.9187,
+          "delta": -0.0942,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 2.1321,
+          "after": 2.0328,
+          "delta": -0.0993,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 38.2452,
+          "after": 39.4801,
+          "delta": 1.2349,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 360,
+          "after": 348,
+          "delta": -12.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 1477.8,
+      "folder": "rounds/r1"
+    },
+    "round1": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 2.9526,
+          "after": 2.0832,
+          "delta": -0.8694,
+          "status": "improved"
+        },
+        "mean_cc": {
+          "before": 3.0129,
+          "after": 2.9187,
+          "delta": -0.0942,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 2.1321,
+          "after": 2.0328,
+          "delta": -0.0993,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 38.2452,
+          "after": 39.4801,
+          "delta": 1.2349,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 360,
+          "after": 348,
+          "delta": -12.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 1477.8,
+      "folder": "rounds/r1"
+    },
+    "last": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 2.9526,
+          "after": 2.0832,
+          "delta": -0.8694,
+          "status": "improved"
+        },
+        "mean_cc": {
+          "before": 3.0129,
+          "after": 2.9187,
+          "delta": -0.0942,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 2.1321,
+          "after": 2.0328,
+          "delta": -0.0993,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 38.2452,
+          "after": 39.4801,
+          "delta": 1.2349,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 360,
+          "after": 348,
+          "delta": -12.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 1477.8,
+      "folder": "rounds/r1"
+    }
+  },
+  "outside_lms_changes": [],
+  "events": [
+    {
+      "at": "2026-11-22T01:33:07+03:00",
+      "text": "call 1 (single) started"
+    },
+    {
+      "at": "2026-11-22T01:41:22+03:00",
+      "text": "call 1 finished: ok, 494.3 s"
+    },
+    {
+      "at": "2026-11-22T01:41:22+03:00",
+      "text": "round 1: exp/single/scale-s01/r1 = 2295f9180aad"
+    },
+    {
+      "at": "2026-11-22T01:41:22+03:00",
+      "text": "measurement rounds/r1 (both) started"
+    },
+    {
+      "at": "2026-11-22T02:06:00+03:00",
+      "text": "measurement rounds/r1: status ok, accepted True, successful True, regressions 0"
+    }
+  ],
+  "best_round": 1,
+  "best_tag": "exp/single/scale-s01/r1",
+  "best_facts": {
+    "status": "ok",
+    "problems": [],
+    "round_accepted": true,
+    "run_successful": true,
+    "reasons": [],
+    "accept_reasons": [],
+    "regressions": 0,
+    "regressions_by_set": {
+      "feedback": 0,
+      "heldout": 0
+    },
+    "regression_cases": [],
+    "api_changed": false,
+    "api_loads": true,
+    "api_change_kind": null,
+    "invalid_metrics": [],
+    "primary": {
+      "duplication_pct": {
+        "before": 2.9526,
+        "after": 2.0832,
+        "delta": -0.8694,
+        "status": "improved"
+      },
+      "mean_cc": {
+        "before": 3.0129,
+        "after": 2.9187,
+        "delta": -0.0942,
+        "status": "improved"
+      },
+      "mean_cognitive": {
+        "before": 2.1321,
+        "after": 2.0328,
+        "delta": -0.0993,
+        "status": "improved"
+      },
+      "mi_weighted": {
+        "before": 38.2452,
+        "after": 39.4801,
+        "delta": 1.2349,
+        "status": "improved"
+      },
+      "smell_count": {
+        "before": 360,
+        "after": 348,
+        "delta": -12.0,
+        "status": "improved"
+      }
+    },
+    "wall_s": 1477.8,
+    "folder": "rounds/r1"
+  },
+  "outcome": "success",
+  "valid": true,
+  "reasons": []
+}

@@ -1,0 +1,32 @@
+run_label,schema_version,module_no,module_name,level,status,valid,files,sloc,units,mean_cc,max_cc,share_cc_high,mean_cognitive,max_cognitive,share_cognitive_high,mi_weighted,mi_mean,smells,smells_per_ksloc,duplication_pct,duplicated_lines
+scale-s01-rounds-r1,1.0,1,Core,simple,generated,1,15,530,56,2.1071,5,0.0000,1.1481,5,0.0000,59.2038,67.8184,10,18.8679,0.0000,0
+scale-s01-rounds-r1,1.0,2,Identity and access,complex,generated,1,9,525,37,2.7297,22,0.0270,1.7500,23,0.0278,52.9287,65.0787,7,13.3333,0.0000,0
+scale-s01-rounds-r1,1.0,3,Members,complex,generated,1,6,664,33,3.2727,21,0.0606,2.3939,25,0.0303,42.2202,58.4939,7,10.5422,0.0000,0
+scale-s01-rounds-r1,1.0,4,Catalog,complex,generated,1,8,831,72,2.3056,16,0.0417,1.4444,18,0.0139,42.3417,65.4508,11,13.2371,2.1544,24
+scale-s01-rounds-r1,1.0,5,Loans and returns,complex,generated,1,5,515,20,3.9000,14,0.1000,2.9000,14,0.0000,49.6425,66.2051,7,13.5922,10.6036,65
+scale-s01-rounds-r1,1.0,6,Reservations,complex,generated,1,5,524,31,2.9032,14,0.0323,2.1290,14,0.0000,40.1648,56.9170,9,17.1756,4.8265,32
+scale-s01-rounds-r1,1.0,7,Fines and payments,complex,generated,1,5,451,23,2.0000,6,0.0000,0.9565,6,0.0000,43.7150,54.8820,6,13.3038,2.1390,12
+scale-s01-rounds-r1,1.0,8,Notifications,medium,generated,1,5,588,43,1.4651,7,0.0000,0.5581,8,0.0000,54.6584,70.4871,15,25.5102,0.0000,0
+scale-s01-rounds-r1,1.0,9,Search,simple,generated,1,4,181,8,5.5000,25,0.2500,4.3750,29,0.1250,52.4755,75.9630,3,16.5746,0.0000,0
+scale-s01-rounds-r1,1.0,10,Reports,medium,generated,1,3,245,14,2.6429,6,0.0000,2.0833,5,0.0000,43.9804,64.0664,2,8.1633,0.0000,0
+scale-s01-rounds-r1,1.0,11,Branches and transfers,medium,generated,1,7,451,21,3.0476,17,0.0476,2.0952,16,0.0476,56.5864,67.3106,5,11.0865,1.0676,6
+scale-s01-rounds-r1,1.0,12,Purchasing,medium,generated,1,5,605,43,2.6744,19,0.0465,1.9767,27,0.0465,46.6135,67.7586,5,8.2645,5.0064,39
+scale-s01-rounds-r1,1.0,13,"Audit log, import, export",complex,generated,1,10,805,42,3.9762,36,0.0714,4.0488,63,0.0732,42.4721,62.6166,12,14.9068,0.9921,10
+scale-s01-rounds-r1,1.0,14,API layer,medium,generated,1,5,475,41,2.1463,9,0.0000,1.2000,10,0.0000,47.6156,59.0225,5,10.5263,4.5902,28
+scale-s01-rounds-r1,1.0,15,Study rooms,complex,generated,1,11,1794,112,3.5000,18,0.0714,2.8559,19,0.0090,30.7594,43.7109,30,16.7224,2.6757,59
+scale-s01-rounds-r1,1.0,16,Equipment loans,complex,generated,1,11,2005,111,3.0270,20,0.0541,2.2364,29,0.0273,33.3594,46.6924,30,14.9626,3.5102,86
+scale-s01-rounds-r1,1.0,17,Digital resources,complex,generated,1,13,1680,117,2.7778,23,0.0342,1.9310,24,0.0259,36.6109,48.1995,16,9.5238,2.7014,57
+scale-s01-rounds-r1,1.0,18,Interlibrary loans,complex,generated,1,10,1353,93,2.6452,17,0.0108,1.7253,20,0.0110,36.5674,53.1661,14,10.3474,2.5596,44
+scale-s01-rounds-r1,1.0,19,Staff and shifts,complex,generated,1,10,1902,112,3.1429,19,0.0536,2.1607,20,0.0089,30.0068,40.6708,30,15.7729,4.3571,102
+scale-s01-rounds-r1,1.0,20,Events,complex,generated,1,12,1596,89,3.2584,18,0.0674,2.3933,23,0.0337,39.9067,52.6930,18,11.2782,3.7849,76
+scale-s01-rounds-r1,1.0,21,Course reserves,complex,generated,1,13,1826,125,2.5920,16,0.0240,1.5887,15,0.0000,40.2137,50.2045,14,7.6670,3.5284,82
+scale-s01-rounds-r1,1.0,22,Donations,complex,generated,1,12,1562,81,3.9877,28,0.0988,3.1852,36,0.0494,35.2707,49.7054,10,6.4020,3.4591,66
+scale-s01-rounds-r1,1.0,23,Preservation,complex,generated,1,10,1138,73,2.7945,17,0.0411,1.6027,11,0.0000,37.5005,52.5485,11,9.6661,2.6971,39
+scale-s01-rounds-r1,1.0,24,Inventory counts,complex,generated,1,10,873,49,3.0204,19,0.0408,2.1633,22,0.0408,45.4761,58.6682,7,8.0183,1.8970,21
+scale-s01-rounds-r1,1.0,25,Purchase suggestions,complex,generated,1,11,1372,74,3.2027,21,0.0270,2.2877,23,0.0137,38.8617,54.9052,17,12.3907,2.6533,45
+scale-s01-rounds-r1,1.0,26,Reading programs,complex,generated,1,11,1582,102,2.8039,19,0.0294,1.8416,23,0.0198,38.5881,52.6448,11,6.9532,1.8408,37
+scale-s01-rounds-r1,1.0,27,Announcements and messages,complex,generated,1,10,1308,83,3.1928,21,0.0482,2.2289,18,0.0120,35.7213,52.9755,10,7.6453,3.4483,57
+scale-s01-rounds-r1,1.0,28,Member cards and building access,complex,generated,1,12,1318,77,2.5195,11,0.0260,1.4079,9,0.0000,41.1237,52.1479,13,9.8634,0.8449,14
+scale-s01-rounds-r1,1.0,29,Printing and copying,complex,generated,1,10,927,45,3.3556,18,0.0444,2.3556,16,0.0222,40.9045,53.0868,11,11.8662,2.3236,27
+scale-s01-rounds-r1,1.0,api/reports.py,API router reports (module 10 and 15-28 reports),medium,generated,1,1,244,17,1.4118,2,0.0000,0.4118,1,0.0000,39.7328,39.7328,2,8.1967,19.1638,55
+scale-s01-rounds-r1,1.0,unassigned,unassigned,,unassigned,1,0,0,0,,,,,,,,,0,,,0
