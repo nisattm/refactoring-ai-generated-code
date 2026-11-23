@@ -7,191 +7,612 @@
 <style>
 :root {
   --bg: #f6f6f4; --panel: #ffffff; --ink: #1d1f21; --muted: #6b6f75; --line: #e3e3df; --soft: #f0f0ec;
-  --accent: #2f5d8a; --good: #2e7d4f; --good-bg: #e6f2ea; --bad: #b3261e; --bad-bg: #fbe9e7;
+  --accent: #2f5d8a; --accent-bg: #e8eef5; --good: #2e7d4f; --good-bg: #e6f2ea; --bad: #b3261e; --bad-bg: #fbe9e7;
   --warn: #8a5a00; --warn-bg: #fbf1dc; --live: #1f6fb2; --live-bg: #e4eff8;
   --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #17191b; --panel: #1f2225; --ink: #e6e6e3; --muted: #9aa0a6; --line: #33373b; --soft: #26292d;
-          --accent: #8db4dc; --good: #7cc49a; --good-bg: #1f3328; --bad: #f08a80; --bad-bg: #3a2220;
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #17191b; --panel: #1f2225; --ink: #e6e6e3; --muted: #9aa0a6; --line: #33373b; --soft: #26292d;
+          --accent: #8db4dc; --accent-bg: #1f2c3a; --good: #7cc49a; --good-bg: #1f3328; --bad: #f08a80; --bad-bg: #3a2220;
+          --warn: #e0b45c; --warn-bg: #3a3020; --live: #8cc2ef; --live-bg: #1d2f3f; } }
+:root[data-theme="dark"] { --bg: #17191b; --panel: #1f2225; --ink: #e6e6e3; --muted: #9aa0a6; --line: #33373b; --soft: #26292d;
+          --accent: #8db4dc; --accent-bg: #1f2c3a; --good: #7cc49a; --good-bg: #1f3328; --bad: #f08a80; --bad-bg: #3a2220;
           --warn: #e0b45c; --warn-bg: #3a3020; --live: #8cc2ef; --live-bg: #1d2f3f; }
-}
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
-header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
-header h1 { font-size: 17px; font-weight: 600; margin: 0; }
-header .lock { font-size: 13px; color: var(--muted); }
-header .lock.on { color: var(--live); }
-header .spacer { flex: 1; }
-header select { font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink); }
-header .updated { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-nav { display: flex; gap: 2px; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
-nav button { font: inherit; border: 0; background: none; color: var(--muted); padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent; }
-nav button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
-nav button .n { font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: 400; }
-main { padding: 20px 24px; }
-.cols { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
-@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } main, header, nav { padding-left: 16px; padding-right: 16px; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; }
+a { color: var(--accent); }
+.app { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh;
+       background: linear-gradient(to right, var(--panel) 231px, var(--line) 231px, var(--line) 232px, var(--bg) 232px); }
+aside { background: var(--panel); border-right: 1px solid var(--line); padding: 16px 12px; position: sticky; top: 0; height: 100vh; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+aside .brand { font-weight: 600; font-size: 15px; padding: 0 8px; }
+aside .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+aside .sect { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 14px 8px 4px; }
+aside button.nav { display: flex; justify-content: space-between; align-items: center; width: 100%; font: inherit; text-align: left; border: 0; background: none; color: var(--ink); padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+aside button.nav:hover { background: var(--soft); }
+aside button.nav.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+aside button.nav .n { font-size: 12px; color: var(--muted); font-weight: 400; }
+aside button.nav small { display: block; font-size: 11.5px; color: var(--muted); font-weight: 400; }
+aside .foot { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
+aside .foot select { font: inherit; width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink); }
+.lock.on { color: var(--live); font-weight: 600; }
+main { padding: 22px 26px 40px; min-width: 0; }
+.pagehead h1 { font-size: 20px; margin: 0; font-weight: 600; }
+.pagehead p { margin: 4px 0 16px; color: var(--muted); max-width: 900px; }
+@media (max-width: 900px) {
+  .app { grid-template-columns: minmax(0, 1fr); background: var(--bg); }
+  .panel { overflow-x: auto; }
+  aside button.nav { gap: 6px; }
+  aside { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; border-right: 0; border-bottom: 1px solid var(--line); }
+  aside .sect, aside .brand small { display: none; }
+  aside button.nav { width: auto; }
+  aside button.nav small { display: none; }
+  aside .foot { margin: 0; border: 0; padding: 0 8px; flex-direction: row; width: 100%; }
+  main { padding: 16px; }
+}
+.cols { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .cols { grid-template-columns: minmax(0, 1fr); } }
 .list { display: flex; flex-direction: column; gap: 6px; }
 .item { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; cursor: pointer; }
 .item:hover { border-color: var(--muted); }
 .item.sel { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
-.item .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.item .id { font-family: var(--mono); font-size: 13px; }
-.item .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
-.tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; margin-left: 6px; }
-.badge { font-size: 12px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
-.b-success { background: var(--good-bg); color: var(--good); }
-.b-failed, .b-invalid { background: var(--bad-bg); color: var(--bad); }
-.b-no_improvement, .b-discarded_limit { background: var(--warn-bg); color: var(--warn); }
-.b-no_change, .b-other { background: var(--soft); color: var(--muted); }
+.item .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.item .name { font-weight: 600; }
+.item .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.id { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.chip { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; white-space: nowrap; cursor: help; }
+.badge { font-size: 12px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; cursor: help; }
+.b-success, .s-passed, .s-fixed { background: var(--good-bg); color: var(--good); }
+.b-failed, .b-invalid, .s-regression, .s-missing { background: var(--bad-bg); color: var(--bad); }
+.b-no_improvement, .b-discarded_limit, .s-failed_unconfirmed, .s-still_failing { background: var(--warn-bg); color: var(--warn); }
+.b-no_change, .b-other, .s-skipped { background: var(--soft); color: var(--muted); }
 .b-running { background: var(--live-bg); color: var(--live); }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; margin-bottom: 14px; }
-.panel h2 { font-size: 15px; margin: 0 0 10px; font-weight: 600; }
-.panel h3 { font-size: 13px; margin: 14px 0 6px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
+.panel h2 { font-size: 16px; margin: 0; font-weight: 650; display: flex; align-items: center; gap: 8px; letter-spacing: -.005em; }
+.lead { font-size: 12.5px; color: var(--muted); margin: 4px 0 14px; max-width: 760px; line-height: 1.45; }
+.panel h3 { font-size: 12px; margin: 14px 0 6px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.q { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--line); font-size: 10.5px; color: var(--muted); text-decoration: none; cursor: pointer; font-weight: 600; flex: none; }
+.q:hover { border-color: var(--accent); color: var(--accent); }
 .title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.title .id { font-family: var(--mono); font-size: 16px; font-weight: 600; }
-.meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 18px; margin-top: 12px; }
-.meta div span { display: block; font-size: 12px; color: var(--muted); }
-.meta div b { font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.title .name { font-size: 18px; font-weight: 600; }
+.subtitle { color: var(--muted); margin-top: 2px; }
+.story { margin-top: 12px; padding: 10px 12px; border-radius: 6px; background: var(--soft); }
+.story.good { background: var(--good-bg); } .story.bad { background: var(--bad-bg); } .story.warn { background: var(--warn-bg); }
+.meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px 18px; margin-top: 14px; }
+.meta > div > span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 1px; }
+.meta b { font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.meta em { display: block; font-style: normal; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
 table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 12px; color: var(--muted); font-weight: 600; }
 td.num, th.num { text-align: right; }
+td .desc { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.35; max-width: 420px; margin-top: 1px; }
+th, td { padding: 8px 8px; }
 .good { color: var(--good); } .bad { color: var(--bad); } .muted { color: var(--muted); }
 .problem { background: var(--bad-bg); border: 1px solid var(--bad); border-radius: 6px; padding: 12px 14px; margin-bottom: 14px; }
-.problem h2 { color: var(--bad); font-size: 15px; margin: 0 0 6px; }
-.problem ul { margin: 4px 0 0; padding-left: 18px; }
+.problem h2 { color: var(--bad); font-size: 15px; margin: 0 0 2px; }
+.problem ul { margin: 6px 0 0; padding-left: 18px; }
+a.case { font-family: var(--mono); font-size: 12.5px; cursor: pointer; }
 .live { border-color: var(--live); }
-.live h2 { color: var(--live); display: flex; align-items: center; gap: 8px; }
+.live h2 { color: var(--live); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); animation: pulse 1.4s infinite; }
 @keyframes pulse { 50% { opacity: .25; } }
 .actions { font-family: var(--mono); font-size: 12.5px; max-height: 260px; overflow: auto; }
 .actions div { padding: 2px 0; border-bottom: 1px dashed var(--line); }
 .actions .tool { display: inline-block; width: 52px; color: var(--muted); }
-pre { font-family: var(--mono); font-size: 12px; background: var(--soft); padding: 10px; border-radius: 4px; white-space: pre-wrap; margin: 6px 0 0; max-height: 240px; overflow: auto; }
+pre { font-family: var(--mono); font-size: 12px; background: var(--soft); padding: 10px; border-radius: 4px; white-space: pre-wrap; margin: 6px 0 0; max-height: 320px; overflow: auto; }
 .timeline { font-size: 13px; max-height: 280px; overflow: auto; }
 .timeline div { display: grid; grid-template-columns: 70px 1fr; gap: 8px; padding: 3px 0; }
 .timeline .t { color: var(--muted); font-family: var(--mono); font-size: 12px; }
 .empty { color: var(--muted); padding: 40px 0; text-align: center; }
 details summary { cursor: pointer; color: var(--accent); font-size: 13px; margin-top: 6px; }
 .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+/* tests */
+.sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.setbox { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+.setbox b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; border-radius: 3px; background: var(--soft); overflow: hidden; display: flex; margin-top: 6px; }
+.bar i { display: block; height: 100%; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.toolbar button { font: inherit; font-size: 12.5px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 3px 10px; border-radius: 14px; cursor: pointer; }
+.toolbar button.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+.toolbar input, .toolbar select { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink); }
+.toolbar input { flex: 1; min-width: 180px; }
+tr.case-row { cursor: pointer; }
+tr.case-row:hover td { background: var(--soft); }
+.pill { font-size: 11.5px; padding: 1px 7px; border-radius: 10px; white-space: nowrap; }
+.casebox { background: var(--soft); border-radius: 6px; padding: 10px 12px; font-size: 13px; }
+.casebox dl { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; margin: 0; }
+.casebox dt { color: var(--muted); }
+.casebox dd { margin: 0; }
+/* guide drawer: opens beside the page so both can be read together */
+.app.with-guide { grid-template-columns: 232px minmax(0, 1fr) min(40vw, 580px); }
+/* with the guide open the page gets narrower: the run list moves above the run as compact cards */
+.app.with-guide .cols { grid-template-columns: minmax(0, 1fr); }
+.app.with-guide .list { flex-direction: row; flex-wrap: wrap; max-height: 220px; overflow: auto; }
+.app.with-guide .item { flex: 1 1 230px; }
+.app.with-guide .item .sub + .sub { display: none; }
+@media (max-width: 900px) { .panel { overflow-x: auto; } }
+#drawer { display: none; }
+.app.with-guide #drawer { display: block; position: sticky; top: 0; height: 100vh; overflow: auto; background: var(--panel); border-left: 1px solid var(--line); }
+#drawer .dhead { position: sticky; top: 0; background: var(--panel); border-bottom: 1px solid var(--line); padding: 12px 16px 10px; z-index: 1; }
+#drawer .dhead .row { display: flex; align-items: center; gap: 8px; }
+#drawer .dhead h1 { font-size: 16px; margin: 0; flex: 1; }
+#drawer .dhead button.close { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 4px; cursor: pointer; padding: 1px 9px; }
+#drawer .toc { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+#drawer .toc a { font-size: 12px; text-decoration: none; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line); color: var(--ink); }
+#drawer .toc a:hover { border-color: var(--accent); color: var(--accent); }
+#drawer .dbody { padding: 6px 16px 40px; }
+#drawer section { padding: 14px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 110px; }
+#drawer section h2 { font-size: 14.5px; margin: 0 0 6px; }
+#drawer dl { display: grid; grid-template-columns: 150px 1fr; gap: 6px 12px; margin: 6px 0 0; font-size: 13px; }
+#drawer dt { font-weight: 600; }
+#drawer dd { margin: 0; }
+#drawer p, #drawer li { font-size: 13px; }
+#drawer table td, #drawer table th { font-size: 12.5px; }
+@media (max-width: 1200px) { .app.with-guide { grid-template-columns: 232px minmax(0, 1fr); } .app.with-guide #drawer { position: fixed; right: 0; top: 0; width: min(92vw, 560px); z-index: 10; box-shadow: -8px 0 24px rgba(0,0,0,.18); } }
+.hint { border-bottom: 1px dotted var(--muted); cursor: help; }
+#drawer .toc a { border-color: color-mix(in srgb, var(--c) 35%, var(--line)); }
+.gcard { border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 8px; margin: 10px 0; background: var(--panel); scroll-margin-top: 120px; }
+.ghead { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; padding: 11px 12px; cursor: pointer; font: inherit; color: var(--ink); text-align: left; }
+.gicon { width: 30px; height: 30px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 16px; flex: none; }
+.gtitle { flex: 1; font-weight: 650; font-size: 14.5px; }
+.gchev { color: var(--muted); transition: transform .15s; }
+.gcard.open .gchev { transform: rotate(180deg); }
+.gbody { display: none; padding: 0 14px 14px; font-size: 13.5px; }
+.gcard.open .gbody { display: block; }
+.plain { background: color-mix(in srgb, var(--c) 9%, var(--panel)); border-radius: 8px; padding: 10px 12px; margin: 2px 0 10px; line-height: 1.5; }
+.plain b:first-child { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--c); margin-bottom: 2px; }
+.analogy { font-style: italic; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 8px 0; }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: 10px; } .tile p { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+.checks div { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-bottom: 1px dashed var(--line); }
+.checks span { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--good-bg); color: var(--good); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+.legend { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; font-size: 12.5px; }
+.legend > div { display: grid; grid-template-columns: 130px 1fr; gap: 10px; align-items: start; }
+.legend .pill, .legend .badge { justify-self: start; }
+.why5 { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
+.why5 ul { margin: 6px 0 0; padding-left: 18px; } .why5 li { margin: 4px 0; }
+.mcards { display: flex; flex-direction: column; gap: 10px; }
+.mcard { border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 8px; padding: 12px; }
+.mcard p { margin: 6px 0; }
+.mtop { display: flex; gap: 10px; align-items: flex-start; }
+.mtop > div { flex: 1; }
+.micon { width: 32px; height: 32px; border-radius: 8px; background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); display: inline-flex; align-items: center; justify-content: center; font-size: 17px; flex: none; }
+.mq { color: var(--c); font-weight: 600; font-size: 13px; }
+.mdir { font-size: 11px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.mdir.down, .mdir.up { background: var(--good-bg); color: var(--good); }
+.ba { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ba > div > span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.ba pre { margin-top: 2px; font-size: 11.5px; }
+.ba > div:first-child pre { border-left: 3px solid var(--bad); } .ba > div:last-child pre { border-left: 3px solid var(--good); }
+.mcard dl { display: grid; grid-template-columns: 130px 1fr; gap: 6px 12px; margin: 8px 0 0; font-size: 12.5px; }
+.mcard dt { font-weight: 600; } .mcard dd { margin: 0; }
+/* what changed */
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.fact { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.fact b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 12px; color: var(--muted); }
+.mlines { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; }
+.mline { display: flex; gap: 10px; align-items: baseline; padding: 8px 10px; border-radius: 6px; background: var(--soft); }
+.mline .arrow { font-weight: 700; width: 18px; text-align: center; }
+.mline.good { background: var(--good-bg); } .mline.good .arrow { color: var(--good); }
+.mline.bad { background: var(--bad-bg); } .mline.bad .arrow { color: var(--bad); }
+.mline small { color: var(--muted); margin-left: auto; white-space: nowrap; }
+/* errors in red */
+pre.err { background: var(--bad-bg); border-left: 4px solid var(--bad); color: var(--ink); }
+pre.err .e { color: var(--bad); font-weight: 600; }
+pre.err .gt { background: color-mix(in srgb, var(--bad) 14%, transparent); display: inline-block; width: 100%; }
+pre.code { counter-reset: ln; padding-left: 0; }
+pre.code span.l { display: block; padding-left: 46px; position: relative; }
+pre.code span.l::before { content: attr(data-n); position: absolute; left: 0; width: 36px; text-align: right; color: var(--muted); }
+pre.code span.l.hit { background: var(--bad-bg); box-shadow: inset 4px 0 0 var(--bad); color: var(--bad); font-weight: 600; }
+body.noexp .lead, body.noexp .desc, body.noexp .meta em, body.noexp .cs, body.noexp .pagehead p { display: none; }
+/* charts */
+.charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 14px; }
+.chart { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px 6px; }
+.chart .ct { font-size: 12.5px; font-weight: 600; }
+.chart .cs { font-size: 11px; color: var(--muted); }
+.chart svg { display: block; width: 100%; height: auto; margin-top: 4px; }
+.chart text { font: 10.5px "Segoe UI", system-ui, sans-serif; fill: var(--muted); }
+.chart text.v { fill: var(--ink); font-weight: 600; }
+.viewtoggle { display: inline-flex; gap: 4px; margin-left: auto; }
+.viewtoggle button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); padding: 2px 10px; border-radius: 12px; cursor: pointer; }
+.viewtoggle button.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+/* guide */
+.guide { display: grid; grid-template-columns: 210px 1fr; gap: 24px; align-items: start; }
+.guide .toc { position: sticky; top: 16px; font-size: 13px; display: flex; flex-direction: column; gap: 2px; }
+.guide .toc a { text-decoration: none; padding: 3px 8px; border-radius: 4px; color: var(--ink); }
+.guide .toc a:hover { background: var(--soft); }
+.guide section { scroll-margin-top: 16px; }
+.guide h2 { font-size: 16px; }
+.guide p, .guide li { max-width: 860px; }
+.guide dl { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 8px 0 0; }
+.guide dt { font-weight: 600; }
+.guide dd { margin: 0; }
+@media (max-width: 900px) { .guide { grid-template-columns: 1fr; } .guide .toc { position: static; } .guide dl, .casebox dl { grid-template-columns: 1fr; } }
+.flash { animation: flash 1.6s; }
+@keyframes flash { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+/* ---- top bar layout (2026-11-23): the menu is a bar fixed at the top; the run list stays in view ---------------- */
+:root { --hh: 56px; }
+.app, .app.with-guide { display: grid; grid-template-columns: minmax(0, 1fr); background: var(--bg); min-height: 100vh; }
+.app.with-guide { grid-template-columns: minmax(0, 1fr) min(40vw, 580px); }
+aside { grid-column: 1 / -1; position: sticky; top: 0; z-index: 20; height: auto; overflow: visible; flex-direction: row; flex-wrap: wrap;
+        align-items: center; gap: 4px 6px; padding: 8px 18px; border-right: 0; border-bottom: 1px solid var(--line);
+        box-shadow: 0 1px 8px rgba(0,0,0,.06); }
+aside .brand { padding: 0 14px 0 0; margin-right: 6px; border-right: 1px solid var(--line); white-space: nowrap; }
+aside .brand small, aside .sect, aside button.nav small { display: none; }
+aside #nav-main { display: flex; gap: 4px; flex-wrap: wrap; }
+aside button.nav { width: auto; gap: 8px; padding: 6px 12px; border-radius: 16px; white-space: nowrap; }
+aside button.nav .n { background: var(--soft); border-radius: 8px; padding: 0 6px; }
+aside button.nav.active .n { background: var(--panel); }
+aside .foot { margin: 0 0 0 auto; padding: 0; border: 0; flex-direction: row; align-items: center; gap: 14px; flex-wrap: wrap; }
+aside .foot label { display: flex; align-items: center; gap: 6px; }
+aside .foot select { width: auto; max-width: 160px; padding: 3px 6px; }
+aside .foot { gap: 10px; }
+aside .foot #updated { display: none; }
+.app.with-guide #drawer { top: var(--hh); height: calc(100vh - var(--hh)); grid-column: 2; grid-row: 2; }
+.app main { grid-column: 1; grid-row: 2; }
+.app:not(.with-guide) .list { position: sticky; top: calc(var(--hh) + 14px); max-height: calc(100vh - var(--hh) - 28px); overflow: auto; padding-right: 2px; }
+#drawer .dhead { top: 0; }
+@media (max-width: 1200px) { .app.with-guide { grid-template-columns: minmax(0, 1fr); } .app.with-guide #drawer { position: fixed; top: var(--hh); height: calc(100vh - var(--hh)); grid-column: auto; grid-row: auto; } }
+@media (max-width: 900px) { aside { position: relative; } aside .foot { margin-left: 0; width: 100%; } .app:not(.with-guide) .list { position: static; max-height: none; }
+  .app.with-guide #drawer { top: 0; height: 100vh; } }
+/* ---- run tabs, metrics page, quick start ------------------------------------------------------------------- */
+.rtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 4px 0 16px; position: sticky; top: var(--hh); background: var(--bg); z-index: 5; padding-top: 6px; }
+.rtabs button { font: inherit; font-size: 14px; border: 0; background: none; color: var(--muted); padding: 8px 14px; cursor: pointer; border-bottom: 3px solid transparent; }
+.rtabs button.on { color: var(--ink); font-weight: 650; border-bottom-color: var(--accent); }
+.tn { font-size: 11px; padding: 0 6px; border-radius: 8px; background: var(--bad-bg); }
+.mchips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.mchips button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 6px 12px; border-radius: 18px; cursor: pointer; }
+.mchips button.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 13%, var(--panel)); color: var(--c); font-weight: 650; }
+.mgrid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 16px; }
+@media (max-width: 1100px) { .mgrid { grid-template-columns: minmax(0, 1fr); } }
+.mgrid .mcard { background: var(--panel); }
+.mgrid .chart { max-width: 380px; }
+tr.grp td { font-weight: 650; background: var(--soft); }
+.dbar { position: relative; height: 14px; }
+.dbar .zero { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+.dbar i { position: absolute; top: 2px; height: 10px; border-radius: 3px; }
+.quick { background: var(--accent-bg); border-radius: 10px; padding: 12px 16px; margin: 12px 0 6px; }
+.quick h2 { font-size: 15px; margin: 0 0 4px; }
+.quick ol { margin: 6px 0; padding-left: 20px; } .quick li { margin: 5px 0; font-size: 13.5px; }
+.quick p { margin: 4px 0 0; font-size: 12.5px; }
+.atabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 12px; }
+.atabs button { font: inherit; text-align: left; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 10px; padding: 10px 14px; cursor: pointer; }
+.atabs button small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.atabs button.on { border-color: var(--accent); background: var(--accent-bg); box-shadow: inset 0 -3px 0 var(--accent); }
+.atabs .n { font-size: 12px; color: var(--muted); background: var(--soft); border-radius: 8px; padding: 0 6px; }
+.flow { display: flex; align-items: stretch; gap: 6px; margin: 6px 0 4px; flex-wrap: wrap; }
+.fstep { flex: 1 1 140px; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 6px 4px; }
+.fstep .fi { width: 46px; height: 46px; border-radius: 50%; background: var(--accent-bg); display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 6px; }
+.fstep b { font-size: 13.5px; } .fstep span:last-child { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.flow .arrow { align-self: center; font-size: 22px; color: var(--accent); margin-top: -26px; }
+.flownote { font-size: 12.5px; color: var(--muted); text-align: center; margin: 0 0 16px; }
+.lead2 { font-size: 13.5px; margin: 4px 0 12px; max-width: 900px; }
+.mdesc { display: block; font-size: 11.5px; color: var(--muted); }
+.grow { display: flex; align-items: center; gap: 18px; margin: 4px 0 14px; }
+.grow > div { border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; min-width: 150px; }
+.grow span { display: block; font-size: 12px; color: var(--muted); } .grow b { font-size: 24px; } .grow em { font-style: normal; color: var(--muted); font-size: 12px; margin-left: 6px; }
+.arrow.big { font-size: 30px; color: var(--accent); }
+.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 1000px) { .cols2 { grid-template-columns: 1fr; } }
+.gchart { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.glegend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+.glegend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.grow2 { display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: center; }
+.grow2 > span { font-size: 13px; }
+.gb { display: flex; align-items: center; gap: 8px; height: 16px; margin: 2px 0; }
+.gb i { display: block; height: 12px; border-radius: 3px; min-width: 2px; }
+.gb b { font-size: 12px; font-weight: 600; white-space: nowrap; } .gb em { font-style: normal; color: var(--muted); font-weight: 400; }
+.howto { background: var(--soft); border-radius: 8px; padding: 10px 14px; margin: 8px 0 12px; font-size: 13px; }
+.howto ul { margin: 4px 0; padding-left: 18px; } .howto p { margin: 4px 0; } .howto li { margin: 3px 0; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 0 0 16px; }
+.steps > div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.steps .si { display: block; font-size: 20px; margin-bottom: 2px; }
+.steps .desc { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; }
+.sbars { display: flex; flex-direction: column; gap: 5px; }
+.sbar { display: grid; grid-template-columns: minmax(180px, 320px) 1fr 50px; gap: 10px; align-items: center; cursor: pointer; padding: 3px 6px; border-radius: 6px; }
+.sbar:hover { background: var(--soft); }
+.sbar i { display: block; height: 12px; border-radius: 3px; background: #b3261e; opacity: .75; min-width: 2px; }
+.sbar b { text-align: right; font-variant-numeric: tabular-nums; }
+.hbar { height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; } .hbar i { display: block; height: 100%; background: #b36b00; opacity: .8; }
+/* table headers stay in view while their table scrolls past (below the top bar, and below the run tabs) */
+main table th { position: sticky; top: var(--hh); background: var(--panel); z-index: 3; box-shadow: 0 1px 0 var(--line); }
+main .cols table th { top: calc(var(--hh) + 46px); }
+main tr.grp td { position: static; }
+@media (max-width: 900px) { main table th { position: static; } }
+/* ---- Python code in colour ---------------------------------------------------------------------------------- */
+:root { --hk: #8a3fb3; --hs: #2e7d32; --hn: #b35900; --hc: #7a7f85; --hf: #1f5fa8; --hb: #00797a; --hd: #a3367a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --hk: #d19af0; --hs: #9ccf7f; --hn: #f0a868; --hc: #8b9198; --hf: #7fb4f0; --hb: #5fd0cf; --hd: #f08fc5; } }
+:root[data-theme="dark"] { --hk: #d19af0; --hs: #9ccf7f; --hn: #f0a868; --hc: #8b9198; --hf: #7fb4f0; --hb: #5fd0cf; --hd: #f08fc5; }
+.hl-k { color: var(--hk); font-weight: 600; } .hl-s { color: var(--hs); } .hl-n { color: var(--hn); }
+.hl-c { color: var(--hc); font-style: italic; } .hl-f { color: var(--hf); font-weight: 600; } .hl-b { color: var(--hb); } .hl-d { color: var(--hd); }
+pre.code span.l.hit .hl-k, pre.code span.l.hit .hl-s, pre.code span.l.hit .hl-n, pre.code span.l.hit .hl-f, pre.code span.l.hit .hl-b { color: var(--bad); }
 </style>
 </head>
 <body>
-<header>
-  <h1>Refactoring Experiments</h1>
-  <span id="lock" class="lock">–</span>
-  <span class="spacer"></span>
-  <label class="updated">Runs
-    <select id="include">
-      <option value="all">all</option>
-      <option value="real">experiments only</option>
-      <option value="pilot">pilot only</option>
-    </select>
-  </label>
-  <span id="updated" class="updated"></span>
-</header>
-<nav id="tabs"></nav>
+<div class="app">
+<aside>
+  <div class="brand">Refactoring Experiments<small>How well do three ways of using Claude refactor AI-generated code?</small></div>
+  <div class="sect">Runs by approach</div>
+  <span id="nav-main"></span>
+  <div class="sect">Results</div>
+
+  <div class="sect">Help</div>
+  
+  <div class="foot">
+    <button class="nav" id="theme" title="Switch between light and dark">◐ Auto</button>
+    <label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="exp"> Explanations</label>
+    <span id="lock" class="lock">–</span>
+    <label title="Which runs to show">
+      <select id="include">
+        <option value="all">All runs</option>
+        <option value="real">Study runs only</option>
+        <option value="pilot">Trial runs only</option>
+      </select>
+    </label>
+    <span id="updated"></span>
+  </div>
+</aside>
 <main id="main"><p class="empty">Loading…</p></main>
+<div id="drawer"></div>
+</div>
 
 <script>
-const TABS = [["single", "Single LLM"], ["iterative", "Iterative LLM"], ["multiagent", "Multi-Agent"], ["compare", "Comparison"]];
-const METRICS = [["mean_cc", "Cyclomatic complexity", 2], ["mean_cognitive", "Cognitive complexity", 2],
-                 ["mi_weighted", "Maintainability index", 1], ["duplication_pct", "Duplication %", 2], ["smell_count", "Code smells", 0]];
+// ---- vocabulary: every label on the page and its explanation ---------------------------------------------------
+const APPROACH = {
+  single: { name: "Single LLM", short: "One prompt, one pass",
+            what: "Claude gets one prompt and refactors the code in one call. It cannot run tests and gets no feedback. This is the baseline approach." },
+  iterative: { name: "Iterative LLM", short: "Up to 3 rounds with test feedback",
+               what: "Claude works in one conversation for up to 3 code-changing rounds. After each round our engine runs the feedback tests and tells Claude which tests broke; a round that makes things worse is undone." },
+  multiagent: { name: "Multi-Agent", short: "Analyzer, Refactoring, Reviewer",
+                what: "An orchestrator uses three Claude subagents: the Analyzer lists what to improve, the Refactoring agent changes the code, the Reviewer approves or rejects. The orchestrator may run the feedback tests (at most 3 times)." },
+};
+const VIEWS = ["single", "iterative", "multiagent"];
+const KIND = {
+  "": { label: "Study run", tip: "A run of the real experiment on the full code. Only these runs count in the study results." },
+  pilot: { label: "Pilot run", tip: "Trial run on the smaller pilot code to test the engine before the study. Not part of the study results." },
+  scale: { label: "Scale trial", tip: "Trial on the full code to see whether one run fits in the usage limit of a Claude Pro account. Not part of the study results." },
+};
+const CODE = {
+  ce03f54: { label: "Pilot code", tip: "An earlier, smaller version of the AI-generated Library Management System (commit ce03f54, about 6,400 lines of code, modules 1–14)." },
+  "v0-ai-baseline": { label: "Full LMS code", tip: "The final AI-generated Library Management System (tag v0-ai-baseline, about 30,000 lines of code). The real experiment starts from this code." },
+};
+const OUTCOME = {
+  success: ["Successful", "No test that passed at the start fails now, no quality metric got worse and at least one improved, and the API is unchanged."],
+  no_improvement: ["No improvement", "Nothing broke, but the code did not get better by our rule: no metric improved enough, or one got worse."],
+  no_change: ["No change", "Claude did not change any file of the application."],
+  failed: ["Failed", "The refactoring broke something: a test that passed at the start now fails, the API changed, or the code no longer loads."],
+  invalid: ["Invalid", "The run does not count because of a technical problem (setup, tool permissions, a crash), not because of the code Claude wrote. It is repeated under a new ID."],
+  discarded_limit: ["Stopped by usage limit", "The Claude account reached its usage limit during the run. The run does not count and is repeated."],
+};
+const METRICS = [
+  ["mean_cc", "Cyclomatic complexity", 2, "Average number of independent paths through a function (if, for, while, and, or …). Lower is better.", "Radon", "Paths through a function · lower is better"],
+  ["mean_cognitive", "Cognitive complexity", 2, "Average effort to read a function; nesting is punished more than in cyclomatic complexity. Lower is better.", "complexipy", "Reading effort · lower is better"],
+  ["mi_weighted", "Maintainability index", 1, "0–100 score combining size, complexity and Halstead volume, averaged over files weighted by size. Higher is better.", "Radon", "0–100 score · higher is better"],
+  ["duplication_pct", "Duplication %", 2, "Share of the code that is copy-pasted (blocks of at least 5 lines and 50 tokens). Lower is better.", "jscpd", "Copy-pasted code · lower is better"],
+  ["smell_count", "Code smells", 0, "Number of design and logic problems from a fixed list of 23 smell types (long method, large class, too many parameters, deep nesting …). Lower is better.", "Ruff, Pylint, own AST checks", "Design and logic problems · lower is better"],
+];
+const THRESHOLD = { mean_cc: "0.01", mean_cognitive: "0.01", mi_weighted: "0.1", duplication_pct: "0.05 points", smell_count: "1" };
 const HIGHER = new Set(["mi_weighted"]);
-const OUTCOME = { success: "Successful", no_improvement: "No improvement", no_change: "No change", failed: "Failed",
-                  invalid: "Invalid", discarded_limit: "Usage limit" };
-let state = { tab: "iterative", key: null, include: "all", runs: [], compare: {}, detail: null };
-try { const saved = JSON.parse(localStorage.getItem("dash") || "{}"); Object.assign(state, saved); } catch (e) {}
+const TEST_STATUS = {
+  regression: ["Broke", "Passed at the start, fails now, and failed again in two repetitions: a real regression caused by the refactoring."],
+  failed_unconfirmed: ["Failed once", "Passed at the start and failed in this measurement, but passed when repeated, so it is not counted as a regression (unstable test)."],
+  missing: ["Missing", "The test did not report a result (for example the code did not load)."],
+  still_failing: ["Failed at start", "Already failed in the starting code (a bug of the generated code), so it is not blamed on the refactoring."],
+  fixed: ["Fixed", "Failed at the start and passes now."],
+  passed: ["Passed", "Passed at the start and still passes."],
+  skipped: ["Skipped", "Skipped by the test itself."],
+};
+const SETNAME = { feedback: "Feedback tests", heldout: "Held-out tests" };
+const SETTIP = { feedback: "Tests whose results Iterative and Multi-Agent may see during refactoring.",
+                 heldout: "Hidden tests that no approach ever sees; they check the final result only, so overfitting to the feedback tests shows up here." };
+const FIELD = {
+  started: "When the engine started the run.",
+  code: "The code Claude was asked to refactor.",
+  calls: "Claude Code calls made in this run; for Iterative and Multi-Agent also the measured rounds and how many were kept.",
+  time: "Time Claude spent working (all calls), without the time our engine spent measuring.",
+  cost: "What the tokens would cost at Anthropic's API list prices. We pay a flat Claude Pro subscription, so this is a size measure, not a bill.",
+  window: "Share of the account's 5-hour usage limit at the start and after the last call. A run may only start below 10 %.",
+  account: "Anonymous label of the Claude Pro account that ran it (exp-1, exp-2 …).",
+  model: "Claude model and reasoning effort; the same in every run.",
+  subagents: "How often the orchestrator called each subagent.",
+  testruns: "How often the orchestrator ran the feedback test command, and the budget.",
+  blocked: "Attempts to use something outside the rules (a hidden folder, another command). They were refused; the run stays valid.",
+  shell: "Harmless read-only shell commands (like ls) inside the project folder. Counted only.",
+  id: "Technical ID of the run: approach letter (s, i, m) and number; a trailing letter (b, c) marks a repeat of an invalid run.",
+};
+
+let state = { view: "single", key: null, include: "all", runs: [], compare: {}, detail: null,
+              tests: null, testsKey: null, tm: null, tf: "problems", ts: "all", tq: "", tall: false, open: new Set() };
+try { const saved = JSON.parse(localStorage.getItem("dash2") || "{}"); Object.assign(state, saved, { open: new Set() }); } catch (e) {}
+if (VIEWS.includes(state.view)) { state.approach = state.view; state.view = "runs"; }
+if (!["metrics", "analyzer", "runs", "compare"].includes(state.view)) state.view = "runs";
+if (!VIEWS.includes(state.approach)) state.approach = "single";
+if (!["overview", "tests", "rounds"].includes(state.rtab)) state.rtab = "overview";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
 const fmt = (v, d = 2) => (v === null || v === undefined || v === "") ? "–" : Number(v).toFixed(d);
 const time = iso => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 const date = iso => iso ? new Date(iso).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
-const mins = s => s ? `${Math.round(s / 60)} min` : "–";
-function save() { try { localStorage.setItem("dash", JSON.stringify({ tab: state.tab, key: state.key, include: state.include })); } catch (e) {} }
+const mins = s => s ? (s < 60 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`) : "–";
+const q = (anchor, tip) => `<a class="q" data-guide="${anchor}" title="${esc(tip || "Explain")}">?</a>`;
+function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, approach: state.approach, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp, theme: state.theme, rtab: state.rtab, metric: state.metric, gv: state.gv })); } catch (e) {} }
+
+// ---- names that explain themselves -----------------------------------------------------------------------------
+function kindOf(run) {
+  if (/^scale/.test(run.run_id || "")) return KIND.scale;
+  return KIND[run.group] || { label: run.group ? run.group[0].toUpperCase() + run.group.slice(1) + " run" : "Study run", tip: "Trial run; not part of the study results." };
+}
+function codeOf(run) {
+  const c = CODE[run.start_ref] || { label: `Code ${run.start_sha || run.start_ref || "?"}`, tip: "Starting commit of this run." };
+  return c;
+}
+function numberOf(run) {
+  const m = /(\d+)([a-z]?)$/.exec(run.run_id || "");
+  return m ? { n: Number(m[1]), repeat: m[2] || "" } : { n: null, repeat: "" };
+}
+function repeatOf(run) {
+  const { repeat } = numberOf(run);
+  if (!repeat) return null;
+  const prev = repeat === "b" ? run.run_id.slice(0, -1) : run.run_id.slice(0, -1) + String.fromCharCode(repeat.charCodeAt(0) - 1);
+  return state.runs.find(r => r.run_id === prev && r.approach === run.approach) || { run_id: prev };
+}
+function runName(run) {
+  const { n, repeat } = numberOf(run);
+  return `${kindOf(run).label}${n !== null ? " " + n : ""}${repeat ? " (repeat)" : ""}`;
+}
 function badge(run) {
-  if (run.status === "running") return `<span class="badge b-running">Running</span>`;
-  if (run.status === "limit_cut") return `<span class="badge b-discarded_limit">Stopped at usage limit</span>`;
+  if (run.status === "running") return `<span class="badge b-running" title="The run is in progress.">Running</span>`;
+  if (run.status === "limit_cut") return `<span class="badge b-discarded_limit" title="${esc(OUTCOME.discarded_limit[1])}">Stopped by usage limit</span>`;
   if (run.status !== "finished") return `<span class="badge b-other">${esc(run.status || "?")}</span>`;
-  return `<span class="badge b-${esc(run.outcome)}">${esc(OUTCOME[run.outcome] || run.outcome)}</span>`;
+  const o = OUTCOME[run.outcome] || [run.outcome, ""];
+  return `<span class="badge b-${esc(run.outcome)}" title="${esc(o[1])}">${esc(o[0])}</span>`;
 }
 function delta(metric, d, digits, status) {
   if (d === null || d === undefined) return `<span class="muted">–</span>`;
   const better = HIGHER.has(metric) ? d > 0 : d < 0, same = Math.abs(d) < 1e-9;
-  // compare.py's verdict decides the colour when it is known (its thresholds, D17); "same" stays grey
   const cls = status ? ({ improved: "good", worse: "bad" }[status] || "muted") : (same ? "muted" : (better ? "good" : "bad"));
   return `<span class="${cls}">${d > 0 ? "+" : ""}${Number(d).toFixed(digits)}</span>`;
 }
+function verdictWord(status) {
+  return { improved: `<span class="good">better</span>`, worse: `<span class="bad">worse</span>`, same: `<span class="muted">same</span>` }[status] || "–";
+}
 
-async function load() {
+// ---- data ------------------------------------------------------------------------------------------------------
+let lastSig = "";
+async function load(force) {
   try {
     const res = await fetch(`/api/runs?include=${state.include}`);
     const data = await res.json();
     state.runs = data.runs; state.compare = data.compare;
     const lock = document.getElementById("lock");
-    lock.textContent = data.lock ? `● Running now: ${data.lock.what}` : "No run in progress";
+    lock.textContent = data.lock ? `● Running now: ${data.lock.what}` : "";
     lock.className = "lock" + (data.lock ? " on" : "");
-    if (state.key && state.tab !== "compare") {
+    if (state.view === "analyzer" && (force || !state.analyzer || state.analyzer.selected !== state.base)) {
+      const a = await fetch(`/api/analyzer${state.base ? "?b=" + encodeURIComponent(state.base) : ""}`);
+      state.analyzer = a.ok ? await a.json() : null;
+      if (state.analyzer) state.base = state.analyzer.selected;
+    }
+    if (state.key && state.view === "runs") {
       const r = await fetch(`/api/run?key=${encodeURIComponent(state.key)}`);
       state.detail = r.ok ? await r.json() : null;
+      const running = state.detail && state.detail.status === "running";
+      if (state.detail && (force || state.testsKey !== state.key + "|" + state.tm || running)) {
+        const t = await fetch(`/api/tests?key=${encodeURIComponent(state.key)}${state.tm ? "&m=" + encodeURIComponent(state.tm) : ""}`);
+        state.tests = t.ok ? await t.json() : null;
+        if (state.tests) { state.tm = state.tests.selected; state.testsKey = state.key + "|" + state.tm; }
+      }
     }
     document.getElementById("updated").textContent = "Updated " + new Date().toLocaleTimeString();
-    render();
+    const sig = JSON.stringify([state.view, state.approach, state.analyzer && state.analyzer.selected, state.key, state.runs, state.detail, state.tests && state.tests.selected, state.tests && state.tests.counts]);
+    if (force || sig !== lastSig) { lastSig = sig; render(); }
   } catch (e) {
     document.getElementById("updated").textContent = "Dashboard server not reachable";
   }
 }
 
+// ---- layout ----------------------------------------------------------------------------------------------------
+const NAV = [["guide", "📘 Guide", "What everything means (opens beside the page)"], ["metrics", "📏 Metrics", "The five quality metrics, one by one"],
+             ["analyzer", "🔍 Code Quality Analyzer", "What the analyzer measured in the starting code"],
+             ["runs", "🧪 Experiment Runs", "Every refactoring run of the three approaches"], ["compare", "📊 Refactoring Comparison", "The three approaches side by side"]];
+function renderNav() {
+  document.getElementById("nav-main").innerHTML = NAV.map(([id, label, tip]) => id === "guide"
+    ? `<button class="nav ${state.guide ? "active" : ""}" data-drawer="1" id="guide-btn" title="${esc(tip)}">${label}</button>`
+    : `<button class="nav ${state.view === id ? "active" : ""}" data-view="${id}" title="${esc(tip)}">${label}${id === "runs" ? ` <span class="n">${state.runs.length}</span>` : ""}</button>`).join("");
+}
+
 function render() {
-  document.getElementById("tabs").innerHTML = TABS.map(([id, label]) => {
-    const n = id === "compare" ? "" : `<span class="n">${state.runs.filter(r => r.approach === id).length}</span>`;
-    return `<button class="${state.tab === id ? "active" : ""}" data-tab="${id}">${label}${n}</button>`;
-  }).join("");
+  renderNav();
   const main = document.getElementById("main");
-  if (state.tab === "compare") { main.innerHTML = renderCompare(); return; }
-  const runs = state.runs.filter(r => r.approach === state.tab);
+  if (state.view === "compare") { main.innerHTML = renderCompare(); return; }
+  if (state.view === "metrics") { main.innerHTML = renderMetricsPage(); return; }
+  if (state.view === "analyzer") { main.innerHTML = renderAnalyzer(); return; }
+  const a = APPROACH[state.approach];
+  const tabs = `<div class="atabs">${VIEWS.map(id => `<button data-approach="${id}" class="${state.approach === id ? "on" : ""}">
+      <b>${APPROACH[id].name}</b> <span class="n">${state.runs.filter(r => r.approach === id).length}</span><small>${APPROACH[id].short}</small></button>`).join("")}</div>`;
+  const head = `<div class="pagehead"><h1>Experiment Runs</h1><p>Every refactoring run, by approach. Pick a run on the left to see what happened.</p></div>${tabs}
+    <p class="lead" style="margin-top:-4px">${esc(a.what)} ${q("approaches", "How the three approaches differ")}</p>`;
+  const runs = state.runs.filter(r => r.approach === state.approach);
   if (!runs.length) {
-    main.innerHTML = `<p class="empty">No ${esc(TABS.find(t => t[0] === state.tab)[1])} runs yet. They appear here as soon as the engine starts one.</p>`;
+    main.innerHTML = head + `<p class="empty">No ${esc(a.name)} runs yet. They appear here as soon as the engine starts one.</p>`;
     return;
   }
-  if (!runs.some(r => r.key === state.key)) { state.key = runs[0].key; state.detail = null; save(); load(); }
-  main.innerHTML = `<div class="cols"><div class="list">${runs.map(renderItem).join("")}</div><div>${renderDetail()}</div></div>`;
+  if (!runs.some(r => r.key === state.key)) { state.key = runs[0].key; state.detail = null; state.tests = null; state.tm = null; save(); load(true); }
+  main.innerHTML = head + `<div class="cols"><div class="list">${runs.map(renderItem).join("")}</div><div>${renderDetail()}</div></div>`;
+  renderTestsBody();
 }
 
 function renderItem(run) {
+  const kind = kindOf(run), code = codeOf(run);
   const cc = run.deltas && run.deltas.mean_cc, ccStatus = (run.metric_status || {}).mean_cc;
   return `<div class="item ${run.key === state.key ? "sel" : ""}" data-key="${esc(run.key)}">
-    <div class="top"><span class="id">${esc(run.run_id)}${run.group ? `<span class="tag">${esc(run.group)}</span>` : ""}</span>${badge(run)}</div>
-    <div class="sub">${esc(date(run.started_at))} · ${run.calls} call${run.calls === 1 ? "" : "s"} · ${run.usd ? "$" + fmt(run.usd) : "–"}${cc !== null && cc !== undefined ? " · CC " + delta("mean_cc", cc, 2, ccStatus) : ""}</div>
+    <div class="top"><span class="name">${esc(runName(run))}</span>${badge(run)}</div>
+    <div class="sub"><span title="${esc(code.tip)}">${esc(code.label)}</span> · ${esc(date(run.started_at))} · <span class="id" title="${esc(FIELD.id)}">${esc(run.run_id)}</span></div>
+    <div class="sub">${mins(run.claude_s)} of Claude work${run.usd ? " · $" + fmt(run.usd) : ""}${cc !== null && cc !== undefined ? " · complexity " + delta("mean_cc", cc, 2, ccStatus) : ""}</div>
     ${run.status === "running" ? `<div class="sub">${esc(run.current)}</div>` : ""}
   </div>`;
+}
+
+// ---- one run ---------------------------------------------------------------------------------------------------
+function story(d) {
+  const out = d.outcome, rep = repeatOf(d);
+  const repeated = state.runs.find(r => r.approach === d.approach && r.run_id !== d.run_id && repeatOf(r) && repeatOf(r).run_id === d.run_id);
+  const tail = repeated ? ` It was repeated as ${esc(runName(repeated))} (${esc(repeated.run_id)}).` : "";
+  const head = rep ? `This run repeats ${esc(rep.run_id)}, which did not count. ` : "";
+  if (d.status === "running") return [`${head}The run is in progress: ${esc(d.current)}`, ""];
+  if (d.status === "limit_cut" || out === "discarded_limit") return [`${head}The Claude account reached its usage limit before Claude finished, so the run does not count.${tail}`, "warn"];
+  if (out === "invalid") return [`${head}This run does not count because of a technical problem, not because of Claude's code: ${esc((d.reasons || [])[0] || "")}.${tail}`, "bad"];
+  const lastFacts = (d.final || {}).best || (d.final || {}).last || (d.final || {}).round1;
+  const statusOf = Object.values(d.metric_status || {}).some(Boolean) ? d.metric_status
+    : Object.fromEntries(Object.entries((lastFacts || {}).metrics || {}).map(([m, v]) => [m, v && v.status]));
+  const changed = Object.entries(statusOf || {}).filter(([, s]) => s === "improved").map(([m]) => (METRICS.find(x => x[0] === m) || [, m])[1].toLowerCase());
+  const worse = Object.entries(statusOf || {}).filter(([, s]) => s === "worse").map(([m]) => (METRICS.find(x => x[0] === m) || [, m])[1].toLowerCase());
+  const tests = d.regressions ? `${d.regressions} test(s) that passed at the start now fail` : "every test that passed at the start still passes";
+  if (out === "success") return [`${head}Claude refactored the code and ${tests}. Improved: ${changed.join(", ") || "–"}${worse.length ? "; worse: " + worse.join(", ") : ""}. The result counts as a successful refactoring.`, "good"];
+  if (out === "no_improvement") return [`${head}Nothing broke (${tests}), but the code did not improve by our rule${worse.length ? ": " + worse.join(", ") + " got worse" : ""}. The starting code stays the best result.`, "warn"];
+  if (out === "no_change") return [`${head}Claude did not change the application code.`, ""];
+  if (out === "failed") return [`${head}The refactoring broke something: ${esc((d.reasons || []).join("; ") || tests)}.`, "bad"];
+  return [head, ""];
 }
 
 function renderDetail() {
   const d = state.detail;
   if (!d || d.key !== state.key) return `<div class="panel"><p class="muted">Loading…</p></div>`;
-  const w = d.window || {};
-  let html = `<div class="panel"><div class="title"><span class="id">${esc(d.run_id)}</span>${badge(d)}
-      ${d.group ? `<span class="tag">${esc(d.group)}</span>` : ""}</div>
+  const w = d.window || {}, kind = kindOf(d), code = codeOf(d), [text, tone] = story(d);
+  const field = (label, tip, value, note = "") => `<div><span><span class="${tip ? "hint" : ""}" title="${esc(tip || "")}">${label}</span></span><b>${value}</b>${note ? `<em>${note}</em>` : ""}</div>`;
+  const roles = d.roles ? [
+    field("Subagent calls", FIELD.subagents, Object.entries(d.roles.subagent_calls || {}).map(([r, n]) => `${esc(r)} ${n}`).join(" · ") || "none"),
+    field("Test command runs", FIELD.testruns, `${d.roles.test_runs}${d.budget ? " of " + d.budget.test_runs : ""}`),
+    field("Blocked attempts", FIELD.blocked, (d.roles.blocked || []).length),
+    field("Read-only shell commands", FIELD.shell, (d.roles.read_only_shell || []).length)].join("") : "";
+  let html = `<div class="panel">
+    <div class="title"><span class="name">${esc(APPROACH[d.approach].name)} · ${esc(runName(d))}</span>${badge(d)}
+      <span class="chip" title="${esc(kind.tip)}">${esc(kind.label)}</span><span class="id" title="${esc(FIELD.id)}">${esc(d.run_id)}</span></div>
+    <div class="subtitle">${esc(code.label)}${d.tests_modules ? `, tests of modules ${esc(d.tests_modules)}` : ""} · ${esc(kind.tip)}</div>
+    ${text ? `<div class="story ${tone}">${text} ${q("outcomes", "What the outcomes mean")}</div>` : ""}
     <div class="meta">
-      <div><span>Started</span><b>${esc(date(d.started_at))}</b></div>
-      <div><span>Start code</span><b>${esc(/^[0-9a-f]{40}$/.test(d.start_ref || "") ? d.start_sha : d.start_ref)}${d.tests_modules ? " · modules " + esc(d.tests_modules) : ""}</b></div>
-      <div><span>${d.approach === "single" ? "Calls" : "Calls / rounds"}</span><b>${d.approach === "single" ? d.calls : `${d.calls} / ${d.rounds} (${d.accepted} accepted)`}</b></div>
-      <div><span>Claude time</span><b>${mins(d.claude_s)}</b></div>
-      <div><span>Cost (list price)</span><b>${d.usd ? "$" + fmt(d.usd) : "–"}</b></div>
-      <div><span>5-hour window</span><b>${fmt(w.start, 0)}% → ${w.end === null || w.end === undefined ? "–" : fmt(w.end, 0) + "%"}</b></div>
-      <div><span>Account</span><b>${esc(d.account)}</b></div>
-      <div><span>Model</span><b>${esc(d.model)} · ${esc(d.effort)}</b></div>
-      ${d.roles ? `<div><span>Subagent calls</span><b>${Object.entries(d.roles.subagent_calls || {}).map(([r, n]) => `${esc(r)} ${n}`).join(" · ") || "none"}</b></div>
-      <div><span>Test command runs</span><b>${d.roles.test_runs}${d.budget ? " of " + d.budget.test_runs : ""}</b></div>
-      <div><span>Blocked attempts</span><b>${(d.roles.blocked || []).length}</b></div>
-      <div><span>Read-only shell commands</span><b>${(d.roles.read_only_shell || []).length}</b></div>` : ""}
+      ${field("Started", FIELD.started, esc(date(d.started_at)))}
+      ${field("Start code", FIELD.code, esc(code.label), esc(/^[0-9a-f]{40}$/.test(d.start_ref || "") ? d.start_sha : d.start_ref))}
+      ${field(d.approach === "single" ? "Claude calls" : "Calls / rounds", FIELD.calls, d.approach === "single" ? d.calls : `${d.calls} / ${d.rounds} (${d.accepted} kept)`)}
+      ${field("Claude time", FIELD.time, mins(d.claude_s))}
+      ${field("Cost (list price)", FIELD.cost, d.usd ? "$" + fmt(d.usd) : "–", "size measure, not a bill")}
+      ${field("5-hour usage window", FIELD.window, `${fmt(w.start, 0)}% → ${w.end === null || w.end === undefined ? "–" : fmt(w.end, 0) + "%"}`, w.used !== null && w.used !== undefined ? `this run used ${fmt(w.used, 0)} points` : "")}
+      ${field("Account", FIELD.account, esc(d.account))}
+      ${field("Model", FIELD.model, `${esc(d.model)} · ${esc(d.effort)}`)}
+      ${roles}
     </div>
     ${d.stop_reason && d.status === "finished" ? `<p class="note">Stopped because: ${esc(d.stop_reason)}</p>` : ""}
   </div>`;
-  html += renderLive(d) + renderProblems(d) + renderMetrics(d) + renderRounds(d) + renderCalls(d) + renderTimeline(d);
+  const nTests = state.tests && state.tests.cases ? state.tests.cases.filter(c => !["passed", "fixed", "skipped"].includes(c.status)).length : 0;
+  const tabs = [["overview", "Overview"], ["tests", `Tests${nTests ? ` <span class="tn bad">${nTests}</span>` : ""}`],
+                ["rounds", d.approach === "single" ? "Calls & timeline" : "Rounds, calls & timeline"]];
+  html += `<div class="rtabs">${tabs.map(([id, l]) => `<button data-rtab="${id}" class="${state.rtab === id ? "on" : ""}">${l}</button>`).join("")}</div>`;
+  html += renderLive(d);
+  if (state.rtab === "overview") html += renderProblems(d) + renderChanges(d) + renderMetrics(d);
+  else if (state.rtab === "tests") html += renderTests(d);
+  else html += renderRounds(d) + renderCalls(d) + renderTimeline(d);
   return html;
 }
 
@@ -201,37 +622,76 @@ function renderLive(d) {
   const actions = (l.actions || []).slice().reverse().map(a =>
     `<div><span class="tool">${esc(a.tool)}</span>${esc(a.target)}</div>`).join("") || `<div class="muted">No tool call yet.</div>`;
   return `<div class="panel live"><h2><span class="dot"></span>Live${l.call ? ` · call ${l.call}` : ""}</h2>
+    <p class="lead">What Claude is doing right now.</p>
     <div><b>Now:</b> ${esc(d.current)}</div>
-    ${l.call ? `<h3>Latest model actions</h3><div class="actions">${actions}</div>
+    ${l.call ? `<h3>Latest actions of Claude</h3><div class="actions">${actions}</div>
     ${l.text ? `<h3>Latest message</h3><pre>${esc(l.text)}</pre>` : ""}` : ""}
   </div>`;
 }
 
+const caseLink = x => `<a class="case" data-case="${esc(x.case)}" title="Show this test">${esc(x.case)}</a>${x.module ? " (module " + esc(x.module) + ")" : ""}`;
 function renderProblems(d) {
   const items = [];
-  if (d.status === "finished" && d.valid === false) items.push(...d.reasons.map(r => `Invalid run: ${esc(r)}`));
+  if (d.status === "finished" && d.valid === false) items.push(...d.reasons.map(r => `Run does not count: ${esc(r)}`));
   const reverts = d.approach !== "single";
-  const dropped = d.approach === "multiagent" ? " → round not kept" : " → round reverted";
+  const dropped = d.approach === "multiagent" ? " → round not kept" : " → round undone";
   if (d.outcome === "failed" && !reverts) items.push(...d.reasons.map(r => `Run failed: ${esc(r)}`));
   (d.calls_detail || []).forEach(c => (c.invalid || []).forEach(r => items.push(`Call ${c.number}: ${esc(r)}`)));
-  const notes = (d.roles && d.roles.blocked || []).map(b => `Blocked (counted, run stays valid): ${esc(b)}`);
+  const notes = (d.roles && d.roles.blocked || []).map(b => esc(b));
   (d.rounds_detail || []).forEach(r => {
-    if (r.regressions.length) items.push(`${reverts ? "Round " + r.round + ": " : "Tests: "}${r.regressions.length} test regression(s) – ` +
-      r.regressions.map(x => `${esc(x.case)}${x.module ? " (module " + esc(x.module) + ")" : ""}`).join(", ") +
-      (reverts && r.accepted === false ? dropped : ""));
-    if (r.api_changed) items.push(`Round ${r.round}: API changed (${esc(r.api_change_kind || "unclassified")})${reverts && r.accepted === false ? dropped : ""}`);
+    if (r.regressions.length) items.push(`${reverts ? "Round " + r.round + ": " : ""}${r.regressions.length} test(s) broke – ` +
+      r.regressions.map(caseLink).join(", ") + (reverts && r.accepted === false ? dropped : ""));
+    if (r.api_changed) items.push(`Round ${r.round}: the REST API changed (${esc(r.api_change_kind || "unclassified")})${reverts && r.accepted === false ? dropped : ""}`);
     (r.problems || []).forEach(p => items.push(`Round ${r.round}: ${esc(p)}`));
   });
   const seen = new Set();
   Object.values(d.final || {}).forEach(f => {
     if (seen.has(f.round)) return; seen.add(f.round);
-    if (reverts && (f.regressions || []).length) items.push(`Final measurement of round ${f.round} (feedback and held-out): ` +
-      f.regressions.map(x => `${esc(x.case)}${x.module ? " (module " + esc(x.module) + ")" : ""}`).join(", "));
+    if (reverts && (f.regressions || []).length) items.push(`Final check of round ${f.round} (feedback and held-out tests): ` + f.regressions.map(caseLink).join(", "));
   });
   if (d.outcome === "failed" && reverts) items.push(...d.reasons.map(r => `Run failed: ${esc(r)}`));
-  const blockedBox = notes.length ? `<div class="panel"><h2>Blocked attempts</h2><ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>` : "";
+  const blockedBox = notes.length ? `<div class="panel"><h2>Blocked attempts ${q("validity", "What counts as blocked")}</h2>
+    <p class="lead">Claude tried to use something the rules do not allow; the attempt was refused and counted. The run stays valid.</p>
+    <ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>` : "";
   if (!items.length) return blockedBox;
-  return `<div class="problem"><h2>Where it went wrong</h2><ul>${[...new Set(items)].map(i => `<li>${i}</li>`).join("")}</ul></div>` + blockedBox;
+  return `<div class="problem"><h2>Where it went wrong</h2><p class="lead">Click a test ID to see the test and its error below.</p><ul>${[...new Set(items)].map(i => `<li>${i}</li>`).join("")}</ul></div>` + blockedBox;
+}
+
+function renderChanges(d) {
+  const ch = d.changes;
+  if (!ch) return "";
+  const size = ch.size || {}, sloc = ch.sloc || {};
+  const lastFacts = (d.final || {}).best || (d.final || {}).last || (d.final || {}).round1 || {};
+  const lines = METRICS.map(([m, label, digits]) => {
+    const v = (lastFacts.metrics || {})[m] || {};
+    if (typeof v.after !== "number" || typeof (d.start_metrics || {})[m] !== "number") return "";
+    const before = d.start_metrics[m], g = METRIC_GUIDE[m];
+    const pct = before ? Math.round(100 * (v.after - before) / Math.abs(before)) : 0;
+    const tone = v.status === "improved" ? "good" : v.status === "worse" ? "bad" : "";
+    const word = v.status === "improved" ? "better" : v.status === "worse" ? "worse" : "about the same";
+    return `<div class="mline ${tone}"><span class="arrow">${tone === "good" ? "✓" : tone === "bad" ? "✗" : "="}</span>
+      <span><b>${label}</b> got <b>${word}</b>: ${fmt(before, digits)} → ${fmt(v.after, digits)}<span class="desc" style="display:inline"> · ${esc(g.question)}</span></span>
+      <small>${pct > 0 ? "+" : ""}${pct} %</small></div>`;
+  }).join("");
+  const smellRows = Object.entries(ch.smells || {}).filter(([, v]) => v.before || v.after)
+    .sort((a, b) => Math.abs(b[1].after - b[1].before) - Math.abs(a[1].after - a[1].before))
+    .map(([id, v]) => `<tr><td>${esc(SMELLS[id] || id)} <span class="id">${esc(id)}</span></td><td class="num">${v.before}</td><td class="num">${v.after}</td>
+      <td class="num">${v.after === v.before ? `<span class="muted">0</span>` : `<span class="${v.after < v.before ? "good" : "bad"}">${v.after > v.before ? "+" : ""}${v.after - v.before}</span>`}</td></tr>`).join("");
+  const names = (list, n) => list.slice(0, 12).map(x => `<span class="id">${esc(x.replace(/^(function|class) /, ""))}</span>`).join(", ") + (n > 12 ? ` and ${n - 12} more` : "");
+  return `<div class="panel"><h2>What the refactoring changed ${q("metrics", "What the metrics mean")}</h2>
+    <p class="lead">${ch.kept ? "The kept result compared with the starting code." : "The last version Claude produced (it was not kept, so the starting code remains the result)."}</p>
+    <div class="facts">
+      <div class="fact"><b>${size.files_changed ?? "–"}</b><span>files changed${size.files_added ? ` · ${size.files_added} new` : ""}${size.files_removed ? ` · ${size.files_removed} removed` : ""}</span></div>
+      <div class="fact"><b><span class="good">+${size.lines_added ?? 0}</span> <span class="bad">−${size.lines_removed ?? 0}</span></b><span>lines added / removed</span></div>
+      <div class="fact"><b>${sloc.before ?? "–"} → ${sloc.after ?? "–"}</b><span>lines of code${typeof sloc.drop_pct === "number" ? ` (${sloc.drop_pct > 0 ? "−" : "+"}${fmt(Math.abs(sloc.drop_pct), 1)} %)` : ""}</span></div>
+      <div class="fact"><b>${ch.added} / ${ch.removed}</b><span>functions or classes created / removed</span></div>
+    </div>
+    <div class="mlines">${lines}</div>
+    ${smellRows ? `<details><summary>Code smells by type</summary><table><tr><th>Bad pattern</th><th class="num">Before</th><th class="num">After</th><th class="num">Change</th></tr>${smellRows}</table></details>` : ""}
+    ${ch.added || ch.removed ? `<details><summary>New and removed functions and classes</summary>
+      ${ch.added ? `<p><b class="good">Created (${ch.added}):</b> ${names(ch.added_names, ch.added)}</p>` : ""}
+      ${ch.removed ? `<p><b class="bad">Removed or merged (${ch.removed}):</b> ${names(ch.removed_names, ch.removed)}</p>` : ""}</details>` : ""}
+  </div>`;
 }
 
 function renderMetrics(d) {
@@ -240,99 +700,642 @@ function renderMetrics(d) {
   const cols = [["Start", d.start_metrics]];
   let ref = null;
   if (f.best) {
-    if (f.round1 && f.round1.round !== f.best.round) cols.push(["Round 1", after(f.round1.metrics)]);
-    cols.push([d.approach === "single" ? "After" : `Best${d.best_round ? " (round " + d.best_round + ")" : ""}`, after(f.best.metrics)]);
-    if (f.last && f.last.round !== f.best.round) cols.push([`Last (round ${f.last.round})`, after(f.last.metrics)]);
+    if (f.round1 && f.round1.round !== f.best.round) cols.push(["Round 1", after(f.round1.metrics), f.round1.metrics]);
+    cols.push([d.approach === "single" ? "After" : `Best${d.best_round ? " (round " + d.best_round + ")" : ""}`, after(f.best.metrics), f.best.metrics]);
+    if (f.last && f.last.round !== f.best.round) cols.push([`Last (round ${f.last.round})`, after(f.last.metrics), f.last.metrics]);
     ref = f.best.metrics;
-  } else if ((d.rounds_detail || []).length) {          // running, or no accepted round: the latest round so far
+  } else if (f.last || f.round1) {
+    const x = f.last || f.round1;
+    cols.push([`Round ${x.round} (not kept)`, after(x.metrics), x.metrics]);
+    ref = x.metrics;
+  } else if ((d.rounds_detail || []).length) {
     const last = d.rounds_detail[d.rounds_detail.length - 1];
-    cols.push([`Round ${last.round}${d.status === "running" ? " (so far)" : ""}`, after(last.metrics)]);
+    cols.push([`Round ${last.round}${d.status === "running" ? " (so far)" : ""}`, after(last.metrics), last.metrics]);
     ref = last.metrics;
   }
   if (cols.length === 1 && d.status === "finished") return "";
-  const rows = METRICS.map(([m, label, digits]) => {
+  const rows = METRICS.map(([m, label, digits, desc, tool, short]) => {
     const v = ref && ref[m];
-    return `<tr><td>${label}</td>${cols.map(([, vals]) => `<td class="num">${fmt(vals && vals[m], digits)}</td>`).join("")}
-      <td class="num">${v ? delta(m, v.delta, digits, v.status) : "–"}</td></tr>`;
+    return `<tr><td title="${esc(desc + " Tool: " + tool + ".")}">${label}<span class="desc">${esc(short)}</span></td>${cols.map(([, vals]) => `<td class="num">${fmt(vals && vals[m], digits)}</td>`).join("")}
+      <td class="num">${v ? delta(m, v.delta, digits, v.status) : "–"}</td>
+      <td class="num" title="A change smaller than ${THRESHOLD[m]} counts as the same.">${v ? verdictWord(v.status) : "–"}</td></tr>`;
   }).join("");
-  const who = d.approach === "single" ? "The result" : "Best result";
-  const succ = f.best ? (f.best.run_successful ? `<span class="good">meets the success rule</span>` :
-    `<span class="bad">does not meet the success rule</span>${(f.best.reasons || []).length ? ": " + esc(f.best.reasons.join("; ")) : ""}`) : "";
-  return `<div class="panel"><h2>Quality metrics</h2>
-    <table><tr><th>Metric</th>${cols.map(([l]) => `<th class="num">${l}</th>`).join("")}<th class="num">Change</th></tr>${rows}</table>
-    ${succ ? `<p class="note">${who} ${succ}.</p>` : ""}
-    <p class="note">Lower is better, except the maintainability index. Tests: feedback and held-out sets, measured in the starting project.</p></div>`;
+  const best = f.best;
+  const succ = best ? (best.run_successful ? `<span class="good">meets the success rule</span>` :
+    `<span class="bad">does not meet the success rule</span>${(best.reasons || []).length ? ": " + esc(best.reasons.join("; ")) : ""}`) : "";
+  const statusCols = cols.map(([l, , st]) => st);
+  const shortOf = l => l.replace(/^Best.*/, "Best").replace(/^Last.*/, "Last").replace(/ \(.*\)$/, "").replace("Round ", "R");
+  const charts = METRICS.map(([m, label, digits]) => metricChart(m, label, digits,
+    cols.map(([l, vals], i) => ({ label: l, short: shortOf(l), v: vals && typeof vals[m] === "number" ? vals[m] : null,
+                                  status: i > 0 && statusCols[i] ? (statusCols[i][m] || {}).status : null })))).join("");
+  const mode = state.mv || "both";
+  const toggle = `<span class="viewtoggle">${["both", "table", "chart"].map(v => `<button data-mv="${v}" class="${mode === v ? "on" : ""}">${{ both: "Table + chart", table: "Table", chart: "Chart" }[v]}</button>`).join("")}</span>`;
+  return `<div class="panel"><h2>Code quality ${q("metrics", "What each metric measures")}${toggle}</h2>
+    <p class="lead">The five metrics that decide success, before and after refactoring. Green is better, red is worse.</p>
+    ${mode !== "chart" ? `<table><tr><th>Metric</th>${cols.map(([l]) => `<th class="num">${l}</th>`).join("")}<th class="num">Change</th><th class="num">Decision</th></tr>${rows}</table>` : ""}
+    ${mode !== "table" ? `<div class="charts">${charts}</div>` : ""}
+    ${succ ? `<p class="note">${d.approach === "single" ? "The result" : "The best result"} ${succ}. ${q("success", "The success rule")}</p>` : ""}
+    <p class="note">Successful = no test that passed at the start fails now, no metric is worse, at least one is better, and the API is unchanged.</p></div>`;
 }
 
+// ---- charts (inline SVG, no library) -----------------------------------------------------------------------------
+// One small chart per metric, each with its own scale: the five metrics have very different units.
+function metricChart(metric, label, digits, bars) {
+  const vals = bars.map(b => b.v).filter(v => typeof v === "number");
+  if (!vals.length) return "";
+  const W = 220, H = 120, top = 16, bottom = 22, left = 4, right = 4;
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  // zoom in around the values so small changes are visible, but say so: the axis does not start at zero
+  const pad = (hi - lo) * 0.6 || Math.abs(hi) * 0.05 || 1;
+  const min = Math.max(0, lo - pad), max = hi + pad * 0.4;
+  const bw = Math.min(40, (W - left - right) / bars.length - 10);
+  const step = (W - left - right) / bars.length;
+  const y = v => top + (H - top - bottom) * (1 - (v - min) / (max - min || 1));
+  const base = bars[0] && typeof bars[0].v === "number" ? bars[0].v : null;
+  const higher = HIGHER.has(metric);
+  const rects = bars.map((b, i) => {
+    if (typeof b.v !== "number") return "";
+    const x = left + i * step + (step - bw) / 2, yy = y(b.v);
+    let color = "var(--muted)";
+    if (i > 0 && base !== null) {
+      const st = b.status;
+      color = st === "improved" ? "var(--good)" : st === "worse" ? "var(--bad)" : (b.v === base ? "var(--muted)" : ((higher ? b.v > base : b.v < base) ? "var(--good)" : "var(--bad)"));
+      if (st === "same") color = "var(--muted)";
+    } else if (i === 0) color = "var(--accent)";
+    return `<rect x="${x}" y="${yy}" width="${bw}" height="${H - bottom - yy}" rx="2" fill="${color}" opacity="${i === 0 ? 0.55 : 0.85}"><title>${esc(b.label)}: ${Number(b.v).toFixed(digits)}</title></rect>
+      <text class="v" x="${x + bw / 2}" y="${yy - 4}" text-anchor="middle">${Number(b.v).toFixed(digits)}</text>
+      <text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(b.short || b.label)}</text>`;
+  }).join("");
+  return `<div class="chart"><div class="ct">${esc(label)}</div><div class="cs">${higher ? "higher is better" : "lower is better"} · axis zoomed</div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}"><line x1="0" x2="${W}" y1="${H - bottom}" y2="${H - bottom}" stroke="var(--line)"/>${rects}</svg></div>`;
+}
+
+// Mean change per approach for one metric: bars from a zero line, green = better, red = worse.
+function changeChart(metric, label, digits, values) {
+  const W = 220, H = 140, mid = 66, span = 44;
+  const nums = values.map(v => v.v).filter(v => typeof v === "number");
+  const m = Math.max(...nums.map(Math.abs), 1e-9);
+  const higher = HIGHER.has(metric), step = W / values.length, bw = Math.min(44, step - 16);
+  const bars = values.map((b, i) => {
+    const x = i * step + (step - bw) / 2;
+    if (typeof b.v !== "number") return `<text x="${x + bw / 2}" y="${mid - 4}" text-anchor="middle">no data</text><text x="${x + bw / 2}" y="${H - 4}" text-anchor="middle">${esc(b.short)}</text>`;
+    const h = Math.abs(b.v) / m * span, good = higher ? b.v > 0 : b.v < 0;
+    const yy = b.v >= 0 ? mid - h : mid;
+    return `<rect x="${x}" y="${yy}" width="${bw}" height="${Math.max(h, 1)}" rx="2" fill="${b.v === 0 ? "var(--muted)" : good ? "var(--good)" : "var(--bad)"}" opacity=".85"><title>${esc(b.label)}: ${b.v > 0 ? "+" : ""}${Number(b.v).toFixed(digits)}</title></rect>
+      <text class="v" x="${x + bw / 2}" y="${b.v >= 0 ? yy - 4 : yy + h + 11}" text-anchor="middle">${b.v > 0 ? "+" : ""}${Number(b.v).toFixed(digits)}</text>
+      <text x="${x + bw / 2}" y="${H - 4}" text-anchor="middle">${esc(b.short)}</text>`;
+  }).join("");
+  return `<div class="chart"><div class="ct">${esc(label)}</div><div class="cs">mean change · ${higher ? "higher" : "lower"} is better</div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}"><line x1="0" x2="${W}" y1="${mid}" y2="${mid}" stroke="var(--line)"/>${bars}</svg></div>`;
+}
+
+// Success rate per approach, 0–100 %.
+function rateChart(rates) {
+  const W = 220, H = 120, top = 16, bottom = 22, step = W / rates.length, bw = Math.min(44, step - 16);
+  const y = v => top + (H - top - bottom) * (1 - v / 100);
+  const bars = rates.map((r, i) => {
+    const x = i * step + (step - bw) / 2;
+    const label = `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(r.short)}</text>`;
+    if (r.v === null) return `<text x="${x + bw / 2}" y="${H - bottom - 6}" text-anchor="middle">no data</text>` + label;
+    return `<rect x="${x}" y="${y(r.v)}" width="${bw}" height="${Math.max(H - bottom - y(r.v), 1)}" rx="2" fill="var(--accent)" opacity=".8"><title>${esc(r.label)}: ${r.v} %</title></rect>
+      <text class="v" x="${x + bw / 2}" y="${y(r.v) - 4}" text-anchor="middle">${r.v} %</text>` + label;
+  }).join("");
+  return `<div class="chart"><div class="ct">Success rate</div><div class="cs">share of valid runs that were successful</div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Success rate"><line x1="0" x2="${W}" y1="${H - bottom}" y2="${H - bottom}" stroke="var(--line)"/>${bars}</svg></div>`;
+}
+
+// ---- tests -----------------------------------------------------------------------------------------------------
+function renderTests(d) {
+  const t = state.tests;
+  if (!t || !t.measurements || !t.measurements.length) {
+    return `<div class="panel"><h2>Tests ${q("tests", "Feedback and held-out tests")}</h2>
+      <p class="lead">No test results for this run: ${d.valid === false ? "it stopped before its code was measured." : "nothing has been measured yet."}</p></div>`;
+  }
+  const sets = Object.entries(t.counts || {}).sort().map(([s, c]) => {
+    const bad = c.regression + c.missing, warn = c.failed_unconfirmed + c.still_failing, ok = c.passed + c.fixed;
+    const pct = n => c.total ? (100 * n / c.total) : 0;
+    return `<div class="setbox" title="${esc(SETTIP[s] || "")}"><div class="muted">${esc(SETNAME[s] || s)}</div>
+      <b>${ok} / ${c.total}</b> pass now
+      <div class="bar"><i style="width:${pct(ok)}%;background:var(--good)"></i><i style="width:${pct(warn)}%;background:var(--warn)"></i><i style="width:${pct(bad)}%;background:var(--bad)"></i></div>
+      <div class="note">${c.regression ? `<span class="bad">${c.regression} broke</span> · ` : ""}${c.still_failing ? `${c.still_failing} failed already at the start · ` : ""}${c.fixed ? `${c.fixed} fixed · ` : ""}${c.failed_unconfirmed ? `${c.failed_unconfirmed} failed once (unstable) · ` : ""}${c.missing ? `<span class="bad">${c.missing} missing</span> · ` : ""}${esc(SETTIP[s] || "")}</div></div>`;
+  }).join("");
+  const opts = t.measurements.map(m => `<option value="${esc(m.folder)}" ${m.folder === t.selected ? "selected" : ""}>${esc(m.label)}</option>`).join("");
+  const problems = t.cases.filter(c => !["passed", "fixed", "skipped"].includes(c.status)).length;
+  const btn = (id, label) => `<button data-tf="${id}" class="${state.tf === id ? "on" : ""}">${label}</button>`;
+  return `<div class="panel" id="tests-panel"><h2>Tests ${q("tests", "Feedback and held-out tests")}</h2>
+    <p class="lead">Every test, at the start and now. Click a row to see the test code, what it checks and why it failed.</p>
+    <div class="toolbar"><label class="muted">Measurement</label><select id="tm">${opts}</select></div>
+    <div class="sets">${sets}</div>
+    <div class="toolbar">
+      ${btn("problems", `Problems (${problems})`)}${btn("all", `All (${t.cases.length})`)}${btn("changed", "Changed result")}${btn("passed", "Passed")}
+      <select id="ts"><option value="all">Both sets</option><option value="feedback" ${state.ts === "feedback" ? "selected" : ""}>Feedback only</option><option value="heldout" ${state.ts === "heldout" ? "selected" : ""}>Held-out only</option></select>
+      <input id="tq" type="search" placeholder="Search test ID, module, requirement or text…" value="${esc(state.tq)}">
+    </div>
+    <div id="tests-body"></div>
+    ${!t.messages_here ? `<p class="note">The error texts of failed tests are kept only on the computer that ran this run (the JUnit reports are not committed). Open the dashboard there to see them.</p>` : ""}
+    ${!t.start_known ? `<p class="note">The starting results were not found, so "Broke" and "Failed at start" cannot be told apart here.</p>` : ""}
+  </div>`;
+}
+
+function renderTestsBody() {
+  const body = document.getElementById("tests-body");
+  const t = state.tests;
+  if (!body || !t) return;
+  const query = state.tq.trim().toLowerCase();
+  let cases = t.cases.filter(c => state.ts === "all" || c.set === state.ts);
+  if (state.tf === "problems") cases = cases.filter(c => !["passed", "fixed", "skipped"].includes(c.status));
+  else if (state.tf === "passed") cases = cases.filter(c => c.status === "passed");
+  else if (state.tf === "changed") cases = cases.filter(c => c.start && c.after && c.start !== c.after);
+  if (query) cases = cases.filter(c => [c.case, c.module, c.area, c.requirement, c.input, c.expected, c.message, c.type].join(" ").toLowerCase().includes(query));
+  if (!cases.length) {
+    body.innerHTML = `<p class="muted">${state.tf === "problems" && !query ? "No problems: every test that passed at the start still passes." : "No test matches."}</p>`;
+    return;
+  }
+  const limit = state.tall ? cases.length : 150;
+  const rows = cases.slice(0, limit).map(c => {
+    const [label, tip] = TEST_STATUS[c.status] || [c.status, ""];
+    const open = state.open.has(c.case);
+    const detail = open ? `<tr><td colspan="6"><div class="casebox"><dl>
+        <dt>Area</dt><dd>${esc(c.area || "module " + c.module)}</dd>
+        ${c.requirement ? `<dt>Requirement</dt><dd>${esc(c.requirement)}</dd>` : ""}
+        <dt>Test type</dt><dd>${esc(c.type || "–")} · ${esc(SETNAME[c.set] || c.set)}</dd>
+        ${c.input ? `<dt>Input</dt><dd>${md(c.input)}</dd>` : ""}
+        ${c.expected ? `<dt>Expected</dt><dd>${md(c.expected)}</dd>` : ""}
+        <dt>Result</dt><dd>${esc(c.start || "–")} at the start → ${esc(c.after || "–")} now. ${esc(tip)}${c.flaky ? " This test is on the list of unstable tests and is left out of the comparison." : ""}</dd>
+      </dl>${c.message ? `<h3 class="bad">Why it failed</h3>${errorBlock(c.message)}` : (["passed", "fixed", "skipped"].includes(c.status) ? "" : `<p class="note">Error text not available here (see the note below the table).</p>`)}
+      ${codeBlock(c)}</div></td></tr>` : "";
+    return `<tr class="case-row" data-open="${esc(c.case)}" id="case-${esc(c.case)}"><td><span class="pill s-${esc(c.status)}" title="${esc(tip)}">${esc(label)}</span></td>
+      <td><span class="id">${esc(c.case)}</span></td><td>${esc(c.area || "module " + c.module)}</td><td title="${esc(SETTIP[c.set] || "")}">${esc(c.set === "heldout" ? "held-out" : c.set)}</td>
+      <td>${esc(c.type)}</td><td class="muted">${esc(c.start || "–")} → ${esc(c.after || "–")}</td></tr>${detail}`;
+  }).join("");
+  body.innerHTML = `<table><tr><th>Status</th><th>Test</th><th>Area</th><th>Set</th><th>Type</th><th>Start → now</th></tr>${rows}</table>
+    ${cases.length > limit ? `<p class="note">${limit} of ${cases.length} shown. <a href="#" data-tall="1">Show all</a></p>` : ""}`;
+}
+
+function errorBlock(text) {
+  const lines = String(text).split("\n").map(l => /^E\s/.test(l) || /Error\b|assert/i.test(l) && /^E|^\s*>/.test(l)
+    ? `<span class="${/^\s*>/.test(l) ? "gt" : "e"}">${esc(l)}</span>` : (/^\s*>/.test(l) ? `<span class="gt">${esc(l)}</span>` : esc(l)));
+  return `<pre class="err">${lines.join("\n")}</pre>`;
+}
+function failingLines(message) {
+  const out = new Set();
+  for (const m of String(message || "").matchAll(/test_[a-z0-9_]+\.py:(\d+)/g)) out.add(Number(m[1]));
+  return out;
+}
+// A small Python highlighter (keywords, strings, numbers, comments, names), enough for the test code.
+const PY_KW = new Set("False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield".split(" "));
+const PY_BI = new Set("len range print str int float dict list set tuple isinstance sum min max any all sorted enumerate zip open self client".split(" "));
+const PY_TOKEN = /("""[\s\S]*?"""|'\'\'[\s\S]*?'\'\'|[rbfu]{0,2}"(?:\\.|[^"\\\n])*"|[rbfu]{0,2}'(?:\\.|[^'\\\n])*')|(#[^\n]*)|(\b\d+(?:\.\d+)?\b)|(@[A-Za-z_][\w.]*)|([A-Za-z_]\w*)/g;
+function highlight(code) {
+  // returns one HTML string per line; a token that spans lines (docstring) is split at the line ends
+  const parts = []; let last = 0, prevWord = "";
+  for (const m of code.matchAll(PY_TOKEN)) {
+    if (m.index > last) parts.push(["", code.slice(last, m.index)]);
+    let cls = "";
+    if (m[1]) cls = "hl-s"; else if (m[2]) cls = "hl-c"; else if (m[3]) cls = "hl-n"; else if (m[4]) cls = "hl-d";
+    else if (m[5]) cls = PY_KW.has(m[5]) ? "hl-k" : (prevWord === "def" || prevWord === "class") ? "hl-f" : PY_BI.has(m[5]) ? "hl-b" : "";
+    if (m[5]) prevWord = m[5];
+    parts.push([cls, m[0]]);
+    last = m.index + m[0].length;
+  }
+  if (last < code.length) parts.push(["", code.slice(last)]);
+  const lines = [""];
+  for (const [cls, text] of parts) {
+    text.split("\n").forEach((piece, i) => {
+      if (i > 0) lines.push("");
+      if (piece) lines[lines.length - 1] += cls ? `<span class="${cls}">${esc(piece)}</span>` : esc(piece);
+    });
+  }
+  return lines;
+}
+const CODE_CACHE = {};
+function codeBlock(c) {
+  const key = c.set + "|" + c.case, code = CODE_CACHE[key];
+  if (code === undefined) {
+    CODE_CACHE[key] = null;
+    fetch(`/api/testcode?case=${encodeURIComponent(c.case)}&set=${encodeURIComponent(c.set)}`)
+      .then(r => r.ok ? r.json() : false).then(j => { CODE_CACHE[key] = j || false; renderTestsBody(); })
+      .catch(() => { CODE_CACHE[key] = false; renderTestsBody(); });
+    return `<h3>Test code</h3><p class="note">Loading…</p>`;
+  }
+  if (code === null) return `<h3>Test code</h3><p class="note">Loading…</p>`;
+  if (!code) return `<h3>Test code</h3><p class="note">The code of this test was not found in dataset/lms/tests.</p>`;
+  const hits = failingLines(c.message);
+  const body = highlight(code.code).map((l, i) => `<span class="l${hits.has(code.line + i) ? " hit" : ""}" data-n="${code.line + i}">${l || " "}</span>`).join("");
+  return `<h3>Test code <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${esc(code.file)}${hits.size ? " · the line where it failed is red" : ""}</span></h3><pre class="code">${body}</pre>`;
+}
+
+function showCase(id) {
+  state.tf = "all"; state.tq = id; state.open.add(id); state.ts = "all"; state.rtab = "tests"; save();
+  render();
+  const row = document.getElementById("case-" + id);
+  const target = row || document.getElementById("tests-panel");
+  if (target) { target.scrollIntoView({ behavior: "smooth", block: "center" }); target.classList.add("flash"); }
+}
+
+// ---- rounds, calls, timeline -------------------------------------------------------------------------------------
 function renderRounds(d) {
   if (!(d.rounds_detail || []).length || d.approach === "single") return "";
   const rows = d.rounds_detail.map(r => {
-    const verdict = r.accepted === true ? `<span class="good">accepted</span>` : r.accepted === false ? `<span class="bad">rejected</span>` : "–";
-    const changes = METRICS.map(([m, label, digits]) => {
-      const v = r.metrics[m]; return v ? delta(m, v.delta, digits, v.status) : "–"; }).join(" ");
+    const verdict = r.accepted === true ? `<span class="good">kept</span>` : r.accepted === false ? `<span class="bad">${d.approach === "multiagent" ? "not kept" : "undone"}</span>` : "–";
+    const changes = METRICS.map(([m, , digits]) => { const v = r.metrics[m]; return v ? delta(m, v.delta, digits, v.status) : "–"; }).join(" · ");
     const why = r.accepted === false ? esc((r.accept_reasons || []).join("; ")) : "";
-    return `<tr><td>${r.round}</td><td>${r.source ? esc(r.source) : r.call}</td><td>${verdict}${why ? `<div class="note">${why}</div>` : ""}</td>
-      <td class="num">${r.regressions.length}</td><td class="num">${changes}</td><td class="num">${mins(r.wall_s)}</td></tr>
-      ${r.feedback ? `<tr><td></td><td colspan="5"><details><summary>Feedback sent to the model</summary><pre>${esc(r.feedback)}</pre></details></td></tr>` : ""}`;
+    return `<tr><td>${r.round}</td><td>${r.source ? esc(r.source) : "call " + r.call}</td><td>${verdict}${why ? `<div class="note">${why}</div>` : ""}</td>
+      <td class="num">${r.regressions.length ? `<span class="bad">${r.regressions.length}</span>` : 0}</td><td class="num">${changes}</td><td class="num">${mins(r.wall_s)}</td></tr>
+      ${r.feedback ? `<tr><td></td><td colspan="5"><details><summary>Test feedback Claude received after this round</summary><pre>${esc(r.feedback)}</pre></details></td></tr>` : ""}`;
   }).join("");
-  return `<div class="panel"><h2>Rounds</h2><table>
-    <tr><th>Round</th><th>${d.approach === "multiagent" ? "From" : "Call"}</th><th>Decision</th><th class="num">Regressions</th><th class="num">CC · Cog · MI · Dup · Smells (vs start)</th><th class="num">Measured in</th></tr>
+  const lead = d.approach === "multiagent"
+    ? "Code saved and measured each time the orchestrator ran the tests; the best round is kept."
+    : "One round per Claude call that changed code; a round that makes things worse is undone.";
+  return `<div class="panel"><h2>Rounds ${q("rounds", "Rounds and the keep rule")}</h2><p class="lead">${lead}</p><table>
+    <tr><th>Round</th><th>${d.approach === "multiagent" ? "From" : "Call"}</th><th>Decision</th><th class="num">Tests broken</th><th class="num">Complexity · Cognitive · MI · Duplication · Smells (vs start)</th><th class="num">Measured in</th></tr>
     ${rows}</table></div>`;
 }
 
 function renderCalls(d) {
   if (!(d.calls_detail || []).length) return "";
-  const rows = d.calls_detail.map(c => `<tr><td>${c.number}</td><td>${esc(c.kind)}</td>
-    <td>${c.status === "ok" ? "ok" : `<span class="bad">${esc(c.status)}</span>`}</td>
+  const kindName = { single: "single prompt", "round-1": "first prompt", "round-n": "follow-up with test feedback", orchestrator: "orchestrator" };
+  const rows = d.calls_detail.map(c => `<tr><td>${c.number}</td><td>${esc(kindName[c.kind] || c.kind)}</td>
+    <td>${c.status === "ok" ? "finished" : `<span class="bad">${esc(c.status === "limit" ? "usage limit" : c.status)}</span>`}</td>
     <td class="num">${mins(c.wall_s)}</td><td class="num">${c.turns ?? "–"}</td><td class="num">${c.files_read}</td>
     <td class="num">${c.files_written}</td><td class="num">${c.usd !== null && c.usd !== undefined ? "$" + fmt(c.usd) : "–"}</td>
     <td>${c.done_marker ? "yes" : ""}</td></tr>
     ${c.written.length ? `<tr><td></td><td colspan="8"><details><summary>Files changed in call ${c.number} (${c.files_written})</summary><pre>${esc(c.written.join("\n"))}</pre></details></td></tr>` : ""}`).join("");
-  return `<div class="panel"><h2>Claude calls</h2><table>
-    <tr><th>#</th><th>Prompt</th><th>Status</th><th class="num">Time</th><th class="num">Turns</th><th class="num">Files read</th><th class="num">Files changed</th><th class="num">Cost</th><th>Said done</th></tr>
+  return `<div class="panel"><h2>Claude calls ${q("cost", "Time, turns and cost")}</h2>
+    <p class="lead">One row per Claude Code call.</p><table>
+    <tr><th>#</th><th>Prompt</th><th>Status</th><th class="num">Time</th><th class="num">Turns</th><th class="num">Files read</th><th class="num">Files changed</th><th class="num">Cost</th><th title="Claude wrote REFACTORING_DONE at the end">Said done</th></tr>
     ${rows}</table></div>`;
 }
 
 function renderTimeline(d) {
   const events = (d.events || []).slice().reverse();
   if (!events.length) return "";
-  return `<div class="panel"><h2>Timeline</h2><div class="timeline">${events.map(e =>
+  return `<div class="panel"><h2>Timeline</h2><p class="lead">What the engine did, newest first.</p><div class="timeline">${events.map(e =>
     `<div><span class="t">${esc(time(e.at))}</span><span>${esc(e.text)}</span></div>`).join("")}</div></div>`;
 }
 
-function renderCompare() {
-  const c = state.compare || {};
-  const names = { single: "Single LLM", iterative: "Iterative LLM", multiagent: "Multi-Agent" };
-  const ids = ["single", "iterative", "multiagent"];
-  const row = (label, fn) => `<tr><td>${label}</td>${ids.map(id => `<td class="num">${fn(c[id] || {})}</td>`).join("")}</tr>`;
-  const rate = a => a.valid ? `${a.success} / ${a.valid} (${Math.round(100 * a.success / a.valid)}%)` : "–";
-  let html = `<div class="panel"><h2>Comparison of the approaches</h2><table>
-    <tr><th></th>${ids.map(id => `<th class="num">${names[id]}</th>`).join("")}</tr>
-    ${row("Finished runs (valid)", a => a.runs ? `${a.runs} (${a.valid})` : "0")}
-    ${row("Successful runs", rate)}
-    ${["failed", "no_improvement", "no_change", "invalid", "discarded_limit"].map(o => row(OUTCOME[o], a => (a.outcomes || {})[o] || 0)).join("")}
-    <tr><th colspan="4">Mean change of the best result vs the start (valid runs)</th></tr>
-    ${METRICS.map(([m, label, digits]) => row(label, a => delta(m, (a.deltas || {})[m], digits))).join("")}
-    <tr><th colspan="4">Cost per valid run</th></tr>
-    ${row("Cost (list price)", a => a.usd !== null && a.usd !== undefined ? "$" + fmt(a.usd) : "–")}
-    ${row("Claude time", a => a.claude_min !== null && a.claude_min !== undefined ? fmt(a.claude_min, 0) + " min" : "–")}
-    ${row("5-hour window used", a => a.window_used !== null && a.window_used !== undefined ? fmt(a.window_used, 0) + " %" : "–")}
-  </table>
-  <p class="note">A run is successful when no test that passed at the start fails, no primary metric is worse, at least one improved and the API is unchanged (ADR 003). Pilot runs use the pilot code (modules 1–14) and are not comparable with the real runs; choose "experiments only" above for the study results.</p></div>`;
-  return html;
+// ---- code quality analyzer: what was measured in the starting code ---------------------------------------------
+function baseName(b) {
+  if (!b) return "";
+  if (/-ct$/.test(b.label)) return "Full LMS code, with characterization tests";
+  if (b.final) return "Full LMS code";
+  if (/ce03f54/.test(b.label + b.code_sha)) return "Pilot code";
+  return b.label;
+}
+function renderGrowth(a) {
+  const g = a.growth;
+  if (!g) return "";
+  const P = g.pilot, F = g.full;
+  const row = (label, p, f, digits = 0, note = "") => {
+    const ratio = typeof p === "number" && p ? f / p : null;
+    return `<tr><td>${label}${note ? `<span class="mdesc">${note}</span>` : ""}</td><td class="num">${typeof p === "number" ? (digits ? fmt(p, digits) : p.toLocaleString()) : "–"}</td>
+      <td class="num">${typeof f === "number" ? (digits ? fmt(f, digits) : f.toLocaleString()) : "–"}</td><td class="num">${ratio === null ? "–" : (digits ? (f - p > 0 ? "+" : "") + fmt(f - p, digits) : "×" + fmt(ratio, 1))}</td></tr>`;
+  };
+  const metricRows = METRICS.map(([m, label, digits]) => {
+    const p = P.primary[m], f = F.primary[m];
+    const worse = typeof p === "number" && typeof f === "number" && (HIGHER.has(m) ? f < p : f > p);
+    return `<tr><td>${label}<span class="mdesc">${METRIC_GUIDE[m].question}</span></td><td class="num">${fmt(p, digits)}</td><td class="num">${fmt(f, digits)}</td>
+      <td class="num"><span class="${worse ? "bad" : "good"}">${f - p > 0 ? "+" : ""}${fmt(f - p, digits)}</span></td></tr>`;
+  }).join("");
+  const x = (F.sloc / P.sloc).toFixed(1);
+  const mode = state.gv || "table";
+  const toggle = `<span class="viewtoggle">${["table", "chart", "both"].map(v => `<button data-gv="${v}" class="${mode === v ? "on" : ""}">${{ table: "Table", chart: "Chart", both: "Table + chart" }[v]}</button>`).join("")}</span>`;
+  // size: one bar pair per row, each row on its own scale (the full code's bar is always the longer one)
+  const sizes = [["Lines of code", P.sloc, F.sloc], ["Files", P.files, F.files], ["Modules", P.modules, F.modules], ["Functions", P.functions, F.functions],
+                 ["Classes", P.classes, F.classes], ["Copy-pasted blocks", P.clones, F.clones], ["Test cases", P.tests, F.tests]];
+  const sizeChart = `<div class="gchart"><div class="glegend"><span><i style="background:#8aa7c4"></i>Pilot code</span><span><i style="background:var(--accent)"></i>Full code</span></div>
+    ${sizes.map(([l, p, f]) => { const m = Math.max(p || 0, f || 0, 1); return `<div class="grow2"><span>${l}</span><div>
+      <div class="gb"><i style="width:${(p || 0) / m * 100}%;background:#8aa7c4"></i><b>${(p ?? 0).toLocaleString()}</b></div>
+      <div class="gb"><i style="width:${(f || 0) / m * 100}%;background:var(--accent)"></i><b>${(f ?? 0).toLocaleString()} <em>×${p ? (f / p).toFixed(1) : "–"}</em></b></div></div></div>`; }).join("")}</div>`;
+  const qualCharts = `<div class="charts">${METRICS.map(([m, label, digits]) => {
+    const p = P.primary[m], f = F.primary[m], worse = HIGHER.has(m) ? f < p : f > p;
+    return metricChart(m, label, digits, [{ label: "Pilot code", short: "Pilot", v: p }, { label: "Full code", short: "Full", v: f, status: worse ? "worse" : "improved" }]);
+  }).join("")}</div>`;
+  return `<div class="panel"><h2>From the pilot code to the full code ${toggle}</h2>
+    <p class="lead2">We first tested everything on an early, smaller version of the generated system (the <b>pilot code</b>, ${P.modules} modules). The real experiment uses the finished system (the <b>full code</b>, ${F.modules} modules), which is <b>${x} times bigger</b>. Its code quality is also worse at the start, which leaves more room for refactoring.</p>
+    <div class="grow"><div><span>Pilot code</span><b>${P.sloc.toLocaleString()}</b><em>lines</em></div><span class="arrow big">→</span><div><span>Full code</span><b>${F.sloc.toLocaleString()}</b><em>lines · ×${x}</em></div></div>
+    ${mode !== "chart" ? `<div class="cols2"><table><tr><th>Size</th><th class="num">Pilot</th><th class="num">Full</th><th class="num">Growth</th></tr>
+      ${row("Lines of code", P.sloc, F.sloc)}${row("Files", P.files, F.files)}${row("Modules", P.modules, F.modules)}${row("Functions", P.functions, F.functions)}
+      ${row("Classes", P.classes, F.classes)}${row("Copy-pasted blocks", P.clones, F.clones)}${row("Test cases", P.tests, F.tests, 0, "feedback and held-out")}</table>
+    <table><tr><th>Quality at the start</th><th class="num">Pilot</th><th class="num">Full</th><th class="num">Change</th></tr>${metricRows}</table></div>` : ""}
+    ${mode !== "table" ? `<h3>Size</h3>${sizeChart}<h3>Quality at the start</h3><p class="note" style="margin-top:0">First bar: pilot code; second bar: full code. Red = the full code starts worse.</p>${qualCharts}` : ""}
+    <p class="note">Red means the full code starts worse on that metric. A run on the pilot code and a run on the full code are therefore not compared by raw values, only by their change.</p></div>`;
 }
 
+function renderAnalyzer() {
+  const a = state.analyzer;
+  const head = `<div class="pagehead"><h1>Code Quality Analyzer</h1><p>Our analyzer reads the code with several free tools and turns their output into numbers. It measures the starting code once, and every refactoring result in exactly the same way, so before and after can be compared.</p></div>`;
+  if (!a || !a.selected) return head + `<p class="empty">${a ? "No measurement of the starting code found." : "Loading…"}</p>`;
+  const opts = a.baselines.map(b => `<option value="${esc(b.id)}" ${b.id === a.selected ? "selected" : ""}>${esc(baseName(b))} (${esc(b.label)}, ${b.sloc ? b.sloc.toLocaleString() + " lines" : "?"})</option>`).join("");
+  const sz = a.size || {}, p = a.primary || {};
+  const steps = [["📄", "Reads the code", "only the application code (lms/)"], ["🧮", "Runs 7 free tools", "Radon, complexipy, jscpd, Ruff, Pylint …"],
+                 ["📏", "Computes 5 metrics", "complexity, readability, maintainability, duplication, smells"], ["🧪", "Runs the tests", "what works before refactoring"],
+                 ["📋", "Writes a report", "the numbers on this page"]];
+  const metricTiles = METRICS.map(([m, label, digits]) => `<div class="fact" style="border-top:3px solid ${METRIC_GUIDE[m].color}"><b>${fmt(p[m], digits)}</b><span>${label}</span>
+    <span class="desc" style="display:block">${METRIC_GUIDE[m].question}</span></div>`).join("");
+  const counts = Object.entries(a.smell_counts || {}).sort((x, y) => y[1] - x[1]);
+  const maxS = Math.max(1, ...counts.map(c => c[1]));
+  const smellBars = counts.map(([id, n]) => `<div class="sbar" data-smell="${id}" title="Show where">
+    <span>${esc(SMELLS[id] || id)} <span class="id">${id}</span></span><i style="width:${n / maxS * 100}%"></i><b>${n}</b></div>`).join("");
+  const pick = state.smell && (a.smell_counts || {})[state.smell] ? state.smell : null;
+  const where = pick ? a.smells.filter(x => x.s_id === pick) : [];
+  const whereList = pick ? `<div class="panel"><h2>Where: ${esc(SMELLS[pick] || pick)} <span class="id">${pick}</span></h2>
+      <p class="lead">${where.length} place(s). File, function and line in the starting code.</p>
+      <table><tr><th>File</th><th>Function or class</th><th class="num">Line</th><th>Detail</th><th>Module</th></tr>
+      ${where.slice(0, 200).map(x => `<tr><td class="id">${esc(x.path)}</td><td>${esc(x.unit || "–")}</td><td class="num">${esc(x.line)}</td><td class="muted">${esc(x.rule)}</td><td>${esc(x.module_name)}</td></tr>`).join("")}</table>
+      ${where.length > 200 ? `<p class="note">First 200 shown.</p>` : ""}</div>` : "";
+  const byDensity = state.modsort === "density";
+  const mods = (a.modules || []).slice().sort((x, y) => byDensity ? Number(y.smells_per_ksloc) - Number(x.smells_per_ksloc) : Number(x.module_no) - Number(y.module_no));
+  const worst = Math.max(...mods.map(m => Number(m.smells_per_ksloc) || 0), 1);
+  const top3 = new Set((a.modules || []).slice().sort((x, y) => Number(y.smells_per_ksloc) - Number(x.smells_per_ksloc)).slice(0, 3).map(m => m.module_no));
+  const modRows = mods.map(m => `<tr><td>${esc(m.module_no)}. ${esc(m.module_name)}${top3.has(m.module_no) ? ` <span class="pill s-regression" title="One of the three modules with the most smells for their size">needs most work</span>` : ""}<span class="mdesc">${esc(m.level)} module · ${esc(m.files)} files</span></td>
+    <td class="num">${Number(m.sloc).toLocaleString()}</td><td class="num">${fmt(m.mean_cc, 2)}</td><td class="num">${fmt(m.mi_weighted, 1)}</td>
+    <td class="num">${fmt(m.duplication_pct, 2)}</td><td class="num">${esc(m.smells)}</td>
+    <td style="width:22%"><div class="hbar"><i style="width:${(Number(m.smells_per_ksloc) || 0) / worst * 100}%"></i></div><span class="mdesc">${fmt(m.smells_per_ksloc, 1)} per 1,000 lines</span></td></tr>`).join("");
+  const tests = Object.entries(a.tests || {}).sort().map(([set, c]) => `<div class="fact"><b>${c.passed || 0} / ${c.total}</b><span>${esc(SETNAME[set] || set)} pass at the start</span></div>`).join("");
+  const failing = (a.failing || []).map(f => `<li><span class="id">${esc(f.case)}</span> ${esc(f.area || "")}: ${md(f.expected || "")} <span class="muted">(${esc(f.set === "heldout" ? "held-out" : f.set)}, ${esc(f.result)})</span></li>`).join("");
+  return head + `<div class="toolbar"><label class="muted">Starting code</label><select id="base">${opts}</select></div>
+    <div class="flow" aria-label="How the analyzer works">${steps.map(([i, t, d], n) => `${n ? `<span class="arrow" aria-hidden="true">→</span>` : ""}<div class="fstep"><span class="fi">${i}</span><b>${t}</b><span>${esc(d)}</span></div>`).join("")}</div>
+    <p class="flownote">The same five steps run on the starting code and again on every refactoring result, so the two can be compared.</p>
+    ${renderGrowth(a)}
+    <div class="panel"><h2>The starting code in numbers</h2><p class="lead">Measured ${esc(date(a.measured_at))} · commit ${esc((a.code_sha || "").slice(0, 12))}.</p>
+      <div class="facts"><div class="fact"><b>${(sz.sloc || 0).toLocaleString()}</b><span>lines of code (${(sz.files || 0)} files)</span></div>
+        <div class="fact"><b>${(sz.cc_units || 0).toLocaleString()}</b><span>functions</span></div><div class="fact"><b>${sz.classes ?? "–"}</b><span>classes</span></div>
+        <div class="fact"><b>${sz.clones ?? "–"}</b><span>copy-pasted blocks</span></div></div>
+      <h3>The five metrics at the start ${q("metrics", "What they mean")}</h3><div class="facts">${metricTiles}</div></div>
+    <div class="panel"><h2>Code smells at the start</h2><p class="lead">${a.smells_total} findings of ${counts.filter(c => c[1]).length} types. Click a type to see where they are.${(a.not_measured || []).length ? ` ${a.not_measured.length} more types of the list cannot be measured reliably and are left out.` : ""}</p>
+      <div class="sbars">${smellBars}</div></div>
+    ${whereList}
+    <div class="panel"><h2>Modules <span class="viewtoggle"><button data-modsort="number" class="${byDensity ? "" : "on"}">By number</button><button data-modsort="density" class="${byDensity ? "on" : ""}">Most problems first</button></span></h2>
+      <div class="howto"><b>How to read this table</b>
+        <p>The library system is built from ${mods.length} modules (loans, members, fees …). Each row is one module of the starting code.</p>
+        <ul><li><b>Lines</b>: how big the module is.</li>
+          <li><b>Complexity</b>: average paths per function, <span class="good">lower is better</span>; above about 5 a module's functions branch a lot.</li>
+          <li><b>Maintainability</b>: 0–100 score, <span class="good">higher is better</span>.</li>
+          <li><b>Duplication %</b>: share of copy-pasted code, <span class="good">lower is better</span>.</li>
+          <li><b>Smell density</b>: code smells per 1,000 lines. It is fair between big and small modules, so the longest bars show where the code has the most problems for its size. These modules are where refactoring can help most; the three worst are marked.</li></ul>
+        <p class="muted">Example: the API layer has the most smells in total (it is also by far the biggest module), but not the highest density.</p></div>
+      <table><tr><th>Module</th><th class="num">Lines</th><th class="num">Complexity</th><th class="num">Maintainability</th><th class="num">Duplication %</th><th class="num">Smells</th><th>Smell density</th></tr>${modRows}</table></div>
+    <div class="panel"><h2>Tests at the start</h2><p class="lead">Which tests already pass before any refactoring. A refactoring must keep all of these passing.</p>
+      <div class="facts">${tests}</div>${failing ? `<h3>Already failing at the start (bugs of the generated code)</h3><ul>${failing}</ul>` : ""}</div>
+    <div class="panel"><h2>Tools and versions</h2><p class="lead">The same versions measure every result.</p>
+      <div class="facts">${Object.entries(a.tools || {}).map(([t, v]) => `<div class="fact"><b style="font-size:15px">${esc(t)}</b><span>${esc(v)}</span></div>`).join("")}</div></div>`;
+}
+
+// ---- metrics page: one metric at a time, across all runs ---------------------------------------------------------
+function metricCard(m) {
+  const [, label, , , tool] = METRICS.find(x => x[0] === m), g = METRIC_GUIDE[m];
+  return `<div class="mcard" style="--c:${g.color}">
+    <div class="mtop"><span class="micon">${g.icon}</span><div><b>${label}</b><div class="mq">${g.question}</div></div>
+      <span class="mdir">${HIGHER.has(m) ? "▲ higher is better" : "▼ lower is better"}</span></div>
+    <p>${g.plain}</p><p class="analogy">${g.analogy}</p>
+    ${g.before ? `<div class="ba"><div><span>Before</span><pre>${highlight(g.before).join("\n")}</pre></div><div><span>After refactoring</span><pre>${highlight(g.after).join("\n")}</pre></div></div>` : ""}
+    <dl><dt>Why we measure it</dt><dd>${g.why}</dd><dt>Unit</dt><dd>${g.unit} · ${g.typical}</dd>
+      <dt>Measured with</dt><dd>${esc(tool)}</dd><dt>Counts as "same"</dt><dd>if the change is smaller than ${THRESHOLD[m]}</dd></dl></div>`;
+}
+
+function renderMetricsPage() {
+  const m = METRICS.some(x => x[0] === state.metric) ? state.metric : METRICS[0][0];
+  const [, label, digits] = METRICS.find(x => x[0] === m);
+  const chips = METRICS.map(([id, l]) => `<button data-metric="${id}" class="${id === m ? "on" : ""}" style="--c:${METRIC_GUIDE[id].color}">${METRIC_GUIDE[id].icon} ${l}</button>`).join("");
+  // one row per finished run that has a result: start → result and the change in percent (comparable across codes)
+  const rows = state.runs.filter(r => r.status === "finished" && typeof (r.start_metrics || {})[m] === "number").map(r => {
+    const start = r.start_metrics[m];
+    const kept = typeof (r.best_metrics || {})[m] === "number" ? r.best_metrics[m] : (r.valid ? start : null);
+    return { r, start, after: kept, pct: kept === null || !start ? null : 100 * (kept - start) / Math.abs(start), status: (r.metric_status || {})[m] };
+  });
+  const maxAbs = Math.max(1, ...rows.map(x => Math.abs(x.pct || 0)));
+  const bar = x => {
+    if (x.pct === null) return `<span class="muted">${x.r.valid === false ? "run did not count" : "no result"}</span>`;
+    const good = HIGHER.has(m) ? x.pct > 0 : x.pct < 0, w = Math.abs(x.pct) / maxAbs * 50;
+    const tone = x.status === "same" || Math.abs(x.pct) < 1e-9 ? "var(--muted)" : good ? "var(--good)" : "var(--bad)";
+    return `<div class="dbar"><span class="zero"></span><i style="width:${w}%;${x.pct < 0 ? `right:50%` : `left:50%`};background:${tone}"></i></div>`;
+  };
+  const groups = VIEWS.map(id => {
+    const list = rows.filter(x => x.r.approach === id);
+    if (!list.length) return "";
+    return `<tr class="grp"><td colspan="5">${APPROACH[id].name}</td></tr>` + list.map(x => `<tr>
+      <td>${esc(runName(x.r))} <span class="id">${esc(x.r.run_id)}</span><span class="desc">${esc(codeOf(x.r).label)}</span></td>
+      <td class="num">${fmt(x.start, digits)}</td><td class="num">${x.after === null ? "–" : fmt(x.after, digits)}</td>
+      <td class="num">${x.pct === null ? "–" : `<span class="${x.status === "improved" ? "good" : x.status === "worse" ? "bad" : "muted"}">${x.pct > 0 ? "+" : ""}${fmt(x.pct, 1)} %</span>`}</td>
+      <td style="width:34%">${bar(x)}</td></tr>`).join("");
+  }).join("");
+  const c = state.compare || {};
+  const means = changeChart(m, label, digits, VIEWS.map(id => ({ label: APPROACH[id].name, short: { single: "Single", iterative: "Iterative", multiagent: "Multi-Agent" }[id], v: ((c[id] || {}).deltas || {})[m] ?? null })));
+  return `<div class="pagehead"><h1>Metrics</h1><p>Pick a metric to see what it means and how it changed in every run.</p></div>
+    <div class="mchips">${chips}</div>
+    <div class="mgrid"><div>${metricCard(m)}</div>
+      <div><div class="panel"><h2>Average change per approach</h2><p class="lead">Valid runs only; a run that kept no change counts as 0.</p><div class="charts" style="grid-template-columns:1fr">${means}</div></div></div></div>
+    <div class="panel"><h2>${esc(label)} in every run</h2>
+      <p class="lead">Value in the starting code, value of the kept result, and the change in percent. The bar shows the change: right of the line is up, left is down; green is better, red is worse.</p>
+      ${rows.length ? `<table><tr><th>Run</th><th class="num">Start</th><th class="num">Result</th><th class="num">Change</th><th></th></tr>${groups}</table>` : `<p class="muted">No finished run yet.</p>`}
+      <p class="note">Runs on the pilot code and on the full code start from different values, so compare the percent change, not the raw numbers.</p></div>`;
+}
+
+// ---- comparison ------------------------------------------------------------------------------------------------
+function renderCompare() {
+  const c = state.compare || {};
+  const row = (label, fn, tip) => `<tr><td${tip ? ` title="${esc(tip)}"` : ""}>${label}${tip ? `<span class="desc">${esc(tip)}</span>` : ""}</td>${VIEWS.map(id => `<td class="num">${fn(c[id] || {})}</td>`).join("")}</tr>`;
+  const rate = a => a.valid ? `${a.success} / ${a.valid} (${Math.round(100 * a.success / a.valid)}%)` : "–";
+  const scope = { all: "all runs, including trial runs", real: "study runs only", pilot: "trial runs only" }[state.include];
+  return `<div class="pagehead"><h1>Refactoring Comparison</h1><p>The three approaches side by side, over the finished runs (${scope}; change it at the bottom left). Only valid runs enter the means. ${q("compare", "How to read the comparison")}</p></div>
+  <div class="panel"><table>
+    <tr><th></th>${VIEWS.map(id => `<th class="num">${APPROACH[id].name}</th>`).join("")}</tr>
+    ${row("Finished runs (valid)", a => a.runs ? `${a.runs} (${a.valid})` : "0", "Runs that ended; in brackets those that count.")}
+    ${row("Successful runs", rate, OUTCOME.success[1])}
+    ${["failed", "no_improvement", "no_change", "invalid", "discarded_limit"].map(o => row(OUTCOME[o][0], a => (a.outcomes || {})[o] || 0, OUTCOME[o][1])).join("")}
+    <tr><th colspan="4">Mean change of the kept result vs the starting code (valid runs)</th></tr>
+    ${METRICS.map(([m, label, digits, desc, , short]) => row(label, a => delta(m, (a.deltas || {})[m], digits), short)).join("")}
+    <tr><th colspan="4">Effort per valid run</th></tr>
+    ${row("Cost (list price)", a => a.usd !== null && a.usd !== undefined ? "$" + fmt(a.usd) : "–", FIELD.cost)}
+    ${row("Claude time", a => a.claude_min !== null && a.claude_min !== undefined ? fmt(a.claude_min, 0) + " min" : "–", FIELD.time)}
+    ${row("5-hour window used", a => a.window_used !== null && a.window_used !== undefined ? fmt(a.window_used, 0) + " %" : "–", FIELD.window)}
+  </table>
+  <p class="note">Trial runs (pilot code, scale trials) test the engine and are not comparable with the study runs; choose "Study runs only" for the study results.</p></div>
+  <div class="panel"><h2>Charts</h2><p class="lead">Mean change per approach (valid runs); each chart has its own scale.</p>
+    <div class="charts">${METRICS.map(([m, label, digits]) => changeChart(m, label, digits, VIEWS.map(id => ({
+      label: APPROACH[id].name, short: { single: "Single", iterative: "Iterative", multiagent: "Multi-Agent" }[id],
+      v: ((c[id] || {}).deltas || {})[m] ?? null })))).join("")}
+    ${(() => { const rates = VIEWS.map(id => { const a = c[id] || {}; return { label: APPROACH[id].name, short: { single: "Single", iterative: "Iterative", multiagent: "Multi-Agent" }[id], v: a.valid ? Math.round(100 * a.success / a.valid) : null }; });
+      return rateChart(rates); })()}
+    </div></div>`;
+}
+
+// ---- guide (opens beside the page; written for readers who are not programmers) ----------------------------------
+const METRIC_GUIDE = {
+  mean_cc: { icon: "⑂", color: "#2f6fb2", question: "How many different ways can each function run?",
+    plain: "Every if, else, loop or and/or gives the code another possible path. A function with many paths is harder to test and easier to get wrong.",
+    analogy: "Like a road with many junctions: the more turns you can take, the harder it is to check every route.",
+    before: "if member.active:\n    if member.debt > 50:\n        refuse()\n    elif member.is_student:\n        ...", after: "if not can_borrow(member):\n    refuse()",
+    why: "The most widely used complexity measure since 1976; it tells us whether functions got simpler.",
+    unit: "average paths per function", typical: "Radon rates 1–5 as simple, 11 or more as high" },
+  mean_cognitive: { icon: "◎", color: "#7b4fb3", question: "How hard is each function to read for a person?",
+    plain: "Like cyclomatic complexity, but it adds extra cost for code nested inside other code, because nesting is what makes code hard to follow.",
+    analogy: "A sentence with brackets inside brackets inside brackets is harder to read than three short sentences.",
+    before: "for loan in loans:\n    if loan.overdue:\n        for fee in loan.fees:\n            if not fee.paid: ...", after: "for fee in unpaid_overdue_fees(loans): ...",
+    why: "Measures readability the way a human feels it; it can improve even when the number of paths stays the same.",
+    unit: "average score per function", typical: "we flag a function above 15" },
+  mi_weighted: { icon: "♥", color: "#2e7d4f", question: "How easy is each file to maintain overall?",
+    plain: "A 0–100 health score that combines size, complexity and how many different words the code uses. Bigger, more tangled files score lower.",
+    analogy: "Like a health check-up that combines several readings into one score.",
+    before: "", after: "",
+    why: "Gives one overall view per file; we weight it by file size so that big files count more.",
+    unit: "score 0–100 (higher is better)", typical: "Radon rates a file above 19 as well maintainable, below 10 as poor" },
+  duplication_pct: { icon: "⧉", color: "#b36b00", question: "How much of the code is copy-pasted?",
+    plain: "Blocks of at least 5 lines that appear more than once. When a rule is copied to several places, a fix in one place is easily forgotten in another.",
+    analogy: "The same paragraph printed in three chapters of a manual: update one, and the others are now wrong.",
+    before: "def fee_for_book(days): ... 8 lines ...\ndef fee_for_dvd(days):  ... the same 8 lines ...", after: "def fee(days, rate): ... once ...",
+    why: "Removing duplication is one of the main goals of refactoring, and AI-generated code tends to repeat itself.",
+    unit: "percent of lines", typical: "0 % means no copy-paste at all" },
+  smell_count: { icon: "⚑", color: "#b3261e", question: "How many known bad patterns are in the code?",
+    plain: "A 'code smell' is a pattern that works but makes code harder to change: a function that is too long, too many inputs, unused code, unexplained numbers … We count 13 measurable types from a fixed list of 23.",
+    analogy: "Like a building inspector's checklist: each item is not a collapse, but each one is a warning sign.",
+    before: "def create(a, b, c, d, e, f, g, h):  # 8 parameters\n    if age > 65: ...                # unexplained number", after: "def create(request):\n    if age > SENIOR_AGE: ...",
+    why: "Covers design and logic problems the other four numbers do not see.",
+    unit: "number of findings", typical: "fewer is better; each finding is one place in the code" },
+};
+const SMELLS = { S01: "Function too long (over 45 lines)", S02: "Class with too many methods", S03: "Too many inputs (parameters)",
+  S07: "Unused code", S09: "Overly complicated condition", S10: "Code nested too deeply", S11: "Unexplained number in a comparison",
+  S18: "Files that depend on each other in a circle", S19: "Errors silently ignored", S20: "Shared default value (a Python trap)",
+  S21: "Inconsistent return values", S22: "Library outside the allowed list", S23: "Type checks switched off" };
+
+function renderGuide() {
+  const card = (id, icon, color, title, body, open) => `<section id="g-${id}" class="gcard ${open ? "open" : ""}" style="--c:${color}">
+      <button class="ghead" data-gtoggle="${id}"><span class="gicon">${icon}</span><span class="gtitle">${title}</span><span class="gchev">▾</span></button>
+      <div class="gbody">${body}</div></section>`;
+  const plain = t => `<div class="plain"><b>In plain words</b>${t}</div>`;
+  const S = [
+    ["refactoring", "🔧", "#2f5d8a", "What is refactoring?", `${plain("Refactoring means rewriting code so that it is <b>cleaner and easier to change</b>, while the program <b>does exactly the same thing</b> as before. Nothing new is added and nothing visible changes for the user.")}
+      <p class="analogy">Like reorganizing a kitchen: the same dishes come out, but the tools are easier to find and nothing is in the wrong drawer.</p>
+      <p>Here the code is a Library Management System (loans, members, fees, reservations …) that an AI wrote. We ask Claude to refactor it and then check two things: <b>is it still correct</b> (the tests) and <b>is it actually better</b> (the five quality metrics).</p>`],
+    ["approaches", "🧭", "#7b4fb3", "The three ways of using Claude", `<div class="tiles">${VIEWS.map((id, i) => `<div class="tile"><b>${["①", "②", "③"][i]} ${APPROACH[id].name}</b><p>${esc(APPROACH[id].what)}</p></div>`).join("")}</div>
+      ${plain("All three get the same code, the same instruction and the same model. Only the way of working differs: one try, several tries with test results, or a small team of AI roles.")}`],
+    ["success", "✅", "#2e7d4f", "When is a refactoring successful?", `<div class="checks">
+      <div><span>1</span>Every test that worked before <b>still works</b> (the program does the same thing).</div>
+      <div><span>2</span><b>None</b> of the five quality metrics got worse.</div>
+      <div><span>3</span><b>At least one</b> of them got better.</div>
+      <div><span>4</span>The program's interface (its REST API) is <b>unchanged</b>.</div></div>
+      <p class="muted">Tests that already failed in the starting code are bugs of the generated code; they never count against Claude.</p>`],
+    ["metrics", "📏", "#b36b00", "The five quality metrics", `${plain("We measure the code with tools, because nobody can judge 30,000 lines by eye. Each metric answers one simple question:")}
+      <div class="legend">${METRICS.map(([m, l]) => `<div><span class="pill" style="background:color-mix(in srgb, ${METRIC_GUIDE[m].color} 15%, transparent);color:${METRIC_GUIDE[m].color}">${METRIC_GUIDE[m].icon} ${l}</span>${METRIC_GUIDE[m].question} <span class="muted">${HIGHER.has(m) ? "Higher is better." : "Lower is better."}</span></div>`).join("")}</div>
+      <p><b>Why these five?</b> Together they cover tangled logic, overall health, copy-paste and known bad patterns. They were chosen <b>before</b> the experiments, so no one could pick the metric that happened to improve.</p>
+      <p><a href="#" data-view="metrics">Open the Metrics page</a> for examples and the values in every run.</p>`],
+    ["tests", "🧪", "#1f6fb2", "Tests: how we know nothing broke", `${plain("A test runs one small piece of the program with a fixed input and checks the answer, for example: 'a book returned 3 days late creates a late fee'. If the answer changes after refactoring, something broke.")}
+      <div class="tiles"><div class="tile"><b>${SETNAME.feedback}</b><p>${esc(SETTIP.feedback)}</p></div><div class="tile"><b>${SETNAME.heldout}</b><p>${esc(SETTIP.heldout)}</p></div></div>
+      <p>Test names like <span class="id">T-LOAN-03-b</span> mean: area <b>loans</b>, requirement <b>03</b>, case <b>b</b>.</p>
+      <div class="legend">${Object.entries(TEST_STATUS).map(([k, [l, t]]) => `<div><span class="pill s-${k}">${l}</span>${esc(t)}</div>`).join("")}</div>`],
+    ["rounds", "🔁", "#2f5d8a", "Rounds: trying again", `${plain("Iterative and Multi-Agent may try up to three times. Every version is measured; a version that breaks a test or makes the code worse is thrown away, and the best version is kept.")}
+      <p>At the end, the kept version is checked again with <b>all</b> tests, including the hidden ones.</p>`],
+    ["runs", "🏷️", "#6b6f75", "Run names and outcomes", `<div class="legend">${Object.values(KIND).map(k => `<div><span class="pill s-skipped">${k.label}</span>${esc(k.tip)}</div>`).join("")}
+      ${Object.values(CODE).map(k => `<div><span class="pill s-skipped">${k.label}</span>${esc(k.tip)}</div>`).join("")}</div>
+      <h3>Outcomes</h3><div class="legend">${Object.entries(OUTCOME).map(([k, [l, t]]) => `<div><span class="badge b-${k}">${l}</span>${esc(t)}</div>`).join("")}</div>
+      <p class="muted">${esc(FIELD.id)}</p>`],
+    ["cost", "⏱️", "#8a5a00", "Time, cost and usage limits", `<dl><dt>Claude time</dt><dd>${esc(FIELD.time)}</dd><dt>Cost (list price)</dt><dd>${esc(FIELD.cost)}</dd>
+      <dt>5-hour usage window</dt><dd>${esc(FIELD.window)}</dd><dt>Account</dt><dd>${esc(FIELD.account)}</dd></dl>`],
+    ["validity", "🛡️", "#b3261e", "When a run does not count", `${plain("Sometimes the problem is the setup, not Claude: a wrong setting, a crash, or the usage limit. Such a run is marked and repeated, never deleted.")}
+      <dl><dt>Blocked attempt</dt><dd>${esc(FIELD.blocked)}</dd><dt>Read-only command</dt><dd>${esc(FIELD.shell)}</dd></dl>`],
+    ["compare", "📊", "#2f5d8a", "Reading the comparison", `<p>The comparison page puts the three approaches side by side: how often each was successful, how much each metric changed on average, and what it cost. Trial runs only check the engine; choose "Study runs only" for the real results.</p>`],
+  ];
+  const openId = state.gopen || "";
+  const quick = `<div class="quick"><h2>Quick start</h2><ol>
+      <li><b>Refactoring</b> = making code cleaner <b>without changing what it does</b>.</li>
+      <li>We ask Claude to refactor an AI-written library system in <b>three ways</b>: one try (Single), several tries with test results (Iterative), or a team of AI roles (Multi-Agent).</li>
+      <li>Every result is checked twice: <b>tests</b> (does it still work?) and <b>five quality metrics</b> (is it really cleaner?).</li>
+      <li>A run is <span class="good"><b>successful</b></span> when nothing broke, no metric got worse and at least one got better.</li>
+      <li>On every page <span class="good">green = better</span>, <span class="bad">red = worse or broken</span>, grey = no change.</li>
+      <li>The menu: <b>Metrics</b> explains the five numbers, <b>Code Quality Analyzer</b> shows the starting code, <b>Experiment Runs</b> shows every run, <b>Refactoring Comparison</b> compares the three approaches.</li></ol>
+      <p class="muted">Open a topic below to learn more.</p></div>`;
+  return `<div class="dhead"><div class="row"><h1>Guide</h1><button class="close" data-drawer="0" title="Close the guide">Close ✕</button></div>
+    <nav class="toc">${S.map(([id, icon, color, t]) => `<a href="#g-${id}" data-goto="${id}" style="--c:${color}">${icon} ${t}</a>`).join("")}</nav></div>
+    <div class="dbody">${quick}${S.map(([id, icon, color, t, body]) => card(id, icon, color, t, body, id === openId)).join("")}</div>`;
+}
+
+function setDrawer(open) {
+  state.guide = open; save();
+  document.querySelector(".app").classList.toggle("with-guide", open);
+  const gb = document.getElementById("guide-btn"); if (gb) gb.classList.toggle("active", open);
+  const d = document.getElementById("drawer");
+  if (open && !d.innerHTML) d.innerHTML = renderGuide();
+}
+function goGuide(anchor) {
+  state.gopen = anchor;
+  document.getElementById("drawer").innerHTML = "";
+  setDrawer(true);
+  const el = document.getElementById("g-" + anchor);
+  if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+}
+
+// ---- events ----------------------------------------------------------------------------------------------------
 document.addEventListener("click", e => {
-  const tab = e.target.closest("[data-tab]");
-  if (tab) { state.tab = tab.dataset.tab; state.key = null; state.detail = null; save(); render(); load(); return; }
+  const g = e.target.closest("[data-guide]");
+  if (g) { e.preventDefault(); goGuide(g.dataset.guide); return; }
+  const go = e.target.closest("[data-goto]");
+  if (go) { e.preventDefault(); goGuide(go.dataset.goto); return; }
+  const gt = e.target.closest("[data-gtoggle]");
+  if (gt) { const sec = gt.closest(".gcard"); const was = sec.classList.contains("open");
+            document.querySelectorAll(".gcard.open").forEach(x => x.classList.remove("open"));
+            if (!was) { sec.classList.add("open"); state.gopen = gt.dataset.gtoggle; sec.scrollIntoView({ behavior: "smooth", block: "start" }); } return; }
+  const dr = e.target.closest("[data-drawer]");
+  if (dr) { setDrawer(dr.dataset.drawer === "1" ? !state.guide : false); return; }
+  const ap = e.target.closest("[data-approach]");
+  if (ap) { state.approach = ap.dataset.approach; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
+  const gvb = e.target.closest("[data-gv]");
+  if (gvb) { state.gv = gvb.dataset.gv; save(); render(); return; }
+  const ms = e.target.closest("[data-modsort]");
+  if (ms) { state.modsort = ms.dataset.modsort; render(); return; }
+  const sm = e.target.closest("[data-smell]");
+  if (sm) { state.smell = state.smell === sm.dataset.smell ? null : sm.dataset.smell; render(); return; }
+  const v = e.target.closest("[data-view]");
+  if (v) { e.preventDefault(); state.view = v.dataset.view; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
   const item = e.target.closest("[data-key]");
-  if (item) { state.key = item.dataset.key; state.detail = null; save(); render(); load(); }
+  if (item) { state.key = item.dataset.key; state.detail = null; state.tests = null; state.tm = null; state.tq = ""; state.open.clear(); save(); render(); load(true); return; }
+  const c = e.target.closest("[data-case]");
+  if (c) { e.preventDefault(); showCase(c.dataset.case); return; }
+  const rt = e.target.closest("[data-rtab]");
+  if (rt) { state.rtab = rt.dataset.rtab; save(); render(); return; }
+  const mt = e.target.closest("[data-metric]");
+  if (mt) { state.metric = mt.dataset.metric; save(); render(); return; }
+  const mv = e.target.closest("[data-mv]");
+  if (mv) { state.mv = mv.dataset.mv; save(); render(); return; }
+  const f = e.target.closest("[data-tf]");
+  if (f) { state.tf = f.dataset.tf; state.tall = false; save(); document.querySelectorAll("[data-tf]").forEach(b => b.classList.toggle("on", b.dataset.tf === state.tf)); renderTestsBody(); return; }
+  const o = e.target.closest("[data-open]");
+  if (o) { const id = o.dataset.open; state.open.has(id) ? state.open.delete(id) : state.open.add(id); renderTestsBody(); return; }
+  if (e.target.closest("[data-tall]")) { e.preventDefault(); state.tall = true; renderTestsBody(); }
 });
+document.addEventListener("input", e => {
+  if (e.target.id === "tq") { state.tq = e.target.value; state.tall = false; renderTestsBody(); }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "ts") { state.ts = e.target.value; save(); renderTestsBody(); }
+  if (e.target.id === "base") { state.base = e.target.value; state.smell = null; load(true); }
+  if (e.target.id === "tm") { state.tm = e.target.value; state.testsKey = null; state.open.clear(); load(true); }
+});
+const bar = document.querySelector("aside");
+const setBar = () => document.documentElement.style.setProperty("--hh", bar.offsetHeight + "px");
+try { new ResizeObserver(setBar).observe(bar); } catch (e) {}
+setBar(); addEventListener("resize", setBar);
+// theme: auto (follows the computer), light or dark; remembered in this browser
+const THEMES = ["auto", "light", "dark"], THEME_LABEL = { auto: "◐ Auto", light: "☀ Light", dark: "☾ Dark" };
+function applyTheme() {
+  const t = THEMES.includes(state.theme) ? state.theme : "auto";
+  if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t);
+  document.getElementById("theme").textContent = THEME_LABEL[t];
+}
+document.getElementById("theme").addEventListener("click", () => {
+  state.theme = THEMES[(THEMES.indexOf(state.theme || "auto") + 1) % THEMES.length]; save(); applyTheme();
+});
+applyTheme();
+const exp = document.getElementById("exp");
+exp.checked = !state.noexp;
+document.body.classList.toggle("noexp", !!state.noexp);
+exp.addEventListener("change", () => { state.noexp = !exp.checked; document.body.classList.toggle("noexp", state.noexp); save(); });
+setDrawer(!!state.guide);
 const include = document.getElementById("include");
 include.value = state.include;
-include.addEventListener("change", () => { state.include = include.value; state.key = null; save(); load(); });
-load();
-setInterval(load, 3000);
+include.addEventListener("change", () => { state.include = include.value; state.key = null; save(); load(true); });
+load(true);
+setInterval(() => load(false), 3000);
 </script>
 </body>
 </html>

@@ -12,6 +12,7 @@ Linux) without Docker.
 from __future__ import annotations
 
 import argparse
+import ast
 import csv
 import json
 import os
@@ -19,6 +20,7 @@ import re
 import sys
 import threading
 import webbrowser
+import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path, PurePosixPath
 from urllib.parse import parse_qs, urlparse
@@ -27,6 +29,11 @@ REPO = Path(__file__).resolve().parents[1]
 APPROACHES = ("single", "iterative", "multiagent")
 PRIMARY = ("mean_cc", "mean_cognitive", "mi_weighted", "duplication_pct", "smell_count")
 HIGHER_IS_BETTER = {"mi_weighted"}
+TESTS_DIR = REPO / "dataset" / "lms" / "tests"
+CASES_DIR = TESTS_DIR / "cases"
+CASE_ID = re.compile(r"T-[A-Z0-9]+(?:-[A-Za-z0-9]+)+")
+SETS = ("feedback", "heldout")
+MESSAGE_CHARS = 1500
 SKIP_DIRS = {"calls", "rounds", "final", "analysis", "tests", "compare", "raw", "openapi", "repeat1", "repeat2"}
 TAIL_BYTES = 400_000
 
@@ -94,6 +101,25 @@ def short_path(path: str) -> str:
     return re.sub(r"^/work/", "", path)
 
 
+def rel_folder(value: str | None) -> str:
+    """A measurement folder of run.json (``final\\r1`` on Windows) as a POSIX path relative to the run folder."""
+    return str(value or "").replace("\\", "/").strip("/")
+
+
+def repo_path(value: str | None) -> Path | None:
+    """A path recorded in run.json: relative to the repository, or absolute on the computer that ran the run (early
+    pilot runs). An absolute path that does not exist here is mapped to the repository from its ``results/`` part."""
+    if not value:
+        return None
+    path = Path(str(value).replace("\\", "/"))
+    if not path.is_absolute() and not re.match(r"^[A-Za-z]:/", path.as_posix()):
+        return REPO / path
+    if path.exists():
+        return path
+    parts = PurePosixPath(path.as_posix()).parts
+    return REPO.joinpath(*parts[parts.index("results"):]) if "results" in parts else None
+
+
 def test_modules(folder: Path) -> dict[str, str]:
     """Case ID -> module, from the tests.csv of a measurement folder."""
     path = folder / "tests" / "tests.csv"
@@ -102,6 +128,118 @@ def test_modules(folder: Path) -> dict[str, str]:
             return {row["case"]: row.get("module", "") for row in csv.DictReader(handle)}
     except (OSError, KeyError, csv.Error):
         return {}
+
+
+def read_cases_csv(path: Path) -> dict[str, dict]:
+    """Case ID -> row of a tests.csv written by run_tests.py (case, module, table, type, set, result)."""
+    try:
+        with path.open(newline="", encoding="utf-8") as handle:
+            return {row["case"]: row for row in csv.DictReader(handle) if row.get("case")}
+    except (OSError, KeyError, csv.Error):
+        return {}
+
+
+_CATALOG: dict[str, dict] = {}
+
+
+def case_catalog(cases_dir: Path = CASES_DIR) -> dict[str, dict]:
+    """Case ID -> what the test checks, from the case tables ``dataset/lms/tests/cases/*.md`` (title, requirement,
+    type, input, expected). Read once per folder."""
+    key = str(cases_dir)
+    if key in _CATALOG:
+        return _CATALOG[key]
+    catalog: dict[str, dict] = {}
+    for md in sorted(cases_dir.glob("*.md")) if cases_dir.is_dir() else []:
+        try:
+            lines = md.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        title = next((line.lstrip("# ").removeprefix("Test cases: ").strip() for line in lines if line.startswith("# ")),
+                     md.stem)
+        for line in lines:
+            cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.startswith("|") else []
+            if len(cells) >= 6 and CASE_ID.fullmatch(cells[0]):
+                catalog[cells[0]] = {"area": title, "requirement": cells[1], "type": cells[2], "input": cells[3],
+                                     "expected": cells[4]}
+    _CATALOG[key] = catalog
+    return catalog
+
+
+def junit_messages(folder: Path) -> dict[str, str]:
+    """Case ID -> failure or error text from the JUnit reports in ``folder`` (``<set>.junit.xml``). These reports are
+    not committed, so they exist only on the computer that ran the measurement."""
+    messages: dict[str, str] = {}
+    for name in SETS:
+        path = folder / f"{name}.junit.xml"
+        if not path.is_file():
+            continue
+        try:
+            root = ET.parse(path).getroot()
+        except (ET.ParseError, OSError):
+            continue
+        for case in root.iter("testcase"):
+            for child in case:
+                if child.tag in ("failure", "error"):
+                    cid = case_id_of(case.get("name") or "")
+                    text = (child.get("message") or "").strip()
+                    body = (child.text or "").strip()
+                    if body and body not in text:
+                        text = (text + "\n\n" + body).strip()
+                    if cid and cid not in messages:
+                        messages[cid] = text[:MESSAGE_CHARS]
+                    break
+    return messages
+
+
+def log_messages(folder: Path) -> dict[str, str]:
+    """Case ID -> the failure section of the pytest output ``<set>.log`` (fallback when there is no JUnit report)."""
+    messages: dict[str, str] = {}
+    for name in SETS:
+        text = read_text(folder / f"{name}.log", 2_000_000)
+        for match in re.finditer(r"^_{3,} (test_\S+?)(?:\[[^\]]*\])? _{3,}$\n(.*?)(?=^_{3,} test_|^={3,}|\Z)", text,
+                                 re.M | re.S):
+            messages.setdefault(case_id_of(match.group(1)), match.group(2).strip()[-MESSAGE_CHARS:])
+    return messages
+
+
+_SOURCES: dict[str, dict] = {}
+
+
+def test_source(case: str, test_set: str, tests_dir: Path = TESTS_DIR) -> dict | None:
+    """The code of the test function of a case (``T-INV-20-a`` -> ``test_t_inv_20_a``) in the feedback or held-out
+    folder, with its file and line. These files are in the repository, so this works on every computer."""
+    if not CASE_ID.fullmatch(case or "") or test_set not in SETS:
+        return None
+    key = f"{tests_dir}|{test_set}"
+    if key not in _SOURCES:
+        index: dict[str, dict] = {}
+        for path in sorted((tests_dir / test_set).glob("test_*.py")):
+            try:
+                text = path.read_text(encoding="utf-8")
+                tree = ast.parse(text)
+            except (OSError, SyntaxError, ValueError):
+                continue
+            lines = text.splitlines()
+            for node in tree.body:
+                if isinstance(node, ast.FunctionDef) and node.name.startswith("test_t_"):
+                    first = min([d.lineno for d in node.decorator_list] + [node.lineno])
+                    index[node.name] = {"file": path.relative_to(tests_dir.parent.parent.parent).as_posix()
+                                        if tests_dir.parent.parent.parent in path.parents else path.name,
+                                        "line": first, "code": "\n".join(lines[first - 1:node.end_lineno])}
+        _SOURCES[key] = index
+    name = "test_" + case.lower().replace("-", "_")
+    return _SOURCES[key].get(name)
+
+
+def case_id_of(test_name: str) -> str:
+    """``test_t_loan_05_c[x]`` -> ``T-LOAN-05-c`` (same rule as scripts/run_tests.py)."""
+    name = test_name.split("[", 1)[0]
+    if not name.startswith("test_t_"):
+        return name
+    parts = name[len("test_t_"):].split("_")
+    if parts and len(parts[-1]) == 1 and parts[-1].isalpha() and len(parts) >= 3:
+        return "T-" + "-".join(p.upper() for p in parts[:-1]) + "-" + parts[-1]
+    return "T-" + "-".join(p.upper() for p in parts)
 
 
 def read_text(path: Path, limit: int = 4000) -> str:
@@ -155,7 +293,7 @@ def summary(key: str, folder: Path) -> dict | None:
         "window": window_used(record), "start_metrics": {m: start.get(m) for m in PRIMARY},
         "best_metrics": {m: (best.get("primary", {}).get(m) or {}).get("after") for m in PRIMARY},
         "deltas": deltas, "metric_status": status, "current": events[-1]["text"] if events else "",
-        "regressions": best.get("regressions"),
+        "regressions": best.get("regressions"), "tests_modules": record.get("tests_modules"),
     }
 
 
@@ -168,7 +306,7 @@ def detail(key: str, folder: Path) -> dict | None:
     rounds = []
     for entry in record.get("rounds", []):
         facts = entry.get("facts") or {}
-        mfolder = folder / facts.get("folder", f"rounds/r{entry.get('round')}")
+        mfolder = folder / (rel_folder(facts.get("folder")) or f"rounds/r{entry.get('round')}")
         modules = test_modules(mfolder) if facts.get("regression_cases") else {}
         rounds.append({
             "round": entry.get("round"), "call": entry.get("call"), "tag": entry.get("tag"),
@@ -182,7 +320,7 @@ def detail(key: str, folder: Path) -> dict | None:
         })
     final = {}
     for name, facts in (record.get("final") or {}).items():
-        mfolder = folder / facts.get("folder", "")
+        mfolder = folder / rel_folder(facts.get("folder"))
         modules = test_modules(mfolder) if facts.get("regression_cases") else {}
         final[name] = {"round": facts.get("round"), "run_successful": facts.get("run_successful"),
                        "reasons": facts.get("reasons", []), "metrics": metrics_of(facts),
@@ -210,9 +348,207 @@ def detail(key: str, folder: Path) -> dict | None:
         "stop_reason": record.get("stop_reason"), "best_round": record.get("best_round"),
         "best_tag": record.get("best_tag"), "tests_modules": record.get("tests_modules"),
         "model": record.get("model"), "effort": record.get("effort"), "live": live,
-        "roles": record.get("roles"), "budget": record.get("budget"),
+        "roles": record.get("roles"), "budget": record.get("budget"), "changes": changes_of(folder, record),
     })
     return out
+
+
+def changes_of(folder: Path, record: dict) -> dict | None:
+    """What the refactoring changed, from compare.json of the result that is shown (best, else last round): files and
+    lines, size, functions and classes added or removed, and every smell type before and after."""
+    final = record.get("final") or {}
+    facts = final.get("best") or final.get("last") or final.get("round1")
+    if not facts and record.get("rounds"):
+        facts = (record["rounds"][-1].get("facts") or {})
+    if not facts:
+        return None
+    data = read_json(folder / rel_folder(facts.get("folder")) / "compare" / "compare.json")
+    if not isinstance(data, dict):
+        return None
+    inv = data.get("inventory") or {}
+    return {"kept": bool(final.get("best")), "size": data.get("change_size"), "sloc": data.get("sloc"),
+            "added": len(inv.get("added") or []), "removed": len(inv.get("removed") or []),
+            "added_names": (inv.get("added") or [])[:40], "removed_names": (inv.get("removed") or [])[:40],
+            "units_before": inv.get("units_before"), "units_after": inv.get("units_after"),
+            "smells": data.get("smell_counts") or {}}
+
+
+def measurements(record: dict) -> list[dict]:
+    """The measurement folders of a run, newest decision first: the final checks (feedback and held-out tests) and
+    the round checks (feedback tests only)."""
+    found: dict[str, dict] = {}
+    names = {"best": "best result", "round1": "round 1", "last": "last round"}
+    for name, facts in (record.get("final") or {}).items():
+        folder = rel_folder(facts.get("folder"))
+        if not folder:
+            continue
+        entry = found.setdefault(folder, {"folder": folder, "kind": "final", "round": facts.get("round"),
+                                          "roles": [], "regressions": facts.get("regression_cases") or []})
+        entry["roles"].append(names.get(name, name))
+    for entry in record.get("rounds") or []:
+        facts = entry.get("facts") or {}
+        folder = rel_folder(facts.get("folder")) or f"rounds/r{entry.get('round')}"
+        found.setdefault(folder, {"folder": folder, "kind": "round", "round": entry.get("round"), "roles": [],
+                                  "regressions": facts.get("regression_cases") or [], "accepted": entry.get("accepted")})
+    for entry in found.values():
+        sets = "feedback and held-out tests" if entry["kind"] == "final" else "feedback tests"
+        if entry["kind"] == "final":
+            what = f"Final check of round {entry['round']}" if entry["round"] else "Final check"
+        else:
+            what = f"Round {entry['round']}"
+        roles = f" ({', '.join(entry['roles'])})" if entry["roles"] else ""
+        entry["label"] = f"{what}{roles}: {sets}"
+    return sorted(found.values(), key=lambda e: (e["kind"] != "final", "best result" not in e["roles"],
+                                                 -(e["round"] or 0)))
+
+
+STATUS_ORDER = ("regression", "failed_unconfirmed", "missing", "still_failing", "fixed", "passed", "skipped")
+
+
+def tests_view(folder: Path, measurement: str | None = None, cases_dir: Path = CASES_DIR) -> dict | None:
+    """Every test case of one measurement of a run: its result at the start and after refactoring, what it checks
+    and, where the JUnit report is on this computer, why it failed."""
+    record = read_json(folder / "run.json")
+    if not isinstance(record, dict):
+        return None
+    options = measurements(record)
+    chosen = next((m for m in options if m["folder"] == measurement), options[0] if options else None)
+    out = {"measurements": options, "selected": chosen["folder"] if chosen else None, "cases": [], "counts": {},
+           "messages_here": False, "start_known": False}
+    if not chosen:
+        return out
+    mfolder = (folder / chosen["folder"]).resolve()
+    if folder.resolve() not in mfolder.parents:
+        return None
+    after = read_cases_csv(mfolder / "tests" / "tests.csv")
+    baseline = repo_path(record.get("baseline"))
+    start = read_cases_csv(baseline / "tests.csv") if baseline else {}
+    flaky = set()
+    if baseline and (baseline / "flaky.txt").is_file():
+        flaky = {line.split()[0] for line in read_text(baseline / "flaky.txt", 200_000).splitlines()
+                 if line.strip() and not line.startswith("#")}
+    messages: dict[str, str] = {}
+    for name in ("tests", "repeat1", "repeat2"):
+        for source in (junit_messages, log_messages):
+            for cid, text in source(mfolder / name).items():
+                messages.setdefault(cid, text)
+    regressions = set(chosen.get("regressions") or [])
+    catalog = case_catalog(cases_dir)
+    cases = []
+    for cid, row in after.items():
+        before = (start.get(cid) or {}).get("result")
+        result = row.get("result") or ""
+        ok_now = result == "passed"
+        if cid in regressions:
+            status = "regression"
+        elif result == "missing":
+            status = "missing"
+        elif result == "skipped":
+            status = "skipped"
+        elif ok_now:
+            status = "fixed" if before and before != "passed" else "passed"
+        elif before == "passed":
+            status = "failed_unconfirmed"
+        else:
+            status = "still_failing"
+        info = catalog.get(cid, {})
+        cases.append({"case": cid, "module": row.get("module", ""), "table": row.get("table", ""),
+                      "type": row.get("type", ""), "set": row.get("set", ""), "start": before, "after": result,
+                      "status": status, "flaky": cid in flaky, "message": messages.get(cid, ""), **info})
+    cases.sort(key=lambda c: (STATUS_ORDER.index(c["status"]), c["set"], c["case"]))
+    counts: dict[str, dict] = {}
+    for c in cases:
+        bucket = counts.setdefault(c["set"], {"total": 0, **{k: 0 for k in STATUS_ORDER}})
+        bucket["total"] += 1
+        bucket[c["status"]] += 1
+    out.update({"cases": cases, "counts": counts, "messages_here": bool(messages) or not any(
+        c["status"] in ("regression", "failed_unconfirmed", "still_failing") for c in cases), "start_known": bool(start)})
+    return out
+
+
+def read_csv_rows(path: Path, limit: int = 100_000) -> list[dict]:
+    try:
+        with path.open(newline="", encoding="utf-8") as handle:
+            return [row for _, row in zip(range(limit), csv.DictReader(handle))]
+    except (OSError, csv.Error):
+        return []
+
+
+def baselines(root: Path) -> list[dict]:
+    """The measurements of the starting code: the final baselines and every baseline a run used, newest code first."""
+    found: dict[str, Path] = {}
+    final = REPO / "results" / "baseline" / "final"
+    for summary_file in sorted(final.glob("*/summary.json")) if final.is_dir() else []:
+        found[summary_file.parent.as_posix()] = summary_file.parent
+    for folder in find_runs(root).values():
+        record = read_json(folder / "run.json") or {}
+        path = repo_path(record.get("baseline"))
+        if path and (path / "summary.json").is_file():
+            found.setdefault(path.as_posix(), path)
+    out = []
+    for path in found.values():
+        summary = read_json(path / "summary.json") or {}
+        try:
+            name = path.relative_to(REPO).as_posix()
+        except ValueError:
+            name = path.as_posix()
+        out.append({"id": name, "label": summary.get("label") or path.name, "code_sha": (summary.get("code_sha") or "")[:12],
+                    "sloc": (summary.get("secondary") or {}).get("sloc"), "final": "/final/" in f"/{name}/"})
+    return sorted(out, key=lambda b: (not b["final"], b["label"]))
+
+
+def baseline_facts(baseline_id: str) -> dict:
+    """Size, the five metrics, smells, modules and tests of one starting code (for the pilot → full comparison)."""
+    path = (REPO / baseline_id) if not Path(baseline_id).is_absolute() else Path(baseline_id)
+    summary = read_json(path / "summary.json") or {}
+    sec = summary.get("secondary") or {}
+    tests = read_csv_rows(path / "tests.csv")
+    modules = [r for r in read_csv_rows(path / "modules.csv") if r.get("status", "generated") == "generated"]
+    return {"label": summary.get("label"), "sloc": sec.get("sloc"), "files": sec.get("files"), "functions": sec.get("cc_units"),
+            "classes": sec.get("classes"), "clones": sec.get("clones"), "modules": len(modules), "tests": len(tests),
+            "primary": summary.get("primary") or {}}
+
+
+def growth(options: list[dict]) -> dict | None:
+    """The pilot code (commit ce03f54) next to the full code (v0-ai-baseline): how the starting code grew."""
+    pilot = next((b for b in options if b["code_sha"].startswith("ce03f54")), None)
+    full = next((b for b in options if b["final"] and not b["label"].endswith("-ct")), None)
+    if not pilot or not full:
+        return None
+    return {"pilot": baseline_facts(pilot["id"]), "full": baseline_facts(full["id"])}
+
+
+def analyzer_view(root: Path, baseline_id: str | None) -> dict:
+    """What the code quality analyzer measured on a starting code: size, the five metrics, smells by type and where
+    they are, every module, the tests at the start and the tool versions."""
+    options = baselines(root)
+    chosen = next((b for b in options if b["id"] == baseline_id), options[0] if options else None)
+    if not chosen:
+        return {"baselines": [], "selected": None}
+    path = (REPO / chosen["id"]).resolve() if not Path(chosen["id"]).is_absolute() else Path(chosen["id"])
+    summary = read_json(path / "summary.json") or {}
+    sec = summary.get("secondary") or {}
+    tests: dict[str, dict] = {}
+    failing = []
+    for row in read_csv_rows(path / "tests.csv"):
+        bucket = tests.setdefault(row.get("set", ""), {"total": 0})
+        bucket["total"] += 1
+        bucket[row.get("result", "")] = bucket.get(row.get("result", ""), 0) + 1
+        if row.get("result") not in ("passed", "skipped"):
+            failing.append({"case": row.get("case"), "set": row.get("set"), "result": row.get("result"),
+                            **case_catalog().get(row.get("case") or "", {})})
+    smells = [{k: row.get(k) for k in ("s_id", "rule", "path", "unit", "line", "module_name")}
+              for row in read_csv_rows(path / "smells.csv") if row.get("counted", "1") == "1"]
+    modules = [{k: row.get(k) for k in ("module_no", "module_name", "level", "files", "sloc", "units", "mean_cc",
+                                        "mean_cognitive", "mi_weighted", "smells", "smells_per_ksloc",
+                                        "duplication_pct")}
+               for row in read_csv_rows(path / "modules.csv") if row.get("status", "generated") == "generated"]
+    return {"baselines": options, "selected": chosen["id"], "label": summary.get("label"), "growth": growth(options),
+            "code_sha": summary.get("code_sha"), "measured_at": summary.get("started_at"),
+            "primary": summary.get("primary"), "smell_counts": summary.get("smell_counts"),
+            "size": {k: sec.get(k) for k in ("files", "sloc", "loc", "cc_units", "classes", "clones")},
+            "not_measured": sec.get("not_measured"), "tools": summary.get("tool_versions"),
+            "modules": modules, "smells": smells[:2000], "smells_total": len(smells), "tests": tests, "failing": failing}
 
 
 def compare_approaches(summaries: list[dict]) -> dict:
@@ -227,7 +563,10 @@ def compare_approaches(summaries: list[dict]) -> dict:
             "success": sum(1 for s in valid if s["outcome"] == "success"),
             "outcomes": {o: sum(1 for s in runs if s["outcome"] == o) for o in
                          ("success", "no_improvement", "no_change", "failed", "invalid", "discarded_limit")},
-            "deltas": {m: mean([s["deltas"][m] for s in valid if isinstance(s["deltas"].get(m), (int, float))])
+            # a valid run that kept no round keeps the starting code: its change is 0, not "unknown"
+            "deltas": {m: mean([s["deltas"][m] if isinstance(s["deltas"].get(m), (int, float)) else 0.0
+                                for s in valid if s["status"] == "finished" and (
+                                    isinstance(s["deltas"].get(m), (int, float)) or not s["accepted"])])
                        for m in PRIMARY},
             "usd": mean([s["usd"] for s in valid]), "claude_min": mean([s["claude_s"] / 60 for s in valid]),
             "window_used": mean([s["window"]["used"] for s in valid if isinstance(s["window"]["used"], (int, float))]),
@@ -247,8 +586,8 @@ def lock_info(lock: Path) -> dict | None:
 # --- web server --------------------------------------------------------------------------------------------------
 
 class Dashboard:
-    def __init__(self, root: Path, lock: Path):
-        self.root, self.lock = root, lock
+    def __init__(self, root: Path, lock: Path, cases_dir: Path = CASES_DIR, tests_dir: Path = TESTS_DIR):
+        self.root, self.lock, self.cases_dir, self.tests_dir = root, lock, cases_dir, tests_dir
 
     def runs(self, include: str) -> dict:
         found = find_runs(self.root)
@@ -264,6 +603,16 @@ class Dashboard:
     def run(self, key: str) -> dict | None:
         folder = find_runs(self.root).get(key)
         return detail(key, folder) if folder else None
+
+    def analyzer(self, baseline_id: str | None) -> dict:
+        return analyzer_view(self.root, baseline_id)
+
+    def code(self, case: str, test_set: str) -> dict | None:
+        return test_source(case, test_set, self.tests_dir)
+
+    def tests(self, key: str, measurement: str | None) -> dict | None:
+        folder = find_runs(self.root).get(key)
+        return tests_view(folder, measurement, self.cases_dir) if folder else None
 
 
 def handler_for(board: Dashboard):
@@ -287,6 +636,19 @@ def handler_for(board: Dashboard):
             elif url.path == "/api/runs":
                 data = board.runs((query.get("include") or ["all"])[0])
                 self.send(200, json.dumps(data).encode("utf-8"), "application/json")
+            elif url.path == "/api/analyzer":
+                data = board.analyzer((query.get("b") or [None])[0])
+                self.send(200, json.dumps(data).encode("utf-8"), "application/json")
+            elif url.path == "/api/testcode":
+                data = board.code((query.get("case") or [""])[0], (query.get("set") or [""])[0])
+                self.send(200 if data else 404, json.dumps(data or {"error": "no test code"}).encode("utf-8"),
+                          "application/json")
+            elif url.path == "/api/tests":
+                data = board.tests((query.get("key") or [""])[0], (query.get("m") or [None])[0])
+                if data is None:
+                    self.send(404, b'{"error": "unknown run"}', "application/json")
+                else:
+                    self.send(200, json.dumps(data).encode("utf-8"), "application/json")
             elif url.path == "/api/run":
                 data = board.run((query.get("key") or [""])[0])
                 if data is None:

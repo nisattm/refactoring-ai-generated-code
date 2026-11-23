@@ -119,3 +119,116 @@ def test_http_server_is_read_only_json(tmp_path, monkeypatch):
         server.server_close()
     after = sorted((p.as_posix(), p.stat().st_mtime_ns) for p in root.rglob("*") if p.is_file())
     assert before == after                                                   # nothing was written
+
+
+def test_tests_view_lists_every_case_with_its_story(tmp_path, monkeypatch):
+    # the instructor asked to see which test passed or failed and why, inside the dashboard (2026-11-23)
+    root = make_runs(tmp_path, monkeypatch)
+    cases = tmp_path / "cases"
+    cases.mkdir()
+    (cases / "a.md").write_text("# Test cases: module 1 (Area A)\n\n| ID | Requirement | Type | Input | Expected | Set |\n"
+                                "| --- | --- | --- | --- | --- | --- |\n"
+                                "| T-A-01-b | LIB-A-01 | Error | `GET /x` | `404` | held-out |\n")
+    folder = root / "single" / "s02"
+    record = json.loads((folder / "run.json").read_text())
+    final = dashboard.rel_folder(record["final"]["best"]["folder"])
+    (folder / final / "tests" / "heldout.junit.xml").write_text(
+        '<testsuite><testcase name="test_t_a_01_b"><failure message="assert 500 == 404">trace</failure></testcase>'
+        '<testcase name="test_t_a_01_a"/></testsuite>')
+    view = dashboard.tests_view(folder, None, cases)
+    assert view["selected"] == final and view["start_known"] and view["messages_here"]
+    broke = view["cases"][0]                                   # problems first
+    assert broke["case"] == "T-A-01-b" and broke["status"] == "regression" and broke["start"] == "passed"
+    assert broke["expected"] == "`404`" and broke["area"] == "module 1 (Area A)" and "assert 500 == 404" in broke["message"]
+    assert view["counts"]["heldout"]["regression"] == 1 and all(c["status"] == "passed" for c in view["cases"][1:])
+    assert "Final check" in view["measurements"][0]["label"]
+    assert dashboard.tests_view(folder, "../../..", cases)["selected"] == final     # unknown folder: the default
+
+
+def test_iterative_measurements_and_paths(tmp_path, monkeypatch):
+    root = make_runs(tmp_path, monkeypatch)
+    record = json.loads((root / "iterative" / "i01" / "run.json").read_text())
+    labels = [m["label"] for m in dashboard.measurements(record)]
+    assert labels[0].startswith("Final check of round 2 (best result") and "Round 1: feedback tests" in labels
+    view = dashboard.tests_view(root / "iterative" / "i01", "rounds/r1")
+    assert [c["case"] for c in view["cases"] if c["status"] == "regression"] == ["T-A-02-a"]
+    assert dashboard.rel_folder("final\\r1") == "final/r1"
+    assert dashboard.repo_path("C:/Users/x/repo/results/baseline/trial/b") == dashboard.REPO / "results/baseline/trial/b"
+    assert dashboard.repo_path("results/a") == dashboard.REPO / "results/a"
+
+
+def test_tests_endpoint(tmp_path, monkeypatch):
+    root = make_runs(tmp_path, monkeypatch)
+    server = dashboard.ThreadingHTTPServer(("127.0.0.1", 0), dashboard.handler_for(
+        dashboard.Dashboard(root, tmp_path / ".run.lock", tmp_path / "no-cases")))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+    try:
+        data = json.loads(urllib.request.urlopen(base + "/api/tests?key=single/s02").read())
+        assert data["counts"]["heldout"]["regression"] == 1
+        page = urllib.request.urlopen(base + "/").read().decode("utf-8")
+        assert "Guide" in page and "When is a refactoring successful?" in page and "metricChart" in page
+        assert "What is refactoring?" in page and "What the refactoring changed" in page
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_test_code_and_log_fallback(tmp_path):
+    # clicking a test shows its code (from the repository) and, without a JUnit report, the pytest log section
+    tests = tmp_path / "dataset" / "lms" / "tests"
+    (tests / "heldout").mkdir(parents=True)
+    (tests / "heldout" / "test_a.py").write_text('import pytest\n\n\n@pytest.mark.x\ndef test_t_a_01_b(client):\n'
+                                                 '    """T-A-01-b"""\n    assert client.get("/x").status_code == 404\n')
+    code = dashboard.test_source("T-A-01-b", "heldout", tests)
+    assert code["line"] == 4 and code["code"].startswith("@pytest.mark.x") and "status_code == 404" in code["code"]
+    assert dashboard.test_source("T-A-01-b", "../x", tests) is None and dashboard.test_source("x", "heldout", tests) is None
+    log = tmp_path / "out"
+    log.mkdir()
+    (log / "heldout.log").write_text("F\n=== FAILURES ===\n____ test_t_a_01_b ____\n>   assert 500 == 404\nE   boom\n"
+                                     "=== short test summary info ===\n")
+    assert "E   boom" in dashboard.log_messages(log)["T-A-01-b"]
+    real = dashboard.test_source("T-INV-20-a", "heldout")
+    assert real["file"] == "dataset/lms/tests/heldout/test_inventory.py" and "def test_t_inv_20_a" in real["code"]
+
+
+def test_changes_of_a_run(tmp_path, monkeypatch):
+    # "what changed" for readers who are not programmers: files, lines, functions and smells from compare.json
+    root = make_runs(tmp_path, monkeypatch)
+    folder = root / "single" / "s01"
+    record = json.loads((folder / "run.json").read_text())
+    target = folder / dashboard.rel_folder(record["final"]["best"]["folder"]) / "compare" / "compare.json"
+    data = json.loads(target.read_text()) if target.is_file() else {}
+    data.update({"change_size": {"files_changed": 3, "lines_added": 10, "lines_removed": 20},
+                 "inventory": {"added": ["function fee"], "removed": ["function old_fee", "class X"]},
+                 "smell_counts": {"S01": {"before": 2, "after": 1}}, "sloc": {"before": 100, "after": 90}})
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(data))
+    ch = dashboard.detail("single/s01", folder)["changes"]
+    assert ch["kept"] and ch["size"]["files_changed"] == 3 and (ch["added"], ch["removed"]) == (1, 2)
+    assert ch["smells"]["S01"] == {"before": 2, "after": 1} and ch["sloc"]["after"] == 90
+
+
+def test_analyzer_page_reads_the_starting_code(tmp_path, monkeypatch):
+    # "Code Quality Analyzer": what was measured in the starting code (size, metrics, smells, modules, tests, tools)
+    root = make_runs(tmp_path, monkeypatch)
+    base = json.loads((root / "single" / "s01" / "run.json").read_text())["baseline"]
+    folder = dashboard.repo_path(base)
+    (folder / "smells.csv").write_text("s_id,rule,path,unit,line,module_name,counted\nS01,50 lines,a/b.py,f,3,Core,1\n"
+                                       "S01,46 lines,a/c.py,g,9,Core,0\n")
+    (folder / "modules.csv").write_text("module_no,module_name,level,status,sloc,smells,smells_per_ksloc\n"
+                                        "1,Core,simple,generated,100,1,10\n2,Later,simple,not generated,0,0,0\n")
+    view = dashboard.analyzer_view(root, str(folder))
+    assert view["selected"] == str(folder) and view["smells_total"] == 1 and view["smells"][0]["path"] == "a/b.py"
+    assert [m["module_name"] for m in view["modules"]] == ["Core"]
+    assert view["tests"]["feedback"]["passed"] == view["tests"]["feedback"]["total"] and view["failing"] == []
+    assert any(b["id"] == str(folder) for b in view["baselines"])
+
+
+def test_growth_from_pilot_to_full_code():
+    # the repository holds both starting codes: the pilot (ce03f54) and the full code (v0-ai-baseline)
+    view = dashboard.analyzer_view(dashboard.REPO / "results" / "experiments", None)
+    g = view["growth"]
+    assert g["pilot"]["sloc"] < g["full"]["sloc"] and g["pilot"]["modules"] < g["full"]["modules"]
+    assert set(g["full"]["primary"]) >= {"mean_cc", "smell_count"}
+    assert dashboard.growth([]) is None

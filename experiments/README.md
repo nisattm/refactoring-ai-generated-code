@@ -107,11 +107,28 @@ feedback, API change, subagent, limit cut (discard and resume), changes outside 
 python experiments/dashboard.py            # opens http://localhost:8765
 ```
 
-A local, read-only page for the runs under `results/experiments/`: one tab per approach (Single, Iterative,
-Multi-Agent) and a comparison tab. A running run shows the current step and the latest actions of the model (from the
-`stream.jsonl` of the running call); every run shows where it went wrong (invalid checks, test regressions with their
-module, API changes, reverted rounds and the feedback the model got), the quality metrics of the start, round 1, the
-best and the last round, the rounds, the calls and a timeline. The comparison counts finished runs per approach
-(outcomes, success rate, mean change of the primary metrics, cost, Claude time, window used); pilot runs can be shown or
-hidden. It never writes a file, listens on 127.0.0.1 only and needs only the standard library (no Docker). A
-Multi-Agent run appears in its tab as soon as its engine writes the same `run.json`.
+A local, read-only page for the runs under `results/experiments/`, made to be read by someone who does not know the
+engine:
+
+- **Menu bar at the top** (it stays in view): **Guide** (opens beside the page; a five-point quick start, then every
+  term, outcome and rule as a closed card; `?` buttons jump to the right card), **Metrics**, **Code Quality Analyzer**,
+  **Experiment Runs** and **Refactoring Comparison**. Every field explains itself on hover; "Explanations" hides the
+  short help lines; the theme button switches between auto, light and dark. Test code is shown in colour.
+- **Code Quality Analyzer:** what the analyzer measured in a starting code (pick the full code or the pilot code):
+  how it works in four steps, size, the five metrics, code smells by type with every place they occur (file, function,
+  line), every module sorted by smell density, the tests at the start (and the ones that already fail), tool versions.
+- **Experiment Runs:** one tab per approach; the run list stays in view while a run scrolls.
+- **Metrics page:** one metric at a time: what it means (question, analogy, before/after example, tool, threshold),
+  its average change per approach, and its start value, result and percent change in every run.
+- **One run** (tabs Overview, Tests, Rounds and calls): a plain-language summary of what happened, "What the refactoring changed" (files and lines, size,
+  functions created or removed, every metric as a sentence with its percent change, smells by type), the quality metrics as a table and as one small chart per
+  metric (start, round 1, best, last), the rounds, the Claude calls, a timeline, and a live view of a running call.
+- **Tests:** every test case of a measurement (choose the final check or a round), its result at the start and now,
+  filters (problems, all, changed, passed), search, and on click the test code (`dataset/lms/tests/<set>/`), what the
+  test checks (requirement, input, expected, from `dataset/lms/tests/cases/*.md`) and why it failed. The error text
+  comes from the JUnit reports or the pytest logs (shown in red, with the failing line of the test code marked), which are not committed, so it is shown only on the computer that ran
+  the run.
+- **Comparison:** outcomes, success rate, mean change of the five metrics, cost, Claude time and window per approach,
+  as a table and as charts; trial runs can be shown or hidden.
+
+It never writes a file, listens on 127.0.0.1 only and needs only the standard library (no Docker).
