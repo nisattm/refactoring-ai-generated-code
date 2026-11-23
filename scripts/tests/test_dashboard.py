@@ -207,3 +207,19 @@ def test_changes_of_a_run(tmp_path, monkeypatch):
     ch = dashboard.detail("single/s01", folder)["changes"]
     assert ch["kept"] and ch["size"]["files_changed"] == 3 and (ch["added"], ch["removed"]) == (1, 2)
     assert ch["smells"]["S01"] == {"before": 2, "after": 1} and ch["sloc"]["after"] == 90
+
+
+def test_analyzer_page_reads_the_starting_code(tmp_path, monkeypatch):
+    # "Code Quality Analyzer": what was measured in the starting code (size, metrics, smells, modules, tests, tools)
+    root = make_runs(tmp_path, monkeypatch)
+    base = json.loads((root / "single" / "s01" / "run.json").read_text())["baseline"]
+    folder = dashboard.repo_path(base)
+    (folder / "smells.csv").write_text("s_id,rule,path,unit,line,module_name,counted\nS01,50 lines,a/b.py,f,3,Core,1\n"
+                                       "S01,46 lines,a/c.py,g,9,Core,0\n")
+    (folder / "modules.csv").write_text("module_no,module_name,level,status,sloc,smells,smells_per_ksloc\n"
+                                        "1,Core,simple,generated,100,1,10\n2,Later,simple,not generated,0,0,0\n")
+    view = dashboard.analyzer_view(root, str(folder))
+    assert view["selected"] == str(folder) and view["smells_total"] == 1 and view["smells"][0]["path"] == "a/b.py"
+    assert [m["module_name"] for m in view["modules"]] == ["Core"]
+    assert view["tests"]["feedback"]["passed"] == view["tests"]["feedback"]["total"] and view["failing"] == []
+    assert any(b["id"] == str(folder) for b in view["baselines"])

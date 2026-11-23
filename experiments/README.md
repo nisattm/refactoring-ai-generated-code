@@ -110,11 +110,14 @@ python experiments/dashboard.py            # opens http://localhost:8765
 A local, read-only page for the runs under `results/experiments/`, made to be read by someone who does not know the
 engine:
 
-- **Menu bar at the top** (it stays in view; the run list on the left stays in view while the run scrolls): one page per approach (Single, Iterative, Multi-Agent), the comparison and a **Guide** that explains
-  every term, metric, outcome and rule, starting with a five-point quick start. The Guide opens beside the page, so both can be read together; the `?` buttons
-  jump to the right section, and every field explains itself on hover. "Show explanations" hides the short help lines; the theme button switches between auto, light and dark. Test code is shown in colour.
-- **Run names:** a run is shown as its kind and number ("Pilot run 2", "Scale trial 1", "Study run 3", "(repeat)")
-  with the code it started from ("Pilot code", "Full LMS code"); the technical ID (`pilot-s02`) stays next to it.
+- **Menu bar at the top** (it stays in view): **Guide** (opens beside the page; a five-point quick start, then every
+  term, outcome and rule as a closed card; `?` buttons jump to the right card), **Metrics**, **Code Quality Analyzer**,
+  **Experiment Runs** and **Refactoring Comparison**. Every field explains itself on hover; "Explanations" hides the
+  short help lines; the theme button switches between auto, light and dark. Test code is shown in colour.
+- **Code Quality Analyzer:** what the analyzer measured in a starting code (pick the full code or the pilot code):
+  how it works in four steps, size, the five metrics, code smells by type with every place they occur (file, function,
+  line), every module sorted by smell density, the tests at the start (and the ones that already fail), tool versions.
+- **Experiment Runs:** one tab per approach; the run list stays in view while a run scrolls.
 - **Metrics page:** one metric at a time: what it means (question, analogy, before/after example, tool, threshold),
   its average change per approach, and its start value, result and percent change in every run.
 - **One run** (tabs Overview, Tests, Rounds and calls): a plain-language summary of what happened, "What the refactoring changed" (files and lines, size,

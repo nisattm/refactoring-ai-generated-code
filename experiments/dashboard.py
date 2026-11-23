@@ -466,6 +466,70 @@ def tests_view(folder: Path, measurement: str | None = None, cases_dir: Path = C
     return out
 
 
+def read_csv_rows(path: Path, limit: int = 100_000) -> list[dict]:
+    try:
+        with path.open(newline="", encoding="utf-8") as handle:
+            return [row for _, row in zip(range(limit), csv.DictReader(handle))]
+    except (OSError, csv.Error):
+        return []
+
+
+def baselines(root: Path) -> list[dict]:
+    """The measurements of the starting code: the final baselines and every baseline a run used, newest code first."""
+    found: dict[str, Path] = {}
+    final = REPO / "results" / "baseline" / "final"
+    for summary_file in sorted(final.glob("*/summary.json")) if final.is_dir() else []:
+        found[summary_file.parent.as_posix()] = summary_file.parent
+    for folder in find_runs(root).values():
+        record = read_json(folder / "run.json") or {}
+        path = repo_path(record.get("baseline"))
+        if path and (path / "summary.json").is_file():
+            found.setdefault(path.as_posix(), path)
+    out = []
+    for path in found.values():
+        summary = read_json(path / "summary.json") or {}
+        try:
+            name = path.relative_to(REPO).as_posix()
+        except ValueError:
+            name = path.as_posix()
+        out.append({"id": name, "label": summary.get("label") or path.name, "code_sha": (summary.get("code_sha") or "")[:12],
+                    "sloc": (summary.get("secondary") or {}).get("sloc"), "final": "/final/" in f"/{name}/"})
+    return sorted(out, key=lambda b: (not b["final"], b["label"]))
+
+
+def analyzer_view(root: Path, baseline_id: str | None) -> dict:
+    """What the code quality analyzer measured on a starting code: size, the five metrics, smells by type and where
+    they are, every module, the tests at the start and the tool versions."""
+    options = baselines(root)
+    chosen = next((b for b in options if b["id"] == baseline_id), options[0] if options else None)
+    if not chosen:
+        return {"baselines": [], "selected": None}
+    path = (REPO / chosen["id"]).resolve() if not Path(chosen["id"]).is_absolute() else Path(chosen["id"])
+    summary = read_json(path / "summary.json") or {}
+    sec = summary.get("secondary") or {}
+    tests: dict[str, dict] = {}
+    failing = []
+    for row in read_csv_rows(path / "tests.csv"):
+        bucket = tests.setdefault(row.get("set", ""), {"total": 0})
+        bucket["total"] += 1
+        bucket[row.get("result", "")] = bucket.get(row.get("result", ""), 0) + 1
+        if row.get("result") not in ("passed", "skipped"):
+            failing.append({"case": row.get("case"), "set": row.get("set"), "result": row.get("result"),
+                            **case_catalog().get(row.get("case") or "", {})})
+    smells = [{k: row.get(k) for k in ("s_id", "rule", "path", "unit", "line", "module_name")}
+              for row in read_csv_rows(path / "smells.csv") if row.get("counted", "1") == "1"]
+    modules = [{k: row.get(k) for k in ("module_no", "module_name", "level", "files", "sloc", "units", "mean_cc",
+                                        "mean_cognitive", "mi_weighted", "smells", "smells_per_ksloc",
+                                        "duplication_pct")}
+               for row in read_csv_rows(path / "modules.csv") if row.get("status", "generated") == "generated"]
+    return {"baselines": options, "selected": chosen["id"], "label": summary.get("label"),
+            "code_sha": summary.get("code_sha"), "measured_at": summary.get("started_at"),
+            "primary": summary.get("primary"), "smell_counts": summary.get("smell_counts"),
+            "size": {k: sec.get(k) for k in ("files", "sloc", "loc", "cc_units", "classes", "clones")},
+            "not_measured": sec.get("not_measured"), "tools": summary.get("tool_versions"),
+            "modules": modules, "smells": smells[:2000], "smells_total": len(smells), "tests": tests, "failing": failing}
+
+
 def compare_approaches(summaries: list[dict]) -> dict:
     """Per approach: runs, valid runs, successes, mean change of the primary metrics, cost, time, window."""
     table = {}
@@ -519,6 +583,9 @@ class Dashboard:
         folder = find_runs(self.root).get(key)
         return detail(key, folder) if folder else None
 
+    def analyzer(self, baseline_id: str | None) -> dict:
+        return analyzer_view(self.root, baseline_id)
+
     def code(self, case: str, test_set: str) -> dict | None:
         return test_source(case, test_set, self.tests_dir)
 
@@ -547,6 +614,9 @@ def handler_for(board: Dashboard):
                 self.send(200, PAGE.encode("utf-8"), "text/html; charset=utf-8")
             elif url.path == "/api/runs":
                 data = board.runs((query.get("include") or ["all"])[0])
+                self.send(200, json.dumps(data).encode("utf-8"), "application/json")
+            elif url.path == "/api/analyzer":
+                data = board.analyzer((query.get("b") or [None])[0])
                 self.send(200, json.dumps(data).encode("utf-8"), "application/json")
             elif url.path == "/api/testcode":
                 data = board.code((query.get("case") or [""])[0], (query.get("set") or [""])[0])

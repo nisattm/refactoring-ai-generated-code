@@ -241,7 +241,7 @@ aside { grid-column: 1 / -1; position: sticky; top: 0; z-index: 20; height: auto
         box-shadow: 0 1px 8px rgba(0,0,0,.06); }
 aside .brand { padding: 0 14px 0 0; margin-right: 6px; border-right: 1px solid var(--line); white-space: nowrap; }
 aside .brand small, aside .sect, aside button.nav small { display: none; }
-aside #nav-runs { display: flex; gap: 4px; flex-wrap: wrap; }
+aside #nav-main { display: flex; gap: 4px; flex-wrap: wrap; }
 aside button.nav { width: auto; gap: 8px; padding: 6px 12px; border-radius: 16px; white-space: nowrap; }
 aside button.nav .n { background: var(--soft); border-radius: 8px; padding: 0 6px; }
 aside button.nav.active .n { background: var(--panel); }
@@ -277,6 +277,21 @@ tr.grp td { font-weight: 650; background: var(--soft); }
 .quick h2 { font-size: 15px; margin: 0 0 4px; }
 .quick ol { margin: 6px 0; padding-left: 20px; } .quick li { margin: 5px 0; font-size: 13.5px; }
 .quick p { margin: 4px 0 0; font-size: 12.5px; }
+.atabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 12px; }
+.atabs button { font: inherit; text-align: left; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 10px; padding: 10px 14px; cursor: pointer; }
+.atabs button small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.atabs button.on { border-color: var(--accent); background: var(--accent-bg); box-shadow: inset 0 -3px 0 var(--accent); }
+.atabs .n { font-size: 12px; color: var(--muted); background: var(--soft); border-radius: 8px; padding: 0 6px; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 0 0 16px; }
+.steps > div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.steps .si { display: block; font-size: 20px; margin-bottom: 2px; }
+.steps .desc { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; }
+.sbars { display: flex; flex-direction: column; gap: 5px; }
+.sbar { display: grid; grid-template-columns: minmax(180px, 320px) 1fr 50px; gap: 10px; align-items: center; cursor: pointer; padding: 3px 6px; border-radius: 6px; }
+.sbar:hover { background: var(--soft); }
+.sbar i { display: block; height: 12px; border-radius: 3px; background: #b3261e; opacity: .75; min-width: 2px; }
+.sbar b { text-align: right; font-variant-numeric: tabular-nums; }
+.hbar { height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; } .hbar i { display: block; height: 100%; background: #b36b00; opacity: .8; }
 /* ---- Python code in colour ---------------------------------------------------------------------------------- */
 :root { --hk: #8a3fb3; --hs: #2e7d32; --hn: #b35900; --hc: #7a7f85; --hf: #1f5fa8; --hb: #00797a; --hd: #a3367a; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --hk: #d19af0; --hs: #9ccf7f; --hn: #f0a868; --hc: #8b9198; --hf: #7fb4f0; --hb: #5fd0cf; --hd: #f08fc5; } }
@@ -291,17 +306,16 @@ pre.code span.l.hit .hl-k, pre.code span.l.hit .hl-s, pre.code span.l.hit .hl-n,
 <aside>
   <div class="brand">Refactoring Experiments<small>How well do three ways of using Claude refactor AI-generated code?</small></div>
   <div class="sect">Runs by approach</div>
-  <div id="nav-runs"></div>
+  <span id="nav-main"></span>
   <div class="sect">Results</div>
-  <button class="nav" data-view="metrics" title="Each quality metric on its own, across all runs">Metrics</button>
-  <button class="nav" data-view="compare">Comparison<small></small></button>
+
   <div class="sect">Help</div>
-  <button class="nav" data-drawer="1" id="guide-btn" title="Opens beside the page"><span>📘 Guide</span></button>
+  
   <div class="foot">
     <button class="nav" id="theme" title="Switch between light and dark">◐ Auto</button>
-    <label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="exp"> Show explanations</label>
+    <label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="exp"> Explanations</label>
     <span id="lock" class="lock">–</span>
-    <label>Show
+    <label title="Which runs to show">
       <select id="include">
         <option value="all">All runs</option>
         <option value="real">Study runs only</option>
@@ -383,7 +397,9 @@ const FIELD = {
 let state = { view: "single", key: null, include: "all", runs: [], compare: {}, detail: null,
               tests: null, testsKey: null, tm: null, tf: "problems", ts: "all", tq: "", tall: false, open: new Set() };
 try { const saved = JSON.parse(localStorage.getItem("dash2") || "{}"); Object.assign(state, saved, { open: new Set() }); } catch (e) {}
-if (!["single", "iterative", "multiagent", "compare", "metrics"].includes(state.view)) state.view = "single";
+if (VIEWS.includes(state.view)) { state.approach = state.view; state.view = "runs"; }
+if (!["metrics", "analyzer", "runs", "compare"].includes(state.view)) state.view = "runs";
+if (!VIEWS.includes(state.approach)) state.approach = "single";
 if (!["overview", "tests", "rounds"].includes(state.rtab)) state.rtab = "overview";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -393,7 +409,7 @@ const time = iso => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit"
 const date = iso => iso ? new Date(iso).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
 const mins = s => s ? (s < 60 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`) : "–";
 const q = (anchor, tip) => `<a class="q" data-guide="${anchor}" title="${esc(tip || "Explain")}">?</a>`;
-function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp, theme: state.theme, rtab: state.rtab, metric: state.metric })); } catch (e) {} }
+function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, approach: state.approach, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp, theme: state.theme, rtab: state.rtab, metric: state.metric })); } catch (e) {} }
 
 // ---- names that explain themselves -----------------------------------------------------------------------------
 function kindOf(run) {
@@ -443,9 +459,14 @@ async function load(force) {
     const data = await res.json();
     state.runs = data.runs; state.compare = data.compare;
     const lock = document.getElementById("lock");
-    lock.textContent = data.lock ? `● Running now: ${data.lock.what}` : "No run in progress";
+    lock.textContent = data.lock ? `● Running now: ${data.lock.what}` : "";
     lock.className = "lock" + (data.lock ? " on" : "");
-    if (state.key && VIEWS.includes(state.view)) {
+    if (state.view === "analyzer" && (force || !state.analyzer || state.analyzer.selected !== state.base)) {
+      const a = await fetch(`/api/analyzer${state.base ? "?b=" + encodeURIComponent(state.base) : ""}`);
+      state.analyzer = a.ok ? await a.json() : null;
+      if (state.analyzer) state.base = state.analyzer.selected;
+    }
+    if (state.key && state.view === "runs") {
       const r = await fetch(`/api/run?key=${encodeURIComponent(state.key)}`);
       state.detail = r.ok ? await r.json() : null;
       const running = state.detail && state.detail.status === "running";
@@ -456,7 +477,7 @@ async function load(force) {
       }
     }
     document.getElementById("updated").textContent = "Updated " + new Date().toLocaleTimeString();
-    const sig = JSON.stringify([state.view, state.key, state.runs, state.detail, state.tests && state.tests.selected, state.tests && state.tests.counts]);
+    const sig = JSON.stringify([state.view, state.approach, state.analyzer && state.analyzer.selected, state.key, state.runs, state.detail, state.tests && state.tests.selected, state.tests && state.tests.counts]);
     if (force || sig !== lastSig) { lastSig = sig; render(); }
   } catch (e) {
     document.getElementById("updated").textContent = "Dashboard server not reachable";
@@ -464,12 +485,13 @@ async function load(force) {
 }
 
 // ---- layout ----------------------------------------------------------------------------------------------------
+const NAV = [["guide", "📘 Guide", "What everything means (opens beside the page)"], ["metrics", "📏 Metrics", "The five quality metrics, one by one"],
+             ["analyzer", "🔍 Code Quality Analyzer", "What the analyzer measured in the starting code"],
+             ["runs", "🧪 Experiment Runs", "Every refactoring run of the three approaches"], ["compare", "📊 Refactoring Comparison", "The three approaches side by side"]];
 function renderNav() {
-  document.getElementById("nav-runs").innerHTML = VIEWS.map(id => {
-    const n = state.runs.filter(r => r.approach === id).length;
-    return `<button class="nav ${state.view === id ? "active" : ""}" data-view="${id}" title="${esc(APPROACH[id].short)}"><span>${APPROACH[id].name}</span><span class="n">${n}</span></button>`;
-  }).join("");
-  document.querySelectorAll("aside button.nav[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === state.view));
+  document.getElementById("nav-main").innerHTML = NAV.map(([id, label, tip]) => id === "guide"
+    ? `<button class="nav ${state.guide ? "active" : ""}" data-drawer="1" id="guide-btn" title="${esc(tip)}">${label}</button>`
+    : `<button class="nav ${state.view === id ? "active" : ""}" data-view="${id}" title="${esc(tip)}">${label}${id === "runs" ? ` <span class="n">${state.runs.length}</span>` : ""}</button>`).join("");
 }
 
 function render() {
@@ -477,9 +499,13 @@ function render() {
   const main = document.getElementById("main");
   if (state.view === "compare") { main.innerHTML = renderCompare(); return; }
   if (state.view === "metrics") { main.innerHTML = renderMetricsPage(); return; }
-  const a = APPROACH[state.view];
-  const head = `<div class="pagehead"><h1>${a.name}</h1><p>${esc(a.what)} ${q("approaches", "How the three approaches differ")}</p></div>`;
-  const runs = state.runs.filter(r => r.approach === state.view);
+  if (state.view === "analyzer") { main.innerHTML = renderAnalyzer(); return; }
+  const a = APPROACH[state.approach];
+  const tabs = `<div class="atabs">${VIEWS.map(id => `<button data-approach="${id}" class="${state.approach === id ? "on" : ""}">
+      <b>${APPROACH[id].name}</b> <span class="n">${state.runs.filter(r => r.approach === id).length}</span><small>${APPROACH[id].short}</small></button>`).join("")}</div>`;
+  const head = `<div class="pagehead"><h1>Experiment Runs</h1><p>Every refactoring run, by approach. Pick a run on the left to see what happened.</p></div>${tabs}
+    <p class="lead" style="margin-top:-4px">${esc(a.what)} ${q("approaches", "How the three approaches differ")}</p>`;
+  const runs = state.runs.filter(r => r.approach === state.approach);
   if (!runs.length) {
     main.innerHTML = head + `<p class="empty">No ${esc(a.name)} runs yet. They appear here as soon as the engine starts one.</p>`;
     return;
@@ -919,6 +945,61 @@ function renderTimeline(d) {
     `<div><span class="t">${esc(time(e.at))}</span><span>${esc(e.text)}</span></div>`).join("")}</div></div>`;
 }
 
+// ---- code quality analyzer: what was measured in the starting code ---------------------------------------------
+function baseName(b) {
+  if (!b) return "";
+  if (/-ct$/.test(b.label)) return "Full LMS code, with characterization tests";
+  if (b.final) return "Full LMS code";
+  if (/ce03f54/.test(b.label + b.code_sha)) return "Pilot code";
+  return b.label;
+}
+function renderAnalyzer() {
+  const a = state.analyzer;
+  const head = `<div class="pagehead"><h1>Code Quality Analyzer</h1><p>Our analyzer reads the code with several free tools and turns their output into numbers. It measures the starting code once, and every refactoring result in exactly the same way, so before and after can be compared.</p></div>`;
+  if (!a || !a.selected) return head + `<p class="empty">${a ? "No measurement of the starting code found." : "Loading…"}</p>`;
+  const opts = a.baselines.map(b => `<option value="${esc(b.id)}" ${b.id === a.selected ? "selected" : ""}>${esc(baseName(b))} (${esc(b.label)}, ${b.sloc ? b.sloc.toLocaleString() + " lines" : "?"})</option>`).join("");
+  const sz = a.size || {}, p = a.primary || {};
+  const steps = [["📄", "Reads the code", "Only the application code (lms/), not the web pages or tests."], ["🧮", "Runs the tools", Object.keys(a.tools || {}).filter(t => t !== "python").join(", ")],
+                 ["📏", "Computes 5 metrics", "Complexity, readability, maintainability, duplication, code smells."], ["🧪", "Runs the tests", "Feedback and held-out tests, to know what works at the start."]];
+  const metricTiles = METRICS.map(([m, label, digits]) => `<div class="fact" style="border-top:3px solid ${METRIC_GUIDE[m].color}"><b>${fmt(p[m], digits)}</b><span>${label}</span>
+    <span class="desc" style="display:block">${METRIC_GUIDE[m].question}</span></div>`).join("");
+  const counts = Object.entries(a.smell_counts || {}).sort((x, y) => y[1] - x[1]);
+  const maxS = Math.max(1, ...counts.map(c => c[1]));
+  const smellBars = counts.map(([id, n]) => `<div class="sbar" data-smell="${id}" title="Show where">
+    <span>${esc(SMELLS[id] || id)} <span class="id">${id}</span></span><i style="width:${n / maxS * 100}%"></i><b>${n}</b></div>`).join("");
+  const pick = state.smell && (a.smell_counts || {})[state.smell] ? state.smell : null;
+  const where = pick ? a.smells.filter(x => x.s_id === pick) : [];
+  const whereList = pick ? `<div class="panel"><h2>Where: ${esc(SMELLS[pick] || pick)} <span class="id">${pick}</span></h2>
+      <p class="lead">${where.length} place(s). File, function and line in the starting code.</p>
+      <table><tr><th>File</th><th>Function or class</th><th class="num">Line</th><th>Detail</th><th>Module</th></tr>
+      ${where.slice(0, 200).map(x => `<tr><td class="id">${esc(x.path)}</td><td>${esc(x.unit || "–")}</td><td class="num">${esc(x.line)}</td><td class="muted">${esc(x.rule)}</td><td>${esc(x.module_name)}</td></tr>`).join("")}</table>
+      ${where.length > 200 ? `<p class="note">First 200 shown.</p>` : ""}</div>` : "";
+  const mods = (a.modules || []).slice().sort((x, y) => Number(y.smells_per_ksloc) - Number(x.smells_per_ksloc));
+  const worst = Math.max(...mods.map(m => Number(m.smells_per_ksloc) || 0), 1);
+  const modRows = mods.map(m => `<tr><td>${esc(m.module_no)}. ${esc(m.module_name)}<span class="desc">${esc(m.level)} module · ${esc(m.files)} files</span></td>
+    <td class="num">${Number(m.sloc).toLocaleString()}</td><td class="num">${fmt(m.mean_cc, 2)}</td><td class="num">${fmt(m.mi_weighted, 1)}</td>
+    <td class="num">${fmt(m.duplication_pct, 2)}</td><td class="num">${esc(m.smells)}</td>
+    <td style="width:22%"><div class="hbar"><i style="width:${(Number(m.smells_per_ksloc) || 0) / worst * 100}%"></i></div><span class="desc">${fmt(m.smells_per_ksloc, 1)} per 1,000 lines</span></td></tr>`).join("");
+  const tests = Object.entries(a.tests || {}).sort().map(([set, c]) => `<div class="fact"><b>${c.passed || 0} / ${c.total}</b><span>${esc(SETNAME[set] || set)} pass at the start</span></div>`).join("");
+  const failing = (a.failing || []).map(f => `<li><span class="id">${esc(f.case)}</span> ${esc(f.area || "")}: ${md(f.expected || "")} <span class="muted">(${esc(f.set === "heldout" ? "held-out" : f.set)}, ${esc(f.result)})</span></li>`).join("");
+  return head + `<div class="toolbar"><label class="muted">Starting code</label><select id="base">${opts}</select></div>
+    <div class="steps">${steps.map(([i, t, d], n) => `<div><span class="si">${i}</span><b>${n + 1}. ${t}</b><span class="desc">${esc(d)}</span></div>`).join("")}</div>
+    <div class="panel"><h2>The starting code in numbers</h2><p class="lead">Measured ${esc(date(a.measured_at))} · commit ${esc((a.code_sha || "").slice(0, 12))}.</p>
+      <div class="facts"><div class="fact"><b>${(sz.sloc || 0).toLocaleString()}</b><span>lines of code (${(sz.files || 0)} files)</span></div>
+        <div class="fact"><b>${(sz.cc_units || 0).toLocaleString()}</b><span>functions</span></div><div class="fact"><b>${sz.classes ?? "–"}</b><span>classes</span></div>
+        <div class="fact"><b>${sz.clones ?? "–"}</b><span>copy-pasted blocks</span></div></div>
+      <h3>The five metrics at the start ${q("metrics", "What they mean")}</h3><div class="facts">${metricTiles}</div></div>
+    <div class="panel"><h2>Code smells at the start</h2><p class="lead">${a.smells_total} findings of ${counts.filter(c => c[1]).length} types. Click a type to see where they are.${(a.not_measured || []).length ? ` ${a.not_measured.length} more types of the list cannot be measured reliably and are left out.` : ""}</p>
+      <div class="sbars">${smellBars}</div></div>
+    ${whereList}
+    <div class="panel"><h2>Modules</h2><p class="lead">Each part of the library system, sorted by code smells per 1,000 lines: the parts at the top need refactoring most.</p>
+      <table><tr><th>Module</th><th class="num">Lines</th><th class="num">Complexity</th><th class="num">Maintainability</th><th class="num">Duplication %</th><th class="num">Smells</th><th>Smell density</th></tr>${modRows}</table></div>
+    <div class="panel"><h2>Tests at the start</h2><p class="lead">Which tests already pass before any refactoring. A refactoring must keep all of these passing.</p>
+      <div class="facts">${tests}</div>${failing ? `<h3>Already failing at the start (bugs of the generated code)</h3><ul>${failing}</ul>` : ""}</div>
+    <div class="panel"><h2>Tools and versions</h2><p class="lead">The same versions measure every result.</p>
+      <div class="facts">${Object.entries(a.tools || {}).map(([t, v]) => `<div class="fact"><b style="font-size:15px">${esc(t)}</b><span>${esc(v)}</span></div>`).join("")}</div></div>`;
+}
+
 // ---- metrics page: one metric at a time, across all runs ---------------------------------------------------------
 function metricCard(m) {
   const [, label, , , tool] = METRICS.find(x => x[0] === m), g = METRIC_GUIDE[m];
@@ -975,7 +1056,7 @@ function renderCompare() {
   const row = (label, fn, tip) => `<tr><td${tip ? ` title="${esc(tip)}"` : ""}>${label}${tip ? `<span class="desc">${esc(tip)}</span>` : ""}</td>${VIEWS.map(id => `<td class="num">${fn(c[id] || {})}</td>`).join("")}</tr>`;
   const rate = a => a.valid ? `${a.success} / ${a.valid} (${Math.round(100 * a.success / a.valid)}%)` : "–";
   const scope = { all: "all runs, including trial runs", real: "study runs only", pilot: "trial runs only" }[state.include];
-  return `<div class="pagehead"><h1>Comparison</h1><p>The three approaches side by side, over the finished runs (${scope}; change it at the bottom left). Only valid runs enter the means. ${q("compare", "How to read the comparison")}</p></div>
+  return `<div class="pagehead"><h1>Refactoring Comparison</h1><p>The three approaches side by side, over the finished runs (${scope}; change it at the bottom left). Only valid runs enter the means. ${q("compare", "How to read the comparison")}</p></div>
   <div class="panel"><table>
     <tr><th></th>${VIEWS.map(id => `<th class="num">${APPROACH[id].name}</th>`).join("")}</tr>
     ${row("Finished runs (valid)", a => a.runs ? `${a.runs} (${a.valid})` : "0", "Runs that ended; in brackets those that count.")}
@@ -1079,7 +1160,8 @@ function renderGuide() {
       <li>We ask Claude to refactor an AI-written library system in <b>three ways</b>: one try (Single), several tries with test results (Iterative), or a team of AI roles (Multi-Agent).</li>
       <li>Every result is checked twice: <b>tests</b> (does it still work?) and <b>five quality metrics</b> (is it really cleaner?).</li>
       <li>A run is <span class="good"><b>successful</b></span> when nothing broke, no metric got worse and at least one got better.</li>
-      <li>On every page <span class="good">green = better</span>, <span class="bad">red = worse or broken</span>, grey = no change.</li></ol>
+      <li>On every page <span class="good">green = better</span>, <span class="bad">red = worse or broken</span>, grey = no change.</li>
+      <li>The menu: <b>Metrics</b> explains the five numbers, <b>Code Quality Analyzer</b> shows the starting code, <b>Experiment Runs</b> shows every run, <b>Refactoring Comparison</b> compares the three approaches.</li></ol>
       <p class="muted">Open a topic below to learn more.</p></div>`;
   return `<div class="dhead"><div class="row"><h1>Guide</h1><button class="close" data-drawer="0" title="Close the guide">Close ✕</button></div>
     <nav class="toc">${S.map(([id, icon, color, t]) => `<a href="#g-${id}" data-goto="${id}" style="--c:${color}">${icon} ${t}</a>`).join("")}</nav></div>
@@ -1089,7 +1171,7 @@ function renderGuide() {
 function setDrawer(open) {
   state.guide = open; save();
   document.querySelector(".app").classList.toggle("with-guide", open);
-  document.getElementById("guide-btn").classList.toggle("active", open);
+  const gb = document.getElementById("guide-btn"); if (gb) gb.classList.toggle("active", open);
   const d = document.getElementById("drawer");
   if (open && !d.innerHTML) d.innerHTML = renderGuide();
 }
@@ -1113,6 +1195,10 @@ document.addEventListener("click", e => {
             if (!was) { sec.classList.add("open"); state.gopen = gt.dataset.gtoggle; sec.scrollIntoView({ behavior: "smooth", block: "start" }); } return; }
   const dr = e.target.closest("[data-drawer]");
   if (dr) { setDrawer(dr.dataset.drawer === "1" ? !state.guide : false); return; }
+  const ap = e.target.closest("[data-approach]");
+  if (ap) { state.approach = ap.dataset.approach; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
+  const sm = e.target.closest("[data-smell]");
+  if (sm) { state.smell = state.smell === sm.dataset.smell ? null : sm.dataset.smell; render(); return; }
   const v = e.target.closest("[data-view]");
   if (v) { e.preventDefault(); state.view = v.dataset.view; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
   const item = e.target.closest("[data-key]");
@@ -1136,6 +1222,7 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", e => {
   if (e.target.id === "ts") { state.ts = e.target.value; save(); renderTestsBody(); }
+  if (e.target.id === "base") { state.base = e.target.value; state.smell = null; load(true); }
   if (e.target.id === "tm") { state.tm = e.target.value; state.testsKey = null; state.open.clear(); load(true); }
 });
 const bar = document.querySelector("aside");
