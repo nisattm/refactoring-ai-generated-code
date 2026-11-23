@@ -115,12 +115,13 @@ engine:
   jump to the right section, and every field explains itself on hover. "Show explanations" hides the short help lines.
 - **Run names:** a run is shown as its kind and number ("Pilot run 2", "Scale trial 1", "Study run 3", "(repeat)")
   with the code it started from ("Pilot code", "Full LMS code"); the technical ID (`pilot-s02`) stays next to it.
-- **One run:** a plain-language summary of what happened, the quality metrics as a table and as one small chart per
+- **One run:** a plain-language summary of what happened, "What the refactoring changed" (files and lines, size,
+  functions created or removed, every metric as a sentence with its percent change, smells by type), the quality metrics as a table and as one small chart per
   metric (start, round 1, best, last), the rounds, the Claude calls, a timeline, and a live view of a running call.
 - **Tests:** every test case of a measurement (choose the final check or a round), its result at the start and now,
   filters (problems, all, changed, passed), search, and on click the test code (`dataset/lms/tests/<set>/`), what the
   test checks (requirement, input, expected, from `dataset/lms/tests/cases/*.md`) and why it failed. The error text
-  comes from the JUnit reports or the pytest logs, which are not committed, so it is shown only on the computer that ran
+  comes from the JUnit reports or the pytest logs (shown in red, with the failing line of the test code marked), which are not committed, so it is shown only on the computer that ran
   the run.
 - **Comparison:** outcomes, success rate, mean change of the five metrics, cost, Claude time and window per approach,
   as a table and as charts; trial runs can be shown or hidden.

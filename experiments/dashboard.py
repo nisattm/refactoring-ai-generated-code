@@ -348,9 +348,29 @@ def detail(key: str, folder: Path) -> dict | None:
         "stop_reason": record.get("stop_reason"), "best_round": record.get("best_round"),
         "best_tag": record.get("best_tag"), "tests_modules": record.get("tests_modules"),
         "model": record.get("model"), "effort": record.get("effort"), "live": live,
-        "roles": record.get("roles"), "budget": record.get("budget"),
+        "roles": record.get("roles"), "budget": record.get("budget"), "changes": changes_of(folder, record),
     })
     return out
+
+
+def changes_of(folder: Path, record: dict) -> dict | None:
+    """What the refactoring changed, from compare.json of the result that is shown (best, else last round): files and
+    lines, size, functions and classes added or removed, and every smell type before and after."""
+    final = record.get("final") or {}
+    facts = final.get("best") or final.get("last") or final.get("round1")
+    if not facts and record.get("rounds"):
+        facts = (record["rounds"][-1].get("facts") or {})
+    if not facts:
+        return None
+    data = read_json(folder / rel_folder(facts.get("folder")) / "compare" / "compare.json")
+    if not isinstance(data, dict):
+        return None
+    inv = data.get("inventory") or {}
+    return {"kept": bool(final.get("best")), "size": data.get("change_size"), "sloc": data.get("sloc"),
+            "added": len(inv.get("added") or []), "removed": len(inv.get("removed") or []),
+            "added_names": (inv.get("added") or [])[:40], "removed_names": (inv.get("removed") or [])[:40],
+            "units_before": inv.get("units_before"), "units_after": inv.get("units_after"),
+            "smells": data.get("smell_counts") or {}}
 
 
 def measurements(record: dict) -> list[dict]:

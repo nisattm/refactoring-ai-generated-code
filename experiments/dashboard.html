@@ -149,6 +149,60 @@ tr.case-row:hover td { background: var(--soft); }
 #drawer table td, #drawer table th { font-size: 12.5px; }
 @media (max-width: 1200px) { .app.with-guide { grid-template-columns: 232px minmax(0, 1fr); } .app.with-guide #drawer { position: fixed; right: 0; top: 0; width: min(92vw, 560px); z-index: 10; box-shadow: -8px 0 24px rgba(0,0,0,.18); } }
 .hint { border-bottom: 1px dotted var(--muted); cursor: help; }
+#drawer .toc a { border-color: color-mix(in srgb, var(--c) 35%, var(--line)); }
+.gcard { border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 8px; margin: 10px 0; background: var(--panel); scroll-margin-top: 120px; }
+.ghead { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; padding: 11px 12px; cursor: pointer; font: inherit; color: var(--ink); text-align: left; }
+.gicon { width: 30px; height: 30px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 16px; flex: none; }
+.gtitle { flex: 1; font-weight: 650; font-size: 14.5px; }
+.gchev { color: var(--muted); transition: transform .15s; }
+.gcard.open .gchev { transform: rotate(180deg); }
+.gbody { display: none; padding: 0 14px 14px; font-size: 13.5px; }
+.gcard.open .gbody { display: block; }
+.plain { background: color-mix(in srgb, var(--c) 9%, var(--panel)); border-radius: 8px; padding: 10px 12px; margin: 2px 0 10px; line-height: 1.5; }
+.plain b:first-child { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--c); margin-bottom: 2px; }
+.analogy { font-style: italic; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 8px 0; }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: 10px; } .tile p { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+.checks div { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-bottom: 1px dashed var(--line); }
+.checks span { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--good-bg); color: var(--good); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+.legend { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; font-size: 12.5px; }
+.legend > div { display: grid; grid-template-columns: 130px 1fr; gap: 10px; align-items: start; }
+.legend .pill, .legend .badge { justify-self: start; }
+.why5 { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
+.why5 ul { margin: 6px 0 0; padding-left: 18px; } .why5 li { margin: 4px 0; }
+.mcards { display: flex; flex-direction: column; gap: 10px; }
+.mcard { border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 8px; padding: 12px; }
+.mcard p { margin: 6px 0; }
+.mtop { display: flex; gap: 10px; align-items: flex-start; }
+.mtop > div { flex: 1; }
+.micon { width: 32px; height: 32px; border-radius: 8px; background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); display: inline-flex; align-items: center; justify-content: center; font-size: 17px; flex: none; }
+.mq { color: var(--c); font-weight: 600; font-size: 13px; }
+.mdir { font-size: 11px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.mdir.down, .mdir.up { background: var(--good-bg); color: var(--good); }
+.ba { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ba span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.ba pre { margin-top: 2px; font-size: 11.5px; }
+.ba > div:first-child pre { border-left: 3px solid var(--bad); } .ba > div:last-child pre { border-left: 3px solid var(--good); }
+.mcard dl { grid-template-columns: 130px 1fr !important; font-size: 12.5px !important; }
+/* what changed */
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.fact { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.fact b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 12px; color: var(--muted); }
+.mlines { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; }
+.mline { display: flex; gap: 10px; align-items: baseline; padding: 8px 10px; border-radius: 6px; background: var(--soft); }
+.mline .arrow { font-weight: 700; width: 18px; text-align: center; }
+.mline.good { background: var(--good-bg); } .mline.good .arrow { color: var(--good); }
+.mline.bad { background: var(--bad-bg); } .mline.bad .arrow { color: var(--bad); }
+.mline small { color: var(--muted); margin-left: auto; white-space: nowrap; }
+/* errors in red */
+pre.err { background: var(--bad-bg); border-left: 4px solid var(--bad); color: var(--ink); }
+pre.err .e { color: var(--bad); font-weight: 600; }
+pre.err .gt { background: color-mix(in srgb, var(--bad) 14%, transparent); display: inline-block; width: 100%; }
+pre.code { counter-reset: ln; padding-left: 0; }
+pre.code span.l { display: block; padding-left: 46px; position: relative; }
+pre.code span.l::before { content: attr(data-n); position: absolute; left: 0; width: 36px; text-align: right; color: var(--muted); }
+pre.code span.l.hit { background: var(--bad-bg); box-shadow: inset 4px 0 0 var(--bad); color: var(--bad); font-weight: 600; }
 body.noexp .lead, body.noexp .desc, body.noexp .meta em, body.noexp .cs, body.noexp .pagehead p { display: none; }
 /* charts */
 .charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 14px; }
@@ -437,7 +491,7 @@ function renderDetail() {
     </div>
     ${d.stop_reason && d.status === "finished" ? `<p class="note">Stopped because: ${esc(d.stop_reason)}</p>` : ""}
   </div>`;
-  html += renderLive(d) + renderProblems(d) + renderMetrics(d) + renderTests(d) + renderRounds(d) + renderCalls(d) + renderTimeline(d);
+  html += renderLive(d) + renderProblems(d) + renderChanges(d) + renderMetrics(d) + renderTests(d) + renderRounds(d) + renderCalls(d) + renderTimeline(d);
   return html;
 }
 
@@ -480,6 +534,43 @@ function renderProblems(d) {
     <ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>` : "";
   if (!items.length) return blockedBox;
   return `<div class="problem"><h2>Where it went wrong</h2><p class="lead">Click a test ID to see the test and its error below.</p><ul>${[...new Set(items)].map(i => `<li>${i}</li>`).join("")}</ul></div>` + blockedBox;
+}
+
+function renderChanges(d) {
+  const ch = d.changes;
+  if (!ch) return "";
+  const size = ch.size || {}, sloc = ch.sloc || {};
+  const lastFacts = (d.final || {}).best || (d.final || {}).last || (d.final || {}).round1 || {};
+  const lines = METRICS.map(([m, label, digits]) => {
+    const v = (lastFacts.metrics || {})[m] || {};
+    if (typeof v.after !== "number" || typeof (d.start_metrics || {})[m] !== "number") return "";
+    const before = d.start_metrics[m], g = METRIC_GUIDE[m];
+    const pct = before ? Math.round(100 * (v.after - before) / Math.abs(before)) : 0;
+    const tone = v.status === "improved" ? "good" : v.status === "worse" ? "bad" : "";
+    const word = v.status === "improved" ? "better" : v.status === "worse" ? "worse" : "about the same";
+    return `<div class="mline ${tone}"><span class="arrow">${tone === "good" ? "✓" : tone === "bad" ? "✗" : "="}</span>
+      <span><b>${label}</b> got <b>${word}</b>: ${fmt(before, digits)} → ${fmt(v.after, digits)}<span class="desc" style="display:inline"> · ${esc(g.question)}</span></span>
+      <small>${pct > 0 ? "+" : ""}${pct} %</small></div>`;
+  }).join("");
+  const smellRows = Object.entries(ch.smells || {}).filter(([, v]) => v.before || v.after)
+    .sort((a, b) => Math.abs(b[1].after - b[1].before) - Math.abs(a[1].after - a[1].before))
+    .map(([id, v]) => `<tr><td>${esc(SMELLS[id] || id)} <span class="id">${esc(id)}</span></td><td class="num">${v.before}</td><td class="num">${v.after}</td>
+      <td class="num">${v.after === v.before ? `<span class="muted">0</span>` : `<span class="${v.after < v.before ? "good" : "bad"}">${v.after > v.before ? "+" : ""}${v.after - v.before}</span>`}</td></tr>`).join("");
+  const names = (list, n) => list.slice(0, 12).map(x => `<span class="id">${esc(x.replace(/^(function|class) /, ""))}</span>`).join(", ") + (n > 12 ? ` and ${n - 12} more` : "");
+  return `<div class="panel"><h2>What the refactoring changed ${q("metrics", "What the metrics mean")}</h2>
+    <p class="lead">${ch.kept ? "The kept result compared with the starting code." : "The last version Claude produced (it was not kept, so the starting code remains the result)."}</p>
+    <div class="facts">
+      <div class="fact"><b>${size.files_changed ?? "–"}</b><span>files changed${size.files_added ? ` · ${size.files_added} new` : ""}${size.files_removed ? ` · ${size.files_removed} removed` : ""}</span></div>
+      <div class="fact"><b><span class="good">+${size.lines_added ?? 0}</span> <span class="bad">−${size.lines_removed ?? 0}</span></b><span>lines added / removed</span></div>
+      <div class="fact"><b>${sloc.before ?? "–"} → ${sloc.after ?? "–"}</b><span>lines of code${typeof sloc.drop_pct === "number" ? ` (${sloc.drop_pct > 0 ? "−" : "+"}${fmt(Math.abs(sloc.drop_pct), 1)} %)` : ""}</span></div>
+      <div class="fact"><b>${ch.added} / ${ch.removed}</b><span>functions or classes created / removed</span></div>
+    </div>
+    <div class="mlines">${lines}</div>
+    ${smellRows ? `<details><summary>Code smells by type</summary><table><tr><th>Bad pattern</th><th class="num">Before</th><th class="num">After</th><th class="num">Change</th></tr>${smellRows}</table></details>` : ""}
+    ${ch.added || ch.removed ? `<details><summary>New and removed functions and classes</summary>
+      ${ch.added ? `<p><b class="good">Created (${ch.added}):</b> ${names(ch.added_names, ch.added)}</p>` : ""}
+      ${ch.removed ? `<p><b class="bad">Removed or merged (${ch.removed}):</b> ${names(ch.removed_names, ch.removed)}</p>` : ""}</details>` : ""}
+  </div>`;
 }
 
 function renderMetrics(d) {
@@ -650,7 +741,7 @@ function renderTestsBody() {
         ${c.input ? `<dt>Input</dt><dd>${md(c.input)}</dd>` : ""}
         ${c.expected ? `<dt>Expected</dt><dd>${md(c.expected)}</dd>` : ""}
         <dt>Result</dt><dd>${esc(c.start || "–")} at the start → ${esc(c.after || "–")} now. ${esc(tip)}${c.flaky ? " This test is on the list of unstable tests and is left out of the comparison." : ""}</dd>
-      </dl>${c.message ? `<h3>Why it failed</h3><pre>${esc(c.message)}</pre>` : (["passed", "fixed", "skipped"].includes(c.status) ? "" : `<p class="note">Error text not available here (see the note below the table).</p>`)}
+      </dl>${c.message ? `<h3 class="bad">Why it failed</h3>${errorBlock(c.message)}` : (["passed", "fixed", "skipped"].includes(c.status) ? "" : `<p class="note">Error text not available here (see the note below the table).</p>`)}
       ${codeBlock(c)}</div></td></tr>` : "";
     return `<tr class="case-row" data-open="${esc(c.case)}" id="case-${esc(c.case)}"><td><span class="pill s-${esc(c.status)}" title="${esc(tip)}">${esc(label)}</span></td>
       <td><span class="id">${esc(c.case)}</span></td><td>${esc(c.area || "module " + c.module)}</td><td title="${esc(SETTIP[c.set] || "")}">${esc(c.set === "heldout" ? "held-out" : c.set)}</td>
@@ -660,6 +751,16 @@ function renderTestsBody() {
     ${cases.length > limit ? `<p class="note">${limit} of ${cases.length} shown. <a href="#" data-tall="1">Show all</a></p>` : ""}`;
 }
 
+function errorBlock(text) {
+  const lines = String(text).split("\n").map(l => /^E\s/.test(l) || /Error\b|assert/i.test(l) && /^E|^\s*>/.test(l)
+    ? `<span class="${/^\s*>/.test(l) ? "gt" : "e"}">${esc(l)}</span>` : (/^\s*>/.test(l) ? `<span class="gt">${esc(l)}</span>` : esc(l)));
+  return `<pre class="err">${lines.join("\n")}</pre>`;
+}
+function failingLines(message) {
+  const out = new Set();
+  for (const m of String(message || "").matchAll(/test_[a-z0-9_]+\.py:(\d+)/g)) out.add(Number(m[1]));
+  return out;
+}
 const CODE_CACHE = {};
 function codeBlock(c) {
   const key = c.set + "|" + c.case, code = CODE_CACHE[key];
@@ -672,7 +773,9 @@ function codeBlock(c) {
   }
   if (code === null) return `<h3>Test code</h3><p class="note">Loading…</p>`;
   if (!code) return `<h3>Test code</h3><p class="note">The code of this test was not found in dataset/lms/tests.</p>`;
-  return `<h3>Test code <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${esc(code.file)}, line ${code.line}</span></h3><pre>${esc(code.code)}</pre>`;
+  const hits = failingLines(c.message);
+  const body = code.code.split("\n").map((l, i) => `<span class="l${hits.has(code.line + i) ? " hit" : ""}" data-n="${code.line + i}">${esc(l) || " "}</span>`).join("");
+  return `<h3>Test code <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">${esc(code.file)}${hits.size ? " · the line where it failed is red" : ""}</span></h3><pre class="code">${body}</pre>`;
 }
 
 function showCase(id) {
@@ -753,43 +856,98 @@ function renderCompare() {
     </div></div>`;
 }
 
-// ---- guide -----------------------------------------------------------------------------------------------------
+// ---- guide (opens beside the page; written for readers who are not programmers) ----------------------------------
+const METRIC_GUIDE = {
+  mean_cc: { icon: "⑂", color: "#2f6fb2", question: "How many different ways can each function run?",
+    plain: "Every if, else, loop or and/or gives the code another possible path. A function with many paths is harder to test and easier to get wrong.",
+    analogy: "Like a road with many junctions: the more turns you can take, the harder it is to check every route.",
+    before: "if member.active:\n    if member.debt > 50:\n        refuse()\n    elif member.is_student:\n        ...", after: "if not can_borrow(member):\n    refuse()",
+    why: "The most widely used complexity measure since 1976; it tells us whether functions got simpler.",
+    unit: "average paths per function", typical: "Radon rates 1–5 as simple, 11 or more as high" },
+  mean_cognitive: { icon: "◎", color: "#7b4fb3", question: "How hard is each function to read for a person?",
+    plain: "Like cyclomatic complexity, but it adds extra cost for code nested inside other code, because nesting is what makes code hard to follow.",
+    analogy: "A sentence with brackets inside brackets inside brackets is harder to read than three short sentences.",
+    before: "for loan in loans:\n    if loan.overdue:\n        for fee in loan.fees:\n            if not fee.paid: ...", after: "for fee in unpaid_overdue_fees(loans): ...",
+    why: "Measures readability the way a human feels it; it can improve even when the number of paths stays the same.",
+    unit: "average score per function", typical: "we flag a function above 15" },
+  mi_weighted: { icon: "♥", color: "#2e7d4f", question: "How easy is each file to maintain overall?",
+    plain: "A 0–100 health score that combines size, complexity and how many different words the code uses. Bigger, more tangled files score lower.",
+    analogy: "Like a health check-up that combines several readings into one score.",
+    before: "", after: "",
+    why: "Gives one overall view per file; we weight it by file size so that big files count more.",
+    unit: "score 0–100 (higher is better)", typical: "Radon rates a file above 19 as well maintainable, below 10 as poor" },
+  duplication_pct: { icon: "⧉", color: "#b36b00", question: "How much of the code is copy-pasted?",
+    plain: "Blocks of at least 5 lines that appear more than once. When a rule is copied to several places, a fix in one place is easily forgotten in another.",
+    analogy: "The same paragraph printed in three chapters of a manual: update one, and the others are now wrong.",
+    before: "def fee_for_book(days): ... 8 lines ...\ndef fee_for_dvd(days):  ... the same 8 lines ...", after: "def fee(days, rate): ... once ...",
+    why: "Removing duplication is one of the main goals of refactoring, and AI-generated code tends to repeat itself.",
+    unit: "percent of lines", typical: "0 % means no copy-paste at all" },
+  smell_count: { icon: "⚑", color: "#b3261e", question: "How many known bad patterns are in the code?",
+    plain: "A 'code smell' is a pattern that works but makes code harder to change: a function that is too long, too many inputs, unused code, unexplained numbers … We count 13 measurable types from a fixed list of 23.",
+    analogy: "Like a building inspector's checklist: each item is not a collapse, but each one is a warning sign.",
+    before: "def create(a, b, c, d, e, f, g, h):  # 8 parameters\n    if age > 65: ...                # unexplained number", after: "def create(request):\n    if age > SENIOR_AGE: ...",
+    why: "Covers design and logic problems the other four numbers do not see.",
+    unit: "number of findings", typical: "fewer is better; each finding is one place in the code" },
+};
+const SMELLS = { S01: "Function too long (over 45 lines)", S02: "Class with too many methods", S03: "Too many inputs (parameters)",
+  S07: "Unused code", S09: "Overly complicated condition", S10: "Code nested too deeply", S11: "Unexplained number in a comparison",
+  S18: "Files that depend on each other in a circle", S19: "Errors silently ignored", S20: "Shared default value (a Python trap)",
+  S21: "Inconsistent return values", S22: "Library outside the allowed list", S23: "Type checks switched off" };
+
 function renderGuide() {
+  const card = (id, icon, color, title, body, open) => `<section id="g-${id}" class="gcard ${open ? "open" : ""}" style="--c:${color}">
+      <button class="ghead" data-gtoggle="${id}"><span class="gicon">${icon}</span><span class="gtitle">${title}</span><span class="gchev">▾</span></button>
+      <div class="gbody">${body}</div></section>`;
+  const plain = t => `<div class="plain"><b>In plain words</b>${t}</div>`;
+  const metricCards = METRICS.map(([m, label, , , tool]) => {
+    const g = METRIC_GUIDE[m];
+    return `<div class="mcard" style="--c:${g.color}">
+      <div class="mtop"><span class="micon">${g.icon}</span><div><b>${label}</b><div class="mq">${g.question}</div></div>
+        <span class="mdir ${HIGHER.has(m) ? "up" : "down"}">${HIGHER.has(m) ? "▲ higher is better" : "▼ lower is better"}</span></div>
+      <p>${g.plain}</p><p class="analogy">${g.analogy}</p>
+      ${g.before ? `<div class="ba"><div><span>Before</span><pre>${esc(g.before)}</pre></div><div><span>After refactoring</span><pre>${esc(g.after)}</pre></div></div>` : ""}
+      <dl><dt>Why we measure it</dt><dd>${g.why}</dd><dt>Unit</dt><dd>${g.unit} · ${g.typical}</dd>
+        <dt>Measured with</dt><dd>${esc(tool)}</dd><dt>Counts as "same"</dt><dd>if the change is smaller than ${THRESHOLD[m]}</dd></dl></div>`;
+  }).join("");
   const S = [
-    ["overview", "What this dashboard shows", `<p>The study asks how well Claude refactors code that an AI generated: a Library Management System (LMS) written by Claude Code. Three ways of using Claude are compared on the same code, with the same model, the same instruction ("improve the structure, do not change the behavior") and the same tests. Every run is measured with the same tools before and after.</p>
-      <p>This page only reads the files the experiment engine writes; it never changes them. While a run is in progress it shows Claude's latest actions live.</p>`],
-    ["approaches", "The three approaches", `<dl>${VIEWS.map(id => `<dt>${APPROACH[id].name}</dt><dd>${esc(APPROACH[id].what)}</dd>`).join("")}</dl>
-      <p class="note">Iterative and Multi-Agent get the same test feedback in the same format (test ID and a short error), so a difference between them comes from one conversation versus three roles, not from extra information. Both have the same budget of 3 code-changing rounds.</p>`],
-    ["runs", "Kinds of runs and their names", `<dl>${Object.values(KIND).map(k => `<dt>${k.label}</dt><dd>${esc(k.tip)}</dd>`).join("")}
-      ${Object.values(CODE).map(k => `<dt>${k.label}</dt><dd>${esc(k.tip)}</dd>`).join("")}
-      <dt>Run ID</dt><dd>${esc(FIELD.id)} Example: <span class="id">pilot-s01b</span> is the repeat of pilot Single run 1.</dd>
-      <dt>Repeat</dt><dd>A run that did not count (invalid or stopped by the usage limit) is never deleted; it is repeated under a new ID and both stay visible.</dd></dl>`],
-    ["outcomes", "Outcomes", `<dl>${Object.values(OUTCOME).map(([l, t]) => `<dt>${l}</dt><dd>${esc(t)}</dd>`).join("")}</dl>`],
-    ["metrics", "The five quality metrics", `<p>Measured on the Python application code (<code>lms/</code>) only; the web interface and tests are excluded. The same tool versions are used for every measurement.</p>
-      <table><tr><th>Metric</th><th>What it measures</th><th>Tool</th><th>"Same" if the change is below</th></tr>
-      ${METRICS.map(([m, l, , d, tool]) => `<tr><td>${l}</td><td>${esc(d)}</td><td>${esc(tool)}</td><td>${THRESHOLD[m]}</td></tr>`).join("")}</table>
-      <p class="note">Many other metrics (size, class design, coupling, architecture) are measured too and reported in the study, but only these five decide success.</p>`],
-    ["success", "When is a refactoring successful?", `<p>All of these must hold, compared with the starting code:</p><ol>
-      <li>No test that passed at the start fails now (feedback and held-out tests checked separately; a failure must repeat twice to count).</li>
-      <li>No primary metric got worse.</li><li>At least one primary metric improved.</li>
-      <li>The REST API is unchanged (same OpenAPI schema), and the code still loads.</li></ol>
-      <p>Tests that already failed in the starting code (bugs of the generated code) are reported separately and never count against the refactoring.</p>`],
-    ["tests", "Tests: feedback and held-out", `<dl>
-      <dt>${SETNAME.feedback}</dt><dd>${esc(SETTIP.feedback)}</dd><dt>${SETNAME.heldout}</dt><dd>${esc(SETTIP.heldout)}</dd>
-      <dt>Test ID</dt><dd><span class="id">T-LOAN-03-b</span>: area (loans), requirement number (03), case letter (b). Each case comes from the requirements of the LMS; its input and expected result are shown when you open a row.</dd>
-      ${Object.values(TEST_STATUS).map(([l, t]) => `<dt>${l}</dt><dd>${esc(t)}</dd>`).join("")}
-      <dt>Error text</dt><dd>The full error of a failed test is in the test report on the computer that ran the run; the dashboard shows it there. Reports are not committed to the repository.</dd></dl>`],
-    ["rounds", "Rounds and the keep rule", `<p>A round is one version of the code that was measured. Iterative measures after every Claude call that changed code; Multi-Agent saves and measures the code every time the orchestrator runs the tests.</p>
-      <p>A round is kept only if no feedback test that passed at the start fails, no metric is worse than in the best version so far, and the API is unchanged. Otherwise Iterative undoes it and tells Claude which tests broke; Multi-Agent simply keeps the earlier best. At the end the best round is checked again with all tests, including the held-out tests.</p>`],
-    ["cost", "Time, cost and usage limits", `<dl><dt>Claude time</dt><dd>${esc(FIELD.time)}</dd><dt>Cost (list price)</dt><dd>${esc(FIELD.cost)}</dd>
-      <dt>5-hour usage window</dt><dd>${esc(FIELD.window)} A Claude Pro account also has a weekly limit.</dd><dt>Account</dt><dd>${esc(FIELD.account)}</dd></dl>`],
-    ["validity", "When a run does not count", `<p>A run is invalid when the setup, not the model, went wrong: Claude got the wrong tools, used a different model or version, changed protected files, a call crashed, or the engine could not measure. These checks run after every call. Invalid runs are repeated under a new ID.</p>
-      <dl><dt>Blocked attempt</dt><dd>${esc(FIELD.blocked)}</dd><dt>Read-only shell command</dt><dd>${esc(FIELD.shell)}</dd></dl>`],
-    ["compare", "Reading the comparison", `<p>The comparison counts finished runs per approach. Success rates and mean metric changes use valid runs only. Trial runs are useful to check the engine, but they ran on the smaller pilot code or were cut by the usage limit, so look at "Study runs only" for the results of the study.</p>`],
+    ["refactoring", "🔧", "#2f5d8a", "What is refactoring?", `${plain("Refactoring means rewriting code so that it is <b>cleaner and easier to change</b>, while the program <b>does exactly the same thing</b> as before. Nothing new is added and nothing visible changes for the user.")}
+      <p class="analogy">Like reorganizing a kitchen: the same dishes come out, but the tools are easier to find and nothing is in the wrong drawer.</p>
+      <p>Here the code is a Library Management System (loans, members, fees, reservations …) that an AI wrote. We ask Claude to refactor it and then check two things: <b>is it still correct</b> (the tests) and <b>is it actually better</b> (the five quality metrics).</p>`],
+    ["approaches", "🧭", "#7b4fb3", "The three ways of using Claude", `<div class="tiles">${VIEWS.map((id, i) => `<div class="tile"><b>${["①", "②", "③"][i]} ${APPROACH[id].name}</b><p>${esc(APPROACH[id].what)}</p></div>`).join("")}</div>
+      ${plain("All three get the same code, the same instruction and the same model. Only the way of working differs: one try, several tries with test results, or a small team of AI roles.")}`],
+    ["success", "✅", "#2e7d4f", "When is a refactoring successful?", `<div class="checks">
+      <div><span>1</span>Every test that worked before <b>still works</b> (the program does the same thing).</div>
+      <div><span>2</span><b>None</b> of the five quality metrics got worse.</div>
+      <div><span>3</span><b>At least one</b> of them got better.</div>
+      <div><span>4</span>The program's interface (its REST API) is <b>unchanged</b>.</div></div>
+      <p class="muted">Tests that already failed in the starting code are bugs of the generated code; they never count against Claude.</p>`],
+    ["metrics", "📏", "#b36b00", "The five quality metrics", `${plain("We cannot ask a person to judge 30,000 lines of code by eye, so we measure it with tools. Each metric answers one simple question about the code.")}
+      <div class="why5"><b>Why exactly these five?</b><ul>
+        <li>Together they cover the main ways code gets hard to change: <b>tangled logic</b> (two complexity views), <b>overall health</b> (maintainability), <b>copy-paste</b> (duplication) and <b>known bad patterns</b> (smells).</li>
+        <li>They were fixed <b>before</b> the experiments. With 20+ metrics, some number always improves by chance; choosing five in advance keeps the result honest.</li>
+        <li>Each is measured by a widely used, free tool and gives the same number every time on the same code.</li>
+        <li>Many other measures (size, class design, coupling, architecture) are recorded too, but only these five decide success.</li></ul></div>
+      <div class="mcards">${metricCards}</div>`],
+    ["tests", "🧪", "#1f6fb2", "Tests: how we know nothing broke", `${plain("A test runs one small piece of the program with a fixed input and checks the answer, for example: 'a book returned 3 days late creates a late fee'. If the answer changes after refactoring, something broke.")}
+      <div class="tiles"><div class="tile"><b>${SETNAME.feedback}</b><p>${esc(SETTIP.feedback)}</p></div><div class="tile"><b>${SETNAME.heldout}</b><p>${esc(SETTIP.heldout)}</p></div></div>
+      <p>Test names like <span class="id">T-LOAN-03-b</span> mean: area <b>loans</b>, requirement <b>03</b>, case <b>b</b>.</p>
+      <div class="legend">${Object.entries(TEST_STATUS).map(([k, [l, t]]) => `<div><span class="pill s-${k}">${l}</span>${esc(t)}</div>`).join("")}</div>`],
+    ["rounds", "🔁", "#2f5d8a", "Rounds: trying again", `${plain("Iterative and Multi-Agent may try up to three times. Every version is measured; a version that breaks a test or makes the code worse is thrown away, and the best version is kept.")}
+      <p>At the end, the kept version is checked again with <b>all</b> tests, including the hidden ones.</p>`],
+    ["runs", "🏷️", "#6b6f75", "Run names and outcomes", `<div class="legend">${Object.values(KIND).map(k => `<div><span class="pill s-skipped">${k.label}</span>${esc(k.tip)}</div>`).join("")}
+      ${Object.values(CODE).map(k => `<div><span class="pill s-skipped">${k.label}</span>${esc(k.tip)}</div>`).join("")}</div>
+      <h3>Outcomes</h3><div class="legend">${Object.entries(OUTCOME).map(([k, [l, t]]) => `<div><span class="badge b-${k}">${l}</span>${esc(t)}</div>`).join("")}</div>
+      <p class="muted">${esc(FIELD.id)}</p>`],
+    ["cost", "⏱️", "#8a5a00", "Time, cost and usage limits", `<dl><dt>Claude time</dt><dd>${esc(FIELD.time)}</dd><dt>Cost (list price)</dt><dd>${esc(FIELD.cost)}</dd>
+      <dt>5-hour usage window</dt><dd>${esc(FIELD.window)}</dd><dt>Account</dt><dd>${esc(FIELD.account)}</dd></dl>`],
+    ["validity", "🛡️", "#b3261e", "When a run does not count", `${plain("Sometimes the problem is the setup, not Claude: a wrong setting, a crash, or the usage limit. Such a run is marked and repeated, never deleted.")}
+      <dl><dt>Blocked attempt</dt><dd>${esc(FIELD.blocked)}</dd><dt>Read-only command</dt><dd>${esc(FIELD.shell)}</dd></dl>`],
+    ["compare", "📊", "#2f5d8a", "Reading the comparison", `<p>The comparison page puts the three approaches side by side: how often each was successful, how much each metric changed on average, and what it cost. Trial runs only check the engine; choose "Study runs only" for the real results.</p>`],
   ];
+  const openId = state.gopen || "refactoring";
   return `<div class="dhead"><div class="row"><h1>Guide</h1><button class="close" data-drawer="0" title="Close the guide">Close ✕</button></div>
-    <nav class="toc">${S.map(([id, t]) => `<a href="#g-${id}" data-goto="${id}">${t}</a>`).join("")}</nav></div>
-    <div class="dbody">${S.map(([id, t, body]) => `<section id="g-${id}"><h2>${t}</h2>${body}</section>`).join("")}</div>`;
+    <nav class="toc">${S.map(([id, icon, color, t]) => `<a href="#g-${id}" data-goto="${id}" style="--c:${color}">${icon} ${t}</a>`).join("")}</nav></div>
+    <div class="dbody">${S.map(([id, icon, color, t, body]) => card(id, icon, color, t, body, id === openId)).join("")}</div>`;
 }
 
 function setDrawer(open) {
@@ -800,6 +958,8 @@ function setDrawer(open) {
   if (open && !d.innerHTML) d.innerHTML = renderGuide();
 }
 function goGuide(anchor) {
+  state.gopen = anchor;
+  document.getElementById("drawer").innerHTML = "";
   setDrawer(true);
   const el = document.getElementById("g-" + anchor);
   if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
@@ -811,6 +971,10 @@ document.addEventListener("click", e => {
   if (g) { e.preventDefault(); goGuide(g.dataset.guide); return; }
   const go = e.target.closest("[data-goto]");
   if (go) { e.preventDefault(); goGuide(go.dataset.goto); return; }
+  const gt = e.target.closest("[data-gtoggle]");
+  if (gt) { const sec = gt.closest(".gcard"); const was = sec.classList.contains("open");
+            document.querySelectorAll(".gcard.open").forEach(x => x.classList.remove("open"));
+            if (!was) { sec.classList.add("open"); state.gopen = gt.dataset.gtoggle; sec.scrollIntoView({ behavior: "smooth", block: "start" }); } return; }
   const dr = e.target.closest("[data-drawer]");
   if (dr) { setDrawer(dr.dataset.drawer === "1" ? !state.guide : false); return; }
   const v = e.target.closest("[data-view]");

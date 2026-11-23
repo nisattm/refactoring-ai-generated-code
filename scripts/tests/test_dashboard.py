@@ -168,6 +168,7 @@ def test_tests_endpoint(tmp_path, monkeypatch):
         assert data["counts"]["heldout"]["regression"] == 1
         page = urllib.request.urlopen(base + "/").read().decode("utf-8")
         assert "Guide" in page and "When is a refactoring successful?" in page and "metricChart" in page
+        assert "What is refactoring?" in page and "What the refactoring changed" in page
     finally:
         server.shutdown()
         server.server_close()
@@ -189,3 +190,20 @@ def test_test_code_and_log_fallback(tmp_path):
     assert "E   boom" in dashboard.log_messages(log)["T-A-01-b"]
     real = dashboard.test_source("T-INV-20-a", "heldout")
     assert real["file"] == "dataset/lms/tests/heldout/test_inventory.py" and "def test_t_inv_20_a" in real["code"]
+
+
+def test_changes_of_a_run(tmp_path, monkeypatch):
+    # "what changed" for readers who are not programmers: files, lines, functions and smells from compare.json
+    root = make_runs(tmp_path, monkeypatch)
+    folder = root / "single" / "s01"
+    record = json.loads((folder / "run.json").read_text())
+    target = folder / dashboard.rel_folder(record["final"]["best"]["folder"]) / "compare" / "compare.json"
+    data = json.loads(target.read_text()) if target.is_file() else {}
+    data.update({"change_size": {"files_changed": 3, "lines_added": 10, "lines_removed": 20},
+                 "inventory": {"added": ["function fee"], "removed": ["function old_fee", "class X"]},
+                 "smell_counts": {"S01": {"before": 2, "after": 1}}, "sloc": {"before": 100, "after": 90}})
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(data))
+    ch = dashboard.detail("single/s01", folder)["changes"]
+    assert ch["kept"] and ch["size"]["files_changed"] == 3 and (ch["added"], ch["removed"]) == (1, 2)
+    assert ch["smells"]["S01"] == {"before": 2, "after": 1} and ch["sloc"]["after"] == 90
