@@ -52,7 +52,8 @@ def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -
     try:
         if args.dry_run:
             return common.dry_run(run)
-        with common.RunLock(Path(args.lock_file), f"run_single.py {args.run_id}", args.wait, args.poll):
+        with common.RunLock(Path(args.lock_file), f"run_single.py {args.run_id}", args.wait, args.poll) as lock:
+            run.lock = lock
             return execute(run)
     except EngineError as exc:
         print(f"run_single: {exc}", file=sys.stderr)

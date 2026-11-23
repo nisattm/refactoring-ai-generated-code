@@ -153,6 +153,28 @@ def test_run_lock(tmp_path):
     assert not path.exists()
 
 
+def test_run_lock_released_during_a_call(tmp_path):
+    # W13: free while Claude Code runs, taken again afterwards; another run may hold it meanwhile
+    import threading
+    path = tmp_path / ".run.lock"
+    with common.RunLock(path, "first", wait=0, poll=1) as lock:
+        with lock.released() as info:
+            assert not path.exists() and lock.held is False
+            other = common.RunLock(path, "second", wait=0, poll=1).acquire(0)
+            threading.Timer(0.3, other.__exit__).start()
+            lock.poll = 0.05
+        assert info["released"] is True and info["wait_s"] > 0
+        assert lock.held and "what=first" in path.read_text()
+    assert not path.exists()
+
+
+def test_released_on_a_lock_not_held_does_nothing(tmp_path):
+    lock = common.RunLock(tmp_path / ".run.lock", "x", wait=0, poll=1)
+    with lock.released() as info:
+        pass
+    assert info == {"released": False, "wait_s": 0.0} and not (tmp_path / ".run.lock").exists()
+
+
 def test_workspace_and_tag(tmp_path):
     project = support.make_project(tmp_path)
     ws = common.Workspace(tmp_path / "work")
@@ -302,3 +324,16 @@ def test_baseline_is_recorded_relative_to_the_repository(tmp_path):
     outside = tmp_path / "elsewhere"
     assert common.repo_relative(outside, repo) == str(outside)
     assert common.from_repo(str(outside), repo) == outside
+
+
+@pytest.mark.parametrize("text, done", [
+    ("All changes made.\nREFACTORING_DONE", True),
+    ("Done.\n\n**REFACTORING_DONE**\n", True),
+    ("`REFACTORING_DONE`.", True),
+    ("Nothing more to change. REFACTORING_DONE", True),
+    ("I will not write REFACTORING_DONE yet: two modules are left.", False),
+    ("REFACTORING_DONE\nBut wait, one more file needs a change.", False),
+    ("", False), (None, False),
+])
+def test_end_marker_only_on_the_last_line(text, done):
+    assert common.said_done(text) is done

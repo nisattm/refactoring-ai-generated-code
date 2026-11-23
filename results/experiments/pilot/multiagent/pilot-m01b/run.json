@@ -1,0 +1,603 @@
+{
+  "approach": "multiagent",
+  "run_id": "pilot-m01b",
+  "repetition": "",
+  "start_ref": "ce03f54",
+  "start_sha": "ce03f5420a2da697772c0441607f35a94d75c8f8",
+  "start_state_commit": "ad338643130d6b5311367bb37afbbdd170afc1e7",
+  "baseline": "results/baseline/trial/pilot-ce03f54-v2",
+  "baseline_primary": {
+    "mean_cc": 2.6795,
+    "mean_cognitive": 1.8578,
+    "mi_weighted": 45.8653,
+    "duplication_pct": 0.809,
+    "smell_count": 83
+  },
+  "tests_modules": "1-14",
+  "test_files": [
+    "api",
+    "audit_io",
+    "auth",
+    "branches",
+    "catalog",
+    "core",
+    "e2e",
+    "fees",
+    "loans",
+    "members",
+    "notifications",
+    "purchasing",
+    "reports",
+    "reservations",
+    "search"
+  ],
+  "account": "exp-1",
+  "accounts_used": [
+    "exp-1"
+  ],
+  "window_pct_start": 0.0,
+  "work_root": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\exp-pilot-m01b-e5x_6ndv",
+  "image": "refactoring-env",
+  "image_id": "sha256:952feefa2878bab27b68d5531ad6bb1a4d4c594907951ebeacff8e397507541b",
+  "model": "claude-sonnet-5-5",
+  "effort": "high",
+  "flags": [
+    "--model",
+    "claude-sonnet-5-5",
+    "--effort",
+    "high",
+    "--tools",
+    "Read,Edit,Write,Glob,Grep",
+    "--allowedTools",
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "--disallowedTools",
+    "Task",
+    "Agent",
+    "--safe-mode",
+    "--permission-mode",
+    "dontAsk",
+    "--output-format",
+    "stream-json",
+    "--verbose"
+  ],
+  "env": {
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1"
+  },
+  "expected_version": "2.1.308",
+  "host": {
+    "os": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.10"
+  },
+  "interface_sha256": "f01b787e6a38fe9236f6f1c8851e8b476e7d2e791d237cf0f5d85794801acb89",
+  "test_hashes_sha256": "f3f9502d862aaa3c601d184646d2a19768fddd8ce341fe60b55156800a0e56e4",
+  "started_at": "2026-11-22T16:17:30+03:00",
+  "finished_at": "2026-11-22T16:39:03+03:00",
+  "status": "finished",
+  "calls": [
+    {
+      "number": 1,
+      "kind": "orchestrator",
+      "account": "exp-1",
+      "started_at": "2026-11-22T16:29:44+03:00",
+      "wall_s": 733.1,
+      "exit_code": 0,
+      "status": "ok",
+      "invalid": [],
+      "session_in": null,
+      "session_id": "14a1726f-e3ab-44c3-b161-e80edafb807f",
+      "prompt_sha256": "2eb90725b7d606935eff916171b20be88f6625d24f56481748555eb31ed22760",
+      "claude_code_version": "2.1.308",
+      "api_key_source": "none",
+      "tools": [
+        "Task",
+        "Bash",
+        "Edit",
+        "Glob",
+        "Grep",
+        "Read",
+        "Write"
+      ],
+      "tool_counts": {
+        "Agent": 3,
+        "Read": 155,
+        "Glob": 6,
+        "Grep": 33,
+        "Write": 17,
+        "Edit": 70,
+        "Bash": 1
+      },
+      "files_read": [
+        "/work/INTERFACE.md",
+        "/work/lms/__init__.py",
+        "/work/lms/api/app.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/auth.py",
+        "/work/lms/api/branches.py",
+        "/work/lms/api/calendar.py",
+        "/work/lms/api/catalog.py",
+        "/work/lms/api/dataexchange.py",
+        "/work/lms/api/errors.py",
+        "/work/lms/api/fines.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/notifications.py",
+        "/work/lms/api/purchasing.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/search.py",
+        "/work/lms/api/transfers.py",
+        "/work/lms/api/users.py",
+        "/work/lms/audit/dataset.py",
+        "/work/lms/audit/exchange_schemas.py",
+        "/work/lms/audit/exporter.py",
+        "/work/lms/audit/importer.py",
+        "/work/lms/audit/models.py",
+        "/work/lms/audit/schemas.py",
+        "/work/lms/audit/service.py",
+        "/work/lms/auth/bootstrap.py",
+        "/work/lms/auth/deps.py",
+        "/work/lms/auth/models.py",
+        "/work/lms/auth/passwords.py",
+        "/work/lms/auth/schemas.py",
+        "/work/lms/auth/service.py",
+        "/work/lms/branches/models.py",
+        "/work/lms/branches/schemas.py",
+        "/work/lms/branches/service.py",
+        "/work/lms/branches/transfers.py",
+        "/work/lms/catalog/isbn.py",
+        "/work/lms/catalog/models.py",
+        "/work/lms/catalog/release.py",
+        "/work/lms/catalog/schemas.py",
+        "/work/lms/catalog/service.py",
+        "/work/lms/catalog/status.py",
+        "/work/lms/core/__init__.py",
+        "/work/lms/core/calendar.py",
+        "/work/lms/core/clock.py",
+        "/work/lms/core/context.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/errors.py",
+        "/work/lms/core/holidays.py",
+        "/work/lms/core/money.py",
+        "/work/lms/core/pagination.py",
+        "/work/lms/core/params.py",
+        "/work/lms/core/responses.py",
+        "/work/lms/core/schemas.py",
+        "/work/lms/core/settings.py",
+        "/work/lms/core/text.py",
+        "/work/lms/core/timeutil.py",
+        "/work/lms/fines/models.py",
+        "/work/lms/fines/schemas.py",
+        "/work/lms/fines/service.py",
+        "/work/lms/loans/models.py",
+        "/work/lms/loans/schemas.py",
+        "/work/lms/loans/service.py",
+        "/work/lms/members/models.py",
+        "/work/lms/members/schemas.py",
+        "/work/lms/members/service.py",
+        "/work/lms/members/types.py",
+        "/work/lms/notifications/models.py",
+        "/work/lms/notifications/schemas.py",
+        "/work/lms/notifications/service.py",
+        "/work/lms/purchasing/models.py",
+        "/work/lms/purchasing/schemas.py",
+        "/work/lms/purchasing/service.py",
+        "/work/lms/reports/schemas.py",
+        "/work/lms/reports/service.py",
+        "/work/lms/reservations/models.py",
+        "/work/lms/reservations/schemas.py",
+        "/work/lms/reservations/service.py",
+        "/work/lms/search/schemas.py",
+        "/work/lms/search/service.py",
+        "/work/requirements.txt"
+      ],
+      "files_written": [
+        "/work/lms/api/app.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/auth.py",
+        "/work/lms/api/branches.py",
+        "/work/lms/api/calendar.py",
+        "/work/lms/api/catalog.py",
+        "/work/lms/api/dataexchange.py",
+        "/work/lms/api/fines.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/notifications.py",
+        "/work/lms/api/purchasing.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/transfers.py",
+        "/work/lms/api/users.py",
+        "/work/lms/audit/dataset.py",
+        "/work/lms/auth/deps.py",
+        "/work/lms/auth/service.py",
+        "/work/lms/branches/service.py",
+        "/work/lms/branches/transfers.py",
+        "/work/lms/catalog/service.py",
+        "/work/lms/core/context.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/errors.py",
+        "/work/lms/core/params.py",
+        "/work/lms/core/responses.py",
+        "/work/lms/core/schemas.py",
+        "/work/lms/fines/service.py",
+        "/work/lms/loans/service.py",
+        "/work/lms/members/service.py",
+        "/work/lms/members/types.py",
+        "/work/lms/notifications/service.py",
+        "/work/lms/purchasing/service.py",
+        "/work/lms/reservations/service.py"
+      ],
+      "subagent_attempts": 3,
+      "subagents_spawned": 3,
+      "permission_denials": [],
+      "terminal_reason": "completed",
+      "is_error": false,
+      "num_turns": 5,
+      "done_marker": true,
+      "outside_lms_changes": 0,
+      "hidden_files": [],
+      "rate_limit": {
+        "rate_limit_info": {
+          "status": "allowed",
+          "resetsAt": 1795370400,
+          "rateLimitType": "five_hour",
+          "overageStatus": "rejected",
+          "overageDisabledReason": "org_level_disabled",
+          "isUsingOverage": false,
+          "unifiedWindows": {
+            "five_hour": {
+              "utilization": 0.24,
+              "resetsAt": 1795370400
+            },
+            "seven_day": {
+              "utilization": 0.47,
+              "resetsAt": 1795536000
+            }
+          }
+        },
+        "session_id": "14a1726f-e3ab-44c3-b161-e80edafb807f"
+      },
+      "usd_raw": 2.4930970999999995,
+      "usd_diff": 2.4930970999999995,
+      "summary_raw": {
+        "input_tokens": 154,
+        "output_tokens": 87831,
+        "cache_write_tokens": 413695,
+        "cache_write_1h_tokens": "",
+        "cache_read_tokens": 5469566,
+        "thinking_tokens": 16875,
+        "total_input_tokens": 5883415,
+        "usd": 2.4930970999999995,
+        "usd_recomputed": 3.0803546,
+        "duration_s": 729.43,
+        "api_duration_s": 537.699,
+        "num_turns": 5,
+        "subagents_spawned": 3,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "14a1726f-e3ab-44c3-b161-e80edafb807f",
+        "note": ""
+      },
+      "summary": {
+        "input_tokens": 154,
+        "output_tokens": 87831,
+        "cache_write_tokens": 413695,
+        "cache_write_1h_tokens": "",
+        "cache_read_tokens": 5469566,
+        "thinking_tokens": 16875,
+        "total_input_tokens": 5883415,
+        "usd": 2.4930970999999995,
+        "usd_recomputed": 3.0803546,
+        "duration_s": 729.43,
+        "api_duration_s": 537.699,
+        "num_turns": 5,
+        "subagents_spawned": 3,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "14a1726f-e3ab-44c3-b161-e80edafb807f",
+        "note": ""
+      },
+      "tokens_raw": {
+        "input_tokens": 154,
+        "output_tokens": 87831,
+        "cache_write_tokens": 413695,
+        "cache_read_tokens": 5469566,
+        "thinking_tokens": 16875
+      },
+      "tokens": {
+        "input_tokens": 154,
+        "output_tokens": 87831,
+        "cache_write_tokens": 413695,
+        "cache_read_tokens": 5469566,
+        "thinking_tokens": 16875
+      },
+      "subagent_calls": {
+        "analyzer": 1,
+        "refactoring": 1,
+        "reviewer": 1
+      },
+      "test_runs": 1,
+      "blocked": []
+    }
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "call": 1,
+      "state_commit": "07c6170f9f399b2a359ae68f965ddd72e95f1af6",
+      "tag": "exp/multiagent/pilot-m01b/r1",
+      "code_sha": "de3396775c39ecac0d94ffdb766d8e53c6b3d588",
+      "source": "test run 1",
+      "test_run": {
+        "run": 1,
+        "at": "2026-11-22T13:25:33+00:00",
+        "status": "ok",
+        "tests_exit": 0,
+        "new_failures": [],
+        "feedback_lines": 0,
+        "regressions_confirmed": false
+      },
+      "accepted": false,
+      "facts": {
+        "status": "ok",
+        "problems": [],
+        "round_accepted": false,
+        "run_successful": false,
+        "reasons": [
+          "tests: set(s) not run after refactoring: heldout",
+          "no primary metric worse: worse: smell_count"
+        ],
+        "accept_reasons": [
+          "primary metrics not worse than the previous best: worse: smell_count"
+        ],
+        "regressions": 0,
+        "regressions_by_set": {
+          "feedback": 0,
+          "heldout": 0
+        },
+        "regression_cases": [],
+        "api_changed": false,
+        "api_loads": true,
+        "api_change_kind": null,
+        "invalid_metrics": [],
+        "primary": {
+          "duplication_pct": {
+            "before": 0.809,
+            "after": 0.7937,
+            "delta": -0.0153,
+            "status": "same"
+          },
+          "mean_cc": {
+            "before": 2.6795,
+            "after": 2.6063,
+            "delta": -0.0732,
+            "status": "improved"
+          },
+          "mean_cognitive": {
+            "before": 1.8578,
+            "after": 1.7839,
+            "delta": -0.0739,
+            "status": "improved"
+          },
+          "mi_weighted": {
+            "before": 45.8653,
+            "after": 48.1637,
+            "delta": 2.2984,
+            "status": "improved"
+          },
+          "smell_count": {
+            "before": 83,
+            "after": 87,
+            "delta": 4.0,
+            "status": "worse"
+          }
+        },
+        "wall_s": 208.7,
+        "folder": "rounds\\r1"
+      },
+      "feedback_lines": 0
+    }
+  ],
+  "final": {
+    "round1": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": false,
+      "run_successful": false,
+      "reasons": [
+        "no primary metric worse: worse: smell_count"
+      ],
+      "accept_reasons": [
+        "primary metrics not worse than the previous best: worse: smell_count"
+      ],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 0.809,
+          "after": 0.7937,
+          "delta": -0.0153,
+          "status": "same"
+        },
+        "mean_cc": {
+          "before": 2.6795,
+          "after": 2.6063,
+          "delta": -0.0732,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 1.8578,
+          "after": 1.7839,
+          "delta": -0.0739,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 45.8653,
+          "after": 48.1637,
+          "delta": 2.2984,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 83,
+          "after": 87,
+          "delta": 4.0,
+          "status": "worse"
+        }
+      },
+      "wall_s": 348.5,
+      "folder": "final\\r1",
+      "round": 1
+    },
+    "last": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": false,
+      "run_successful": false,
+      "reasons": [
+        "no primary metric worse: worse: smell_count"
+      ],
+      "accept_reasons": [
+        "primary metrics not worse than the previous best: worse: smell_count"
+      ],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 0.809,
+          "after": 0.7937,
+          "delta": -0.0153,
+          "status": "same"
+        },
+        "mean_cc": {
+          "before": 2.6795,
+          "after": 2.6063,
+          "delta": -0.0732,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 1.8578,
+          "after": 1.7839,
+          "delta": -0.0739,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 45.8653,
+          "after": 48.1637,
+          "delta": 2.2984,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 83,
+          "after": 87,
+          "delta": 4.0,
+          "status": "worse"
+        }
+      },
+      "wall_s": 348.5,
+      "folder": "final\\r1",
+      "round": 1
+    }
+  },
+  "outside_lms_changes": [],
+  "events": [
+    {
+      "at": "2026-11-22T16:17:30+03:00",
+      "text": "call 1 (orchestrator) started"
+    },
+    {
+      "at": "2026-11-22T16:29:44+03:00",
+      "text": "call 1 finished: ok, 733.1 s"
+    },
+    {
+      "at": "2026-11-22T16:29:45+03:00",
+      "text": "round 1: exp/multiagent/pilot-m01b/r1 = de3396775c39"
+    },
+    {
+      "at": "2026-11-22T16:29:46+03:00",
+      "text": "measurement rounds/r1 (feedback) started"
+    },
+    {
+      "at": "2026-11-22T16:33:14+03:00",
+      "text": "measurement rounds/r1: status ok, accepted False, successful False, regressions 0"
+    },
+    {
+      "at": "2026-11-22T16:33:14+03:00",
+      "text": "round 1 not kept: primary metrics not worse than the previous best: worse: smell_count"
+    },
+    {
+      "at": "2026-11-22T16:33:14+03:00",
+      "text": "stop: 1 round(s) from 1 test run(s)"
+    },
+    {
+      "at": "2026-11-22T16:33:15+03:00",
+      "text": "measurement final/r1 (both) started"
+    },
+    {
+      "at": "2026-11-22T16:39:03+03:00",
+      "text": "measurement final/r1: status ok, accepted False, successful False, regressions 0"
+    }
+  ],
+  "test_command": "python /engine/experiments/feedback_tests.py",
+  "roles_allowed": {
+    "analyzer": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "refactoring": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write"
+    ],
+    "reviewer": [
+      "Read",
+      "Glob",
+      "Grep"
+    ]
+  },
+  "budget": {
+    "refactoring_calls": 3,
+    "test_runs": 3
+  },
+  "roles": {
+    "subagent_calls": {
+      "analyzer": 1,
+      "refactoring": 1,
+      "reviewer": 1
+    },
+    "test_runs": 1,
+    "blocked": [],
+    "read_only_shell": [],
+    "invalid": []
+  },
+  "stop_reason": "1 round(s) from 1 test run(s)",
+  "best_round": 0,
+  "best_tag": "",
+  "outcome": "no_improvement",
+  "valid": true,
+  "reasons": [
+    "no round was accepted: the best result is the starting code"
+  ]
+}

@@ -26,6 +26,7 @@ The work folder (``--work-root``, a temporary folder by default) is outside the 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import datetime as dt
 import getpass
@@ -213,13 +214,18 @@ def tag_code(repo: Path, start_sha: str, lms_dir: Path, tag: str, message: str) 
 # --- run lock (W13) -----------------------------------------------------------------------------------------------
 
 class RunLock:
-    """``.run.lock`` in the repository root, same format as scripts/measure_baseline.sh; held for the whole run."""
+    """``.run.lock`` in the repository root, same format as scripts/measure_baseline.sh. Held for the whole run,
+    except during a Claude Code call that runs no tests (W13, ADR 004 addendum point 1): ``released()``."""
 
     def __init__(self, path: Path, what: str, wait: int = 21600, poll: int = 60, log=print):
         self.path, self.what, self.wait, self.poll, self.log = path, what, wait, poll, log
         self.held = False
 
     def __enter__(self) -> "RunLock":
+        return self.acquire(self.wait)
+
+    def acquire(self, wait: int | None) -> "RunLock":
+        """Take the lock; ``wait`` seconds at most (None: no limit, used after a call so that its result is kept)."""
         waited = 0
         user = os.environ.get("USER") or os.environ.get("USERNAME") or getpass.getuser()
         text = (f"who={user}@{socket.gethostname()}\nwhat={self.what}\n"
@@ -228,10 +234,11 @@ class RunLock:
             try:
                 fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             except FileExistsError:
-                if waited >= self.wait:
+                if wait is not None and waited >= wait:
                     held = self.path.read_text(encoding="utf-8", errors="replace") if self.path.exists() else ""
                     raise EngineError(f"{self.path} is still held after {waited} s:\n{held}", EXIT_LOCK) from None
-                self.log(f"waiting for {self.path}")
+                if waited == 0:
+                    self.log(f"waiting for {self.path}")
                 time.sleep(self.poll)
                 waited += self.poll
                 continue
@@ -244,6 +251,23 @@ class RunLock:
         if self.held and self.path.exists() and f"pid={os.getpid()}\n" in self.path.read_text(encoding="utf-8"):
             self.path.unlink()
         self.held = False
+
+    @contextlib.contextmanager
+    def released(self):
+        """W13: free the lock while Claude Code runs and take it again before the code is tested or measured, so
+        that the tests and measurements of two runs never overlap. Yields a dict; ``wait_s`` is the time spent
+        waiting for the lock afterwards (another run was measuring)."""
+        info = {"released": self.held, "wait_s": 0.0}
+        if not self.held:
+            yield info
+            return
+        self.__exit__()
+        try:
+            yield info
+        finally:
+            started = time.monotonic()
+            self.acquire(None)
+            info["wait_s"] = round(time.monotonic() - started, 1)
 
 
 # --- the model's workspace (W3) -----------------------------------------------------------------------------------
@@ -392,12 +416,12 @@ def fixed_sentence(prompts: Path, name: str, default: str) -> str:
 # --- the Claude Code call (W9) --------------------------------------------------------------------------------------
 
 def claude_args(prompt: str, effort: str, session_id: str | None, tools: tuple = TOOLS, allowed: tuple | None = None,
-                disallowed: tuple = DISALLOWED_TOOLS, extra: tuple = ()) -> list[str]:
+                disallowed: tuple = DISALLOWED_TOOLS, extra: tuple = (), safe_mode: bool = True) -> list[str]:
     # --tools only offers the tools; in dontAsk mode a tool also needs --allowedTools, otherwise every Write is
     # denied and the call still ends with subtype "success" (setup check, Işıl, 20 November 2026)
     args = ["-p", prompt, "--model", MODEL, "--effort", effort, "--tools", ",".join(tools),
             "--allowedTools", *(allowed or tools), *(("--disallowedTools", *disallowed) if disallowed else ()),
-            *extra, *FIXED_FLAGS]
+            *extra, *(f for f in FIXED_FLAGS if safe_mode or f != "--safe-mode")]
     if session_id:
         args += ["--resume", session_id]
     return args
@@ -405,7 +429,7 @@ def claude_args(prompt: str, effort: str, session_id: str | None, tools: tuple =
 
 def parse_stream(text: str) -> dict:
     """Facts from a ``--output-format stream-json --verbose`` log: init event, result event, tool uses."""
-    init, result, uses, texts, rate_limit = None, None, [], [], None
+    init, result, uses, texts, rate_limit, tool_results = None, None, [], [], None, {}
     for line in text.splitlines():
         line = line.strip()
         if not line.startswith("{"):
@@ -419,6 +443,13 @@ def parse_stream(text: str) -> dict:
             init = event
         elif kind == "result":
             result = event
+        elif kind == "user":             # tool results: a denied subagent type only shows up here (K6c)
+            for block in (event.get("message") or {}).get("content") or []:
+                if isinstance(block, dict) and block.get("type") == "tool_result":
+                    content = block.get("content")
+                    text = content if isinstance(content, str) else " ".join(
+                        str(c.get("text") or "") for c in content or [] if isinstance(c, dict))
+                    tool_results[block.get("tool_use_id")] = {"is_error": bool(block.get("is_error")), "text": text[:500]}
         elif kind == "rate_limit_event":
             rate_limit = {k: v for k, v in event.items() if k not in ("type", "uuid")}
         elif kind == "assistant":
@@ -435,13 +466,22 @@ def parse_stream(text: str) -> dict:
     for u in uses:
         counts[u["name"]] = counts.get(u["name"], 0) + 1
     return {"init": init, "result": result, "tool_counts": counts, "rate_limit": rate_limit, "uses": uses,
+            "tool_results": tool_results,
             "files_read": paths("Read"), "files_written": paths("Edit", "Write"),
             "subagent_attempts": sum(counts.get(n, 0) for n in SUBAGENT_TOOLS),
             "final_text": (result or {}).get("result") or (texts[-1] if texts else "")}
 
 
+def said_done(text: str | None) -> bool:
+    """The end marker counts only at the end of the last non-empty line of the final message, as the prompt asks
+    (W4); a sentence that only mentions REFACTORING_DONE ("I will not write REFACTORING_DONE yet") does not stop a
+    run. Markdown around it (**, `, a final period) is allowed."""
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    return bool(lines) and lines[-1].strip("*_`>#. ").endswith(DONE_MARKER)
+
+
 def check_call(parsed: dict, stderr: str, expected_version: str | None, tools: tuple = TOOLS,
-               subagents_allowed: bool = False) -> tuple[str, list[str]]:
+               subagents_allowed: bool = False, denials_invalid: bool = True) -> tuple[str, list[str]]:
     """Status of a call (``ok``, ``limit`` or ``error``) and the reasons that make the run invalid (W9, W10)."""
     init, result = parsed["init"], parsed["result"]
     invalid: list[str] = []
@@ -476,7 +516,7 @@ def check_call(parsed: dict, stderr: str, expected_version: str | None, tools: t
     denials = result.get("permission_denials")
     if not isinstance(denials, list):
         invalid.append("permission_denials missing: denied tool calls cannot be checked")
-    elif denials:
+    elif denials and denials_invalid:      # Multi-Agent classifies its denials itself (run_multiagent.blocked_or_broken)
         invalid.append(f"{len(denials)} denied tool call(s): {', '.join(denied_tools(denials))}")
     return "ok", invalid
 
@@ -622,6 +662,7 @@ class Run:
     def __init__(self, approach: str, args, toolkit: Toolkit | None = None, log=print):
         self.approach, self.args, self.log = approach, args, log
         self.toolkit = toolkit or RealToolkit()
+        self.lock: RunLock | None = None      # set by the runner; released during a call that runs no tests (W13)
         self.repo = Path(args.repo).resolve()
         self.out_root = Path(args.out_root).resolve()
         self.out = self.out_root / approach / args.run_id
@@ -747,23 +788,30 @@ class Run:
                    "-v", f"{self.ws.model}:/work", "-v", f"{self.ws.session}:/session", *volumes, "-w", "/work",
                    self.settings["image"], "claude", *args]
             env, cwd = None, None
-        self.event(f"call {number} ({kind}) started")
-        started = time.monotonic()
-        timed_out = False
-        with (folder / "stream.jsonl").open("w", encoding="utf-8") as out, \
-                (folder / "stderr.txt").open("w", encoding="utf-8") as err:
-            try:
-                code = subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=out, stderr=err, env=env, cwd=cwd,
-                                      timeout=self.settings["call_timeout"], check=False).returncode
-            except subprocess.TimeoutExpired:
-                timed_out, code = True, None
-                if not self.settings["local"]:
-                    subprocess.run(["docker", "kill", name], capture_output=True, check=False)
-        wall = round(time.monotonic() - started, 1)
+        # W13: the lock is free while Claude Code runs, unless the call runs tests itself (Multi-Agent: hold_lock)
+        release = self.lock is not None and not setup.get("hold_lock")
+        lock_ctx = self.lock.released() if release else contextlib.nullcontext({"released": False, "wait_s": 0.0})
+        self.event(f"call {number} ({kind}) started" + ("; run lock released" if release else ""))
+        with lock_ctx as lock_info:
+            started = time.monotonic()
+            timed_out = False
+            with (folder / "stream.jsonl").open("w", encoding="utf-8") as out, \
+                    (folder / "stderr.txt").open("w", encoding="utf-8") as err:
+                try:
+                    code = subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=out, stderr=err, env=env, cwd=cwd,
+                                          timeout=self.settings["call_timeout"], check=False).returncode
+                except subprocess.TimeoutExpired:
+                    timed_out, code = True, None
+                    if not self.settings["local"]:
+                        subprocess.run(["docker", "kill", name], capture_output=True, check=False)
+            wall = round(time.monotonic() - started, 1)
+        if lock_info["wait_s"]:
+            self.event(f"run lock taken again after waiting {lock_info['wait_s']} s")
         parsed = parse_stream((folder / "stream.jsonl").read_text(encoding="utf-8", errors="replace"))
         stderr = (folder / "stderr.txt").read_text(encoding="utf-8", errors="replace")
         status, invalid = check_call(parsed, stderr, self.settings["expected_version"],
-                                     tools=setup.get("tools", TOOLS), subagents_allowed=setup.get("subagents_allowed", False))
+                                     tools=setup.get("tools", TOOLS), subagents_allowed=setup.get("subagents_allowed", False),
+                                     denials_invalid=setup.get("denials_invalid", True))
         self.last_parsed = parsed
         if timed_out:
             status, invalid = "error", [f"call timed out after {self.settings['call_timeout']} s"]
@@ -784,6 +832,7 @@ class Run:
         diff = share.get("usd") if isinstance(share.get("usd"), (int, float)) else None
         record = {
             "number": number, "kind": kind, "account": self.args.account, "started_at": now(), "wall_s": wall,
+            "lock_released": lock_info["released"], "lock_wait_s": lock_info["wait_s"],
             "exit_code": code, "status": status, "invalid": invalid, "session_in": session_id,
             "session_id": result.get("session_id") or (parsed["init"] or {}).get("session_id"),
             "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
@@ -795,7 +844,7 @@ class Run:
             "subagents_spawned": (result.get("subagent_stats") or {}).get("spawned"),
             "permission_denials": denied_tools(result.get("permission_denials") or []),
             "terminal_reason": result.get("terminal_reason"), "is_error": result.get("is_error"),
-            "num_turns": result.get("num_turns"), "done_marker": DONE_MARKER in (parsed["final_text"] or ""),
+            "num_turns": result.get("num_turns"), "done_marker": said_done(parsed["final_text"]),
             "outside_lms_changes": n_outside, "hidden_files": hidden,
             "rate_limit": parsed["rate_limit"],
             "usd_raw": raw, "usd_diff": diff, "summary_raw": summary, "summary": share,
@@ -971,7 +1020,9 @@ def answered_calls(record: dict) -> int:
     return sum(1 for c in record["calls"] if c["status"] != "limit")
 
 
-def dry_run(run: Run) -> int:
+def dry_run(run: Run, args: list[str] | None = None, env: dict | None = None, mounts: tuple = ()) -> int:
+    """Check the inputs and print the Claude Code command. A runner with its own command (Multi-Agent) passes its
+    arguments, extra environment and extra mounts (``-v <name>:<path>[:ro]``); the default is the Single command."""
     run.check_inputs()
     sha = resolve_commit(run.repo, run.args.start_ref)
     print(f"start:     {run.args.start_ref} = {sha}")
@@ -979,7 +1030,8 @@ def dry_run(run: Run) -> int:
     print(f"output:    {run.out}")
     print(f"lock:      {run.args.lock_file}")
     print("claude:    docker run --rm --env-file <env-file> -e CLAUDE_CONFIG_DIR=/session "
-          + " ".join(f"-e {k}={v}" for k, v in CLAUDE_ENV.items())
-          + f" -v <work>/model:/work -v <work>/session:/session -w /work {run.settings['image']} claude "
-          + " ".join(claude_args("<prompt>", run.settings["effort"], None)))
+          + " ".join(f"-e {k}={v}" for k, v in {**CLAUDE_ENV, **(env or {})}.items())
+          + " -v <work>/model:/work -v <work>/session:/session " + "".join(f"{m} " for m in mounts)
+          + f"-w /work {run.settings['image']} claude "
+          + " ".join(args if args is not None else claude_args("<prompt>", run.settings["effort"], None)))
     return EXIT_DONE
