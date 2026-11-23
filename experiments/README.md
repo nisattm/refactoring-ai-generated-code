@@ -111,11 +111,13 @@ A local, read-only page for the runs under `results/experiments/`, made to be re
 engine:
 
 - **Menu bar at the top** (it stays in view; the run list on the left stays in view while the run scrolls): one page per approach (Single, Iterative, Multi-Agent), the comparison and a **Guide** that explains
-  every term, metric, outcome and rule. The Guide opens beside the page, so both can be read together; the `?` buttons
+  every term, metric, outcome and rule, starting with a five-point quick start. The Guide opens beside the page, so both can be read together; the `?` buttons
   jump to the right section, and every field explains itself on hover. "Show explanations" hides the short help lines; the theme button switches between auto, light and dark. Test code is shown in colour.
 - **Run names:** a run is shown as its kind and number ("Pilot run 2", "Scale trial 1", "Study run 3", "(repeat)")
   with the code it started from ("Pilot code", "Full LMS code"); the technical ID (`pilot-s02`) stays next to it.
-- **One run:** a plain-language summary of what happened, "What the refactoring changed" (files and lines, size,
+- **Metrics page:** one metric at a time: what it means (question, analogy, before/after example, tool, threshold),
+  its average change per approach, and its start value, result and percent change in every run.
+- **One run** (tabs Overview, Tests, Rounds and calls): a plain-language summary of what happened, "What the refactoring changed" (files and lines, size,
   functions created or removed, every metric as a sentence with its percent change, smells by type), the quality metrics as a table and as one small chart per
   metric (start, round 1, best, last), the rounds, the Claude calls, a timeline, and a live view of a running call.
 - **Tests:** every test case of a measurement (choose the final check or a round), its result at the start and now,

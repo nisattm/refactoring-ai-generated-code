@@ -181,10 +181,11 @@ tr.case-row:hover td { background: var(--soft); }
 .mdir { font-size: 11px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
 .mdir.down, .mdir.up { background: var(--good-bg); color: var(--good); }
 .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.ba span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.ba > div > span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .ba pre { margin-top: 2px; font-size: 11.5px; }
 .ba > div:first-child pre { border-left: 3px solid var(--bad); } .ba > div:last-child pre { border-left: 3px solid var(--good); }
-.mcard dl { grid-template-columns: 130px 1fr !important; font-size: 12.5px !important; }
+.mcard dl { display: grid; grid-template-columns: 130px 1fr; gap: 6px 12px; margin: 8px 0 0; font-size: 12.5px; }
+.mcard dt { font-weight: 600; } .mcard dd { margin: 0; }
 /* what changed */
 .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
 .fact { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
@@ -256,6 +257,26 @@ aside .foot #updated { display: none; }
 @media (max-width: 1200px) { .app.with-guide { grid-template-columns: minmax(0, 1fr); } .app.with-guide #drawer { position: fixed; top: var(--hh); height: calc(100vh - var(--hh)); grid-column: auto; grid-row: auto; } }
 @media (max-width: 900px) { aside { position: relative; } aside .foot { margin-left: 0; width: 100%; } .app:not(.with-guide) .list { position: static; max-height: none; }
   .app.with-guide #drawer { top: 0; height: 100vh; } }
+/* ---- run tabs, metrics page, quick start ------------------------------------------------------------------- */
+.rtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 4px 0 16px; position: sticky; top: var(--hh); background: var(--bg); z-index: 5; padding-top: 6px; }
+.rtabs button { font: inherit; font-size: 14px; border: 0; background: none; color: var(--muted); padding: 8px 14px; cursor: pointer; border-bottom: 3px solid transparent; }
+.rtabs button.on { color: var(--ink); font-weight: 650; border-bottom-color: var(--accent); }
+.tn { font-size: 11px; padding: 0 6px; border-radius: 8px; background: var(--bad-bg); }
+.mchips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.mchips button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 6px 12px; border-radius: 18px; cursor: pointer; }
+.mchips button.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 13%, var(--panel)); color: var(--c); font-weight: 650; }
+.mgrid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 16px; }
+@media (max-width: 1100px) { .mgrid { grid-template-columns: minmax(0, 1fr); } }
+.mgrid .mcard { background: var(--panel); }
+.mgrid .chart { max-width: 380px; }
+tr.grp td { font-weight: 650; background: var(--soft); }
+.dbar { position: relative; height: 14px; }
+.dbar .zero { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+.dbar i { position: absolute; top: 2px; height: 10px; border-radius: 3px; }
+.quick { background: var(--accent-bg); border-radius: 10px; padding: 12px 16px; margin: 12px 0 6px; }
+.quick h2 { font-size: 15px; margin: 0 0 4px; }
+.quick ol { margin: 6px 0; padding-left: 20px; } .quick li { margin: 5px 0; font-size: 13.5px; }
+.quick p { margin: 4px 0 0; font-size: 12.5px; }
 /* ---- Python code in colour ---------------------------------------------------------------------------------- */
 :root { --hk: #8a3fb3; --hs: #2e7d32; --hn: #b35900; --hc: #7a7f85; --hf: #1f5fa8; --hb: #00797a; --hd: #a3367a; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --hk: #d19af0; --hs: #9ccf7f; --hn: #f0a868; --hc: #8b9198; --hf: #7fb4f0; --hb: #5fd0cf; --hd: #f08fc5; } }
@@ -272,6 +293,7 @@ pre.code span.l.hit .hl-k, pre.code span.l.hit .hl-s, pre.code span.l.hit .hl-n,
   <div class="sect">Runs by approach</div>
   <div id="nav-runs"></div>
   <div class="sect">Results</div>
+  <button class="nav" data-view="metrics" title="Each quality metric on its own, across all runs">Metrics</button>
   <button class="nav" data-view="compare">Comparison<small></small></button>
   <div class="sect">Help</div>
   <button class="nav" data-drawer="1" id="guide-btn" title="Opens beside the page"><span>📘 Guide</span></button>
@@ -361,7 +383,8 @@ const FIELD = {
 let state = { view: "single", key: null, include: "all", runs: [], compare: {}, detail: null,
               tests: null, testsKey: null, tm: null, tf: "problems", ts: "all", tq: "", tall: false, open: new Set() };
 try { const saved = JSON.parse(localStorage.getItem("dash2") || "{}"); Object.assign(state, saved, { open: new Set() }); } catch (e) {}
-if (!["single", "iterative", "multiagent", "compare"].includes(state.view)) state.view = "single";
+if (!["single", "iterative", "multiagent", "compare", "metrics"].includes(state.view)) state.view = "single";
+if (!["overview", "tests", "rounds"].includes(state.rtab)) state.rtab = "overview";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
@@ -370,7 +393,7 @@ const time = iso => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit"
 const date = iso => iso ? new Date(iso).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
 const mins = s => s ? (s < 60 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`) : "–";
 const q = (anchor, tip) => `<a class="q" data-guide="${anchor}" title="${esc(tip || "Explain")}">?</a>`;
-function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp, theme: state.theme })); } catch (e) {} }
+function save() { try { localStorage.setItem("dash2", JSON.stringify({ view: state.view, key: state.key, include: state.include, tf: state.tf, ts: state.ts, mv: state.mv, guide: state.guide, noexp: state.noexp, theme: state.theme, rtab: state.rtab, metric: state.metric })); } catch (e) {} }
 
 // ---- names that explain themselves -----------------------------------------------------------------------------
 function kindOf(run) {
@@ -453,6 +476,7 @@ function render() {
   renderNav();
   const main = document.getElementById("main");
   if (state.view === "compare") { main.innerHTML = renderCompare(); return; }
+  if (state.view === "metrics") { main.innerHTML = renderMetricsPage(); return; }
   const a = APPROACH[state.view];
   const head = `<div class="pagehead"><h1>${a.name}</h1><p>${esc(a.what)} ${q("approaches", "How the three approaches differ")}</p></div>`;
   const runs = state.runs.filter(r => r.approach === state.view);
@@ -526,7 +550,14 @@ function renderDetail() {
     </div>
     ${d.stop_reason && d.status === "finished" ? `<p class="note">Stopped because: ${esc(d.stop_reason)}</p>` : ""}
   </div>`;
-  html += renderLive(d) + renderProblems(d) + renderChanges(d) + renderMetrics(d) + renderTests(d) + renderRounds(d) + renderCalls(d) + renderTimeline(d);
+  const nTests = state.tests && state.tests.cases ? state.tests.cases.filter(c => !["passed", "fixed", "skipped"].includes(c.status)).length : 0;
+  const tabs = [["overview", "Overview"], ["tests", `Tests${nTests ? ` <span class="tn bad">${nTests}</span>` : ""}`],
+                ["rounds", d.approach === "single" ? "Calls & timeline" : "Rounds, calls & timeline"]];
+  html += `<div class="rtabs">${tabs.map(([id, l]) => `<button data-rtab="${id}" class="${state.rtab === id ? "on" : ""}">${l}</button>`).join("")}</div>`;
+  html += renderLive(d);
+  if (state.rtab === "overview") html += renderProblems(d) + renderChanges(d) + renderMetrics(d);
+  else if (state.rtab === "tests") html += renderTests(d);
+  else html += renderRounds(d) + renderCalls(d) + renderTimeline(d);
   return html;
 }
 
@@ -840,7 +871,7 @@ function codeBlock(c) {
 }
 
 function showCase(id) {
-  state.tf = "all"; state.tq = id; state.open.add(id); state.ts = "all";
+  state.tf = "all"; state.tq = id; state.open.add(id); state.ts = "all"; state.rtab = "tests"; save();
   render();
   const row = document.getElementById("case-" + id);
   const target = row || document.getElementById("tests-panel");
@@ -886,6 +917,56 @@ function renderTimeline(d) {
   if (!events.length) return "";
   return `<div class="panel"><h2>Timeline</h2><p class="lead">What the engine did, newest first.</p><div class="timeline">${events.map(e =>
     `<div><span class="t">${esc(time(e.at))}</span><span>${esc(e.text)}</span></div>`).join("")}</div></div>`;
+}
+
+// ---- metrics page: one metric at a time, across all runs ---------------------------------------------------------
+function metricCard(m) {
+  const [, label, , , tool] = METRICS.find(x => x[0] === m), g = METRIC_GUIDE[m];
+  return `<div class="mcard" style="--c:${g.color}">
+    <div class="mtop"><span class="micon">${g.icon}</span><div><b>${label}</b><div class="mq">${g.question}</div></div>
+      <span class="mdir">${HIGHER.has(m) ? "▲ higher is better" : "▼ lower is better"}</span></div>
+    <p>${g.plain}</p><p class="analogy">${g.analogy}</p>
+    ${g.before ? `<div class="ba"><div><span>Before</span><pre>${highlight(g.before).join("\n")}</pre></div><div><span>After refactoring</span><pre>${highlight(g.after).join("\n")}</pre></div></div>` : ""}
+    <dl><dt>Why we measure it</dt><dd>${g.why}</dd><dt>Unit</dt><dd>${g.unit} · ${g.typical}</dd>
+      <dt>Measured with</dt><dd>${esc(tool)}</dd><dt>Counts as "same"</dt><dd>if the change is smaller than ${THRESHOLD[m]}</dd></dl></div>`;
+}
+
+function renderMetricsPage() {
+  const m = METRICS.some(x => x[0] === state.metric) ? state.metric : METRICS[0][0];
+  const [, label, digits] = METRICS.find(x => x[0] === m);
+  const chips = METRICS.map(([id, l]) => `<button data-metric="${id}" class="${id === m ? "on" : ""}" style="--c:${METRIC_GUIDE[id].color}">${METRIC_GUIDE[id].icon} ${l}</button>`).join("");
+  // one row per finished run that has a result: start → result and the change in percent (comparable across codes)
+  const rows = state.runs.filter(r => r.status === "finished" && typeof (r.start_metrics || {})[m] === "number").map(r => {
+    const start = r.start_metrics[m];
+    const kept = typeof (r.best_metrics || {})[m] === "number" ? r.best_metrics[m] : (r.valid ? start : null);
+    return { r, start, after: kept, pct: kept === null || !start ? null : 100 * (kept - start) / Math.abs(start), status: (r.metric_status || {})[m] };
+  });
+  const maxAbs = Math.max(1, ...rows.map(x => Math.abs(x.pct || 0)));
+  const bar = x => {
+    if (x.pct === null) return `<span class="muted">${x.r.valid === false ? "run did not count" : "no result"}</span>`;
+    const good = HIGHER.has(m) ? x.pct > 0 : x.pct < 0, w = Math.abs(x.pct) / maxAbs * 50;
+    const tone = x.status === "same" || Math.abs(x.pct) < 1e-9 ? "var(--muted)" : good ? "var(--good)" : "var(--bad)";
+    return `<div class="dbar"><span class="zero"></span><i style="width:${w}%;${x.pct < 0 ? `right:50%` : `left:50%`};background:${tone}"></i></div>`;
+  };
+  const groups = VIEWS.map(id => {
+    const list = rows.filter(x => x.r.approach === id);
+    if (!list.length) return "";
+    return `<tr class="grp"><td colspan="5">${APPROACH[id].name}</td></tr>` + list.map(x => `<tr>
+      <td>${esc(runName(x.r))} <span class="id">${esc(x.r.run_id)}</span><span class="desc">${esc(codeOf(x.r).label)}</span></td>
+      <td class="num">${fmt(x.start, digits)}</td><td class="num">${x.after === null ? "–" : fmt(x.after, digits)}</td>
+      <td class="num">${x.pct === null ? "–" : `<span class="${x.status === "improved" ? "good" : x.status === "worse" ? "bad" : "muted"}">${x.pct > 0 ? "+" : ""}${fmt(x.pct, 1)} %</span>`}</td>
+      <td style="width:34%">${bar(x)}</td></tr>`).join("");
+  }).join("");
+  const c = state.compare || {};
+  const means = changeChart(m, label, digits, VIEWS.map(id => ({ label: APPROACH[id].name, short: { single: "Single", iterative: "Iterative", multiagent: "Multi-Agent" }[id], v: ((c[id] || {}).deltas || {})[m] ?? null })));
+  return `<div class="pagehead"><h1>Metrics</h1><p>Pick a metric to see what it means and how it changed in every run.</p></div>
+    <div class="mchips">${chips}</div>
+    <div class="mgrid"><div>${metricCard(m)}</div>
+      <div><div class="panel"><h2>Average change per approach</h2><p class="lead">Valid runs only; a run that kept no change counts as 0.</p><div class="charts" style="grid-template-columns:1fr">${means}</div></div></div></div>
+    <div class="panel"><h2>${esc(label)} in every run</h2>
+      <p class="lead">Value in the starting code, value of the kept result, and the change in percent. The bar shows the change: right of the line is up, left is down; green is better, red is worse.</p>
+      ${rows.length ? `<table><tr><th>Run</th><th class="num">Start</th><th class="num">Result</th><th class="num">Change</th><th></th></tr>${groups}</table>` : `<p class="muted">No finished run yet.</p>`}
+      <p class="note">Runs on the pilot code and on the full code start from different values, so compare the percent change, not the raw numbers.</p></div>`;
 }
 
 // ---- comparison ------------------------------------------------------------------------------------------------
@@ -960,16 +1041,6 @@ function renderGuide() {
       <button class="ghead" data-gtoggle="${id}"><span class="gicon">${icon}</span><span class="gtitle">${title}</span><span class="gchev">▾</span></button>
       <div class="gbody">${body}</div></section>`;
   const plain = t => `<div class="plain"><b>In plain words</b>${t}</div>`;
-  const metricCards = METRICS.map(([m, label, , , tool]) => {
-    const g = METRIC_GUIDE[m];
-    return `<div class="mcard" style="--c:${g.color}">
-      <div class="mtop"><span class="micon">${g.icon}</span><div><b>${label}</b><div class="mq">${g.question}</div></div>
-        <span class="mdir ${HIGHER.has(m) ? "up" : "down"}">${HIGHER.has(m) ? "▲ higher is better" : "▼ lower is better"}</span></div>
-      <p>${g.plain}</p><p class="analogy">${g.analogy}</p>
-      ${g.before ? `<div class="ba"><div><span>Before</span><pre>${highlight(g.before).join("\n")}</pre></div><div><span>After refactoring</span><pre>${highlight(g.after).join("\n")}</pre></div></div>` : ""}
-      <dl><dt>Why we measure it</dt><dd>${g.why}</dd><dt>Unit</dt><dd>${g.unit} · ${g.typical}</dd>
-        <dt>Measured with</dt><dd>${esc(tool)}</dd><dt>Counts as "same"</dt><dd>if the change is smaller than ${THRESHOLD[m]}</dd></dl></div>`;
-  }).join("");
   const S = [
     ["refactoring", "🔧", "#2f5d8a", "What is refactoring?", `${plain("Refactoring means rewriting code so that it is <b>cleaner and easier to change</b>, while the program <b>does exactly the same thing</b> as before. Nothing new is added and nothing visible changes for the user.")}
       <p class="analogy">Like reorganizing a kitchen: the same dishes come out, but the tools are easier to find and nothing is in the wrong drawer.</p>
@@ -982,13 +1053,10 @@ function renderGuide() {
       <div><span>3</span><b>At least one</b> of them got better.</div>
       <div><span>4</span>The program's interface (its REST API) is <b>unchanged</b>.</div></div>
       <p class="muted">Tests that already failed in the starting code are bugs of the generated code; they never count against Claude.</p>`],
-    ["metrics", "📏", "#b36b00", "The five quality metrics", `${plain("We cannot ask a person to judge 30,000 lines of code by eye, so we measure it with tools. Each metric answers one simple question about the code.")}
-      <div class="why5"><b>Why exactly these five?</b><ul>
-        <li>Together they cover the main ways code gets hard to change: <b>tangled logic</b> (two complexity views), <b>overall health</b> (maintainability), <b>copy-paste</b> (duplication) and <b>known bad patterns</b> (smells).</li>
-        <li>They were fixed <b>before</b> the experiments. With 20+ metrics, some number always improves by chance; choosing five in advance keeps the result honest.</li>
-        <li>Each is measured by a widely used, free tool and gives the same number every time on the same code.</li>
-        <li>Many other measures (size, class design, coupling, architecture) are recorded too, but only these five decide success.</li></ul></div>
-      <div class="mcards">${metricCards}</div>`],
+    ["metrics", "📏", "#b36b00", "The five quality metrics", `${plain("We measure the code with tools, because nobody can judge 30,000 lines by eye. Each metric answers one simple question:")}
+      <div class="legend">${METRICS.map(([m, l]) => `<div><span class="pill" style="background:color-mix(in srgb, ${METRIC_GUIDE[m].color} 15%, transparent);color:${METRIC_GUIDE[m].color}">${METRIC_GUIDE[m].icon} ${l}</span>${METRIC_GUIDE[m].question} <span class="muted">${HIGHER.has(m) ? "Higher is better." : "Lower is better."}</span></div>`).join("")}</div>
+      <p><b>Why these five?</b> Together they cover tangled logic, overall health, copy-paste and known bad patterns. They were chosen <b>before</b> the experiments, so no one could pick the metric that happened to improve.</p>
+      <p><a href="#" data-view="metrics">Open the Metrics page</a> for examples and the values in every run.</p>`],
     ["tests", "🧪", "#1f6fb2", "Tests: how we know nothing broke", `${plain("A test runs one small piece of the program with a fixed input and checks the answer, for example: 'a book returned 3 days late creates a late fee'. If the answer changes after refactoring, something broke.")}
       <div class="tiles"><div class="tile"><b>${SETNAME.feedback}</b><p>${esc(SETTIP.feedback)}</p></div><div class="tile"><b>${SETNAME.heldout}</b><p>${esc(SETTIP.heldout)}</p></div></div>
       <p>Test names like <span class="id">T-LOAN-03-b</span> mean: area <b>loans</b>, requirement <b>03</b>, case <b>b</b>.</p>
@@ -1005,10 +1073,17 @@ function renderGuide() {
       <dl><dt>Blocked attempt</dt><dd>${esc(FIELD.blocked)}</dd><dt>Read-only command</dt><dd>${esc(FIELD.shell)}</dd></dl>`],
     ["compare", "📊", "#2f5d8a", "Reading the comparison", `<p>The comparison page puts the three approaches side by side: how often each was successful, how much each metric changed on average, and what it cost. Trial runs only check the engine; choose "Study runs only" for the real results.</p>`],
   ];
-  const openId = state.gopen || "refactoring";
+  const openId = state.gopen || "";
+  const quick = `<div class="quick"><h2>Quick start</h2><ol>
+      <li><b>Refactoring</b> = making code cleaner <b>without changing what it does</b>.</li>
+      <li>We ask Claude to refactor an AI-written library system in <b>three ways</b>: one try (Single), several tries with test results (Iterative), or a team of AI roles (Multi-Agent).</li>
+      <li>Every result is checked twice: <b>tests</b> (does it still work?) and <b>five quality metrics</b> (is it really cleaner?).</li>
+      <li>A run is <span class="good"><b>successful</b></span> when nothing broke, no metric got worse and at least one got better.</li>
+      <li>On every page <span class="good">green = better</span>, <span class="bad">red = worse or broken</span>, grey = no change.</li></ol>
+      <p class="muted">Open a topic below to learn more.</p></div>`;
   return `<div class="dhead"><div class="row"><h1>Guide</h1><button class="close" data-drawer="0" title="Close the guide">Close ✕</button></div>
     <nav class="toc">${S.map(([id, icon, color, t]) => `<a href="#g-${id}" data-goto="${id}" style="--c:${color}">${icon} ${t}</a>`).join("")}</nav></div>
-    <div class="dbody">${S.map(([id, icon, color, t, body]) => card(id, icon, color, t, body, id === openId)).join("")}</div>`;
+    <div class="dbody">${quick}${S.map(([id, icon, color, t, body]) => card(id, icon, color, t, body, id === openId)).join("")}</div>`;
 }
 
 function setDrawer(open) {
@@ -1039,11 +1114,15 @@ document.addEventListener("click", e => {
   const dr = e.target.closest("[data-drawer]");
   if (dr) { setDrawer(dr.dataset.drawer === "1" ? !state.guide : false); return; }
   const v = e.target.closest("[data-view]");
-  if (v) { state.view = v.dataset.view; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
+  if (v) { e.preventDefault(); state.view = v.dataset.view; state.key = null; state.detail = null; state.tests = null; state.tm = null; save(); render(); load(true); return; }
   const item = e.target.closest("[data-key]");
   if (item) { state.key = item.dataset.key; state.detail = null; state.tests = null; state.tm = null; state.tq = ""; state.open.clear(); save(); render(); load(true); return; }
   const c = e.target.closest("[data-case]");
   if (c) { e.preventDefault(); showCase(c.dataset.case); return; }
+  const rt = e.target.closest("[data-rtab]");
+  if (rt) { state.rtab = rt.dataset.rtab; save(); render(); return; }
+  const mt = e.target.closest("[data-metric]");
+  if (mt) { state.metric = mt.dataset.metric; save(); render(); return; }
   const mv = e.target.closest("[data-mv]");
   if (mv) { state.mv = mv.dataset.mv; save(); render(); return; }
   const f = e.target.closest("[data-tf]");
