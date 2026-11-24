@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import request_now
 from lms.auth.deps import StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
@@ -39,7 +40,7 @@ def _order(db, order) -> OrderOut:  # noqa: ANN001
 
 @router.post("/suppliers", response_model=SupplierOut, status_code=201)
 def create_supplier(body: SupplierCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> SupplierOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     return supplier_out(
         service.create_supplier(db, now, staff.user, name=body.name, email=body.email, phone=body.phone)
     )
@@ -65,7 +66,7 @@ def get_supplier(supplier_id: SupplierId, db: SessionDep, _: StaffOnly) -> Suppl
 def update_supplier(
     supplier_id: SupplierId, body: SupplierPatchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> SupplierOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     supplier = service.get_supplier_or_404(db, supplier_id)
     fields = {name: getattr(body, name) for name in body.model_fields_set}
     return supplier_out(service.update_supplier(db, now, staff.user, supplier, fields))
@@ -76,7 +77,7 @@ def update_supplier(
 
 @router.post("/purchase-orders", response_model=OrderOut, status_code=201)
 def create_order(body: OrderCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     order = service.create_order(
         db, now, staff.user, supplier_id=body.supplier_id, branch_id=body.branch_id, lines=body.lines
     )
@@ -103,7 +104,7 @@ def get_order(order_id: OrderId, db: SessionDep, _: StaffOnly) -> OrderOut:
 
 @router.patch("/purchase-orders/{order_id}", response_model=OrderOut)
 def update_order(order_id: OrderId, body: OrderPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     order = service.get_order_or_404(db, order_id)
     fields = {name: getattr(body, name) for name in body.model_fields_set}
     return _order(db, service.update_order(db, now, staff.user, order, fields))
@@ -111,13 +112,13 @@ def update_order(order_id: OrderId, body: OrderPatchIn, request: Request, db: Se
 
 @router.post("/purchase-orders/{order_id}/submit", response_model=OrderOut)
 def submit_order(order_id: OrderId, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     return _order(db, service.submit_order(db, now, staff.user, service.get_order_or_404(db, order_id)))
 
 
 @router.post("/purchase-orders/{order_id}/cancel", response_model=OrderOut)
 def cancel_order(order_id: OrderId, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     return _order(db, service.cancel_order(db, now, staff.user, service.get_order_or_404(db, order_id)))
 
 

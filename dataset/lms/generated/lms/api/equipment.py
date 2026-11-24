@@ -4,18 +4,24 @@ from __future__ import annotations
 
 import datetime
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
-from pydantic import BaseModel
 
+from lms.api.common import (
+    acting_member_id,
+    collect_date,
+    ensure_own_or_staff,
+    fields_of,
+    optional_date,
+    request_now,
+)
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
+from lms.core.errors import ValidationFailed, reference_not_found
 from lms.core.pagination import Page, PageDep, paginate
-from lms.core.timeutil import parse_date
 from lms.equipment import inventory, lending
 from lms.equipment import reservations as reservation_service
 from lms.equipment.models import EquipmentLoan, EquipmentTraining, EquipmentType
@@ -58,31 +64,8 @@ ReservationId = Annotated[int, Path(ge=1)]
 MemberId = Annotated[int, Path(ge=1)]
 
 
-def _optional_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
-
-
-def _fields_of(body: BaseModel) -> dict[str, Any]:
-    """The parsed values of a request body (``model_dump`` would serialize amounts to strings)."""
-    return {name: getattr(body, name) for name in type(body).model_fields}
-
-
-def _own_member_id(principal: Principal) -> int:
-    member_id = principal.user.member_id
-    if member_id is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member_id
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own equipment data can be accessed")
+    ensure_own_or_staff(principal, member_id, "equipment data")
 
 
 def _loan_out(db: SessionDep, loan: EquipmentLoan, now: datetime.datetime) -> EquipmentLoanOut:
@@ -100,8 +83,8 @@ def _type_out(db: SessionDep, equipment_type: EquipmentType) -> TypeOut:
 
 @router.post("/equipment-types", response_model=TypeOut, status_code=201)
 def create_type(body: TypeCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> TypeOut:
-    now = local_now(request.app.state.settings.clock)
-    equipment_type = inventory.create_type(db, now, admin.user, **_fields_of(body))
+    now = request_now(request)
+    equipment_type = inventory.create_type(db, now, admin.user, **fields_of(body))
     return _type_out(db, equipment_type)
 
 
@@ -122,7 +105,7 @@ def get_type(type_id: TypeId, db: SessionDep, _: AnyUser) -> TypeOut:
 
 @router.patch("/equipment-types/{type_id}", response_model=TypeOut)
 def update_type(type_id: TypeId, body: TypePatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> TypeOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     fields = {name: getattr(body, name) for name in body.model_fields_set}
     problems = type_range_problems(None, fields.get("period"), fields.get("hourly_late_fee"), fields.get("max_open_per_member"))
     if problems:
@@ -144,14 +127,7 @@ def type_availability(
     problems: list[dict[str, str]] = []
     if branch_id is None:
         problems.append({"field": "branch_id", "problem": "field required"})
-    day: datetime.date | None = None
-    if date is None:
-        problems.append({"field": "date", "problem": "field required"})
-    else:
-        try:
-            day = parse_date(date.strip())
-        except ValueError:
-            problems.append({"field": "date", "problem": "expected a valid date in the form YYYY-MM-DD"})
+    day = collect_date("date", date, problems)
     if problems:
         raise ValidationFailed(problems)
     assert branch_id is not None and day is not None
@@ -166,8 +142,8 @@ def type_availability(
 
 @router.post("/equipment-items", response_model=ItemOut, status_code=201)
 def create_item(body: ItemCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> ItemOut:
-    now = local_now(request.app.state.settings.clock)
-    return item_out(inventory.create_item(db, now, admin.user, **_fields_of(body)))
+    now = request_now(request)
+    return item_out(inventory.create_item(db, now, admin.user, **fields_of(body)))
 
 
 @router.get("/equipment-items", response_model=Page[ItemOut])
@@ -191,7 +167,7 @@ def get_item(item_id: ItemId, db: SessionDep, _: StaffOnly) -> ItemOut:
 
 @router.patch("/equipment-items/{item_id}", response_model=ItemOut)
 def update_item(item_id: ItemId, body: ItemPatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> ItemOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     item = inventory.get_item_or_404(db, item_id)
     fields = {name: getattr(body, name) for name in body.model_fields_set}
     return item_out(inventory.update_item(db, now, admin.user, item, fields))
@@ -199,14 +175,14 @@ def update_item(item_id: ItemId, body: ItemPatchIn, request: Request, db: Sessio
 
 @router.post("/equipment-items/{item_id}/retire", response_model=ItemOut)
 def retire_item(item_id: ItemId, request: Request, db: SessionDep, admin: AdminOnly) -> ItemOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     item = inventory.get_item_or_404(db, item_id)
     return item_out(inventory.retire_item(db, now, admin.user, item))
 
 
 @router.post("/equipment-items/{item_id}/repair-done", response_model=ItemOut)
 def repair_done(item_id: ItemId, request: Request, db: SessionDep, staff: StaffOnly) -> ItemOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     item = inventory.get_item_or_404(db, item_id)
     return item_out(inventory.repair_done(db, now, staff.user, item))
 
@@ -218,7 +194,7 @@ def repair_done(item_id: ItemId, request: Request, db: SessionDep, staff: StaffO
 def record_training(
     member_id: MemberId, body: TrainingIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> TrainingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     if body.completed_on > now.date():
         raise ValidationFailed.single("completed_on", "completed_on must not be after today")
     member = get_member_or_404(db, member_id)
@@ -263,7 +239,7 @@ def list_loans(
     branch_id: Annotated[int | None, Query()] = None,
     overdue: Annotated[bool | None, Query()] = None,
 ) -> Page[EquipmentLoanOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     stmt = lending.loan_list_stmt(
         now, member_id=member_id, status=status, type_id=type_id, branch_id=branch_id, overdue=overdue
     )
@@ -272,7 +248,7 @@ def list_loans(
 
 @router.get("/equipment-loans/{loan_id}", response_model=EquipmentLoanOut)
 def get_loan(loan_id: LoanId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> EquipmentLoanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     loan = lending.get_loan_or_404(db, loan_id)
     _own_or_staff(principal, loan.member_id)
     return _loan_out(db, loan, now)
@@ -290,7 +266,7 @@ def list_member_loans(
     branch_id: Annotated[int | None, Query()] = None,
     overdue: Annotated[bool | None, Query()] = None,
 ) -> Page[EquipmentLoanOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member: Member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = lending.loan_list_stmt(
@@ -301,7 +277,7 @@ def list_member_loans(
 
 @router.post("/equipment-loans/{loan_id}/return", response_model=EquipmentLoanOut)
 def return_loan(loan_id: LoanId, body: ReturnIn, request: Request, db: SessionDep, staff: StaffOnly) -> EquipmentLoanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     if body.condition == "damaged":
         if body.damage_fee is None:
             raise ValidationFailed.single("damage_fee", "damage_fee is required for a damaged return")
@@ -326,7 +302,7 @@ def extend_loan(loan_id: LoanId, request: Request, db: SessionDep, principal: Cu
 
 @router.post("/equipment-loans/{loan_id}/report-lost", response_model=EquipmentLoanOut)
 def report_lost(loan_id: LoanId, request: Request, db: SessionDep, staff: StaffOnly) -> EquipmentLoanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     loan = lending.get_loan_or_404(db, loan_id)
     lending.report_lost(db, now, staff.user, loan)
     return _loan_out(db, loan, now)
@@ -341,14 +317,7 @@ def create_reservation(
 ) -> ReservationOut:
     settings = request.app.state.settings
     now = local_now(settings.clock)
-    if principal.user.role == "member":
-        if body.member_id is not None:
-            raise ValidationFailed.single("member_id", "members reserve for themselves and must not send member_id")
-        member_id = _own_member_id(principal)
-    else:
-        if body.member_id is None:
-            raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
-        member_id = body.member_id
+    member_id = acting_member_id(principal, body.member_id, "reserve for themselves")
     reservation = reservation_service.create_reservation(
         db,
         now,
@@ -379,8 +348,8 @@ def list_reservations(
         status=status,
         type_id=type_id,
         branch_id=branch_id,
-        first=_optional_date("from", first),
-        last=_optional_date("to", to),
+        first=optional_date("from", first),
+        last=optional_date("to", to),
     )
     return paginate(db, stmt, page, reservation_out)
 
@@ -404,8 +373,8 @@ def list_member_reservations(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> Page[ReservationOut]:
-    first_date = _optional_date("from", first)
-    last_date = _optional_date("to", to)
+    first_date = optional_date("from", first)
+    last_date = optional_date("to", to)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = reservation_service.reservation_list_stmt(
@@ -418,7 +387,7 @@ def list_member_reservations(
 def cancel_reservation(
     reservation_id: ReservationId, request: Request, db: SessionDep, principal: CurrentPrincipal
 ) -> ReservationOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     reservation = reservation_service.get_reservation_or_404(db, reservation_id)
     _own_or_staff(principal, reservation.member_id)
     reservation_service.cancel(db, now, principal.user, reservation, by_member=principal.user.role == "member")
@@ -427,6 +396,6 @@ def cancel_reservation(
 
 @router.post("/equipment/process", response_model=ProcessOut)
 def process(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     expired, notices = reservation_service.process(db, now, staff.user)
     return ProcessOut(expired_reservations=expired, overdue_notices=notices)

@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
-from pydantic import BaseModel
 
+from lms.api.common import ensure_own_or_staff, fields_of, request_now
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
-from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
@@ -48,15 +47,8 @@ OutgoingId = Annotated[int, Path(ge=1)]
 MemberId = Annotated[int, Path(ge=1)]
 
 
-def _fields_of(body: BaseModel) -> dict[str, Any]:
-    """The parsed values of a request body (``model_dump`` would serialize amounts to strings)."""
-    return {name: getattr(body, name) for name in type(body).model_fields}
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own interlibrary requests can be accessed")
+    ensure_own_or_staff(principal, member_id, "interlibrary requests")
 
 
 def _out(request: IllRequest, now) -> RequestOut:  # noqa: ANN001
@@ -68,8 +60,8 @@ def _out(request: IllRequest, now) -> RequestOut:  # noqa: ANN001
 
 @router.post("/ill-partners", response_model=PartnerOut, status_code=201)
 def create_partner(body: PartnerCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> PartnerOut:
-    now = local_now(request.app.state.settings.clock)
-    return partners.to_out(db, partners.create_partner(db, now, admin.user, **_fields_of(body)))
+    now = request_now(request)
+    return partners.to_out(db, partners.create_partner(db, now, admin.user, **fields_of(body)))
 
 
 @router.get("/ill-partners", response_model=Page[PartnerOut])
@@ -103,7 +95,7 @@ def get_partner(partner_id: PartnerId, db: SessionDep, _: StaffOnly) -> PartnerO
 def update_partner(
     partner_id: PartnerId, body: PartnerPatchIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> PartnerOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     fields = {name: getattr(body, name) for name in body.model_fields_set}
     partner = partners.get_partner_or_404(db, partner_id)
     return partners.to_out(db, partners.update_partner(db, now, admin.user, partner, fields))
@@ -115,7 +107,7 @@ def update_partner(
 @router.post("/ill-requests", response_model=RequestOut, status_code=201)
 def create_request(body: RequestCreateIn, request: Request, db: SessionDep, principal: CurrentPrincipal) -> RequestOut:
     settings = request.app.state.settings
-    now = local_now(settings.clock)
+    now = request_now(request)
     if principal.user.role == "member":
         if body.member_id is not None:
             raise ValidationFailed.single("member_id", "member_id must not be sent by a member")
@@ -146,7 +138,7 @@ def list_requests(
     overdue: Annotated[bool | None, Query()] = None,
     member_id: Annotated[int | None, Query()] = None,
 ) -> Page[RequestOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     stmt = request_service.request_list_stmt(
         now.date(), member_id=member_id, status=status, partner_id=partner_id, overdue=overdue
     )
@@ -155,7 +147,7 @@ def list_requests(
 
 @router.get("/ill-requests/{request_id}", response_model=RequestOut)
 def get_request(request_id: RequestId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> RequestOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
     _own_or_staff(principal, found.member_id)
     return _out(found, now)
@@ -172,7 +164,7 @@ def list_member_requests(
     partner_id: Annotated[int | None, Query()] = None,
     overdue: Annotated[bool | None, Query()] = None,
 ) -> Page[RequestOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = request_service.request_list_stmt(
@@ -183,7 +175,7 @@ def list_member_requests(
 
 @router.post("/ill-requests/{request_id}/send", response_model=RequestOut)
 def send_request(request_id: RequestId, body: SendIn, request: Request, db: SessionDep, staff: StaffOnly) -> RequestOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
     return _out(request_service.send(db, now, staff.user, found, body.partner_id), now)
 
@@ -192,7 +184,7 @@ def send_request(request_id: RequestId, body: SendIn, request: Request, db: Sess
 def reject_request(
     request_id: RequestId, body: RejectIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> RequestOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
     return _out(request_service.reject(db, now, staff.user, found, body.reason), now)
 
@@ -202,9 +194,9 @@ def receive_request(
     request_id: RequestId, body: ReceiveIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> RequestOut:
     settings = request.app.state.settings
-    now = local_now(settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
-    received = request_service.receive(
+    received =request_service.receive(
         db, now, staff.user, settings.holidays, found,
         partner_due_on=body.partner_due_on,
         replacement_cost=body.replacement_cost,
@@ -216,7 +208,7 @@ def receive_request(
 @router.post("/ill-requests/{request_id}/collect", response_model=RequestOut)
 def collect_request(request_id: RequestId, request: Request, db: SessionDep, staff: StaffOnly) -> RequestOut:
     settings = request.app.state.settings
-    now = local_now(settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
     return _out(request_service.collect(db, now, staff.user, settings.holidays, found), now)
 
@@ -225,21 +217,21 @@ def collect_request(request_id: RequestId, request: Request, db: SessionDep, sta
 def return_request(
     request_id: RequestId, body: BranchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> RequestOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
     return _out(request_service.return_request(db, now, staff.user, found, body.branch_id), now)
 
 
 @router.post("/ill-requests/{request_id}/close", response_model=RequestOut)
 def close_request(request_id: RequestId, request: Request, db: SessionDep, staff: StaffOnly) -> RequestOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
     return _out(request_service.close(db, now, staff.user, found), now)
 
 
 @router.post("/ill-requests/{request_id}/report-lost", response_model=RequestOut)
 def report_request_lost(request_id: RequestId, request: Request, db: SessionDep, staff: StaffOnly) -> RequestOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
     return _out(request_service.report_lost(db, now, staff.user, found), now)
 
@@ -249,9 +241,9 @@ def renewal_answer(
     request_id: RequestId, body: RenewalAnswerIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> RequestOut:
     settings = request.app.state.settings
-    now = local_now(settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
-    answered = request_service.renewal_answer(
+    answered =request_service.renewal_answer(
         db, now, staff.user, settings.holidays, found, approved=body.approved, partner_due_on=body.partner_due_on
     )
     return _out(answered, now)
@@ -261,7 +253,7 @@ def renewal_answer(
 def cancel_request(
     request_id: RequestId, request: Request, db: SessionDep, principal: CurrentPrincipal
 ) -> RequestOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
     _own_or_staff(principal, found.member_id)
     reason = "member_request" if principal.user.role == "member" else "staff_request"
@@ -272,7 +264,7 @@ def cancel_request(
 def renewal_request(
     request_id: RequestId, request: Request, db: SessionDep, principal: CurrentPrincipal
 ) -> RequestOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = request_service.get_request_or_404(db, request_id)
     _own_or_staff(principal, found.member_id)
     return _out(request_service.renewal_request(db, now, principal.user, found), now)
@@ -280,7 +272,7 @@ def renewal_request(
 
 @router.post("/ill/process", response_model=ProcessOut)
 def process(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     uncollected, overdue_outgoing = request_service.process(db, now, staff.user)
     return ProcessOut(uncollected=uncollected, overdue_outgoing=overdue_outgoing)
 
@@ -290,7 +282,7 @@ def process(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
 
 @router.post("/ill-outgoing", response_model=OutgoingOut, status_code=201)
 def create_outgoing(body: OutgoingCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> OutgoingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     created = outgoing_service.create_outgoing(db, now, staff.user, partner_id=body.partner_id, book_id=body.book_id)
     return outgoing_service.to_out(db, created, now.date())
 
@@ -305,14 +297,14 @@ def list_outgoing(
     partner_id: Annotated[int | None, Query()] = None,
     overdue: Annotated[bool | None, Query()] = None,
 ) -> Page[OutgoingOut]:
-    today = local_now(request.app.state.settings.clock).date()
+    today = request_now(request).date()
     stmt = outgoing_service.outgoing_list_stmt(today, status=status, partner_id=partner_id, overdue=overdue)
     return paginate(db, stmt, page, lambda o: outgoing_service.to_out(db, o, today))
 
 
 @router.get("/ill-outgoing/{outgoing_id}", response_model=OutgoingOut)
 def get_outgoing(outgoing_id: OutgoingId, request: Request, db: SessionDep, _: StaffOnly) -> OutgoingOut:
-    today = local_now(request.app.state.settings.clock).date()
+    today = request_now(request).date()
     return outgoing_service.to_out(db, outgoing_service.get_outgoing_or_404(db, outgoing_id), today)
 
 
@@ -320,14 +312,14 @@ def get_outgoing(outgoing_id: OutgoingId, request: Request, db: SessionDep, _: S
 def ship_outgoing(
     outgoing_id: OutgoingId, body: ShipIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> OutgoingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = outgoing_service.get_outgoing_or_404(db, outgoing_id)
     return outgoing_service.to_out(db, outgoing_service.ship(db, now, staff.user, found, body.copy_id), now.date())
 
 
 @router.post("/ill-outgoing/{outgoing_id}/decline", response_model=OutgoingOut)
 def decline_outgoing(outgoing_id: OutgoingId, request: Request, db: SessionDep, staff: StaffOnly) -> OutgoingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = outgoing_service.get_outgoing_or_404(db, outgoing_id)
     return outgoing_service.to_out(db, outgoing_service.decline(db, now, staff.user, found), now.date())
 
@@ -337,9 +329,9 @@ def outgoing_returned(
     outgoing_id: OutgoingId, body: BranchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> OutgoingOut:
     settings = request.app.state.settings
-    now = local_now(settings.clock)
+    now = request_now(request)
     found = outgoing_service.get_outgoing_or_404(db, outgoing_id)
-    done = outgoing_service.returned(db, now, staff.user, settings.holidays, found, body.branch_id)
+    done =outgoing_service.returned(db, now, staff.user, settings.holidays, found, body.branch_id)
     return outgoing_service.to_out(db, done, now.date())
 
 
@@ -347,6 +339,6 @@ def outgoing_returned(
 def outgoing_report_lost(
     outgoing_id: OutgoingId, request: Request, db: SessionDep, staff: StaffOnly
 ) -> OutgoingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     found = outgoing_service.get_outgoing_or_404(db, outgoing_id)
     return outgoing_service.to_out(db, outgoing_service.report_lost(db, now, staff.user, found), now.date())

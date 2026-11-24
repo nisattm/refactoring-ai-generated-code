@@ -7,10 +7,10 @@ from typing import Annotated
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import ensure_own_or_staff, request_now
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden
 from lms.core.pagination import Page, PageDep, paginate
 from lms.fines import service
 from lms.fines.models import Fee, Payment
@@ -35,9 +35,7 @@ FeeId = Annotated[int, Path(ge=1)]
 
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25: a member may only address their own fees and payments."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own fees and payments can be accessed")
+    ensure_own_or_staff(principal, member_id, "fees and payments")
 
 
 def _fee_stmt(
@@ -97,7 +95,7 @@ def get_balance(member_id: MemberId, request: Request, db: SessionDep, principal
 
 @router.post("/members/{member_id}/payments", response_model=PaymentOut, status_code=201)
 def record_payment(member_id: MemberId, body: PaymentIn, request: Request, db: SessionDep, staff: StaffOnly) -> PaymentOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = get_member_or_404(db, member_id)
     payment, allocations = service.record_payment(db, now, staff.user, member.id, body.amount, body.method)
     return payment_out(payment, allocations)
@@ -115,6 +113,6 @@ def list_member_payments(
 
 @router.post("/fees/{fee_id}/waive", response_model=FeeOut)
 def waive_fee(fee_id: FeeId, body: WaiveIn, request: Request, db: SessionDep, admin: AdminOnly) -> FeeOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     fee = service.get_fee_or_404(db, fee_id)
     return fee_out(service.waive_fee(db, now, admin.user, fee, body.reason))

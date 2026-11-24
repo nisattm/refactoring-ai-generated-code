@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import acting_member_id, ensure_own_or_staff, is_staff, optional_date, report_range, request_now
 from lms.auth.deps import AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import NotFound, ValidationFailed, reference_not_found
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.events import events as event_service
 from lms.events import process as process_service
 from lms.events import registrations as registration_service
@@ -48,23 +47,8 @@ RegistrationId = Annotated[int, Path(ge=1)]
 MemberId = Annotated[int, Path(ge=1)]
 
 
-def _optional_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
-
-
-def _is_staff(principal: Principal) -> bool:
-    return principal.user.role != "member"
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own event data can be accessed")
+    ensure_own_or_staff(principal, member_id, "event data")
 
 
 # --- events ------------------------------------------------------------------------------------
@@ -94,12 +78,12 @@ def list_events(
 ) -> Page[EventOut]:
     selection = event_service.list_events(
         db,
-        include_drafts=_is_staff(principal),
+        include_drafts=is_staff(principal),
         branch_id=branch_id,
         kind=kind,
         status=status,
-        first=_optional_date("from", first),
-        last=_optional_date("to", to),
+        first=optional_date("from", first),
+        last=optional_date("to", to),
         series_id=series_id,
         q=q,
     )
@@ -116,14 +100,14 @@ def list_events(
 
 @router.post("/events/process", response_model=ProcessOut)
 def process_events(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    completed, no_shows, bans, reminders = process_service.process(db, local_now(request.app.state.settings.clock), staff.user)
+    completed, no_shows, bans, reminders = process_service.process(db, request_now(request), staff.user)
     return ProcessOut(completed_events=completed, no_shows=no_shows, bans=bans, reminders=reminders)
 
 
 @router.get("/events/{event_id}", response_model=EventOut)
 def get_event(event_id: EventId, db: SessionDep, principal: AnyUser) -> EventOut:
     event = event_service.get_event_or_404(db, event_id)
-    if event.status == "draft" and not _is_staff(principal):
+    if event.status == "draft" and not is_staff(principal):
         raise NotFound(f"Event {event_id} does not exist", details={"resource": "event", "id": event_id})
     return event_service.to_out(db, event)
 
@@ -151,7 +135,7 @@ def publish_event(event_id: EventId, request: Request, db: SessionDep, staff: St
 @router.post("/events/{event_id}/cancel", response_model=EventOut)
 def cancel_event(event_id: EventId, request: Request, db: SessionDep, staff: StaffOnly) -> EventOut:
     event = event_service.get_event_or_404(db, event_id)
-    return event_service.to_out(db, event_service.cancel(db, local_now(request.app.state.settings.clock), staff.user, event))
+    return event_service.to_out(db, event_service.cancel(db, request_now(request), staff.user, event))
 
 
 # --- series --------------------------------------------------------------------------------------
@@ -171,7 +155,7 @@ def create_series(body: SeriesCreateIn, request: Request, db: SessionDep, staff:
 
 @router.post("/event-series/{series_id}/cancel", response_model=SeriesCancelledOut)
 def cancel_series(series_id: SeriesId, request: Request, db: SessionDep, staff: StaffOnly) -> SeriesCancelledOut:
-    cancelled = event_service.cancel_series(db, local_now(request.app.state.settings.clock), staff.user, series_id)
+    cancelled = event_service.cancel_series(db, request_now(request), staff.user, series_id)
     return SeriesCancelledOut(cancelled=cancelled)
 
 
@@ -183,17 +167,8 @@ def register(
     event_id: EventId, body: RegistrationCreateIn, request: Request, db: SessionDep, principal: CurrentPrincipal
 ) -> RegistrationOut:
     settings = request.app.state.settings
-    if principal.user.role == "member":
-        if body.member_id is not None:
-            raise ValidationFailed.single("member_id", "members register themselves and must not send member_id")
-        if principal.user.member_id is None:
-            raise Forbidden("The authenticated user has no member record")
-        member_id = principal.user.member_id
-    else:
-        if body.member_id is None:
-            raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
-        member_id = body.member_id
-    event = event_service.get_event_or_404(db, event_id)
+    member_id = acting_member_id(principal, body.member_id, "register themselves")
+    event =event_service.get_event_or_404(db, event_id)
     member = db.get(Member, member_id)
     if member is None:
         raise reference_not_found("member_id", member_id)
@@ -224,8 +199,8 @@ def list_member_registrations(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> Page[RegistrationOut]:
-    first_date = _optional_date("from", first)
-    last_date = _optional_date("to", to)
+    first_date = optional_date("from", first)
+    last_date = optional_date("to", to)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = registration_service.member_registrations_stmt(member.id, status, first_date, last_date)
@@ -242,7 +217,7 @@ def _registration_for(db: SessionDep, principal: Principal, registration_id: int
 def cancel_registration(
     registration_id: RegistrationId, request: Request, db: SessionDep, principal: CurrentPrincipal
 ) -> RegistrationOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     reg = _registration_for(db, principal, registration_id)
     cancelled = registration_service.cancel(db, now, principal.user, reg, by_member=principal.user.role == "member")
     return registration_service.to_out(db, cancelled)
@@ -250,7 +225,7 @@ def cancel_registration(
 
 @router.post("/event-registrations/{registration_id}/check-in", response_model=RegistrationOut)
 def check_in(registration_id: RegistrationId, request: Request, db: SessionDep, staff: StaffOnly) -> RegistrationOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     reg = registration_service.get_registration_or_404(db, registration_id)
     return registration_service.to_out(db, registration_service.check_in(db, now, staff.user, reg))
 
@@ -279,22 +254,6 @@ def event_attendance_report(
     branch_id: Annotated[int | None, Query()] = None,
     kind: Annotated[EventKind | None, Query()] = None,
 ) -> Page[AttendanceOut]:
-    problems: list[dict[str, str]] = []
-    dates: dict[str, datetime.date] = {}
-    for name, raw in (("from", first), ("to", to)):
-        if raw is None:
-            problems.append({"field": name, "problem": "field required"})
-            continue
-        try:
-            dates[name] = parse_date(raw.strip())
-        except ValueError:
-            problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-    if problems:
-        raise ValidationFailed(problems)
-    start, end = dates["from"], dates["to"]
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     stmt = usage.attendance(db, start, end, branch_id=branch_id, kind=kind)
     return paginate(db, stmt, page, lambda e: usage.attendance_out(db, e))

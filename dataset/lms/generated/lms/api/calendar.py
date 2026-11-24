@@ -9,11 +9,11 @@ from typing import Annotated
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel
 
+from lms.api.common import collect_date
 from lms.core import calendar as cal
 from lms.core.errors import ValidationFailed
 from lms.core.holidays import holiday_name
 from lms.core.settings import Settings
-from lms.core.timeutil import parse_date
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
 
@@ -52,14 +52,7 @@ class _Params:
         self.problems: list[dict[str, str]] = []
 
     def date(self, name: str, raw: str | None) -> datetime.date | None:
-        if raw is None:
-            self.problems.append({"field": name, "problem": "field required"})
-            return None
-        try:
-            return parse_date(raw.strip())
-        except ValueError:
-            self.problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-            return None
+        return collect_date(name, raw, self.problems)
 
     def integer(self, name: str, raw: str | None, low: int, high: int) -> int | None:
         if raw is None:

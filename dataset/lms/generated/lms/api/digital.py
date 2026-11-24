@@ -2,19 +2,18 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import acting_member_id, collect_date, ensure_own_or_staff, request_now
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.catalog.service import get_book_or_404
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
+from lms.core.errors import ValidationFailed, reference_not_found
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.digital import holds as hold_service
 from lms.digital import lending, process as process_service, resources, sessions as session_service, state
 from lms.digital.models import DigitalResource
@@ -60,40 +59,13 @@ BookId = Annotated[int, Path(ge=1)]
 MAX_CALENDAR_DAYS = 92
 
 
-def _required_date(name: str, raw: str | None, problems: list[dict[str, str]]) -> datetime.date | None:
-    if raw is None:
-        problems.append({"field": name, "problem": "field required"})
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-        return None
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own digital data can be accessed")
-
-
-def _acting_member_id(principal: Principal, body: ActionCreateIn) -> int:
-    """``member_id`` in the body: staff must send it, a member must not (25.3)."""
-    if principal.user.role == "member":
-        if body.member_id is not None:
-            raise ValidationFailed.single("member_id", "members act for themselves and must not send member_id")
-        if principal.user.member_id is None:
-            raise Forbidden("The authenticated user has no member record")
-        member_id = principal.user.member_id
-    else:
-        if body.member_id is None:
-            raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
-        member_id = body.member_id
-    return member_id
+    ensure_own_or_staff(principal, member_id, "digital data")
 
 
 def _resolve(db: SessionDep, principal: Principal, body: ActionCreateIn) -> tuple[DigitalResource, Member]:
-    member_id = _acting_member_id(principal, body)
+    """``member_id`` in the body: staff must send it, a member must not (25.3)."""
+    member_id = acting_member_id(principal, body.member_id, "act for themselves")
     resource = db.get(DigitalResource, body.resource_id)
     if resource is None:
         raise reference_not_found("resource_id", body.resource_id)
@@ -108,7 +80,7 @@ def _resolve(db: SessionDep, principal: Principal, body: ActionCreateIn) -> tupl
 
 @router.post("/digital-resources", response_model=ResourceOut, status_code=201)
 def create_resource(body: ResourceCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> ResourceOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     return resources.counts_out(db, resources.create_resource(db, now, staff.user, body), now)
 
 
@@ -123,14 +95,14 @@ def list_resources(
     q: Annotated[str | None, Query()] = None,
     book_id: Annotated[int | None, Query()] = None,
 ) -> Page[ResourceOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     stmt = resources.resource_list_stmt(kind=kind, is_active=is_active, q=q, book_id=book_id)
     return paginate(db, stmt, page, lambda r: resources.counts_out(db, r, now))
 
 
 @router.get("/digital-resources/{resource_id}", response_model=ResourceOut)
 def get_resource(resource_id: ResourceId, request: Request, db: SessionDep, _: AnyUser) -> ResourceOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     return resources.counts_out(db, state.get_resource_or_404(db, resource_id), now)
 
 
@@ -138,7 +110,7 @@ def get_resource(resource_id: ResourceId, request: Request, db: SessionDep, _: A
 def update_resource(
     resource_id: ResourceId, body: ResourcePatchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> ResourceOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     resource = state.get_resource_or_404(db, resource_id)
     fields = {name: getattr(body, name) for name in body.model_fields_set}
     return resources.counts_out(db, resources.update_resource(db, now, staff.user, resource, fields), now)
@@ -146,7 +118,7 @@ def update_resource(
 
 @router.get("/books/{book_id}/digital-resources", response_model=list[ResourceOut])
 def book_resources(book_id: BookId, request: Request, db: SessionDep, _: AnyUser) -> list[ResourceOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     book = get_book_or_404(db, book_id)
     stmt = (
         sa.select(DigitalResource)
@@ -165,8 +137,8 @@ def resource_calendar(
     to: Annotated[str | None, Query()] = None,
 ) -> CalendarOut:
     problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
+    start = collect_date("from", first, problems)
+    end = collect_date("to", to, problems)
     if problems:
         raise ValidationFailed(problems)
     assert start is not None and end is not None
@@ -186,7 +158,7 @@ def resource_calendar(
 def add_license(
     resource_id: ResourceId, body: LicenseCreateIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> LicenseOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     resource = state.get_resource_or_404(db, resource_id)
     return license_out(resources.add_license(db, now, admin.user, resource, body), now.date())
 
@@ -200,7 +172,7 @@ def list_licenses(
     page: PageDep,
     status: Annotated[LicenseStatus | None, Query()] = None,
 ) -> Page[LicenseOut]:
-    today = local_now(request.app.state.settings.clock).date()
+    today = request_now(request).date()
     resource = state.get_resource_or_404(db, resource_id)
     items = [license_out(lic, today) for lic in resources.license_list(db, resource.id, today, status)]
     return paginate_sequence(items, page)
@@ -214,7 +186,7 @@ def expiring_licenses(
     page: PageDep,
     ending_within_days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> Page[ExpiringLicenseOut]:
-    today = local_now(request.app.state.settings.clock).date()
+    today = request_now(request).date()
     items = [expiring_license_out(lic, today, title) for lic, title in resources.expiring_licenses(db, today, ending_within_days)]
     return paginate_sequence(items, page)
 
@@ -223,14 +195,14 @@ def expiring_licenses(
 def update_license(
     license_id: LicenseId, body: LicensePatchIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> LicenseOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     lic = resources.get_license_or_404(db, license_id)
     return license_out(resources.update_license(db, now, admin.user, lic, body), now.date())
 
 
 @router.post("/digital-licenses/{license_id}/cancel", response_model=LicenseOut)
 def cancel_license(license_id: LicenseId, request: Request, db: SessionDep, admin: AdminOnly) -> LicenseOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     lic = resources.get_license_or_404(db, license_id)
     return license_out(resources.cancel_license(db, now, admin.user, lic), now.date())
 
@@ -239,7 +211,7 @@ def cancel_license(license_id: LicenseId, request: Request, db: SessionDep, admi
 def renew_license(
     license_id: LicenseId, body: LicenseRenewIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> LicenseOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     lic = resources.get_license_or_404(db, license_id)
     return license_out(resources.renew_license(db, now, admin.user, lic, body), now.date())
 
@@ -265,14 +237,14 @@ def list_loans(
     resource_id: Annotated[int | None, Query()] = None,
     member_id: Annotated[int | None, Query()] = None,
 ) -> Page[LoanOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     stmt = lending.loan_list_stmt(now, member_id=member_id, resource_id=resource_id, status=status)
     return paginate(db, stmt, page, lambda loan: loan_out(loan, now))
 
 
 @router.get("/digital-loans/{loan_id}", response_model=LoanOut)
 def get_loan(loan_id: LoanId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> LoanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     loan = lending.get_loan_or_404(db, loan_id)
     _own_or_staff(principal, loan.member_id)
     return loan_out(loan, now)
@@ -288,7 +260,7 @@ def list_member_loans(
     status: Annotated[LoanStatus | None, Query()] = None,
     resource_id: Annotated[int | None, Query()] = None,
 ) -> Page[LoanOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = lending.loan_list_stmt(now, member_id=member.id, resource_id=resource_id, status=status)
@@ -297,7 +269,7 @@ def list_member_loans(
 
 @router.post("/digital-loans/{loan_id}/return", response_model=LoanOut)
 def return_loan(loan_id: LoanId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> LoanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     loan = lending.get_loan_or_404(db, loan_id)
     _own_or_staff(principal, loan.member_id)
     return loan_out(lending.return_loan(db, now, principal.user, loan), now)
@@ -305,7 +277,7 @@ def return_loan(loan_id: LoanId, request: Request, db: SessionDep, principal: Cu
 
 @router.post("/digital-loans/{loan_id}/renew", response_model=LoanOut)
 def renew_loan(loan_id: LoanId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> LoanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     loan = lending.get_loan_or_404(db, loan_id)
     _own_or_staff(principal, loan.member_id)
     return loan_out(lending.renew(db, now, principal.user, loan), now)
@@ -352,7 +324,7 @@ def list_member_holds(
 
 @router.post("/digital-holds/{hold_id}/cancel", response_model=HoldOut)
 def cancel_hold(hold_id: HoldId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> HoldOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     hold = hold_service.get_hold_or_404(db, hold_id)
     _own_or_staff(principal, hold.member_id)
     hold_service.cancel(db, now, principal.user, hold, by_member=principal.user.role == "member")
@@ -372,7 +344,7 @@ def open_session(body: ActionCreateIn, request: Request, db: SessionDep, princip
 
 @router.post("/digital-sessions/{session_id}/close", response_model=SessionOut)
 def close_session(session_id: SessionId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> SessionOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     session = session_service.get_session_or_404(db, session_id)
     _own_or_staff(principal, session.member_id)
     return session_out(session_service.close_session(db, now, session), now)
@@ -388,7 +360,7 @@ def list_member_sessions(
     open: Annotated[bool | None, Query()] = None,
     resource_id: Annotated[int | None, Query()] = None,
 ) -> Page[SessionOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = session_service.member_session_stmt(member.id, now, open_=open, resource_id=resource_id)
@@ -400,7 +372,7 @@ def list_member_sessions(
 
 @router.post("/digital/process", response_model=ProcessOut)
 def process(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     expired_loans, expired_holds, holds_ready, due_soon = process_service.process(db, now, staff.user)
     return ProcessOut(
         expired_loans=expired_loans, expired_holds=expired_holds, holds_ready=holds_ready, due_soon_notices=due_soon
