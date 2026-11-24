@@ -5,6 +5,7 @@ calls; the compaction window of the three engines. Fake Claude, fake measurement
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -103,7 +104,7 @@ def test_limit_then_wait_then_continue_the_same_session(tmp_path, monkeypatch, c
     assert not (tmp_path / ".run.lock").exists()
     assert rec["pauses"] == 1 and rec["wait_s"] == 3900.0 and rec["limit_kinds"] == ["five_hour"] and rec["auto_resume"]
     assert rec["limit_cuts"] == [{"call": 1, "kind": "five_hour", "resets_at": T0 + 3600, "five_hour_util": 1,
-                                  "seven_day_util": 0.49, "waited_s": 3900.0}]
+                                  "seven_day_util": 0.49, "cut_at": float(T0), "waited_s": 3900.0}]
     # the second call: the same flags (--agents, tools, permissions, environment), --resume and the fixed sentence
     first, second = call_file(tmp_path, 1), call_file(tmp_path, 2)
     a1, a2 = first["args"], second["args"]
@@ -274,3 +275,157 @@ def test_resume_args_keep_the_flags_and_replace_the_prompt():
     assert common.resume_args(args, "again", "s9") == ["-p", "again", "--model", "m", "--agents", "{}", "--resume", "s9"]
     with pytest.raises(common.EngineError):
         common.resume_args(["--model", "m"], "x", "s9")
+
+
+# --- --resume-run: the same rules by hand ---------------------------------------------------------------------------
+
+def first(tmp_path, monkeypatch, calls, *extra):
+    """The first command of a run; returns the project, the toolkit, the exit code and the record."""
+    project = support.make_project(tmp_path)
+    support.scenario(monkeypatch, tmp_path, calls)
+    toolkit = support.FakeToolkit()
+    code = run_multiagent.main(support.argv(project, "m1", "--test-command", FAKE_TESTS, *extra), toolkit)
+    return project, toolkit, code, load(tmp_path)
+
+
+def load(tmp_path, run_id="m1") -> dict:
+    return json.loads((tmp_path / "out" / "multiagent" / run_id / "run.json").read_text())
+
+
+def again(tmp_path, project, toolkit, *extra):
+    code = run_multiagent.main(support.argv(project, "m1", "--resume-run", *extra), toolkit)
+    return code, load(tmp_path)
+
+
+OK_CALL = {"steps": [REFACTOR, {"test": True}], "text": "REFACTORING_DONE", "cost": 0.3}
+
+
+def test_resume_run_continues_the_same_session_by_hand(tmp_path, monkeypatch, clock):
+    project, toolkit, code, rec = first(tmp_path, monkeypatch, [cut(steps=[CUT_REFACTOR]), OK_CALL])
+    assert code == common.EXIT_LIMIT and rec["status"] == "limit_cut"
+    clock.t = T0 + 3600 + 300 + 10                                   # the window has reopened
+    code, rec = again(tmp_path, project, toolkit)
+    assert code == 0 and rec["valid"] is True and clock.sleeps == []
+    assert [c["status"] for c in rec["calls"]] == ["limit", "ok"] and rec["calls"][1]["kind"] == "resume"
+    assert rec["pauses"] == 1 and rec["wait_s"] == 3910.0 and rec["manual_resumes"] == 1 and rec["auto_resume"] is False
+    first_args, second_args = call_file(tmp_path, 1)["args"], call_file(tmp_path, 2)["args"]
+    assert second_args[1] == common.CONTINUE_PROMPT and second_args[-2:] == ["--resume", "session-1"]
+    assert second_args[2:-2] == first_args[2:]                         # --agents, tools, permissions: the same
+    assert call_file(tmp_path, 2)["env"] == call_file(tmp_path, 1)["env"]
+    assert rec["roles"]["subagent_calls"] == {"refactoring": 1} and rec["roles"]["interrupted_by_limit"] == {"refactoring": 1}
+    assert rec["calls"][1]["usd_diff"] == pytest.approx(0.3)
+
+
+def test_resume_run_needs_none_of_the_start_options(tmp_path, monkeypatch, clock):
+    project, toolkit, _, _ = first(tmp_path, monkeypatch, [cut(steps=[REFACTOR]), OK_CALL])
+    clock.t = T0 + 4000
+    fake = f"{sys.executable} {FIXTURES / 'fake_claude.py'}"
+    argv = ["--resume-run", "--run-id", "m1", "--local", "--claude-command", fake, "--repo", str(project["repo"]),
+            "--out-root", str(tmp_path / "out"), "--cost-log", str(tmp_path / "metrics" / "cost-log.csv"),
+            "--lock-file", str(tmp_path / ".run.lock"), "--prompts", str(project["prompts"]), "--keep-work"]
+    assert run_multiagent.main(argv, toolkit) == 0
+    assert load(tmp_path)["outcome"] == "success"
+
+
+def test_resume_run_refuses_before_the_window_reopens(tmp_path, monkeypatch, clock):
+    project, toolkit, _, _ = first(tmp_path, monkeypatch, [cut(steps=[REFACTOR]), OK_CALL])
+    clock.t = T0 + 100
+    code, rec = again(tmp_path, project, toolkit)
+    assert code == common.EXIT_LIMIT and rec["status"] == "limit_cut" and len(rec["calls"]) == 1
+    assert "the window opens" in rec["stop_reason"] and "--auto-resume" in rec["stop_reason"]
+    assert not list(tmp_path.glob("work-*/session/fake-call-2.json")) and rec["pauses"] == 0
+
+
+def test_resume_run_with_auto_resume_waits_for_the_window(tmp_path, monkeypatch, clock):
+    project, toolkit, _, _ = first(tmp_path, monkeypatch, [cut(steps=[REFACTOR]), OK_CALL])
+    clock.t = T0 + 100
+    code, rec = again(tmp_path, project, toolkit, "--auto-resume")
+    assert code == 0 and sum(clock.sleeps) == 3800 and clock.lock_free and all(clock.lock_free)
+    assert rec["pauses"] == 1 and rec["wait_s"] == 3900.0                 # since the cut, not since this command
+
+
+def test_resume_run_after_a_weekly_cut_only_after_the_reset(tmp_path, monkeypatch, clock):
+    project, toolkit, code, rec = first(tmp_path, monkeypatch, [cut(weekly=True, steps=[REFACTOR]), OK_CALL])
+    assert code == common.EXIT_LIMIT and rec["limit_kinds"] == ["seven_day"]
+    weekly_reset = T0 + 3600 + 7200
+    clock.t = weekly_reset - 600
+    for extra in ((), ("--auto-resume",)):                              # not even --auto-resume waits for the week
+        code, rec = again(tmp_path, project, toolkit, *extra)
+        assert code == common.EXIT_LIMIT and "weekly limit" in rec["stop_reason"] and clock.sleeps == []
+    clock.t = weekly_reset + 400
+    code, rec = again(tmp_path, project, toolkit)
+    assert code == 0 and rec["pauses"] == 1
+
+
+def test_resume_run_when_the_cut_did_not_name_a_window(tmp_path, monkeypatch, clock):
+    project, toolkit, code, rec = first(tmp_path, monkeypatch, [cut(resets_in=None, steps=[REFACTOR]), OK_CALL])
+    assert code == common.EXIT_LIMIT and rec["limit_kinds"] == ["unknown"]
+    code, rec = again(tmp_path, project, toolkit)                        # the person knows the window is open
+    assert code == 0 and rec["pauses"] == 1 and clock.sleeps == []
+
+
+def test_resume_run_keeps_the_pause_limits(tmp_path, monkeypatch, clock):
+    calls = [cut(resets_in=1000 * n) for n in range(1, 5)] + [OK_CALL]
+    project, toolkit, code, rec = first(tmp_path, monkeypatch, calls, "--auto-resume")
+    assert code == common.EXIT_LIMIT and rec["pauses"] == 3 and len(rec["calls"]) == 4
+    clock.t += 9999
+    code, rec = again(tmp_path, project, toolkit)
+    assert code == common.EXIT_LIMIT and "3 pauses already" in rec["stop_reason"] and len(rec["calls"]) == 4
+    assert rec["status"] == "limit_cut" and not list(tmp_path.glob("work-*/session/fake-call-5.json"))
+
+
+def test_resume_run_keeps_the_24_hour_limit(tmp_path, monkeypatch, clock):
+    project, toolkit, _, _ = first(tmp_path, monkeypatch, [cut(steps=[REFACTOR]), OK_CALL])
+    clock.t = T0 + 25 * 3600                                             # a day after the cut
+    code, rec = again(tmp_path, project, toolkit)
+    assert code == common.EXIT_LIMIT and "would pass 24 h of waiting" in rec["stop_reason"] and len(rec["calls"]) == 1
+
+
+def test_a_run_cut_again_after_resume_can_be_resumed_again(tmp_path, monkeypatch, clock):
+    project, toolkit, _, _ = first(tmp_path, monkeypatch, [cut(steps=[REFACTOR]), cut(resets_in=9000), OK_CALL])
+    clock.t = T0 + 4000
+    code, rec = again(tmp_path, project, toolkit)                        # cut again; no --auto-resume: stays cut
+    assert code == common.EXIT_LIMIT and rec["pauses"] == 1 and len(rec["calls"]) == 2
+    assert "--auto-resume is not set" in rec["stop_reason"]
+    state = json.loads((tmp_path / "out" / "multiagent" / "m1" / "state.json").read_text())
+    assert state["session_id"] == "session-1" and state["limit_cut_at_call"] == 2
+    clock.t = T0 + 9000 + 400
+    code, rec = again(tmp_path, project, toolkit)
+    assert code == 0 and rec["pauses"] == 2 and rec["manual_resumes"] == 2 and len(rec["calls"]) == 3
+    assert rec["roles"]["test_runs"] == 1
+
+
+def rewrite_orchestrator(tmp_path, project):
+    (project["prompts"] / "multiagent" / "orchestrator.md").write_text("Another task.\n")
+
+
+def rewrite_reviewer(tmp_path, project):
+    (project["prompts"] / "multiagent" / "reviewer.md").write_text("---\ndescription: Changed.\n---\nAnother reviewer.\n")
+
+
+def remove_workspace(tmp_path, project):
+    shutil.rmtree(tmp_path / "work-m1" / "state.git")
+
+
+@pytest.mark.parametrize("make_wrong, message", [
+    (rewrite_orchestrator, "orchestrator prompt is not the one"),
+    (rewrite_reviewer, "role prompts are not the ones"),
+    (remove_workspace, "is gone")])
+def test_resume_run_refuses_a_changed_setup(tmp_path, monkeypatch, clock, capsys, make_wrong, message):
+    project, toolkit, _, _ = first(tmp_path, monkeypatch, [cut(steps=[REFACTOR]), OK_CALL])
+    clock.t = T0 + 4000
+    make_wrong(tmp_path, project)
+    code, rec = again(tmp_path, project, toolkit)
+    assert code == common.EXIT_USAGE and message in capsys.readouterr().err
+    assert rec["status"] == "limit_cut" and len(rec["calls"]) == 1       # nothing was changed
+
+
+def test_resume_run_refuses_another_account_and_runs_that_are_not_cut(tmp_path, monkeypatch, clock, capsys):
+    project, toolkit, _, _ = first(tmp_path, monkeypatch, [cut(steps=[REFACTOR]), OK_CALL])
+    clock.t = T0 + 4000
+    code, _ = again(tmp_path, project, toolkit, "--account", "acc-b")
+    assert code == common.EXIT_USAGE and "another account is not supported" in capsys.readouterr().err
+    assert again(tmp_path, project, toolkit)[0] == 0                     # the same account (acc-a) continues
+    code, _ = again(tmp_path, project, toolkit)                          # now finished: not waiting any more
+    assert code == common.EXIT_USAGE and "is not waiting after a usage-limit cut" in capsys.readouterr().err
+    assert run_multiagent.main(support.argv(project, "nope", "--resume-run"), toolkit) == common.EXIT_USAGE

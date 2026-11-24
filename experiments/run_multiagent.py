@@ -18,6 +18,13 @@ A usage-limit cut does not discard the run: the status becomes ``limit_cut`` and
 (``common.CONTINUE_PROMPT``). At most 3 pauses and 24 hours of waiting; the weekly limit never waits. The roles and the
 budget (M5) are checked over all calls; a subagent call that the limit cut in the middle is recorded separately.
 
+    python experiments/run_multiagent.py --resume-run --run-id <id> [--auto-resume] [--env-file <token file>]
+
+continues a run that stopped as ``limit_cut`` by hand, in the same session, with the same rules (``pause_gate``): the
+5-hour window must have reopened (or ``--auto-resume`` waits for it), the weekly limit only after its reset time, at
+most 3 pauses and 24 hours in total; a pause by hand counts as a pause. The settings (model effort, image, version,
+compaction window, roles, orchestrator prompt) are those of the run; another ``--account`` is refused.
+
 The settings marked K1–K7 are the ones the Week 6 setup check verifies; they are constants below.
 
 Exit code: 0 valid run · 1 invalid run, repeat it · 2 usage error · 3 run lock not free · 5 usage-limit cut
@@ -268,8 +275,8 @@ def prepare(run: Run, test_command: str | None) -> dict:
     """Agent state folder, config of the test command, the claude arguments and the docker mounts."""
     ws, local = run.ws, run.settings["local"]
     state, config_dir = ws.root / "agent-state", ws.root / "agent-config"
-    state.mkdir()
-    config_dir.mkdir()
+    state.mkdir(exist_ok=True)              # --resume-run prepares the same folders again
+    config_dir.mkdir(exist_ok=True)
     if local:
         paths = {"code": str(ws.model), "project": str(ws.start), "tests": str(ws.tests), "hashes": str(ws.hashes),
                  "baseline": str(run.baseline), "state": str(state), "scripts": str(common.SCRIPTS)}
@@ -290,15 +297,17 @@ def prepare(run: Run, test_command: str | None) -> dict:
     prompt = common.fill_prompt(common.load_prompt(run.prompts, "multiagent/orchestrator.md"),
                                 test_command=command, max_refactoring_calls=MAX_REFACTORING_CALLS,
                                 max_test_runs=MAX_TEST_RUNS)
+    agents = agents_json(run.prompts / "multiagent")
     args = common.claude_args(prompt, run.settings["effort"], None, tools=ORCHESTRATOR_TOOLS, allowed=allowed,
                               disallowed=deny_rules(hidden) + tuple(f"Agent({a})" for a in BUILTIN_AGENTS),
-                              extra=("--agents", agents_json(run.prompts / "multiagent")),
-                              safe_mode=SAFE_MODE)
+                              extra=("--agents", agents), safe_mode=SAFE_MODE)
     volumes = [] if local else [(str(common.REPO), MOUNTS["engine"], True), (str(ws.start), MOUNTS["start"], True),
                                 (str(ws.tests), MOUNTS["tests"], True), (str(run.baseline), MOUNTS["baseline"], True),
                                 (str(state), MOUNTS["state"], False), (str(config_dir), MOUNTS["config"], True)]
     run.record.update({"test_command": command, "roles_allowed": {r: list(t) for r, t in ROLES.items()},
-                       "budget": {"refactoring_calls": MAX_REFACTORING_CALLS, "test_runs": MAX_TEST_RUNS}})
+                       "budget": {"refactoring_calls": MAX_REFACTORING_CALLS, "test_runs": MAX_TEST_RUNS},
+                       # --resume-run checks that the roles and the orchestrator prompt are still the ones of the run
+                       "agents_sha256": hashlib.sha256(agents.encode("utf-8")).hexdigest()})
     return {"prompt": prompt, "state": state,
             # the feedback tests run inside the call, so the run lock stays held (W13 does not apply, ADR 005)
             "setup": {"args": args, "tools": INIT_TOOLS, "subagents_allowed": True, "denials_invalid": False,
@@ -340,9 +349,9 @@ def stop_cut(run: Run, state: dict, why: str) -> int:
     return common.EXIT_LIMIT
 
 
-def handle_limit(run: Run, call: dict, state: dict, auto_resume: bool) -> int | None:
-    """A call was cut by the usage limit. Returns an exit code when the run stops (``limit_cut``), or None after the
-    pause: the 5-hour window has reopened and the same session can be continued. The weekly limit never waits."""
+def record_cut(run: Run, call: dict, state: dict) -> dict:
+    """A call was cut by the usage limit: write down which window is full and when it opens (``limit_cuts``,
+    ``limit_kinds``), set the status ``limit_cut`` and save ``state.json`` with the session id. Nothing is deleted."""
     info = common.limit_info(call.get("rate_limit"))
     record = run.record
     state.update({"session_id": call["session_id"] or state["session_id"], "limit_cut_at_call": call["number"],
@@ -350,64 +359,77 @@ def handle_limit(run: Run, call: dict, state: dict, auto_resume: bool) -> int | 
     record["limit_kinds"].append(info["kind"] or "unknown")
     record["limit_cuts"].append({"call": call["number"], "kind": info["kind"], "resets_at": info["resets_at"],
                                  "five_hour_util": info["five_hour_util"], "seven_day_util": info["seven_day_util"],
-                                 "waited_s": None})
+                                 "cut_at": common.CLOCK(), "waited_s": None})
     record["status"] = "limit_cut"
     state.update({k: record[k] for k in ("pauses", "wait_s", "limit_kinds")})
     common.write_json(run.out / "state.json", state)
     run.save()
-    if info["kind"] == "seven_day":
+    return info
+
+
+def pause_gate(run: Run, state: dict, info: dict, auto_resume: bool, manual: bool = False) -> int | None:
+    """The rules for continuing a cut run, the same after a cut in this process (``--auto-resume``) and for
+    ``--resume-run`` (``manual``). Returns an exit code when the run stays cut (``limit_cut``), or None when the same
+    session can be continued now (after waiting, if ``auto_resume`` and the 5-hour window has not reopened yet).
+
+    - The weekly limit never waits; it can only be continued by hand, once its reset time has passed.
+    - At most ``MAX_PAUSES`` pauses and ``MAX_PAUSE_TOTAL_S`` seconds between the cuts and the continuations in total;
+      a pause by hand counts like a pause with ``--auto-resume`` (its time is the time since the cut).
+    - By hand a cut whose window the last event did not name can be continued (the person knows); with
+      ``--auto-resume`` it cannot, because there is nothing to wait for."""
+    record, now = run.record, common.CLOCK()
+    cut = record["limit_cuts"][-1]
+    cut_at = cut.get("cut_at") or now
+    opens = info["resets_at"] + common.RESET_MARGIN_S if info["resets_at"] is not None else None
+    reopened = opens is not None and opens <= now
+    if info["kind"] == "seven_day" and not (manual and reopened):
         return stop_cut(run, state, f"the weekly limit is full (resets {utc(info['resets_at'])}): no waiting; continue "
-                                    f"the same session after that time")
-    if not auto_resume:
+                                    f"the same session by hand after that time (--resume-run)")
+    if not manual and not auto_resume:
         return stop_cut(run, state, "--auto-resume is not set")
-    if not state["session_id"]:
+    if not state.get("session_id"):
         return stop_cut(run, state, "the cut call has no session id: it cannot be continued")
-    if info["kind"] != "five_hour" or info["resets_at"] is None:
+    if not manual and (info["kind"] != "five_hour" or opens is None):
         return stop_cut(run, state, "the last rate_limit_event does not say which window is full or when it resets")
+    waiting = opens is not None and opens > now
+    if waiting and not auto_resume:
+        return stop_cut(run, state, f"the window opens {utc(opens)}: continue then, or add --auto-resume to wait")
     if record["pauses"] >= common.MAX_PAUSES:
         return stop_cut(run, state, f"{record['pauses']} pauses already (at most {common.MAX_PAUSES})")
-    planned = max(0.0, info["resets_at"] + common.RESET_MARGIN_S - common.CLOCK())
-    if record["wait_s"] + planned > common.MAX_PAUSE_TOTAL_S:
-        return stop_cut(run, state, f"waiting {planned / 3600:.1f} h more would pass {common.MAX_PAUSE_TOTAL_S // 3600} "
+    projected = max(now, opens or now) - cut_at
+    if record["wait_s"] + projected > common.MAX_PAUSE_TOTAL_S:
+        return stop_cut(run, state, f"this pause ({projected / 3600:.1f} h) would pass {common.MAX_PAUSE_TOTAL_S // 3600} "
                                     f"h of waiting in total")
-    lock = run.lock
-    held = lock is not None and lock.held
-    if held:                # nothing runs while we wait: free the lock for other runs (W13); taken again below
-        lock.__exit__()
-    run.event(f"5-hour window full: waiting until {utc(info['resets_at'])} + {common.RESET_MARGIN_S // 60} min "
-              f"(pause {record['pauses'] + 1} of {common.MAX_PAUSES}); the lock is {'released' if held else 'not held'}")
-    waited = common.wait_until(info["resets_at"], common.RESET_MARGIN_S,
-                               on_tick=lambda left: run.event(f"still waiting: {int(left // 60)} min left"))
-    if held:
-        lock.acquire(None)
+    if waiting:
+        lock = run.lock
+        held = lock is not None and lock.held
+        if held:            # nothing runs while we wait: free the lock for other runs (W13); taken again below
+            lock.__exit__()
+        run.event(f"5-hour window full: waiting until {utc(info['resets_at'])} + {common.RESET_MARGIN_S // 60} min "
+                  f"(pause {record['pauses'] + 1} of {common.MAX_PAUSES}); the lock is {'released' if held else 'not held'}")
+        common.wait_until(info["resets_at"], common.RESET_MARGIN_S,
+                          on_tick=lambda left: run.event(f"still waiting: {int(left // 60)} min left"))
+        if held:
+            lock.acquire(None)
+    paused = round(common.CLOCK() - cut_at, 1)
     record["pauses"] += 1
-    record["wait_s"] = round(record["wait_s"] + waited, 1)
-    record["limit_cuts"][-1]["waited_s"] = waited
+    record["wait_s"] = round(record["wait_s"] + paused, 1)
+    cut["waited_s"] = paused
     record["status"] = "running"
     state.update({k: record[k] for k in ("pauses", "wait_s")})
     common.write_json(run.out / "state.json", state)
-    run.event(f"waited {waited} s: continuing session {state['session_id']}")
+    run.event(f"paused {paused} s: continuing session {state['session_id']}")
     return None
 
 
-def execute(run: Run, test_command: str | None, auto_resume: bool = False) -> int:
-    run.setup()
-    leftovers = [p for p in run.ws.listing() if p.split("/")[0].startswith(".") or p.split("/")[-1] in common.FORBIDDEN_NAMES]
-    if leftovers:          # without --safe-mode nothing may be there for Claude Code to load
-        raise EngineError(f"the model's folder has files Claude Code would load: {', '.join(leftovers[:5])}")
-    prepared = prepare(run, test_command)
-    setup = prepared["setup"]
-    run.record.update({"auto_resume": auto_resume, "pauses": 0, "wait_s": 0.0, "limit_kinds": [], "limit_cuts": []})
-    cut_state = {"session_id": None, "pending": {"kind": "orchestrator", "prompt": prepared["prompt"]},
-                 "limit_cut_at_call": None, "pauses": 0, "wait_s": 0.0, "limit_kinds": []}
-    common.write_json(run.out / "state.json", cut_state)
-    call = run.call(prepared["prompt"], "orchestrator", None, setup)
+def conclude(run: Run, prepared: dict, cut_state: dict, call: dict, auto_resume: bool) -> int:
+    """From the last call on: continue after every usage-limit cut as far as the rules allow, then check the roles
+    over all calls, measure the snapshots and finish."""
     while call["status"] == "limit":      # pause, wait for the window, continue the same session with the same settings
-        stop = handle_limit(run, call, cut_state, auto_resume)
+        stop = pause_gate(run, cut_state, record_cut(run, call, cut_state), auto_resume)
         if stop is not None:
             return stop
-        resumed = {**setup, "args": common.resume_args(setup["args"], common.CONTINUE_PROMPT, cut_state["session_id"])}
-        call = run.call(common.CONTINUE_PROMPT, "resume", cut_state["session_id"], resumed)
+        call = resume_call(run, prepared, cut_state)
     cut_state["pending"] = None
     common.write_json(run.out / "state.json", cut_state)
     # the budget and the roles are checked over the streams of all calls (M5)
@@ -452,13 +474,87 @@ def execute(run: Run, test_command: str | None, auto_resume: bool = False) -> in
     return run_iterative.final(run, f"{len(sources)} round(s) from {roles['test_runs']} test run(s)")
 
 
+def resume_call(run: Run, prepared: dict, cut_state: dict) -> dict:
+    """The same session again: the same arguments (``--agents``, tools, permissions), volumes and environment, the
+    prompt replaced by the fixed sentence and ``--resume <session_id>``."""
+    setup = prepared["setup"]
+    resumed = {**setup, "args": common.resume_args(setup["args"], common.CONTINUE_PROMPT, cut_state["session_id"])}
+    return run.call(common.CONTINUE_PROMPT, "resume", cut_state["session_id"], resumed)
+
+
+def execute(run: Run, test_command: str | None, auto_resume: bool = False) -> int:
+    run.setup()
+    leftovers = [p for p in run.ws.listing() if p.split("/")[0].startswith(".") or p.split("/")[-1] in common.FORBIDDEN_NAMES]
+    if leftovers:          # without --safe-mode nothing may be there for Claude Code to load
+        raise EngineError(f"the model's folder has files Claude Code would load: {', '.join(leftovers[:5])}")
+    prepared = prepare(run, test_command)
+    run.record.update({"auto_resume": auto_resume, "pauses": 0, "wait_s": 0.0, "limit_kinds": [], "limit_cuts": []})
+    cut_state = {"session_id": None, "pending": {"kind": "orchestrator", "prompt": prepared["prompt"]},
+                 "limit_cut_at_call": None, "pauses": 0, "wait_s": 0.0, "limit_kinds": []}
+    common.write_json(run.out / "state.json", cut_state)
+    call = run.call(prepared["prompt"], "orchestrator", None, prepared["setup"])
+    return conclude(run, prepared, cut_state, call, auto_resume)
+
+
+def resume(run: Run, args) -> int:
+    """``--resume-run``: continue a run that stopped as ``limit_cut`` in the same session, by hand, with the rules of
+    ``--auto-resume`` (``pause_gate``). The work folder, ``session/`` and ``state.json`` are those the cut left; the
+    model's ``lms/`` is not touched (the session expects the files as it left them)."""
+    if not (run.out / "run.json").is_file() or not (run.out / "state.json").is_file():
+        raise EngineError(f"no saved run in {run.out}")
+    run.record = common.read_json(run.out / "run.json")
+    state = common.read_json(run.out / "state.json")
+    record = run.record
+    if record.get("status") != "limit_cut" or not state.get("pending") or not record.get("limit_cuts"):
+        raise EngineError(f"run {args.run_id} is not waiting after a usage-limit cut (status {record.get('status')})")
+    if args.account and args.account != record["account"]:
+        raise EngineError(f"run {args.run_id} was started with account {record['account']}: continuing with another "
+                          f"account is not supported")
+    args.account = record["account"]
+    run.baseline = common.from_repo(record["baseline"], run.repo)
+    run.ws = common.Workspace(Path(record["work_root"]))
+    if not run.ws.git_dir.is_dir():
+        raise EngineError(f"work folder {run.ws.root} is gone: the run cannot continue")
+    run.image_id = record.get("image_id", "")
+    for key, value in (("image", record.get("image")), ("effort", record.get("effort")),
+                       ("expected_version", record.get("expected_version")),
+                       ("compact_window", record.get("compact_window"))):
+        if value is not None:       # the settings of the run, not those of this command line
+            run.settings[key] = value
+    run.check_docker()
+    stored_agents = record.get("agents_sha256")       # prepare() writes the current value into the record
+    prepared = prepare(run, record["test_command"])
+    if hashlib.sha256(prepared["prompt"].encode("utf-8")).hexdigest() != record["calls"][0]["prompt_sha256"]:
+        raise EngineError("the orchestrator prompt is not the one this run started with: it cannot continue")
+    if stored_agents and stored_agents != record["agents_sha256"]:
+        raise EngineError("the role prompts are not the ones this run started with: it cannot continue")
+    cut = record["limit_cuts"][-1]
+    info = {"kind": cut.get("kind"), "resets_at": cut.get("resets_at")}
+    record["auto_resume"] = args.auto_resume
+    stop = pause_gate(run, state, info, args.auto_resume, manual=True)
+    if stop is not None:
+        return stop
+    record["manual_resumes"] = record.get("manual_resumes", 0) + 1
+    call = resume_call(run, prepared, state)
+    return conclude(run, prepared, state, call, args.auto_resume)
+
+
 def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     common.add_arguments(parser)
+    parser.add_argument("--resume-run", action="store_true",
+                        help="continue a run that stopped as limit_cut, by hand, in the same session (--run-id; the other "
+                             "settings are those of the run, --account only if it is the same; the rules of --auto-resume)")
     parser.add_argument("--auto-resume", action="store_true",
                         help="after a usage-limit cut of the 5-hour window: wait for its reset and continue the same "
                              "session (at most 3 pauses, 24 h of waiting)")
     parser.add_argument("--test-command", help=argparse.SUPPRESS)       # tests: a stand-in for feedback_tests.py
+    if argv is None:
+        argv = sys.argv[1:]
+    if "--resume-run" in argv:
+        for action in parser._actions:      # the start options are in run.json
+            if action.dest in ("start_ref", "baseline", "account"):
+                action.required = False
     args = parser.parse_args(argv)
     run = Run(APPROACH, args, toolkit)
     try:
@@ -466,6 +562,8 @@ def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -
             return dry_run(run)
         with common.RunLock(Path(args.lock_file), f"run_multiagent.py {args.run_id}", args.wait, args.poll) as lock:
             run.lock = lock
+            if args.resume_run:
+                return resume(run, args)
             return execute(run, args.test_command, args.auto_resume)
     except EngineError as exc:
         print(f"run_multiagent: {exc}", file=sys.stderr)
