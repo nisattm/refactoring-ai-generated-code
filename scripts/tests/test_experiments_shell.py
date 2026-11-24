@@ -42,13 +42,20 @@ M01C_COMMAND = "find /work/lms -name '*.py' | sort | xargs wc -l | sort -k2 | ta
     "sort -k2 -n lms/list.txt | uniq",
     "wc -l lms/a.py lms/b.py; ls",
     "grep -c x lms/a.py || ls",
+    M01C_COMMAND,                                           # xargs runs wc: read-only (decision of 24 November, 20:35)
+    "find lms -name '*.py' | xargs -0 wc -l",
+    "find lms -name '*.py' | xargs -n 1 -P 4 wc -l",
+    "ls lms | xargs -I {} grep -n def lms/{}",
+    "ls lms | xargs -I{} cat lms/{}",
+    "ls lms | xargs --max-args 2 wc -l",
+    "ls lms | xargs -- wc -l",
+    "ls lms | xargs -0 -n1 head -3",
 ])
 def test_read_only_commands_of_the_list_are_accepted(command):
     assert common.classify_shell(command) == (True, "")
 
 
 @pytest.mark.parametrize("command, why", [
-    (M01C_COMMAND, "'xargs' is not on the list"),
     ("echo hi", "'echo'"),
     ("python -c 'print(1)'", "'python'"),
     ("rm -rf lms", "'rm'"),
@@ -67,7 +74,17 @@ def test_read_only_commands_of_the_list_are_accepted(command):
     ("ls `pwd`", "command substitution"),
     ("ls & rm x", "'&' is not allowed"),
     ("ls; rm x", "'rm'"),
-    ("ls | xargs rm", "'xargs'"),
+    ("ls | xargs rm", "xargs runs 'rm' is not on the list"),
+    ("ls | xargs rm -f", "xargs runs 'rm' is not on the list"),
+    ("ls | xargs sed -i s/a/b/", "xargs runs 'sed' is not on the list"),
+    ("ls | xargs echo hi", "xargs runs 'echo' is not on the list"),
+    ("ls | xargs python x.py", "xargs runs 'python' is not on the list"),
+    ("ls | xargs sh -c 'rm x'", "xargs runs 'sh' is not on the list"),
+    ("ls | xargs -I {} find {} -delete", "xargs runs find with an action"),
+    ("ls | xargs -I{} sort -o out {}", "xargs runs sort with an output"),
+    ("ls | xargs -I{} uniq {} out", "xargs runs uniq with an output"),
+    ("ls | xargs", "xargs without a command"),
+    ("ls | xargs -n 1 -P 4", "xargs without a command"),
     ("ls 'unclosed", "cannot be parsed"),
     ("   ", "empty command"),
 ])
@@ -104,7 +121,7 @@ def test_a_subagent_may_run_read_only_commands(role):
     assert roles["read_only_shell"] == ["find /work/lms -type f | wc -l", "ls lms"]
 
 
-@pytest.mark.parametrize("command", ["rm -rf lms", "python -c 1", M01C_COMMAND, "cat a > b"])
+@pytest.mark.parametrize("command", ["rm -rf lms", "python -c 1", "ls | xargs rm", "cat a > b"])
 def test_a_subagent_command_that_writes_or_is_not_listed_makes_the_run_invalid(command):
     roles = run_multiagent.analyze_roles([agent("a1", "refactoring"), bash(command, "a1")], TEST_COMMAND)
     assert len(roles["invalid"]) == 1 and "refactoring: " in roles["invalid"][0] and roles["read_only_shell"] == []
@@ -144,10 +161,20 @@ def test_multiagent_run_with_a_read_only_command_of_the_refactoring_subagent_is_
     assert rec["roles"]["read_only_shell"] == [command] and rec["roles"]["read_only_shell_by_role"] == {"refactoring": 1}
 
 
-def test_multiagent_run_with_the_m01c_command_stays_invalid_because_of_xargs(tmp_path, monkeypatch):
+def test_multiagent_run_with_the_real_m01c_command_is_valid(tmp_path, monkeypatch):
     _, toolkit, code, rec = multi(tmp_path, monkeypatch, [{**REFACTOR, "bash": [M01C_COMMAND]}, {"test": True}])
+    assert code == 0 and rec["valid"] is True and rec["roles"]["read_only_shell"] == [M01C_COMMAND]
+
+
+def test_multiagent_run_with_xargs_rm_is_invalid(tmp_path, monkeypatch):
+    _, toolkit, code, rec = multi(tmp_path, monkeypatch, [{**REFACTOR, "bash": ["ls lms | xargs rm"]}, {"test": True}])
     assert code == common.EXIT_INVALID and toolkit.measured == []
-    assert any("refactoring: " in r and "'xargs' is not on the list" in r for r in rec["reasons"])
+    assert any("refactoring: " in r and "xargs runs 'rm' is not on the list" in r for r in rec["reasons"])
+
+
+def test_the_two_rule_decisions_are_written_with_their_times():
+    assert [d["at"] for d in common.SHELL_RULE_DECISIONS] == ["2026-11-24T20:30:00+03:00", "2026-11-24T20:35:00+03:00"]
+    assert "xargs wc -l is valid" in common.SHELL_RULE_DECISIONS[1]["decision"]
 
 
 # --- Single and Iterative use the same function -------------------------------------------------------------------
@@ -215,6 +242,7 @@ def test_rejudge_measures_a_run_that_is_valid_under_the_new_rule(tmp_path, monke
     first, second = rec["decisions"]
     assert (first["outcome"], first["valid"]) == ("invalid", False) and "old rule" in first["reasons"][0]
     assert (second["outcome"], second["valid"], second["reasons"]) == ("success", True, [])
+    assert [d["at"] for d in second["rule_decisions"]] == ["2026-11-24T20:30:00+03:00", "2026-11-24T20:35:00+03:00"]
     assert rec["roles"]["read_only_shell_by_role"] == {"refactoring": 1} and first["roles"]["read_only_shell"] == []
     assert rec["work_root"] == str(copy) and copy.is_dir()           # rebound to the copy, which is kept
     after = rows(tmp_path)

@@ -597,7 +597,7 @@ def rejudge(run: Run, args) -> int:
     if record["calls"][-1]["status"] != "ok":
         invalid.append(f"call status {record['calls'][-1]['status']}")
     second = {"by": "--rejudge-run", "at": common.now(), "rule": "read-only shell commands do not invalidate (24 Nov 2026)",
-              "reasons": invalid, "roles": roles}
+              "rule_decisions": [dict(d) for d in common.SHELL_RULE_DECISIONS], "reasons": invalid, "roles": roles}
     record["decisions"] = [first, second]
     record.update({"roles": roles, "work_root": str(root), "note": REJUDGE_NOTE.format(first=first_finished)})
     run.event(f"rejudge: {'still invalid: ' + '; '.join(invalid) if invalid else 'valid under the current rules'}")
