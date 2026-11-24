@@ -71,12 +71,13 @@ def test_roles_tokens_and_calls_are_attributed_by_parent():
     roles = report["roles"]
     assert list(roles) == ["orchestrator", "analyzer", "refactoring"]
     assert report["messages"] == 6 and [roles[r]["calls"] for r in roles] == [2, 3, 1]
-    assert (roles["orchestrator"]["input"], roles["orchestrator"]["output"]) == (12, 27)
+    assert (roles["orchestrator"]["input"], roles["orchestrator"]["output_partial"]) == (12, 27)
     assert roles["analyzer"]["cache_read"] == 600
     # m6 appears in two events with a growing usage: counted once, the largest value of every field
-    assert (roles["refactoring"]["output"], roles["refactoring"]["cache_read"]) == (11, 400)
+    assert (roles["refactoring"]["output_partial"], roles["refactoring"]["cache_read"]) == (11, 400)
     assert roles["refactoring"]["tools"] == {"Read": 1, "Edit": 1} and roles["orchestrator"]["tools"] == {"Agent": 2}
-    assert report["totals"]["stream"] == {"input": 16, "output": 53, "cache_write": 30, "cache_read": 1090}
+    # the output of a message is only its first value in a real stream: not summed, the call's output is modelUsage's
+    assert report["totals"]["stream"] == {"input": 16, "cache_write": 30, "cache_read": 1090}
     assert report["totals"]["result"] == {"input": 16, "output": 48, "cache_write": 30, "cache_read": 990,
                                           "usd": 1.5}
 
@@ -104,7 +105,7 @@ def test_subagent_runs_and_the_one_that_never_returned():
     report = diag.analyze(stream(*FULL))
     runs = {r["role"]: r for r in report["invocations"]}
     assert runs["analyzer"]["finished"] is True and runs["analyzer"]["calls"] == 3 and runs["analyzer"]["reads"] == 3
-    assert runs["refactoring"]["finished"] is False and runs["refactoring"]["output"] == 11
+    assert runs["refactoring"]["finished"] is False and runs["refactoring"]["max_context"] == 401
     assert report["end"]["open_subagents"] == [{"role": "refactoring", "order": 2}]
 
 
@@ -120,8 +121,8 @@ def test_the_end_of_a_limit_cut_call():
 def test_rate_limit_events_carry_the_usage_so_far():
     first, last = diag.analyze(stream(*FULL))["rate_limits"]
     assert (first["five_hour"], first["seven_day"], first["messages_before"], first["role"]) == (0.5, 0.4, 4, "analyzer")
-    assert (first["output_tokens_so_far"], first["cache_read_tokens_so_far"]) == (20 + 15, 40 + 600)
-    assert last["messages_before"] == 6 and last["role"] == "refactoring" and last["output_tokens_so_far"] == 53
+    assert first["cache_read_tokens_so_far"] == 40 + 600 and "output_tokens_so_far" not in first
+    assert last["messages_before"] == 6 and last["role"] == "refactoring" and last["cache_read_tokens_so_far"] == 1090
 
 
 def test_a_killed_call_without_result_and_with_a_cut_line():
@@ -155,7 +156,8 @@ def test_an_empty_stream():
 
 def test_report_text_names_roles_numbers_and_the_end():
     text = diag.render("call-1", diag.analyze(stream(*FULL)), 5)
-    assert "| analyzer | 1 | 3 | 3 | 15 | 0 | 600 | 3 | 2 | 1 | 1 |" in text
+    assert "| analyzer | 1 | 3 | 3 | 0 | 600 | 301 | 3 | 0 | 3 | 2 | 1 | 1 |" in text
+    assert "'output': 48" in text and "Compaction events: 0" in text and "analyzer 55 %" in text
     assert "| analyzer | /work/lms/a.py | 2 |" in text
     assert "api_error_status 429" in text and "refactoring #2" in text and "| 50 % |" in text
 
@@ -176,3 +178,39 @@ def test_main_reports_a_missing_path_and_an_empty_folder(tmp_path, capsys):
     assert diag.main([str(tmp_path / "nope.jsonl")]) == 2
     assert diag.main([str(tmp_path)]) == 2
     assert "diagnose_stream:" in capsys.readouterr().err
+
+
+def test_largest_context_per_role_and_drops():
+    roles = diag.analyze(stream(*FULL))["roles"]
+    # context = input + cache write + cache read of one message
+    assert (roles["orchestrator"]["max_context"], roles["orchestrator"]["max_context_call"],
+            roles["orchestrator"]["last_context"]) == (80, 1, 52)
+    assert (roles["analyzer"]["max_context"], roles["analyzer"]["max_context_call"]) == (301, 3)
+    assert roles["refactoring"]["max_context"] == 401 and roles["analyzer"]["context_drops"] == 0
+    # a call whose context is less than half of the one before in the same run of a role is counted
+    events = [assistant(f"m{i}", use(f"r{i}", "Read", file_path="/a"), tokens=usage(1, 1, 0, c))
+              for i, c in enumerate((100, 300, 90, 120), start=1)]
+    events.append(assistant("m5", {"type": "text", "text": "limit"}, tokens=usage(0, 0, 0, 0)))    # synthetic end of a cut call
+    stats = diag.analyze(stream(*events))["roles"]["orchestrator"]
+    assert stats["context_drops"] == 1 and stats["max_context"] == 301 and stats["last_context"] == 121
+
+
+def test_compaction_events_are_counted_with_their_metadata():
+    events = [assistant("m1", use("r1", "Read", file_path="/a")),
+              {"type": "system", "subtype": "compact_boundary", "compact_metadata": {"trigger": "auto", "pre_tokens": 190000}},
+              {"type": "system", "subtype": "status", "status": "compacting"},
+              assistant("m2", use("r2", "Read", file_path="/b"))]
+    report = diag.analyze(stream(*events))
+    assert report["compactions"] == [{"event": 1, "subtype": "compact_boundary", "trigger": "auto",
+                                      "pre_tokens": 190000, "after_call": 1, "role": "orchestrator"}]
+    assert "- event 1 compact_boundary: trigger auto, pre_tokens 190000, after call 1 (orchestrator)" in         diag.render("x", report, 5)
+    assert diag.analyze(stream(*FULL))["compactions"] == []
+
+
+def test_a_subagent_cut_by_the_limit_is_shown_as_cut():
+    cut = {"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": "a1", "content": [
+        {"type": "text", "text": "  Agent terminated early due to an API error: You've hit your session limit"}]}]}}
+    events = [assistant("m1", use("a1", "Agent", subagent_type="refactoring")), cut]
+    report = diag.analyze(stream(*events))
+    assert report["invocations"][0]["cut_by_limit"] is True and report["invocations"][0]["error"] is False
+    assert "CUT BY LIMIT" in diag.render("x", report, 5)

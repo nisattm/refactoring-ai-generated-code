@@ -23,7 +23,8 @@ def main() -> int:
     counter.write_text(str(number))
     args = sys.argv[1:]
     (session / f"fake-call-{number}.json").write_text(json.dumps({"args": args, "cwd": os.getcwd(), "env": {
-        k: os.environ.get(k) for k in ("CLAUDE_CONFIG_DIR", "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS")}}))
+        k: os.environ.get(k) for k in ("CLAUDE_CONFIG_DIR", "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS",
+                                       "CLAUDE_CODE_AUTO_COMPACT_WINDOW")}}))
     scenario = json.loads(Path(os.environ["FAKE_CLAUDE_SCENARIO"]).read_text())
     spec = scenario[number - 1] if number <= len(scenario) else {}
     session_id = args[args.index("--resume") + 1] if "--resume" in args else f"session-{number}"
@@ -77,6 +78,10 @@ def main() -> int:
                 emit({"type": "assistant", "parent_tool_use_id": call_id, "message": {"content": [
                     {"type": "tool_use", "id": f"{call_id}-w", "name": step.get("write_tool", "Write"),
                      "input": {"file_path": f"/work/{rel}"}}]}})
+            if step.get("interrupted"):     # scale-m01: the usage limit cut the subagent; the result is not is_error
+                emit({"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": call_id, "content": [
+                    {"type": "text", "text": "  Agent terminated early due to an API error: You've hit your session limit "
+                                             "(error type rate_limit, HTTP 429)\n  PARTIAL output recovered"}]}]}})
         elif "denied" in step:            # a call the permissions blocked: in the stream and in permission_denials
             tool, data = step["denied"], step.get("input", {})
             use_id = f"denied-{number}-{i}"
@@ -110,6 +115,12 @@ def main() -> int:
     usage = {"claude-sonnet-5-5": {"inputTokens": 10 * n, "outputTokens": 20 * n, "cacheReadInputTokens": 100 * n,
                                    "cacheCreationInputTokens": 50 * n, "costUSD": totals["usd"]}}
     if spec.get("limit"):
+        if "resets_at" in spec:      # the last rate_limit_event of scale-m01: rejected, the window full, resetsAt
+            weekly = bool(spec.get("weekly"))
+            emit({"type": "rate_limit_event", "rate_limit_info": {
+                "status": "rejected", "resetsAt": spec["resets_at"], "rateLimitType": "seven_day" if weekly else "five_hour",
+                "unifiedWindows": {"five_hour": {"utilization": 0.5 if weekly else 1, "resetsAt": spec["resets_at"]},
+                                   "seven_day": {"utilization": 1 if weekly else 0.49, "resetsAt": spec["resets_at"] + 7200}}}})
         emit({"type": "result", "subtype": "error_during_execution", "is_error": True, "api_error_status": 429,
               "result": "Claude AI usage limit reached", "session_id": session_id, "terminal_reason": "error",
               "total_cost_usd": totals["usd"], "modelUsage": usage,

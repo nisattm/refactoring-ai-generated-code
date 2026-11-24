@@ -46,8 +46,9 @@ def test_success_with_three_roles(tmp_path, monkeypatch):
     project, toolkit, code, rec = start(tmp_path, monkeypatch, [
         {"agent": "analyzer"}, REFACTOR, {"test": True}, {"agent": "reviewer"}], text="REFACTORING_DONE")
     assert code == 0 and rec["outcome"] == "success" and rec["valid"] is True
-    assert rec["roles"] == {"subagent_calls": {"analyzer": 1, "refactoring": 1, "reviewer": 1}, "test_runs": 1,
-                            "blocked": [], "read_only_shell": [], "invalid": []}
+    assert rec["roles"] == {"subagent_calls": {"analyzer": 1, "refactoring": 1, "reviewer": 1},
+                            "interrupted_by_limit": {}, "test_runs": 1, "blocked": [], "read_only_shell": [],
+                            "invalid": []}
     assert [r["source"] for r in rec["rounds"]] == ["test run 1"] and rec["best_round"] == 1
     assert support.run_git(project["repo"], "tag", "-l", "exp/multiagent/*") == "exp/multiagent/m1/r1"
     # the call: three subagents with their tools, the subagent tool offered, Bash only for the test command
@@ -170,9 +171,11 @@ def test_role_that_cannot_be_started_means_a_broken_setup(tmp_path, monkeypatch)
     assert any("subagent call failed (broken setup): analyzer" in r for r in rec["reasons"])
 
 
-def test_limit_cut_discards_the_run(tmp_path, monkeypatch):
+def test_limit_cut_keeps_the_run_and_does_not_discard_it(tmp_path, monkeypatch):
+    # Week 6: the run is not discarded any more; status limit_cut, state.json with the session id (test_experiments_pause.py)
     _, _, code, rec = start(tmp_path, monkeypatch, [REFACTOR], limit=True)
-    assert code == common.EXIT_LIMIT and rec["outcome"] == "discarded_limit"
+    assert code == common.EXIT_LIMIT and rec["status"] == "limit_cut" and "outcome" not in rec
+    assert (tmp_path / "out" / "multiagent" / "m1" / "state.json").is_file()
 
 
 def test_dry_run_prints_the_multiagent_command(tmp_path, capsys):
