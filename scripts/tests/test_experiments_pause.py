@@ -118,7 +118,7 @@ def test_limit_then_wait_then_continue_the_same_session(tmp_path, monkeypatch, c
     # the subagent the limit cut is recorded apart and is not a call of its role
     assert rec["roles"] == {"subagent_calls": {"analyzer": 1, "refactoring": 1, "reviewer": 1},
                             "interrupted_by_limit": {"refactoring": 1}, "test_runs": 1, "blocked": [],
-                            "read_only_shell": [], "invalid": []}
+                            "read_only_shell": [], "read_only_shell_by_role": {}, "invalid": []}
     assert [m["set"] for m in toolkit.measured] == ["feedback", "both"]
 
 

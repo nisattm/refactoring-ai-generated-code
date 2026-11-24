@@ -46,6 +46,9 @@ def main() -> int:
         path.write_text(content, encoding="utf-8")
         emit({"type": "assistant", "message": {"content": [
             {"type": "tool_use", "name": "Write", "input": {"file_path": f"/work/{rel}"}}]}})
+    for command in spec.get("bash", []):           # a shell command of the model itself (no parent), e.g. "ls lms"
+        emit({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash",
+                                                            "input": {"command": command}}]}})
     for rel in spec.get("delete", []):
         Path(rel).unlink()
     emit({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Read",
@@ -78,6 +81,9 @@ def main() -> int:
                 emit({"type": "assistant", "parent_tool_use_id": call_id, "message": {"content": [
                     {"type": "tool_use", "id": f"{call_id}-w", "name": step.get("write_tool", "Write"),
                      "input": {"file_path": f"/work/{rel}"}}]}})
+            for n, command in enumerate(step.get("bash", [])):      # a shell command of the subagent
+                emit({"type": "assistant", "parent_tool_use_id": call_id, "message": {"content": [
+                    {"type": "tool_use", "id": f"{call_id}-sh{n}", "name": "Bash", "input": {"command": command}}]}})
             if step.get("interrupted"):     # scale-m01: the usage limit cut the subagent; the result is not is_error
                 emit({"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": call_id, "content": [
                     {"type": "text", "text": "  Agent terminated early due to an API error: You've hit your session limit "

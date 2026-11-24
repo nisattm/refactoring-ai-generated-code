@@ -560,6 +560,118 @@ def denied_tools(denials: list) -> list[str]:
     return [str(d.get("tool_name") or d.get("name") or "?") if isinstance(d, dict) else str(d) for d in denials]
 
 
+# --- shell commands of the model (the same rule in every role and every approach) --------------------------------------
+
+# Decision of 24 November 2026 (m01c, before its metrics were seen): read-only shell commands are no reason for an
+# invalid run in any role or approach; they are counted and written to run.json. A command that writes, deletes or is
+# not on this list makes the run invalid. This widens the decision of 22 November (orchestrator only, K6b).
+# Addition of 24 November 2026, 20:35 (m01c, metrics still not seen): `xargs` counts as read-only when the command it
+# runs is on the list and has no option that writes; the options of xargs itself (-0, -n, -I, ...) are free. No other
+# command is added. Both decisions are copied into the decision record of a run judged again (SHELL_RULE_DECISIONS).
+READ_ONLY_COMMANDS = ("find", "wc", "ls", "cat", "head", "tail", "sort", "grep", "uniq")
+SHELL_RULE_DECISIONS = (
+    {"at": "2026-11-24T20:30:00+03:00", "decision": "Read-only shell commands (find, wc, ls, cat, head, tail, sort, grep, "
+     "uniq) are no reason for an invalid run in any role or approach; they are counted and written to run.json. A "
+     "command that writes, deletes or is not on the list makes the run invalid."},
+    {"at": "2026-11-24T20:35:00+03:00", "decision": "The list was incomplete: xargs counts as read-only when the command "
+     "it runs is on the list and has no option that writes (xargs wc -l is valid; xargs rm and xargs sed -i are not); "
+     "the options of xargs itself (-0, -n, -I, ...) are free. No other command is added."},
+)
+_XARGS_VALUE_SHORT = set("nLIsPdEa")        # -n 1, -L 1, -I {}, -s N, -P N, -d C, -E END, -a FILE: the value is the next word
+_XARGS_VALUE_LONG = {"--max-args", "--max-chars", "--max-procs", "--delimiter", "--arg-file", "--process-slot-var"}
+_FIND_ACTIONS = {"-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprint0", "-fprintf", "-fls"}
+_SEPARATORS = {"|", "||", "&&", ";"}
+
+
+def classify_shell(command: str) -> tuple[bool, str]:
+    """``(True, "")`` if ``command`` only chains commands of ``READ_ONLY_COMMANDS`` (pipes, ``&&``, ``||``, ``;``)
+    without anything that writes, deletes or runs another program; otherwise ``(False, why)``. Redirections are not
+    allowed, except ``2>/dev/null``; substitutions, background jobs and unknown commands (``python``, ``echo``, ...)
+    are not either. ``xargs`` is read-only if the command it runs is (``xargs wc -l``; ``xargs rm`` is not). Options that make an allowed command write (``find -delete``/``-exec``/``-fprint*``,
+    ``sort -o``) are not allowed, and ``uniq`` takes at most one file (the second would be its output)."""
+    if not command.strip():
+        return False, "empty command"
+    if "`" in command:
+        return False, "command substitution"
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        tokens = list(lexer)
+    except ValueError as exc:
+        return False, f"cannot be parsed ({exc})"
+    stages: list[list[str]] = [[]]
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if token in _SEPARATORS:
+            stages.append([])
+        elif token == ">" and tokens[i + 1:i + 2] == ["/dev/null"] and stages[-1][-1:] == ["2"]:
+            stages[-1].pop()
+            i += 1
+        elif token and set(token) <= set("();<>|&"):
+            return False, f"'{token}' is not allowed"
+        else:
+            stages[-1].append(token)
+        i += 1
+    for stage in (s for s in stages if s):
+        name, args, via = stage[0], stage[1:], ""
+        if name == "xargs":
+            name, args = _xargs_command(args)
+            via = "xargs runs "
+            if name is None:
+                return False, "xargs without a command (it would run echo)"
+        problem = _command_problem(name, args)
+        if problem:
+            return False, via + problem
+    return True, ""
+
+
+def _xargs_command(args: list[str]) -> tuple[str | None, list[str]]:
+    """The command xargs runs and its arguments: what is left after the options of xargs itself."""
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg == "--":
+            i += 1
+            break
+        if not arg.startswith("-") or arg == "-":
+            break
+        if (len(arg) == 2 and arg[1] in _XARGS_VALUE_SHORT) or arg in _XARGS_VALUE_LONG:
+            i += 1                          # the value of the option is the next word
+        i += 1
+    return (args[i], args[i + 1:]) if i < len(args) else (None, [])
+
+
+def _command_problem(name: str, args: list[str]) -> str:
+    """Why a command of the list is not read-only with these arguments ("" if it is)."""
+    if name not in READ_ONLY_COMMANDS:
+        return f"'{name}' is not on the list ({', '.join(READ_ONLY_COMMANDS)})"
+    if name == "find" and any(a in _FIND_ACTIONS for a in args):
+        return "find with an action that writes or runs a program"
+    if name == "sort" and any(a == "--output" or a.startswith("--output=") or a.startswith("--compress-program")
+                              or (a.startswith("-") and not a.startswith("--") and "o" in a[1:]) for a in args):
+        return "sort with an output file or a program"
+    if name == "uniq" and sum(1 for a in args if not a.startswith("-")) > 1:
+        return "uniq with an output file"
+    return ""
+
+
+def shell_check(uses: list[dict], allowed_command: str | None = None) -> dict:
+    """The Bash uses of a stream: ``read_only`` (commands to count) and ``invalid`` (reasons). ``allowed_command``
+    (the Multi-Agent test command) is neither."""
+    own = " ".join((allowed_command or "").split())
+    report: dict[str, list[str]] = {"read_only": [], "invalid": []}
+    for use in uses:
+        if use.get("name") != "Bash":
+            continue
+        command = " ".join(str((use.get("input") or {}).get("command") or "").split())
+        if own and command == own:
+            continue
+        ok, why = classify_shell(command)
+        (report["read_only"] if ok else report["invalid"]).append(command[:80] if ok else f"{command[:80]} ({why})")
+    return report
+
+
 # --- pause and continue after a usage-limit cut -------------------------------------------------------------------
 
 def limit_info(rate_limit: dict | None) -> dict:
@@ -909,6 +1021,8 @@ class Run:
         hidden = sorted(set(hidden_or_forbidden(before, after)) | set(forbidden_writes(parsed["files_written"])))
         if hidden:
             invalid.append(f"new hidden file(s) or CLAUDE.md / AGENTS.md: {', '.join(hidden[:10])}")
+        shell = shell_check(parsed["uses"]) if setup.get("shell_check", True) else {"read_only": [], "invalid": []}
+        invalid += [f"shell command that is not a read-only command of the list: {c}" for c in shell["invalid"]]
         outside = self.ws.discard_outside_lms(before)
         n_outside = sum(len(v) for v in outside.values())
         if n_outside:
@@ -935,7 +1049,7 @@ class Run:
             "permission_denials": denied_tools(result.get("permission_denials") or []),
             "terminal_reason": result.get("terminal_reason"), "is_error": result.get("is_error"),
             "num_turns": result.get("num_turns"), "done_marker": said_done(parsed["final_text"]),
-            "outside_lms_changes": n_outside, "hidden_files": hidden,
+            "outside_lms_changes": n_outside, "hidden_files": hidden, "read_only_shell": shell["read_only"],
             "rate_limit": parsed["rate_limit"],
             "usd_raw": raw, "usd_diff": diff, "summary_raw": summary, "summary": share,
             "tokens_raw": {k: summary.get(k) for k in TOKEN_KEYS}, "tokens": {k: share.get(k) for k in TOKEN_KEYS},

@@ -48,6 +48,7 @@ def test_success_with_three_roles(tmp_path, monkeypatch):
     assert code == 0 and rec["outcome"] == "success" and rec["valid"] is True
     assert rec["roles"] == {"subagent_calls": {"analyzer": 1, "refactoring": 1, "reviewer": 1},
                             "interrupted_by_limit": {}, "test_runs": 1, "blocked": [], "read_only_shell": [],
+                            "read_only_shell_by_role": {},
                             "invalid": []}
     assert [r["source"] for r in rec["rounds"]] == ["test run 1"] and rec["best_round"] == 1
     assert support.run_git(project["repo"], "tag", "-l", "exp/multiagent/*") == "exp/multiagent/m1/r1"
@@ -108,9 +109,9 @@ def test_no_change(tmp_path, monkeypatch):
     ([{"agent": "analyzer", "write": {"lms/a.py": "x = 1\n"}}], "analyzer subagent used Write"),
     ([REFACTOR] * 4, "Refactoring subagent called 4 times"),
     ([REFACTOR, {"test": True}, {"test": True}, {"test": True}, {"test": True}], "test command run 4 times"),
-    ([{"test": True, "command": "sed -i s/a/b/ lms/a.py"}], "shell command(s) that can change files ran"),
-    ([{"test": True, "command": "cat lms/a.py > lms/b.py"}], "shell command(s) that can change files ran"),
-    ([{"test": True, "command": "python -c 'print(1)'"}], "shell command(s) that can change files ran"),
+    ([{"test": True, "command": "sed -i s/a/b/ lms/a.py"}], "shell command(s) that are not read-only commands of the list ran"),
+    ([{"test": True, "command": "cat lms/a.py > lms/b.py"}], "shell command(s) that are not read-only commands of the list ran"),
+    ([{"test": True, "command": "python -c 'print(1)'"}], "shell command(s) that are not read-only commands of the list ran"),
 ])
 def test_invalid_runs(tmp_path, monkeypatch, steps, reason):
     _, toolkit, code, rec = start(tmp_path, monkeypatch, steps)
