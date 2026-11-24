@@ -1,0 +1,31 @@
+run_label,schema_version,module_no,module_name,level,status,valid,files,sloc,units,mean_cc,max_cc,share_cc_high,mean_cognitive,max_cognitive,share_cognitive_high,mi_weighted,mi_mean,smells,smells_per_ksloc,duplication_pct,duplicated_lines
+m01c-rounds-r1,1.0,1,Core,simple,generated,1,15,445,50,1.9600,5,0.0000,1.0833,5,0.0000,65.1363,70.8767,10,22.4719,0.0000,0
+m01c-rounds-r1,1.0,2,Identity and access,complex,generated,1,7,432,28,2.9643,22,0.0357,2.0000,23,0.0370,48.9005,61.2779,6,13.8889,0.0000,0
+m01c-rounds-r1,1.0,3,Members,complex,generated,1,5,509,22,3.7727,21,0.0455,2.9091,25,0.0455,40.4570,60.5906,6,11.7878,0.0000,0
+m01c-rounds-r1,1.0,4,Catalog,complex,generated,1,7,653,49,2.6735,16,0.0612,1.8367,18,0.0204,41.2514,68.5214,8,12.2511,2.7555,24
+m01c-rounds-r1,1.0,5,Loans and returns,complex,generated,1,4,399,14,4.8571,10,0.0000,3.7857,9,0.0000,35.5430,57.6469,6,15.0376,3.7578,18
+m01c-rounds-r1,1.0,6,Reservations,complex,generated,1,4,389,22,3.0909,11,0.0455,2.1364,12,0.0000,38.9984,59.8144,8,20.5656,0.0000,0
+m01c-rounds-r1,1.0,7,Fines and payments,complex,generated,1,4,357,15,2.2667,6,0.0000,1.2000,6,0.0000,43.0089,57.0034,4,11.2045,0.0000,0
+m01c-rounds-r1,1.0,8,Notifications,medium,generated,1,4,515,36,1.5556,7,0.0000,0.6667,8,0.0000,48.2313,63.1088,14,27.1845,0.0000,0
+m01c-rounds-r1,1.0,9,Search,simple,generated,1,3,135,7,4.5714,24,0.1429,4.1429,28,0.1429,51.9630,83.1120,2,14.8148,0.0000,0
+m01c-rounds-r1,1.0,10,Reports,medium,generated,1,3,244,13,2.6923,6,0.0000,2.1818,5,0.0000,44.2351,64.1698,2,8.1967,0.0000,0
+m01c-rounds-r1,1.0,11,Branches and transfers,medium,generated,1,5,363,13,4.0000,17,0.0769,3.0769,16,0.0769,52.1126,62.8902,4,11.0193,1.3514,6
+m01c-rounds-r1,1.0,12,Purchasing,medium,generated,1,4,503,31,3.1935,19,0.0645,2.5484,27,0.0323,37.7510,60.0178,4,7.9523,6.1033,39
+m01c-rounds-r1,1.0,13,"Audit log, import, export",complex,generated,1,8,736,38,4.2632,36,0.0789,4.4595,63,0.0811,39.0532,58.2434,10,13.5870,1.0929,10
+m01c-rounds-r1,1.0,14,API layer,medium,generated,1,35,5456,510,1.6961,12,0.0039,0.7224,13,0.0000,47.0653,57.0118,61,11.1804,5.3853,376
+m01c-rounds-r1,1.0,15,Study rooms,complex,generated,1,10,1503,87,3.8506,17,0.0920,3.2907,19,0.0116,30.2356,44.8966,28,18.6294,2.3810,44
+m01c-rounds-r1,1.0,16,Equipment loans,complex,generated,1,10,1668,81,3.5062,18,0.0741,2.7125,29,0.0250,33.1901,47.8864,24,14.3885,3.0527,62
+m01c-rounds-r1,1.0,17,Digital resources,complex,generated,1,12,1378,86,3.2907,23,0.0465,2.4706,24,0.0353,35.5560,48.7942,11,7.9826,3.3159,57
+m01c-rounds-r1,1.0,18,Interlibrary loans,complex,generated,1,9,1071,65,3.0769,17,0.0154,2.1587,20,0.0159,35.5788,54.6789,11,10.2708,3.8123,52
+m01c-rounds-r1,1.0,19,Staff and shifts,complex,generated,1,9,1499,78,3.5128,19,0.0769,2.5000,20,0.0128,30.8038,42.2264,21,14.0093,3.4632,64
+m01c-rounds-r1,1.0,20,Events,complex,generated,1,11,1379,68,3.7206,18,0.0882,2.8529,23,0.0441,39.4900,53.5527,13,9.4271,3.4163,59
+m01c-rounds-r1,1.0,21,Course reserves,complex,generated,1,12,1536,90,3.0111,15,0.0333,2.0444,14,0.0000,40.1543,51.0378,9,5.8594,3.4590,67
+m01c-rounds-r1,1.0,22,Donations,complex,generated,1,11,1356,60,4.6500,28,0.1167,3.8167,36,0.0500,34.6297,50.6061,8,5.8997,3.2278,53
+m01c-rounds-r1,1.0,23,Preservation,complex,generated,1,9,966,54,3.3519,17,0.0556,2.0741,11,0.0000,34.0400,52.1001,9,9.3168,2.5535,31
+m01c-rounds-r1,1.0,24,Inventory counts,complex,generated,1,9,750,35,3.7143,19,0.0571,2.9714,22,0.0571,43.8644,59.0551,7,9.3333,2.2152,21
+m01c-rounds-r1,1.0,25,Purchase suggestions,complex,generated,1,10,1135,54,3.4444,19,0.0370,2.5283,21,0.0189,38.7988,56.4687,16,14.0969,2.1444,30
+m01c-rounds-r1,1.0,26,Reading programs,complex,generated,1,10,1348,73,3.2740,19,0.0411,2.3333,23,0.0278,38.1570,53.7991,10,7.4184,1.3002,22
+m01c-rounds-r1,1.0,27,Announcements and messages,complex,generated,1,9,1066,62,3.6452,21,0.0645,2.6613,17,0.0161,34.8016,54.4097,8,7.5047,3.2568,44
+m01c-rounds-r1,1.0,28,Member cards and building access,complex,generated,1,11,1103,54,3.0185,11,0.0370,1.8868,9,0.0000,40.5165,52.8680,12,10.8794,0.0000,0
+m01c-rounds-r1,1.0,29,Printing and copying,complex,generated,1,10,925,45,3.3333,18,0.0444,2.3333,16,0.0222,41.3204,54.4066,12,12.9730,2.3256,27
+m01c-rounds-r1,1.0,unassigned,unassigned,,unassigned,1,0,0,0,,,,,,,,,0,,,0

@@ -1,0 +1,401 @@
+run_label,schema_version,kind,source,target,value,note
+m01c-final-r1,1.0,module_edge,1,13,3,imports
+m01c-final-r1,1.0,module_edge,1,14,2,imports
+m01c-final-r1,1.0,module_edge,10,1,13,imports
+m01c-final-r1,1.0,module_edge,10,13,2,imports
+m01c-final-r1,1.0,module_edge,10,3,2,imports
+m01c-final-r1,1.0,module_edge,10,4,5,imports
+m01c-final-r1,1.0,module_edge,10,5,2,imports
+m01c-final-r1,1.0,module_edge,10,6,2,imports
+m01c-final-r1,1.0,module_edge,10,7,6,imports
+m01c-final-r1,1.0,module_edge,11,1,20,imports
+m01c-final-r1,1.0,module_edge,11,13,5,imports
+m01c-final-r1,1.0,module_edge,11,15,3,imports
+m01c-final-r1,1.0,module_edge,11,16,2,imports
+m01c-final-r1,1.0,module_edge,11,18,2,imports
+m01c-final-r1,1.0,module_edge,11,19,3,imports
+m01c-final-r1,1.0,module_edge,11,2,4,imports
+m01c-final-r1,1.0,module_edge,11,20,2,imports
+m01c-final-r1,1.0,module_edge,11,21,2,imports
+m01c-final-r1,1.0,module_edge,11,22,2,imports
+m01c-final-r1,1.0,module_edge,11,24,2,imports
+m01c-final-r1,1.0,module_edge,11,25,2,imports
+m01c-final-r1,1.0,module_edge,11,26,2,imports
+m01c-final-r1,1.0,module_edge,11,27,2,imports
+m01c-final-r1,1.0,module_edge,11,28,2,imports
+m01c-final-r1,1.0,module_edge,11,29,2,imports
+m01c-final-r1,1.0,module_edge,11,3,2,imports
+m01c-final-r1,1.0,module_edge,11,4,8,imports
+m01c-final-r1,1.0,module_edge,11,6,7,imports
+m01c-final-r1,1.0,module_edge,12,1,23,imports
+m01c-final-r1,1.0,module_edge,12,11,2,imports
+m01c-final-r1,1.0,module_edge,12,13,3,imports
+m01c-final-r1,1.0,module_edge,12,17,2,imports
+m01c-final-r1,1.0,module_edge,12,2,2,imports
+m01c-final-r1,1.0,module_edge,12,22,2,imports
+m01c-final-r1,1.0,module_edge,12,23,2,imports
+m01c-final-r1,1.0,module_edge,12,25,4,imports
+m01c-final-r1,1.0,module_edge,12,3,3,imports
+m01c-final-r1,1.0,module_edge,12,4,6,imports
+m01c-final-r1,1.0,module_edge,12,6,2,imports
+m01c-final-r1,1.0,module_edge,13,1,30,imports
+m01c-final-r1,1.0,module_edge,13,10,2,imports
+m01c-final-r1,1.0,module_edge,13,11,6,imports
+m01c-final-r1,1.0,module_edge,13,15,2,imports
+m01c-final-r1,1.0,module_edge,13,2,4,imports
+m01c-final-r1,1.0,module_edge,13,3,11,imports
+m01c-final-r1,1.0,module_edge,13,4,21,imports
+m01c-final-r1,1.0,module_edge,13,5,4,imports
+m01c-final-r1,1.0,module_edge,14,1,370,imports
+m01c-final-r1,1.0,module_edge,14,10,8,imports
+m01c-final-r1,1.0,module_edge,14,11,26,imports
+m01c-final-r1,1.0,module_edge,14,12,15,imports
+m01c-final-r1,1.0,module_edge,14,13,9,imports
+m01c-final-r1,1.0,module_edge,14,15,36,imports
+m01c-final-r1,1.0,module_edge,14,16,40,imports
+m01c-final-r1,1.0,module_edge,14,17,42,imports
+m01c-final-r1,1.0,module_edge,14,18,33,imports
+m01c-final-r1,1.0,module_edge,14,19,42,imports
+m01c-final-r1,1.0,module_edge,14,2,144,imports
+m01c-final-r1,1.0,module_edge,14,20,30,imports
+m01c-final-r1,1.0,module_edge,14,21,40,imports
+m01c-final-r1,1.0,module_edge,14,22,35,imports
+m01c-final-r1,1.0,module_edge,14,23,35,imports
+m01c-final-r1,1.0,module_edge,14,24,25,imports
+m01c-final-r1,1.0,module_edge,14,25,26,imports
+m01c-final-r1,1.0,module_edge,14,26,37,imports
+m01c-final-r1,1.0,module_edge,14,27,31,imports
+m01c-final-r1,1.0,module_edge,14,28,39,imports
+m01c-final-r1,1.0,module_edge,14,29,33,imports
+m01c-final-r1,1.0,module_edge,14,3,64,imports
+m01c-final-r1,1.0,module_edge,14,4,45,imports
+m01c-final-r1,1.0,module_edge,14,5,10,imports
+m01c-final-r1,1.0,module_edge,14,6,11,imports
+m01c-final-r1,1.0,module_edge,14,7,18,imports
+m01c-final-r1,1.0,module_edge,14,8,9,imports
+m01c-final-r1,1.0,module_edge,14,9,4,imports
+m01c-final-r1,1.0,module_edge,15,1,38,imports
+m01c-final-r1,1.0,module_edge,15,11,6,imports
+m01c-final-r1,1.0,module_edge,15,13,10,imports
+m01c-final-r1,1.0,module_edge,15,19,4,imports
+m01c-final-r1,1.0,module_edge,15,2,6,imports
+m01c-final-r1,1.0,module_edge,15,20,4,imports
+m01c-final-r1,1.0,module_edge,15,3,2,imports
+m01c-final-r1,1.0,module_edge,15,7,2,imports
+m01c-final-r1,1.0,module_edge,15,8,7,imports
+m01c-final-r1,1.0,module_edge,16,1,61,imports
+m01c-final-r1,1.0,module_edge,16,11,6,imports
+m01c-final-r1,1.0,module_edge,16,13,7,imports
+m01c-final-r1,1.0,module_edge,16,19,6,imports
+m01c-final-r1,1.0,module_edge,16,2,6,imports
+m01c-final-r1,1.0,module_edge,16,3,6,imports
+m01c-final-r1,1.0,module_edge,16,5,2,imports
+m01c-final-r1,1.0,module_edge,16,7,4,imports
+m01c-final-r1,1.0,module_edge,16,8,7,imports
+m01c-final-r1,1.0,module_edge,17,1,49,imports
+m01c-final-r1,1.0,module_edge,17,12,2,imports
+m01c-final-r1,1.0,module_edge,17,13,4,imports
+m01c-final-r1,1.0,module_edge,17,2,10,imports
+m01c-final-r1,1.0,module_edge,17,3,8,imports
+m01c-final-r1,1.0,module_edge,17,4,2,imports
+m01c-final-r1,1.0,module_edge,17,7,2,imports
+m01c-final-r1,1.0,module_edge,17,8,5,imports
+m01c-final-r1,1.0,module_edge,18,1,50,imports
+m01c-final-r1,1.0,module_edge,18,11,8,imports
+m01c-final-r1,1.0,module_edge,18,13,7,imports
+m01c-final-r1,1.0,module_edge,18,2,6,imports
+m01c-final-r1,1.0,module_edge,18,3,2,imports
+m01c-final-r1,1.0,module_edge,18,4,11,imports
+m01c-final-r1,1.0,module_edge,18,5,2,imports
+m01c-final-r1,1.0,module_edge,18,6,2,imports
+m01c-final-r1,1.0,module_edge,18,7,4,imports
+m01c-final-r1,1.0,module_edge,18,8,2,imports
+m01c-final-r1,1.0,module_edge,19,1,45,imports
+m01c-final-r1,1.0,module_edge,19,11,8,imports
+m01c-final-r1,1.0,module_edge,19,13,11,imports
+m01c-final-r1,1.0,module_edge,19,15,15,imports
+m01c-final-r1,1.0,module_edge,19,16,4,imports
+m01c-final-r1,1.0,module_edge,19,2,10,imports
+m01c-final-r1,1.0,module_edge,19,20,4,imports
+m01c-final-r1,1.0,module_edge,2,1,37,imports
+m01c-final-r1,1.0,module_edge,2,13,3,imports
+m01c-final-r1,1.0,module_edge,2,19,2,imports
+m01c-final-r1,1.0,module_edge,2,27,2,imports
+m01c-final-r1,1.0,module_edge,20,1,41,imports
+m01c-final-r1,1.0,module_edge,20,11,2,imports
+m01c-final-r1,1.0,module_edge,20,13,11,imports
+m01c-final-r1,1.0,module_edge,20,15,13,imports
+m01c-final-r1,1.0,module_edge,20,19,7,imports
+m01c-final-r1,1.0,module_edge,20,2,10,imports
+m01c-final-r1,1.0,module_edge,20,26,2,imports
+m01c-final-r1,1.0,module_edge,20,3,2,imports
+m01c-final-r1,1.0,module_edge,20,7,8,imports
+m01c-final-r1,1.0,module_edge,20,8,9,imports
+m01c-final-r1,1.0,module_edge,21,1,52,imports
+m01c-final-r1,1.0,module_edge,21,11,4,imports
+m01c-final-r1,1.0,module_edge,21,13,16,imports
+m01c-final-r1,1.0,module_edge,21,15,2,imports
+m01c-final-r1,1.0,module_edge,21,16,2,imports
+m01c-final-r1,1.0,module_edge,21,19,4,imports
+m01c-final-r1,1.0,module_edge,21,2,10,imports
+m01c-final-r1,1.0,module_edge,21,3,4,imports
+m01c-final-r1,1.0,module_edge,21,4,23,imports
+m01c-final-r1,1.0,module_edge,21,5,2,imports
+m01c-final-r1,1.0,module_edge,21,6,2,imports
+m01c-final-r1,1.0,module_edge,21,7,4,imports
+m01c-final-r1,1.0,module_edge,21,8,7,imports
+m01c-final-r1,1.0,module_edge,22,1,55,imports
+m01c-final-r1,1.0,module_edge,22,11,8,imports
+m01c-final-r1,1.0,module_edge,22,13,11,imports
+m01c-final-r1,1.0,module_edge,22,2,8,imports
+m01c-final-r1,1.0,module_edge,22,3,7,imports
+m01c-final-r1,1.0,module_edge,22,4,12,imports
+m01c-final-r1,1.0,module_edge,22,8,4,imports
+m01c-final-r1,1.0,module_edge,23,1,47,imports
+m01c-final-r1,1.0,module_edge,23,11,8,imports
+m01c-final-r1,1.0,module_edge,23,12,4,imports
+m01c-final-r1,1.0,module_edge,23,13,7,imports
+m01c-final-r1,1.0,module_edge,23,2,6,imports
+m01c-final-r1,1.0,module_edge,23,4,12,imports
+m01c-final-r1,1.0,module_edge,23,5,4,imports
+m01c-final-r1,1.0,module_edge,23,6,2,imports
+m01c-final-r1,1.0,module_edge,23,7,2,imports
+m01c-final-r1,1.0,module_edge,24,1,24,imports
+m01c-final-r1,1.0,module_edge,24,11,6,imports
+m01c-final-r1,1.0,module_edge,24,13,6,imports
+m01c-final-r1,1.0,module_edge,24,19,2,imports
+m01c-final-r1,1.0,module_edge,24,2,6,imports
+m01c-final-r1,1.0,module_edge,24,21,4,imports
+m01c-final-r1,1.0,module_edge,24,4,12,imports
+m01c-final-r1,1.0,module_edge,24,6,6,imports
+m01c-final-r1,1.0,module_edge,24,8,2,imports
+m01c-final-r1,1.0,module_edge,25,1,45,imports
+m01c-final-r1,1.0,module_edge,25,11,4,imports
+m01c-final-r1,1.0,module_edge,25,12,7,imports
+m01c-final-r1,1.0,module_edge,25,13,12,imports
+m01c-final-r1,1.0,module_edge,25,2,8,imports
+m01c-final-r1,1.0,module_edge,25,3,2,imports
+m01c-final-r1,1.0,module_edge,25,4,10,imports
+m01c-final-r1,1.0,module_edge,25,6,2,imports
+m01c-final-r1,1.0,module_edge,25,8,6,imports
+m01c-final-r1,1.0,module_edge,26,1,43,imports
+m01c-final-r1,1.0,module_edge,26,11,2,imports
+m01c-final-r1,1.0,module_edge,26,13,11,imports
+m01c-final-r1,1.0,module_edge,26,15,2,imports
+m01c-final-r1,1.0,module_edge,26,2,8,imports
+m01c-final-r1,1.0,module_edge,26,20,2,imports
+m01c-final-r1,1.0,module_edge,26,3,2,imports
+m01c-final-r1,1.0,module_edge,26,4,7,imports
+m01c-final-r1,1.0,module_edge,26,5,2,imports
+m01c-final-r1,1.0,module_edge,26,7,6,imports
+m01c-final-r1,1.0,module_edge,26,8,6,imports
+m01c-final-r1,1.0,module_edge,27,1,36,imports
+m01c-final-r1,1.0,module_edge,27,11,4,imports
+m01c-final-r1,1.0,module_edge,27,13,9,imports
+m01c-final-r1,1.0,module_edge,27,2,6,imports
+m01c-final-r1,1.0,module_edge,27,3,6,imports
+m01c-final-r1,1.0,module_edge,27,5,2,imports
+m01c-final-r1,1.0,module_edge,27,7,2,imports
+m01c-final-r1,1.0,module_edge,27,8,4,imports
+m01c-final-r1,1.0,module_edge,28,1,51,imports
+m01c-final-r1,1.0,module_edge,28,11,6,imports
+m01c-final-r1,1.0,module_edge,28,13,11,imports
+m01c-final-r1,1.0,module_edge,28,15,2,imports
+m01c-final-r1,1.0,module_edge,28,16,2,imports
+m01c-final-r1,1.0,module_edge,28,19,2,imports
+m01c-final-r1,1.0,module_edge,28,2,10,imports
+m01c-final-r1,1.0,module_edge,28,3,8,imports
+m01c-final-r1,1.0,module_edge,28,7,2,imports
+m01c-final-r1,1.0,module_edge,28,8,6,imports
+m01c-final-r1,1.0,module_edge,29,1,37,imports
+m01c-final-r1,1.0,module_edge,29,11,4,imports
+m01c-final-r1,1.0,module_edge,29,13,9,imports
+m01c-final-r1,1.0,module_edge,29,2,6,imports
+m01c-final-r1,1.0,module_edge,29,28,6,imports
+m01c-final-r1,1.0,module_edge,29,3,8,imports
+m01c-final-r1,1.0,module_edge,29,7,12,imports
+m01c-final-r1,1.0,module_edge,29,8,4,imports
+m01c-final-r1,1.0,module_edge,3,1,19,imports
+m01c-final-r1,1.0,module_edge,3,11,2,imports
+m01c-final-r1,1.0,module_edge,3,13,3,imports
+m01c-final-r1,1.0,module_edge,3,15,4,imports
+m01c-final-r1,1.0,module_edge,3,16,8,imports
+m01c-final-r1,1.0,module_edge,3,17,4,imports
+m01c-final-r1,1.0,module_edge,3,18,6,imports
+m01c-final-r1,1.0,module_edge,3,2,8,imports
+m01c-final-r1,1.0,module_edge,3,20,4,imports
+m01c-final-r1,1.0,module_edge,3,21,6,imports
+m01c-final-r1,1.0,module_edge,3,22,4,imports
+m01c-final-r1,1.0,module_edge,3,25,4,imports
+m01c-final-r1,1.0,module_edge,3,26,4,imports
+m01c-final-r1,1.0,module_edge,3,27,4,imports
+m01c-final-r1,1.0,module_edge,3,28,4,imports
+m01c-final-r1,1.0,module_edge,3,29,4,imports
+m01c-final-r1,1.0,module_edge,3,5,2,imports
+m01c-final-r1,1.0,module_edge,3,6,2,imports
+m01c-final-r1,1.0,module_edge,3,7,6,imports
+m01c-final-r1,1.0,module_edge,3,8,3,imports
+m01c-final-r1,1.0,module_edge,4,1,27,imports
+m01c-final-r1,1.0,module_edge,4,11,2,imports
+m01c-final-r1,1.0,module_edge,4,13,3,imports
+m01c-final-r1,1.0,module_edge,4,18,2,imports
+m01c-final-r1,1.0,module_edge,4,2,2,imports
+m01c-final-r1,1.0,module_edge,4,21,2,imports
+m01c-final-r1,1.0,module_edge,4,22,4,imports
+m01c-final-r1,1.0,module_edge,4,23,5,imports
+m01c-final-r1,1.0,module_edge,4,24,2,imports
+m01c-final-r1,1.0,module_edge,4,25,2,imports
+m01c-final-r1,1.0,module_edge,4,6,4,imports
+m01c-final-r1,1.0,module_edge,5,1,22,imports
+m01c-final-r1,1.0,module_edge,5,11,2,imports
+m01c-final-r1,1.0,module_edge,5,13,2,imports
+m01c-final-r1,1.0,module_edge,5,19,2,imports
+m01c-final-r1,1.0,module_edge,5,2,2,imports
+m01c-final-r1,1.0,module_edge,5,26,2,imports
+m01c-final-r1,1.0,module_edge,5,28,2,imports
+m01c-final-r1,1.0,module_edge,5,3,6,imports
+m01c-final-r1,1.0,module_edge,5,4,4,imports
+m01c-final-r1,1.0,module_edge,5,6,4,imports
+m01c-final-r1,1.0,module_edge,5,7,8,imports
+m01c-final-r1,1.0,module_edge,5,8,2,imports
+m01c-final-r1,1.0,module_edge,6,1,15,imports
+m01c-final-r1,1.0,module_edge,6,11,4,imports
+m01c-final-r1,1.0,module_edge,6,13,2,imports
+m01c-final-r1,1.0,module_edge,6,2,2,imports
+m01c-final-r1,1.0,module_edge,6,21,2,imports
+m01c-final-r1,1.0,module_edge,6,3,2,imports
+m01c-final-r1,1.0,module_edge,6,4,6,imports
+m01c-final-r1,1.0,module_edge,6,5,2,imports
+m01c-final-r1,1.0,module_edge,6,8,2,imports
+m01c-final-r1,1.0,module_edge,7,1,24,imports
+m01c-final-r1,1.0,module_edge,7,13,2,imports
+m01c-final-r1,1.0,module_edge,7,16,2,imports
+m01c-final-r1,1.0,module_edge,7,18,2,imports
+m01c-final-r1,1.0,module_edge,7,2,2,imports
+m01c-final-r1,1.0,module_edge,7,21,2,imports
+m01c-final-r1,1.0,module_edge,7,5,2,imports
+m01c-final-r1,1.0,module_edge,7,8,4,imports
+m01c-final-r1,1.0,module_edge,8,1,12,imports
+m01c-final-r1,1.0,module_edge,8,13,2,imports
+m01c-final-r1,1.0,module_edge,8,2,2,imports
+m01c-final-r1,1.0,module_edge,8,4,3,imports
+m01c-final-r1,1.0,module_edge,8,5,2,imports
+m01c-final-r1,1.0,module_edge,8,6,2,imports
+m01c-final-r1,1.0,module_edge,8,7,2,imports
+m01c-final-r1,1.0,module_edge,9,1,6,imports
+m01c-final-r1,1.0,module_edge,9,4,10,imports
+m01c-final-r1,1.0,module_edge,9,5,2,imports
+m01c-final-r1,1.0,module_fan_in,1,,28,
+m01c-final-r1,1.0,module_fan_out,1,,2,
+m01c-final-r1,1.0,module_fan_in,10,,2,
+m01c-final-r1,1.0,module_fan_out,10,,7,
+m01c-final-r1,1.0,module_fan_in,11,,21,
+m01c-final-r1,1.0,module_fan_out,11,,19,
+m01c-final-r1,1.0,module_fan_in,12,,4,
+m01c-final-r1,1.0,module_fan_out,12,,11,
+m01c-final-r1,1.0,module_fan_in,13,,27,
+m01c-final-r1,1.0,module_fan_out,13,,8,
+m01c-final-r1,1.0,module_fan_in,14,,1,
+m01c-final-r1,1.0,module_fan_out,14,,28,
+m01c-final-r1,1.0,module_fan_in,15,,9,
+m01c-final-r1,1.0,module_fan_out,15,,9,
+m01c-final-r1,1.0,module_fan_in,16,,7,
+m01c-final-r1,1.0,module_fan_out,16,,9,
+m01c-final-r1,1.0,module_fan_in,17,,3,
+m01c-final-r1,1.0,module_fan_out,17,,8,
+m01c-final-r1,1.0,module_fan_in,18,,5,
+m01c-final-r1,1.0,module_fan_out,18,,10,
+m01c-final-r1,1.0,module_fan_in,19,,10,
+m01c-final-r1,1.0,module_fan_out,19,,7,
+m01c-final-r1,1.0,module_fan_in,2,,25,
+m01c-final-r1,1.0,module_fan_out,2,,4,
+m01c-final-r1,1.0,module_fan_in,20,,6,
+m01c-final-r1,1.0,module_fan_out,20,,10,
+m01c-final-r1,1.0,module_fan_in,21,,7,
+m01c-final-r1,1.0,module_fan_out,21,,13,
+m01c-final-r1,1.0,module_fan_in,22,,5,
+m01c-final-r1,1.0,module_fan_out,22,,7,
+m01c-final-r1,1.0,module_fan_in,23,,3,
+m01c-final-r1,1.0,module_fan_out,23,,9,
+m01c-final-r1,1.0,module_fan_in,24,,3,
+m01c-final-r1,1.0,module_fan_out,24,,9,
+m01c-final-r1,1.0,module_fan_in,25,,5,
+m01c-final-r1,1.0,module_fan_out,25,,9,
+m01c-final-r1,1.0,module_fan_in,26,,5,
+m01c-final-r1,1.0,module_fan_out,26,,11,
+m01c-final-r1,1.0,module_fan_in,27,,4,
+m01c-final-r1,1.0,module_fan_out,27,,8,
+m01c-final-r1,1.0,module_fan_in,28,,5,
+m01c-final-r1,1.0,module_fan_out,28,,10,
+m01c-final-r1,1.0,module_fan_in,29,,3,
+m01c-final-r1,1.0,module_fan_out,29,,8,
+m01c-final-r1,1.0,module_fan_in,3,,19,
+m01c-final-r1,1.0,module_fan_out,3,,20,
+m01c-final-r1,1.0,module_fan_in,4,,17,
+m01c-final-r1,1.0,module_fan_out,4,,11,
+m01c-final-r1,1.0,module_fan_in,5,,14,
+m01c-final-r1,1.0,module_fan_out,5,,12,
+m01c-final-r1,1.0,module_fan_in,6,,13,
+m01c-final-r1,1.0,module_fan_out,6,,9,
+m01c-final-r1,1.0,module_fan_in,7,,16,
+m01c-final-r1,1.0,module_fan_out,7,,8,
+m01c-final-r1,1.0,module_fan_in,8,,18,
+m01c-final-r1,1.0,module_fan_out,8,,7,
+m01c-final-r1,1.0,module_fan_in,9,,1,
+m01c-final-r1,1.0,module_fan_out,9,,3,
+m01c-final-r1,1.0,module_cycle,1,,29,1;10;11;12;13;14;15;16;17;18;19;2;20;21;22;23;24;25;26;27;28;29;3;4;5;6;7;8;9
+m01c-final-r1,1.0,layer_violation:api_persistence,api/access.py,sqlalchemy,8,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/access.py,lms.access.models,13,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/access.py,lms.branches.models,42,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/access.py,lms.members.models,50,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/branches.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/branches.py,lms.branches.models,12,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/catalog.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/catalog.py,lms.catalog.models,13,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/courses.py,lms.courses.models,22,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/digital.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/digital.py,lms.digital.models,20,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/digital.py,lms.members.models,47,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/donations.py,lms.donations.models,19,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/donations.py,lms.members.models,39,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/equipment.py,sqlalchemy,9,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/equipment.py,lms.equipment.models,23,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/equipment.py,lms.branches.models,50,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/equipment.py,lms.members.models,51,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/events.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/events.py,lms.events.models,22,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/events.py,lms.members.models,41,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/fines.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/fines.py,lms.fines.models,16,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/ill.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/ill.py,lms.ill.models,22,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/ill.py,lms.members.models,42,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/inventory.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/inventory.py,sqlalchemy.orm,9,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/loans.py,sqlalchemy,8,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/loans.py,lms.loans.models,17,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/members.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/members.py,lms.members.models,19,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/messaging.py,lms.messaging.models,17,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/params.py,sqlalchemy.orm,9,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/params.py,lms.members.models,15,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/preservation.py,lms.branches.models,10,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/printing.py,sqlalchemy.orm,10,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/printing.py,lms.members.models,21,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/printing.py,lms.printing.models,25,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/programs.py,lms.catalog.models,12,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/programs.py,lms.members.models,18,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/programs.py,lms.programs.models,21,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/reservations.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/reservations.py,sqlalchemy.orm,9,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/reservations.py,lms.catalog.models,13,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/reservations.py,lms.reservations.models,21,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/rooms.py,sqlalchemy,8,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/rooms.py,sqlalchemy.orm,10,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/rooms.py,lms.members.models,19,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/rooms.py,lms.rooms.models,22,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/staff.py,lms.staff.models,21,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/suggestions.py,lms.catalog.models,17,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/suggestions.py,lms.suggestions.models,22,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/users.py,sqlalchemy,7,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)
+m01c-final-r1,1.0,layer_violation:api_persistence,api/users.py,lms.auth.models,12,lms/api imports lms.<package>.models or sqlalchemy (the API layer reaches the database layer)

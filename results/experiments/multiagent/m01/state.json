@@ -1,0 +1,8 @@
+{
+  "session_id": null,
+  "pending": null,
+  "limit_cut_at_call": null,
+  "pauses": 0,
+  "wait_s": 0.0,
+  "limit_kinds": []
+}

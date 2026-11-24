@@ -1,0 +1,26 @@
+{
+  "label": "m01c-final-r1",
+  "code_sha": "3280db718141e88672acfcb9ce9aaaaa9c8c8fb1",
+  "set": "both",
+  "steps": [
+    {
+      "name": "analyze",
+      "exit": 0,
+      "seconds": 59.9
+    },
+    {
+      "name": "tests",
+      "exit": 1,
+      "seconds": 3180.3
+    },
+    {
+      "name": "compare",
+      "exit": 0,
+      "seconds": 26.5
+    }
+  ],
+  "problems": [],
+  "status": "ok",
+  "new_failures": [],
+  "api_change_kind": null
+}

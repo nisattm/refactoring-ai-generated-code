@@ -1,0 +1,850 @@
+{
+  "approach": "multiagent",
+  "run_id": "m01c",
+  "repetition": "",
+  "start_ref": "v0-ai-baseline",
+  "start_sha": "3bd14129262d562e9f66eb899737119ce7d6c586",
+  "start_state_commit": "519baf9a37788cb4f71564029d176b7082ee63c0",
+  "baseline": "results/baseline/final/v0-ai-baseline-ct",
+  "baseline_primary": {
+    "mean_cc": 3.0129,
+    "mean_cognitive": 2.1321,
+    "mi_weighted": 38.2452,
+    "duplication_pct": 2.9526,
+    "smell_count": 360
+  },
+  "tests_modules": null,
+  "test_files": null,
+  "account": "eren",
+  "accounts_used": [
+    "eren"
+  ],
+  "window_pct_start": 9.0,
+  "work_root": "C:\\Users\\nisa\\Documents\\proje02-work\\exp-m01c-rejudge",
+  "image": "refactoring-env",
+  "image_id": "sha256:11c96c1d6c9fda2ba3c585626911360f3babce08e39e50ea7a8810741b1f002d",
+  "model": "claude-sonnet-5-5",
+  "effort": "high",
+  "flags": [
+    "--model",
+    "claude-sonnet-5-5",
+    "--effort",
+    "high",
+    "--tools",
+    "Read,Edit,Write,Glob,Grep",
+    "--allowedTools",
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "--disallowedTools",
+    "Task",
+    "Agent",
+    "--safe-mode",
+    "--permission-mode",
+    "dontAsk",
+    "--output-format",
+    "stream-json",
+    "--verbose"
+  ],
+  "env": {
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "200000"
+  },
+  "compact_window": 200000,
+  "expected_version": "2.1.308",
+  "host": {
+    "os": "Windows-11-10.0.22621-SP0",
+    "python": "3.12.10"
+  },
+  "interface_sha256": "fb9424abda62ecf499eac9b37925997c271b206489442ce95dd1c5a431798a5d",
+  "test_hashes_sha256": "7bff2136eea724f11fd3feebb65c3dc2654f76408a072fe796f00485cd729e6d",
+  "started_at": "2026-11-24T19:25:08+03:00",
+  "finished_at": "2026-11-24T22:06:48+03:00",
+  "status": "finished",
+  "calls": [
+    {
+      "number": 1,
+      "kind": "orchestrator",
+      "account": "eren",
+      "started_at": "2026-11-24T20:18:54+03:00",
+      "wall_s": 3224.9,
+      "lock_released": false,
+      "lock_wait_s": 0.0,
+      "exit_code": 0,
+      "status": "ok",
+      "invalid": [],
+      "session_in": null,
+      "session_id": "9862c641-7733-40c5-ba24-fbd8ccca897e",
+      "prompt_sha256": "2eb90725b7d606935eff916171b20be88f6625d24f56481748555eb31ed22760",
+      "claude_code_version": "2.1.308",
+      "api_key_source": "none",
+      "tools": [
+        "Task",
+        "Bash",
+        "Edit",
+        "Glob",
+        "Grep",
+        "Read",
+        "Write"
+      ],
+      "tool_counts": {
+        "Agent": 3,
+        "Read": 198,
+        "Glob": 14,
+        "Grep": 167,
+        "Bash": 2,
+        "Write": 4,
+        "Edit": 323
+      },
+      "files_read": [
+        "/work/INTERFACE.md",
+        "/work/lms/access/bans.py",
+        "/work/lms/access/passes.py",
+        "/work/lms/access/rules.py",
+        "/work/lms/api/access.py",
+        "/work/lms/api/app.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/calendar.py",
+        "/work/lms/api/courses.py",
+        "/work/lms/api/deps.py",
+        "/work/lms/api/digital.py",
+        "/work/lms/api/donations.py",
+        "/work/lms/api/equipment.py",
+        "/work/lms/api/errors.py",
+        "/work/lms/api/events.py",
+        "/work/lms/api/fines.py",
+        "/work/lms/api/ill.py",
+        "/work/lms/api/inventory.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/notifications.py",
+        "/work/lms/api/params.py",
+        "/work/lms/api/preservation.py",
+        "/work/lms/api/printing.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/rooms.py",
+        "/work/lms/api/staff.py",
+        "/work/lms/api/suggestions.py",
+        "/work/lms/audit/dataset.py",
+        "/work/lms/audit/exchange_schemas.py",
+        "/work/lms/audit/exporter.py",
+        "/work/lms/audit/importer.py",
+        "/work/lms/audit/service.py",
+        "/work/lms/auth/bootstrap.py",
+        "/work/lms/auth/deps.py",
+        "/work/lms/auth/schemas.py",
+        "/work/lms/auth/service.py",
+        "/work/lms/branches/service.py",
+        "/work/lms/branches/transfers.py",
+        "/work/lms/catalog/release.py",
+        "/work/lms/catalog/schemas.py",
+        "/work/lms/catalog/service.py",
+        "/work/lms/catalog/status.py",
+        "/work/lms/core/__init__.py",
+        "/work/lms/core/calendar.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/errors.py",
+        "/work/lms/core/limits.py",
+        "/work/lms/core/lookup.py",
+        "/work/lms/core/money.py",
+        "/work/lms/core/pagination.py",
+        "/work/lms/core/schemas.py",
+        "/work/lms/core/text.py",
+        "/work/lms/core/timeutil.py",
+        "/work/lms/courses/accrual.py",
+        "/work/lms/courses/courses.py",
+        "/work/lms/courses/loans.py",
+        "/work/lms/courses/reading_list.py",
+        "/work/lms/courses/reserve.py",
+        "/work/lms/digital/holds.py",
+        "/work/lms/digital/lending.py",
+        "/work/lms/digital/resources.py",
+        "/work/lms/digital/sessions.py",
+        "/work/lms/digital/state.py",
+        "/work/lms/donations/donors.py",
+        "/work/lms/donations/offers.py",
+        "/work/lms/donations/schemas.py",
+        "/work/lms/equipment/accrual.py",
+        "/work/lms/equipment/inventory.py",
+        "/work/lms/equipment/lending.py",
+        "/work/lms/equipment/reservations.py",
+        "/work/lms/events/bans.py",
+        "/work/lms/events/events.py",
+        "/work/lms/events/process.py",
+        "/work/lms/events/registrations.py",
+        "/work/lms/fines/service.py",
+        "/work/lms/ill/accrual.py",
+        "/work/lms/ill/outgoing.py",
+        "/work/lms/ill/partners.py",
+        "/work/lms/ill/requests.py",
+        "/work/lms/inventory/counts.py",
+        "/work/lms/inventory/schemas.py",
+        "/work/lms/inventory/usage.py",
+        "/work/lms/loans/schemas.py",
+        "/work/lms/loans/service.py",
+        "/work/lms/members/schemas.py",
+        "/work/lms/members/service.py",
+        "/work/lms/messaging/announcements.py",
+        "/work/lms/messaging/threads.py",
+        "/work/lms/notifications/service.py",
+        "/work/lms/preservation/jobs.py",
+        "/work/lms/preservation/schemas.py",
+        "/work/lms/preservation/shipments.py",
+        "/work/lms/printing/jobs.py",
+        "/work/lms/printing/printers.py",
+        "/work/lms/printing/rules.py",
+        "/work/lms/programs/entries.py",
+        "/work/lms/programs/programs.py",
+        "/work/lms/purchasing/service.py",
+        "/work/lms/reports/service.py",
+        "/work/lms/reservations/service.py",
+        "/work/lms/rooms/bans.py",
+        "/work/lms/rooms/bookings.py",
+        "/work/lms/rooms/rooms.py",
+        "/work/lms/search/service.py",
+        "/work/lms/staff/leave.py",
+        "/work/lms/staff/profiles.py",
+        "/work/lms/staff/shifts.py",
+        "/work/lms/suggestions/ordering.py",
+        "/work/lms/suggestions/review.py",
+        "/work/lms/suggestions/rules.py",
+        "/work/lms/suggestions/service.py"
+      ],
+      "files_written": [
+        "/work/lms/access/bans.py",
+        "/work/lms/access/passes.py",
+        "/work/lms/access/rules.py",
+        "/work/lms/access/schemas.py",
+        "/work/lms/api/access.py",
+        "/work/lms/api/app.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/calendar.py",
+        "/work/lms/api/courses.py",
+        "/work/lms/api/digital.py",
+        "/work/lms/api/donations.py",
+        "/work/lms/api/equipment.py",
+        "/work/lms/api/events.py",
+        "/work/lms/api/fines.py",
+        "/work/lms/api/ill.py",
+        "/work/lms/api/inventory.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/messaging.py",
+        "/work/lms/api/notifications.py",
+        "/work/lms/api/params.py",
+        "/work/lms/api/preservation.py",
+        "/work/lms/api/printing.py",
+        "/work/lms/api/programs.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/rooms.py",
+        "/work/lms/api/staff.py",
+        "/work/lms/api/suggestions.py",
+        "/work/lms/audit/dataset.py",
+        "/work/lms/audit/exchange_schemas.py",
+        "/work/lms/auth/service.py",
+        "/work/lms/branches/service.py",
+        "/work/lms/branches/transfers.py",
+        "/work/lms/catalog/schemas.py",
+        "/work/lms/catalog/service.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/errors.py",
+        "/work/lms/core/limits.py",
+        "/work/lms/core/lookup.py",
+        "/work/lms/core/pagination.py",
+        "/work/lms/core/schemas.py",
+        "/work/lms/courses/courses.py",
+        "/work/lms/courses/loans.py",
+        "/work/lms/courses/reading_list.py",
+        "/work/lms/courses/reserve.py",
+        "/work/lms/digital/holds.py",
+        "/work/lms/digital/lending.py",
+        "/work/lms/digital/resources.py",
+        "/work/lms/digital/sessions.py",
+        "/work/lms/digital/state.py",
+        "/work/lms/donations/donors.py",
+        "/work/lms/donations/offers.py",
+        "/work/lms/donations/schemas.py",
+        "/work/lms/equipment/inventory.py",
+        "/work/lms/equipment/lending.py",
+        "/work/lms/equipment/reservations.py",
+        "/work/lms/events/events.py",
+        "/work/lms/events/registrations.py",
+        "/work/lms/fines/service.py",
+        "/work/lms/ill/outgoing.py",
+        "/work/lms/ill/partners.py",
+        "/work/lms/ill/requests.py",
+        "/work/lms/inventory/closing.py",
+        "/work/lms/inventory/counts.py",
+        "/work/lms/inventory/missing.py",
+        "/work/lms/inventory/schemas.py",
+        "/work/lms/loans/service.py",
+        "/work/lms/members/service.py",
+        "/work/lms/messaging/announcements.py",
+        "/work/lms/messaging/schemas.py",
+        "/work/lms/messaging/threads.py",
+        "/work/lms/notifications/service.py",
+        "/work/lms/preservation/jobs.py",
+        "/work/lms/preservation/schemas.py",
+        "/work/lms/preservation/shipments.py",
+        "/work/lms/printing/jobs.py",
+        "/work/lms/printing/printers.py",
+        "/work/lms/printing/rules.py",
+        "/work/lms/printing/schemas.py",
+        "/work/lms/programs/entries.py",
+        "/work/lms/programs/programs.py",
+        "/work/lms/programs/schemas.py",
+        "/work/lms/purchasing/service.py",
+        "/work/lms/reports/service.py",
+        "/work/lms/reservations/service.py",
+        "/work/lms/rooms/bans.py",
+        "/work/lms/rooms/bookings.py",
+        "/work/lms/rooms/rooms.py",
+        "/work/lms/search/service.py",
+        "/work/lms/staff/leave.py",
+        "/work/lms/staff/profiles.py",
+        "/work/lms/staff/shifts.py",
+        "/work/lms/suggestions/ordering.py",
+        "/work/lms/suggestions/review.py",
+        "/work/lms/suggestions/rules.py",
+        "/work/lms/suggestions/service.py"
+      ],
+      "subagent_attempts": 3,
+      "subagents_spawned": 3,
+      "permission_denials": [],
+      "terminal_reason": "completed",
+      "is_error": false,
+      "num_turns": 5,
+      "done_marker": true,
+      "outside_lms_changes": 0,
+      "hidden_files": [],
+      "rate_limit": {
+        "rate_limit_info": {
+          "status": "allowed",
+          "resetsAt": 1795553400,
+          "rateLimitType": "five_hour",
+          "overageStatus": "rejected",
+          "overageDisabledReason": "org_level_disabled",
+          "isUsingOverage": false,
+          "unifiedWindows": {
+            "five_hour": {
+              "utilization": 0.85,
+              "resetsAt": 1795553400
+            },
+            "seven_day": {
+              "utilization": 0.16,
+              "resetsAt": 1795784400
+            }
+          }
+        },
+        "session_id": "9862c641-7733-40c5-ba24-fbd8ccca897e"
+      },
+      "usd_raw": 6.110170600000002,
+      "usd_diff": 6.110170600000002,
+      "summary_raw": {
+        "input_tokens": 16305,
+        "output_tokens": 196663,
+        "cache_write_tokens": 820925,
+        "cache_write_1h_tokens": "",
+        "cache_read_tokens": 20209426,
+        "thinking_tokens": 30516,
+        "total_input_tokens": 21046656,
+        "usd": 6.110170600000002,
+        "usd_recomputed": 7.3038826,
+        "duration_s": 3221.888,
+        "api_duration_s": 1339.449,
+        "num_turns": 5,
+        "subagents_spawned": 3,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "9862c641-7733-40c5-ba24-fbd8ccca897e",
+        "note": ""
+      },
+      "summary": {
+        "input_tokens": 16305,
+        "output_tokens": 196663,
+        "cache_write_tokens": 820925,
+        "cache_write_1h_tokens": "",
+        "cache_read_tokens": 20209426,
+        "thinking_tokens": 30516,
+        "total_input_tokens": 21046656,
+        "usd": 6.110170600000002,
+        "usd_recomputed": 7.3038826,
+        "duration_s": 3221.888,
+        "api_duration_s": 1339.449,
+        "num_turns": 5,
+        "subagents_spawned": 3,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "9862c641-7733-40c5-ba24-fbd8ccca897e",
+        "note": ""
+      },
+      "tokens_raw": {
+        "input_tokens": 16305,
+        "output_tokens": 196663,
+        "cache_write_tokens": 820925,
+        "cache_read_tokens": 20209426,
+        "thinking_tokens": 30516
+      },
+      "tokens": {
+        "input_tokens": 16305,
+        "output_tokens": 196663,
+        "cache_write_tokens": 820925,
+        "cache_read_tokens": 20209426,
+        "thinking_tokens": 30516
+      },
+      "subagent_calls": {
+        "analyzer": 1,
+        "refactoring": 1,
+        "reviewer": 1
+      },
+      "test_runs": 1,
+      "blocked": []
+    }
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "call": 1,
+      "state_commit": "66c4e8a12a226bb74a5a5cbc8e4429f796128d39",
+      "tag": "exp/multiagent/m01c/r1",
+      "code_sha": "3280db718141e88672acfcb9ce9aaaaa9c8c8fb1",
+      "source": "test run 1",
+      "test_run": {
+        "run": 1,
+        "at": "2026-11-24T16:46:33+00:00",
+        "status": "ok",
+        "tests_exit": 0,
+        "new_failures": [],
+        "feedback_lines": 0,
+        "regressions_confirmed": false
+      },
+      "accepted": true,
+      "facts": {
+        "status": "ok",
+        "problems": [],
+        "round_accepted": true,
+        "run_successful": null,
+        "reasons": [
+          "tests: set(s) not run after refactoring: heldout"
+        ],
+        "accept_reasons": [],
+        "regressions": 0,
+        "regressions_by_set": {
+          "feedback": 0,
+          "heldout": 0
+        },
+        "regression_cases": [],
+        "api_changed": false,
+        "api_loads": true,
+        "api_change_kind": null,
+        "invalid_metrics": [],
+        "primary": {
+          "duplication_pct": {
+            "before": 2.9526,
+            "after": 2.0742,
+            "delta": -0.8784,
+            "status": "improved"
+          },
+          "mean_cc": {
+            "before": 3.0129,
+            "after": 2.8913,
+            "delta": -0.1216,
+            "status": "improved"
+          },
+          "mean_cognitive": {
+            "before": 2.1321,
+            "after": 1.9967,
+            "delta": -0.1354,
+            "status": "improved"
+          },
+          "mi_weighted": {
+            "before": 38.2452,
+            "after": 39.8024,
+            "delta": 1.5572,
+            "status": "improved"
+          },
+          "smell_count": {
+            "before": 360,
+            "after": 344,
+            "delta": -16.0,
+            "status": "improved"
+          }
+        },
+        "wall_s": 1990.7,
+        "folder": "rounds\\r1"
+      },
+      "feedback_lines": 0
+    }
+  ],
+  "final": {
+    "best": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 2.9526,
+          "after": 2.0742,
+          "delta": -0.8784,
+          "status": "improved"
+        },
+        "mean_cc": {
+          "before": 3.0129,
+          "after": 2.8913,
+          "delta": -0.1216,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 2.1321,
+          "after": 1.9967,
+          "delta": -0.1354,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 38.2452,
+          "after": 39.8024,
+          "delta": 1.5572,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 360,
+          "after": 344,
+          "delta": -16.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 3267.8,
+      "folder": "final\\r1",
+      "round": 1
+    },
+    "round1": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 2.9526,
+          "after": 2.0742,
+          "delta": -0.8784,
+          "status": "improved"
+        },
+        "mean_cc": {
+          "before": 3.0129,
+          "after": 2.8913,
+          "delta": -0.1216,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 2.1321,
+          "after": 1.9967,
+          "delta": -0.1354,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 38.2452,
+          "after": 39.8024,
+          "delta": 1.5572,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 360,
+          "after": 344,
+          "delta": -16.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 3267.8,
+      "folder": "final\\r1",
+      "round": 1
+    },
+    "last": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 2.9526,
+          "after": 2.0742,
+          "delta": -0.8784,
+          "status": "improved"
+        },
+        "mean_cc": {
+          "before": 3.0129,
+          "after": 2.8913,
+          "delta": -0.1216,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 2.1321,
+          "after": 1.9967,
+          "delta": -0.1354,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 38.2452,
+          "after": 39.8024,
+          "delta": 1.5572,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 360,
+          "after": 344,
+          "delta": -16.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 3267.8,
+      "folder": "final\\r1",
+      "round": 1
+    }
+  },
+  "outside_lms_changes": [],
+  "events": [
+    {
+      "at": "2026-11-24T19:25:09+03:00",
+      "text": "call 1 (orchestrator) started"
+    },
+    {
+      "at": "2026-11-24T20:18:54+03:00",
+      "text": "call 1 finished: ok, 3224.9 s"
+    },
+    {
+      "at": "2026-11-24T20:39:06+03:00",
+      "text": "rejudge: valid under the current rules"
+    },
+    {
+      "at": "2026-11-24T20:39:09+03:00",
+      "text": "round 1: exp/multiagent/m01c/r1 = 3280db718141"
+    },
+    {
+      "at": "2026-11-24T20:39:09+03:00",
+      "text": "measurement rounds/r1 (feedback) started"
+    },
+    {
+      "at": "2026-11-24T21:12:20+03:00",
+      "text": "measurement rounds/r1: status ok, accepted True, successful None, regressions 0"
+    },
+    {
+      "at": "2026-11-24T21:12:20+03:00",
+      "text": "stop: 1 round(s) from 1 test run(s)"
+    },
+    {
+      "at": "2026-11-24T21:12:21+03:00",
+      "text": "measurement final/r1 (both) started"
+    },
+    {
+      "at": "2026-11-24T22:06:48+03:00",
+      "text": "measurement final/r1: status ok, accepted True, successful True, regressions 0"
+    }
+  ],
+  "test_command": "python /engine/experiments/feedback_tests.py",
+  "roles_allowed": {
+    "analyzer": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "refactoring": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write"
+    ],
+    "reviewer": [
+      "Read",
+      "Glob",
+      "Grep"
+    ]
+  },
+  "budget": {
+    "refactoring_calls": 3,
+    "test_runs": 3
+  },
+  "agents_sha256": "937df6cdce34f237d95cc15b1bc26934293c0615e76cac068af3a3ddabd835b1",
+  "auto_resume": true,
+  "pauses": 0,
+  "wait_s": 0.0,
+  "limit_kinds": [],
+  "limit_cuts": [],
+  "roles": {
+    "subagent_calls": {
+      "analyzer": 1,
+      "refactoring": 1,
+      "reviewer": 1
+    },
+    "interrupted_by_limit": {},
+    "test_runs": 1,
+    "blocked": [],
+    "read_only_shell": [
+      "find /work/lms -name '*.py' | sort | xargs wc -l | sort -k2 | tail -n 200"
+    ],
+    "read_only_shell_by_role": {
+      "refactoring": 1
+    },
+    "invalid": []
+  },
+  "outcome": "success",
+  "valid": true,
+  "reasons": [],
+  "decisions": [
+    {
+      "by": "the engine at the end of the call",
+      "at": "2026-11-24T20:18:54+03:00",
+      "outcome": "invalid",
+      "valid": false,
+      "reasons": [
+        "the refactoring subagent used Bash (not one of its tools)"
+      ],
+      "roles": {
+        "subagent_calls": {
+          "analyzer": 1,
+          "refactoring": 1,
+          "reviewer": 1
+        },
+        "interrupted_by_limit": {},
+        "test_runs": 1,
+        "blocked": [],
+        "read_only_shell": [],
+        "invalid": [
+          "the refactoring subagent used Bash (not one of its tools)"
+        ]
+      }
+    },
+    {
+      "by": "--rejudge-run",
+      "at": "2026-11-24T20:39:06+03:00",
+      "rule": "read-only shell commands do not invalidate (24 Nov 2026)",
+      "rule_decisions": [
+        {
+          "at": "2026-11-24T20:30:00+03:00",
+          "decision": "Read-only shell commands (find, wc, ls, cat, head, tail, sort, grep, uniq) are no reason for an invalid run in any role or approach; they are counted and written to run.json. A command that writes, deletes or is not on the list makes the run invalid."
+        },
+        {
+          "at": "2026-11-24T20:35:00+03:00",
+          "decision": "The list was incomplete: xargs counts as read-only when the command it runs is on the list and has no option that writes (xargs wc -l is valid; xargs rm and xargs sed -i are not); the options of xargs itself (-0, -n, -I, ...) are free. No other command is added."
+        }
+      ],
+      "reasons": [],
+      "roles": {
+        "subagent_calls": {
+          "analyzer": 1,
+          "refactoring": 1,
+          "reviewer": 1
+        },
+        "interrupted_by_limit": {},
+        "test_runs": 1,
+        "blocked": [],
+        "read_only_shell": [
+          "find /work/lms -name '*.py' | sort | xargs wc -l | sort -k2 | tail -n 200"
+        ],
+        "read_only_shell_by_role": {
+          "refactoring": 1
+        },
+        "invalid": []
+      },
+      "outcome": "success",
+      "valid": true
+    }
+  ],
+  "note": "rejudged with --rejudge-run under the shell rule of 24 November 2026 (read-only commands do not invalidate); the first row of this run_id (finished 2026-11-24T20:18:54+03:00) is the decision at the end of the call; duration_s runs until the rejudge",
+  "stop_reason": "1 round(s) from 1 test run(s)",
+  "best_round": 1,
+  "best_tag": "exp/multiagent/m01c/r1",
+  "best_facts": {
+    "status": "ok",
+    "problems": [],
+    "round_accepted": true,
+    "run_successful": true,
+    "reasons": [],
+    "accept_reasons": [],
+    "regressions": 0,
+    "regressions_by_set": {
+      "feedback": 0,
+      "heldout": 0
+    },
+    "regression_cases": [],
+    "api_changed": false,
+    "api_loads": true,
+    "api_change_kind": null,
+    "invalid_metrics": [],
+    "primary": {
+      "duplication_pct": {
+        "before": 2.9526,
+        "after": 2.0742,
+        "delta": -0.8784,
+        "status": "improved"
+      },
+      "mean_cc": {
+        "before": 3.0129,
+        "after": 2.8913,
+        "delta": -0.1216,
+        "status": "improved"
+      },
+      "mean_cognitive": {
+        "before": 2.1321,
+        "after": 1.9967,
+        "delta": -0.1354,
+        "status": "improved"
+      },
+      "mi_weighted": {
+        "before": 38.2452,
+        "after": 39.8024,
+        "delta": 1.5572,
+        "status": "improved"
+      },
+      "smell_count": {
+        "before": 360,
+        "after": 344,
+        "delta": -16.0,
+        "status": "improved"
+      }
+    },
+    "wall_s": 3267.8,
+    "folder": "final\\r1",
+    "round": 1
+  }
+}

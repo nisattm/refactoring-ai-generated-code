@@ -1,0 +1,224 @@
+{
+  "approach": "multiagent",
+  "run_id": "m01",
+  "repetition": "",
+  "start_ref": "v0-ai-baseline",
+  "start_sha": "3bd14129262d562e9f66eb899737119ce7d6c586",
+  "start_state_commit": "01181cad306c2094bbbe523dd0821ac013f8f938",
+  "baseline": "results/baseline/final/v0-ai-baseline-ct",
+  "baseline_primary": {
+    "mean_cc": 3.0129,
+    "mean_cognitive": 2.1321,
+    "mi_weighted": 38.2452,
+    "duplication_pct": 2.9526,
+    "smell_count": 360
+  },
+  "tests_modules": null,
+  "test_files": null,
+  "account": "eren",
+  "accounts_used": [
+    "eren"
+  ],
+  "window_pct_start": 0.0,
+  "work_root": "C:\\Users\\nisa\\AppData\\Local\\Temp\\exp-m01-mzp6756w",
+  "image": "refactoring-env",
+  "image_id": "sha256:11c96c1d6c9fda2ba3c585626911360f3babce08e39e50ea7a8810741b1f002d",
+  "model": "claude-sonnet-5-5",
+  "effort": "high",
+  "flags": [
+    "--model",
+    "claude-sonnet-5-5",
+    "--effort",
+    "high",
+    "--tools",
+    "Read,Edit,Write,Glob,Grep",
+    "--allowedTools",
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "--disallowedTools",
+    "Task",
+    "Agent",
+    "--safe-mode",
+    "--permission-mode",
+    "dontAsk",
+    "--output-format",
+    "stream-json",
+    "--verbose"
+  ],
+  "env": {
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "200000"
+  },
+  "compact_window": 200000,
+  "expected_version": "2.1.308",
+  "host": {
+    "os": "Windows-11-10.0.22621-SP0",
+    "python": "3.12.10"
+  },
+  "interface_sha256": "fb9424abda62ecf499eac9b37925997c271b206489442ce95dd1c5a431798a5d",
+  "test_hashes_sha256": "7bff2136eea724f11fd3feebb65c3dc2654f76408a072fe796f00485cd729e6d",
+  "started_at": "2026-11-24T18:56:52+03:00",
+  "finished_at": "2026-11-24T18:57:01+03:00",
+  "status": "finished",
+  "calls": [
+    {
+      "number": 1,
+      "kind": "orchestrator",
+      "account": "eren",
+      "started_at": "2026-11-24T18:57:01+03:00",
+      "wall_s": 7.1,
+      "lock_released": false,
+      "lock_wait_s": 0.0,
+      "exit_code": 1,
+      "status": "ok",
+      "invalid": [
+        "call returned an error: Not logged in · Please run /login api_error success",
+        "no modelUsage: model cannot be checked"
+      ],
+      "session_in": null,
+      "session_id": "f9a6e4c5-07a5-43ff-a448-d830a4d8b44a",
+      "prompt_sha256": "2eb90725b7d606935eff916171b20be88f6625d24f56481748555eb31ed22760",
+      "claude_code_version": "2.1.308",
+      "api_key_source": "none",
+      "tools": [
+        "Task",
+        "Bash",
+        "Edit",
+        "Glob",
+        "Grep",
+        "Read",
+        "Write"
+      ],
+      "tool_counts": {},
+      "files_read": [],
+      "files_written": [],
+      "subagent_attempts": 0,
+      "subagents_spawned": 0,
+      "permission_denials": [],
+      "terminal_reason": "api_error",
+      "is_error": true,
+      "num_turns": 1,
+      "done_marker": false,
+      "outside_lms_changes": 0,
+      "hidden_files": [],
+      "rate_limit": null,
+      "usd_raw": 0,
+      "usd_diff": 0,
+      "summary_raw": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_write_tokens": 0,
+        "cache_write_1h_tokens": 0,
+        "cache_read_tokens": 0,
+        "thinking_tokens": 0,
+        "total_input_tokens": 0,
+        "usd": 0,
+        "usd_recomputed": 0.0,
+        "duration_s": 3.507,
+        "api_duration_s": 0.0,
+        "num_turns": 1,
+        "subagents_spawned": 0,
+        "models_used": "",
+        "valid": "false",
+        "session_id": "f9a6e4c5-07a5-43ff-a448-d830a4d8b44a",
+        "note": "call returned an error (HTTP 401): Not logged in · Please run /login; no modelUsage: model cannot be checked"
+      },
+      "summary": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_write_tokens": 0,
+        "cache_write_1h_tokens": 0,
+        "cache_read_tokens": 0,
+        "thinking_tokens": 0,
+        "total_input_tokens": 0,
+        "usd": 0,
+        "usd_recomputed": 0.0,
+        "duration_s": 3.507,
+        "api_duration_s": 0.0,
+        "num_turns": 1,
+        "subagents_spawned": 0,
+        "models_used": "",
+        "valid": "false",
+        "session_id": "f9a6e4c5-07a5-43ff-a448-d830a4d8b44a",
+        "note": "call returned an error (HTTP 401): Not logged in · Please run /login; no modelUsage: model cannot be checked"
+      },
+      "tokens_raw": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_write_tokens": 0,
+        "cache_read_tokens": 0,
+        "thinking_tokens": 0
+      },
+      "tokens": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_write_tokens": 0,
+        "cache_read_tokens": 0,
+        "thinking_tokens": 0
+      },
+      "subagent_calls": {},
+      "test_runs": 0,
+      "blocked": []
+    }
+  ],
+  "rounds": [],
+  "final": {},
+  "outside_lms_changes": [],
+  "events": [
+    {
+      "at": "2026-11-24T18:56:54+03:00",
+      "text": "call 1 (orchestrator) started"
+    },
+    {
+      "at": "2026-11-24T18:57:01+03:00",
+      "text": "call 1 finished: ok, 7.1 s; invalid: ['call returned an error: Not logged in · Please run /login api_error success', 'no modelUsage: model cannot be checked']"
+    }
+  ],
+  "test_command": "python /engine/experiments/feedback_tests.py",
+  "roles_allowed": {
+    "analyzer": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "refactoring": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write"
+    ],
+    "reviewer": [
+      "Read",
+      "Glob",
+      "Grep"
+    ]
+  },
+  "budget": {
+    "refactoring_calls": 3,
+    "test_runs": 3
+  },
+  "agents_sha256": "937df6cdce34f237d95cc15b1bc26934293c0615e76cac068af3a3ddabd835b1",
+  "auto_resume": true,
+  "pauses": 0,
+  "wait_s": 0.0,
+  "limit_kinds": [],
+  "limit_cuts": [],
+  "roles": {
+    "subagent_calls": {},
+    "interrupted_by_limit": {},
+    "test_runs": 0,
+    "blocked": [],
+    "read_only_shell": [],
+    "invalid": []
+  },
+  "outcome": "invalid",
+  "valid": false,
+  "reasons": [
+    "call returned an error: Not logged in · Please run /login api_error success",
+    "no modelUsage: model cannot be checked"
+  ]
+}
