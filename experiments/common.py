@@ -560,6 +560,76 @@ def denied_tools(denials: list) -> list[str]:
     return [str(d.get("tool_name") or d.get("name") or "?") if isinstance(d, dict) else str(d) for d in denials]
 
 
+# --- shell commands of the model (the same rule in every role and every approach) --------------------------------------
+
+# Decision of 24 November 2026 (m01c, before its metrics were seen): read-only shell commands are no reason for an
+# invalid run in any role or approach; they are counted and written to run.json. A command that writes, deletes or is
+# not on this list makes the run invalid. This widens the decision of 22 November (orchestrator only, K6b).
+READ_ONLY_COMMANDS = ("find", "wc", "ls", "cat", "head", "tail", "sort", "grep", "uniq")
+_FIND_ACTIONS = {"-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprint0", "-fprintf", "-fls"}
+_SEPARATORS = {"|", "||", "&&", ";"}
+
+
+def classify_shell(command: str) -> tuple[bool, str]:
+    """``(True, "")`` if ``command`` only chains commands of ``READ_ONLY_COMMANDS`` (pipes, ``&&``, ``||``, ``;``)
+    without anything that writes, deletes or runs another program; otherwise ``(False, why)``. Redirections are not
+    allowed, except ``2>/dev/null``; substitutions, background jobs and unknown commands (``xargs``, ``python``,
+    ``echo``, ...) are not either. Options that make an allowed command write (``find -delete``/``-exec``/``-fprint*``,
+    ``sort -o``) are not allowed, and ``uniq`` takes at most one file (the second would be its output)."""
+    if not command.strip():
+        return False, "empty command"
+    if "`" in command:
+        return False, "command substitution"
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        tokens = list(lexer)
+    except ValueError as exc:
+        return False, f"cannot be parsed ({exc})"
+    stages: list[list[str]] = [[]]
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if token in _SEPARATORS:
+            stages.append([])
+        elif token == ">" and tokens[i + 1:i + 2] == ["/dev/null"] and stages[-1][-1:] == ["2"]:
+            stages[-1].pop()
+            i += 1
+        elif token and set(token) <= set("();<>|&"):
+            return False, f"'{token}' is not allowed"
+        else:
+            stages[-1].append(token)
+        i += 1
+    for stage in (s for s in stages if s):
+        name, args = stage[0], stage[1:]
+        if name not in READ_ONLY_COMMANDS:
+            return False, f"'{name}' is not on the list ({', '.join(READ_ONLY_COMMANDS)})"
+        if name == "find" and any(a in _FIND_ACTIONS for a in args):
+            return False, "find with an action that writes or runs a program"
+        if name == "sort" and any(a == "--output" or a.startswith("--output=") or a.startswith("--compress-program")
+                                  or (a.startswith("-") and not a.startswith("--") and "o" in a[1:]) for a in args):
+            return False, "sort with an output file or a program"
+        if name == "uniq" and sum(1 for a in args if not a.startswith("-")) > 1:
+            return False, "uniq with an output file"
+    return True, ""
+
+
+def shell_check(uses: list[dict], allowed_command: str | None = None) -> dict:
+    """The Bash uses of a stream: ``read_only`` (commands to count) and ``invalid`` (reasons). ``allowed_command``
+    (the Multi-Agent test command) is neither."""
+    own = " ".join((allowed_command or "").split())
+    report: dict[str, list[str]] = {"read_only": [], "invalid": []}
+    for use in uses:
+        if use.get("name") != "Bash":
+            continue
+        command = " ".join(str((use.get("input") or {}).get("command") or "").split())
+        if own and command == own:
+            continue
+        ok, why = classify_shell(command)
+        (report["read_only"] if ok else report["invalid"]).append(command[:80] if ok else f"{command[:80]} ({why})")
+    return report
+
+
 # --- pause and continue after a usage-limit cut -------------------------------------------------------------------
 
 def limit_info(rate_limit: dict | None) -> dict:
@@ -909,6 +979,8 @@ class Run:
         hidden = sorted(set(hidden_or_forbidden(before, after)) | set(forbidden_writes(parsed["files_written"])))
         if hidden:
             invalid.append(f"new hidden file(s) or CLAUDE.md / AGENTS.md: {', '.join(hidden[:10])}")
+        shell = shell_check(parsed["uses"]) if setup.get("shell_check", True) else {"read_only": [], "invalid": []}
+        invalid += [f"shell command that is not a read-only command of the list: {c}" for c in shell["invalid"]]
         outside = self.ws.discard_outside_lms(before)
         n_outside = sum(len(v) for v in outside.values())
         if n_outside:
@@ -935,7 +1007,7 @@ class Run:
             "permission_denials": denied_tools(result.get("permission_denials") or []),
             "terminal_reason": result.get("terminal_reason"), "is_error": result.get("is_error"),
             "num_turns": result.get("num_turns"), "done_marker": said_done(parsed["final_text"]),
-            "outside_lms_changes": n_outside, "hidden_files": hidden,
+            "outside_lms_changes": n_outside, "hidden_files": hidden, "read_only_shell": shell["read_only"],
             "rate_limit": parsed["rate_limit"],
             "usd_raw": raw, "usd_diff": diff, "summary_raw": summary, "summary": share,
             "tokens_raw": {k: summary.get(k) for k in TOKEN_KEYS}, "tokens": {k: share.get(k) for k in TOKEN_KEYS},

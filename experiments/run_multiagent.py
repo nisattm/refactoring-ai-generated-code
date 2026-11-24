@@ -19,11 +19,16 @@ A usage-limit cut does not discard the run: the status becomes ``limit_cut`` and
 budget (M5) are checked over all calls; a subagent call that the limit cut in the middle is recorded separately.
 
     python experiments/run_multiagent.py --resume-run --run-id <id> [--auto-resume] [--env-file <token file>]
+    python experiments/run_multiagent.py --rejudge-run --run-id <id> [--work-root <copy of its work folder>]
 
 continues a run that stopped as ``limit_cut`` by hand, in the same session, with the same rules (``pause_gate``): the
 5-hour window must have reopened (or ``--auto-resume`` waits for it), the weekly limit only after its reset time, at
 most 3 pauses and 24 hours in total; a pause by hand counts as a pause. The settings (model effort, image, version,
 compaction window, roles, orchestrator prompt) are those of the run; another ``--account`` is refused.
+
+``--rejudge-run`` judges a run that ended ``invalid`` again with the current rules (``analyze_roles`` over the recorded
+streams), without calling Claude; if it is valid now, it is measured like a normal run. The old and the new decision
+stay in ``run.json`` (``decisions``) and ``runs.csv`` gets a new row.
 
 The settings marked K1–K7 are the ones the Week 6 setup check verifies; they are constants below.
 
@@ -111,13 +116,9 @@ def agents_json(prompts: Path) -> str:
 
 # K6b: Claude Code runs read-only shell commands inside the working folder (cat, find, ls, ...) on its own, without
 # --allowedTools, and denies the rest (python -c, anything outside /work). Such a command has the effect of Read /
-# Glob / Grep and is only counted. As a second guard, a command that ran and could change files makes the run invalid.
-MUTATING = re.compile(r"(^|[\s;&|(])(>|>>|tee|rm|mv|cp|sed\s+-i|perl\s+-i|chmod|chown|touch|mkdir|rmdir|ln|truncate|dd|"
-                      r"python3?|pip3?|pytest|git|curl|wget|bash|sh)(\s|$|[;&|)<>])")
-
-
-def can_change_files(command: str) -> bool:
-    return bool(MUTATING.search(command)) or ">" in command or bool(re.search(r"\s-(delete|exec|execdir|fprint\w*)\b", command))
+# Glob / Grep. Rule of 24 November 2026 (common.classify_shell): the commands of common.READ_ONLY_COMMANDS are only
+# counted, in every role (a subagent can run them too, although Bash is not in its tools); a command that writes,
+# deletes or is not on the list makes the run invalid.
 
 
 def inside_work(tool: str, data: dict) -> bool:
@@ -203,22 +204,25 @@ def analyze_roles(uses: list[dict], test_command: str, denials: list | None = No
                for r, n in sorted(calls.items()) if r not in ROLES]
     invalid += [f"a needed tool call was denied (broken setup): {b}" for b in broken]
     invalid += [f"a subagent call failed (broken setup): {f}" for f in failed]
-    tests, other_shell, read_only_shell = 0, [], []
+    tests, other_shell, read_only_shell, shell_by_role = 0, [], [], {}
     for u in uses:
         parent = u.get("parent")
+        role = "orchestrator" if not parent else role_of.get(parent)
+        if u["name"] == "Bash" and role is not None:
+            command = " ".join(str(u["input"].get("command") or "").split())
+            ok, why = common.classify_shell(command)
+            if not parent and command == " ".join(test_command.split()):
+                tests += 1
+            elif ok:
+                read_only_shell.append(command[:80])
+                shell_by_role[role] = shell_by_role.get(role, 0) + 1
+            else:
+                other_shell.append(f"{command[:80]} ({why})" if not parent else f"{role}: {command[:80]} ({why})")
+            continue
         if not parent:
             if u["name"] in EDIT_TOOLS:
                 invalid.append(f"the orchestrator used {u['name']} itself (only the Refactoring subagent edits)")
-            elif u["name"] == "Bash":
-                command = " ".join(str(u["input"].get("command") or "").split())
-                if command == " ".join(test_command.split()):
-                    tests += 1
-                elif can_change_files(command):
-                    other_shell.append(command[:80])
-                else:
-                    read_only_shell.append(command[:80])
             continue
-        role = role_of.get(parent)
         if u["name"] in common.SUBAGENT_TOOLS:
             invalid.append(f"a subagent ({role or 'unknown'}) started another subagent")
         elif role in ROLES and u["name"] not in ROLES[role]:
@@ -226,13 +230,14 @@ def analyze_roles(uses: list[dict], test_command: str, denials: list | None = No
         elif role is None:
             invalid.append(f"a tool call ({u['name']}) of an unknown subagent")
     if other_shell:
-        invalid.append(f"shell command(s) that can change files ran: {', '.join(other_shell[:3])}")
+        invalid.append(f"shell command(s) that are not read-only commands of the list ran: {'; '.join(other_shell[:3])}")
     if calls.get("refactoring", 0) > MAX_REFACTORING_CALLS:
         invalid.append(f"Refactoring subagent called {calls['refactoring']} times (at most {MAX_REFACTORING_CALLS})")
     if tests > MAX_TEST_RUNS:
         invalid.append(f"test command run {tests} times (at most {MAX_TEST_RUNS})")
     return {"subagent_calls": calls, "interrupted_by_limit": interrupted, "test_runs": tests, "blocked": blocked,
-            "read_only_shell": read_only_shell, "invalid": sorted(set(invalid), key=invalid.index)}
+            "read_only_shell": read_only_shell, "read_only_shell_by_role": shell_by_role,
+            "invalid": sorted(set(invalid), key=invalid.index)}
 
 
 def tree_hash(folder: Path) -> str:
@@ -311,7 +316,7 @@ def prepare(run: Run, test_command: str | None) -> dict:
     return {"prompt": prompt, "state": state,
             # the feedback tests run inside the call, so the run lock stays held (W13 does not apply, ADR 005)
             "setup": {"args": args, "tools": INIT_TOOLS, "subagents_allowed": True, "denials_invalid": False,
-                      "hold_lock": True,
+                      "hold_lock": True, "shell_check": False,      # analyze_roles judges the shell commands of all calls
                       "volumes": volumes,
                       "env": {"BASH_DEFAULT_TIMEOUT_MS": BASH_TIMEOUT_MS, "BASH_MAX_TIMEOUT_MS": BASH_TIMEOUT_MS}}}
 
@@ -422,6 +427,14 @@ def pause_gate(run: Run, state: dict, info: dict, auto_resume: bool, manual: boo
     return None
 
 
+def roles_over_calls(run: Run) -> dict:
+    """The budget and the roles are checked over the streams of all calls (M5), read again from the call folders."""
+    parsed = run.parsed_calls()
+    denials = [d for p in parsed for d in (p.get("result") or {}).get("permission_denials") or []]
+    return analyze_roles([u for p in parsed for u in p["uses"]], run.record["test_command"], denials,
+                         {k: v for p in parsed for k, v in p["tool_results"].items()})
+
+
 def conclude(run: Run, prepared: dict, cut_state: dict, call: dict, auto_resume: bool) -> int:
     """From the last call on: continue after every usage-limit cut as far as the rules allow, then check the roles
     over all calls, measure the snapshots and finish."""
@@ -432,11 +445,7 @@ def conclude(run: Run, prepared: dict, cut_state: dict, call: dict, auto_resume:
         call = resume_call(run, prepared, cut_state)
     cut_state["pending"] = None
     common.write_json(run.out / "state.json", cut_state)
-    # the budget and the roles are checked over the streams of all calls (M5)
-    parsed = run.parsed_calls()
-    denials = [d for p in parsed for d in (p.get("result") or {}).get("permission_denials") or []]
-    roles = analyze_roles([u for p in parsed for u in p["uses"]], run.record["test_command"], denials,
-                          {k: v for p in parsed for k, v in p["tool_results"].items()})
+    roles = roles_over_calls(run)
     run.record["roles"] = roles
     # the totals of the whole run, on the last call (as before, when a run had a single call)
     call["subagent_calls"], call["test_runs"], call["blocked"] = roles["subagent_calls"], roles["test_runs"], roles["blocked"]
@@ -445,8 +454,13 @@ def conclude(run: Run, prepared: dict, cut_state: dict, call: dict, auto_resume:
     invalid = list(dict.fromkeys(carried + roles["invalid"]))
     if invalid or call["status"] != "ok":
         return run.finish("invalid", False, invalid or [f"call status {call['status']}"])
+    return measure_and_finish(run, prepared["state"], cut_state, roles)
 
-    sources = rounds_from(run, prepared["state"])
+
+def measure_and_finish(run: Run, agent_state: Path, cut_state: dict, roles: dict) -> int:
+    """The snapshots of the test command (and the end of the last call) as rounds: the feedback measurement of every
+    round with the best-round rule (W1), then the full measurement of the best, the first and the last (as Iterative)."""
+    sources = rounds_from(run, agent_state)
     # run_iterative.final() saves run.state as state.json: keep the session and the pauses in it
     run.state = {"best": 0, "best_commit": run.record["start_state_commit"], **cut_state}
     for k, src in enumerate(sources, start=1):
@@ -539,19 +553,82 @@ def resume(run: Run, args) -> int:
     return conclude(run, prepared, state, call, args.auto_resume)
 
 
+REJUDGE_NOTE = ("rejudged with --rejudge-run under the shell rule of 24 November 2026 (read-only commands do not "
+                "invalidate); the first row of this run_id (finished {first}) is the decision at the end of the call; "
+                "duration_s runs until the rejudge")
+
+
+def rejudge(run: Run, args) -> int:
+    """``--rejudge-run``: judge a run that ended ``invalid`` again with the current rules, without calling Claude: the
+    roles and the budget from the recorded streams, the call checks as recorded. Both decisions stay in
+    ``run.json`` (``decisions``). If the run is valid now it is measured as a normal run (feedback rounds with the
+    best-round rule, then the full measurement); either way a new row is added to ``runs.csv`` (the old row is not
+    changed) whose note points to the old one. The work folder is kept. ``--work-root`` points to a copy of it."""
+    if not (run.out / "run.json").is_file():
+        raise EngineError(f"no saved run in {run.out}")
+    run.record = common.read_json(run.out / "run.json")
+    record = run.record
+    if record.get("status") != "finished" or record.get("valid") is not False or record.get("outcome") != "invalid":
+        raise EngineError(f"run {args.run_id} did not end invalid (status {record.get('status')}, outcome "
+                          f"{record.get('outcome')}): there is nothing to judge again")
+    if record.get("decisions"):
+        raise EngineError(f"run {args.run_id} was already judged again ({len(record['decisions'])} decisions in run.json)")
+    run.baseline = common.from_repo(record["baseline"], run.repo)
+    root = Path(args.work_root).resolve() if args.work_root else Path(record["work_root"])
+    run.ws = common.Workspace(root)
+    if not run.ws.git_dir.is_dir() or not (root / "agent-state").is_dir():
+        raise EngineError(f"work folder {root} is gone or incomplete: give --work-root with a copy of it")
+    run.image_id = record.get("image_id", "")
+    for key, value in (("image", record.get("image")), ("effort", record.get("effort")),
+                       ("expected_version", record.get("expected_version")),
+                       ("compact_window", record.get("compact_window"))):
+        if value is not None:
+            run.settings[key] = value
+    run.check_docker()
+    args.account, args.keep_work = record["account"], True             # the work folder is never deleted here
+    state_file = run.out / "state.json"
+    cut_state = common.read_json(state_file) if state_file.is_file() else {}
+    first_finished = record["finished_at"]
+    first = {"by": "the engine at the end of the call", "at": first_finished, "outcome": record["outcome"],
+             "valid": record["valid"], "reasons": record["reasons"], "roles": record.get("roles")}
+    roles = roles_over_calls(run)
+    carried = [reason for c in record["calls"] for reason in c["invalid"]]
+    invalid = list(dict.fromkeys(carried + roles["invalid"]))
+    if record["calls"][-1]["status"] != "ok":
+        invalid.append(f"call status {record['calls'][-1]['status']}")
+    second = {"by": "--rejudge-run", "at": common.now(), "rule": "read-only shell commands do not invalidate (24 Nov 2026)",
+              "reasons": invalid, "roles": roles}
+    record["decisions"] = [first, second]
+    record.update({"roles": roles, "work_root": str(root), "note": REJUDGE_NOTE.format(first=first_finished)})
+    run.event(f"rejudge: {'still invalid: ' + '; '.join(invalid) if invalid else 'valid under the current rules'}")
+    if invalid:
+        second.update({"outcome": "invalid", "valid": False})
+        code = run.finish("invalid", False, invalid)
+    else:
+        record["status"] = "running"
+        code = measure_and_finish(run, run.ws.root / "agent-state", cut_state, roles)
+        second.update({"outcome": record["outcome"], "valid": record["valid"]})
+    record["roles"] = roles
+    run.save()
+    return code
+
+
 def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     common.add_arguments(parser)
     parser.add_argument("--resume-run", action="store_true",
                         help="continue a run that stopped as limit_cut, by hand, in the same session (--run-id; the other "
                              "settings are those of the run, --account only if it is the same; the rules of --auto-resume)")
+    parser.add_argument("--rejudge-run", action="store_true",
+                        help="judge a run that ended invalid again with the current rules, without calling Claude; if it is "
+                             "valid now it is measured as a normal run (--run-id; --work-root: a copy of its work folder)")
     parser.add_argument("--auto-resume", action="store_true",
                         help="after a usage-limit cut of the 5-hour window: wait for its reset and continue the same "
                              "session (at most 3 pauses, 24 h of waiting)")
     parser.add_argument("--test-command", help=argparse.SUPPRESS)       # tests: a stand-in for feedback_tests.py
     if argv is None:
         argv = sys.argv[1:]
-    if "--resume-run" in argv:
+    if "--resume-run" in argv or "--rejudge-run" in argv:
         for action in parser._actions:      # the start options are in run.json
             if action.dest in ("start_ref", "baseline", "account"):
                 action.required = False
@@ -562,8 +639,12 @@ def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -
             return dry_run(run)
         with common.RunLock(Path(args.lock_file), f"run_multiagent.py {args.run_id}", args.wait, args.poll) as lock:
             run.lock = lock
+            if args.resume_run and args.rejudge_run:
+                raise EngineError("--resume-run and --rejudge-run exclude each other")
             if args.resume_run:
                 return resume(run, args)
+            if args.rejudge_run:
+                return rejudge(run, args)
             return execute(run, args.test_command, args.auto_resume)
     except EngineError as exc:
         print(f"run_multiagent: {exc}", file=sys.stderr)
