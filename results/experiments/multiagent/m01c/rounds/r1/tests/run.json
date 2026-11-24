@@ -1,0 +1,23 @@
+{
+  "date": "2026-11-24T18:11:55+00:00",
+  "code": "/exp/measure/rounds-r1",
+  "tests": "/exp/tests",
+  "valid": true,
+  "invalid_reasons": [],
+  "timeout_s": 7200,
+  "test_file_changes": {
+    "changed": [],
+    "added": [],
+    "removed": []
+  },
+  "sets": {
+    "feedback": {
+      "tests": 905,
+      "passed": 905,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "missing": 0
+    }
+  }
+}

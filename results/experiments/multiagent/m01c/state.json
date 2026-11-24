@@ -1,0 +1,10 @@
+{
+  "best": 1,
+  "best_commit": "66c4e8a12a226bb74a5a5cbc8e4429f796128d39",
+  "session_id": null,
+  "pending": null,
+  "limit_cut_at_call": null,
+  "pauses": 0,
+  "wait_s": 0.0,
+  "limit_kinds": []
+}

@@ -1,0 +1,285 @@
+{
+  "label": "m01c-final-r1",
+  "primary": {
+    "mean_cc": 2.8913,
+    "mean_cognitive": 1.9967,
+    "mi_weighted": 39.8024,
+    "duplication_pct": 2.0742,
+    "smell_count": 344
+  },
+  "smell_counts": {
+    "S01": 78,
+    "S02": 0,
+    "S03": 197,
+    "S07": 7,
+    "S09": 2,
+    "S10": 0,
+    "S11": 22,
+    "S18": 0,
+    "S19": 0,
+    "S20": 0,
+    "S21": 0,
+    "S22": 0,
+    "S23": 38
+  },
+  "secondary": {
+    "files": 260,
+    "files_excluded_by_d1": 0,
+    "sloc": 29819,
+    "loc": 37682,
+    "cc_units": 1840,
+    "cognitive_units": 1824,
+    "nested_units": 16,
+    "classes": 483,
+    "classes_by_kind": {
+      "orm": 85,
+      "plain": 36,
+      "schema": 362
+    },
+    "mi_plain_mean": 55.9416,
+    "duplication_pct_union": 2.9411,
+    "duplicated_lines_union": 1106,
+    "duplication_pct_of_sloc": 3.709,
+    "duplicated_lines_jscpd": 780,
+    "clones": 79,
+    "jscpd_files_read": 228,
+    "jscpd_token_warnings": {
+      "search/schemas.py": {
+        "estimated_tokens": 40,
+        "read_by_jscpd": false
+      }
+    },
+    "suppressions": {
+      "noqa": 16,
+      "type_ignore": 104,
+      "pylint_disable": 0,
+      "jscpd_ignore": 0
+    },
+    "raw_findings_by_rule": {
+      "ruff:ANN401": 42,
+      "ruff:F401": 5,
+      "ruff:F841": 2,
+      "ruff:PLR0913": 197,
+      "ruff:PLR0916": 1,
+      "ruff:PLR2004": 31,
+      "ruff:SIM401": 1
+    },
+    "ruff_f401_preview": 5,
+    "s03_route_handlers": 54,
+    "s03_other": 143,
+    "s18_without_function_level_imports": 0,
+    "s18_files_in_cycles": 0,
+    "package_cycles_module_level_sizes": [
+      26
+    ],
+    "pylint_secondary": {},
+    "not_measured": [
+      "S04",
+      "S05",
+      "S08",
+      "S12",
+      "S13",
+      "S14",
+      "S15",
+      "S16",
+      "S17"
+    ],
+    "modules_not_generated": [],
+    "module_stats_valid": true,
+    "with_secondary": true,
+    "layer_violations": {
+      "api_persistence": 55,
+      "domain_imports_api": 0,
+      "core_imports_domain": 0,
+      "total": 55
+    },
+    "r0401_check": {
+      "pylint_messages": 0,
+      "pylint_files_in_cycles": 0,
+      "our_files_in_cycles": 0,
+      "agree": true
+    },
+    "static_cases": {
+      "T-TECH-02-a": "passed",
+      "T-TECH-04-a": "passed",
+      "T-TECH-06-a": "passed",
+      "T-TECH-10-a": "partial",
+      "T-TECH-11-a": "passed",
+      "T-TECH-12-a": "passed"
+    },
+    "vulture": {
+      "findings": 7,
+      "by_kind": {
+        "unused variable": 7
+      }
+    },
+    "pyexamine": {
+      "rows": 1614,
+      "by_type": {
+        "Architectural": 446,
+        "Code": 1055,
+        "Structural": 113
+      },
+      "by_name": {
+        "Data Clumps": 67,
+        "Feature Envy": 491,
+        "God Object": 23,
+        "High Fan-in": 29,
+        "High Fan-out": 50,
+        "High Lines of Code (LOC)": 18,
+        "High Number of Classes (NOC)": 1,
+        "High Number of Classes (NOCC)": 13,
+        "Long Method": 77,
+        "Long Parameter List": 129,
+        "Message Chains": 158,
+        "Parallel Inheritance Hierarchies": 3,
+        "Potential Improper API Usage": 125,
+        "Potential Redundant Abstractions": 4,
+        "Potential Shotgun Surgery": 127,
+        "Primitive Obsession": 1,
+        "Scattered Functionality": 93,
+        "Speculative Generality": 1,
+        "Temporary Field": 1,
+        "Too Many Branches": 2,
+        "Unstable Dependency": 201
+      },
+      "crashed_files": [
+        "auth/schemas.py",
+        "catalog/schemas.py",
+        "digital/schemas.py",
+        "donations/schemas.py",
+        "events/schemas.py",
+        "ill/schemas.py",
+        "messaging/schemas.py",
+        "preservation/schemas.py",
+        "printing/schemas.py",
+        "programs/schemas.py",
+        "purchasing/schemas.py",
+        "suggestions/schemas.py"
+      ]
+    }
+  },
+  "frozen_smell_list": [
+    {
+      "id": "S01",
+      "tool": "ast",
+      "rule": "function longer than 45 lines, docstring excluded"
+    },
+    {
+      "id": "S02",
+      "tool": "ast",
+      "rule": "plain class with more than 15 methods"
+    },
+    {
+      "id": "S03",
+      "tool": "ruff",
+      "rule": "PLR0913"
+    },
+    {
+      "id": "S07",
+      "tool": "ruff",
+      "rule": "F401, F841"
+    },
+    {
+      "id": "S09",
+      "tool": "ruff",
+      "rule": "PLR0916 (preview run), SIM"
+    },
+    {
+      "id": "S10",
+      "tool": "pylint",
+      "rule": "R1702"
+    },
+    {
+      "id": "S11",
+      "tool": "ruff",
+      "rule": "PLR2004"
+    },
+    {
+      "id": "S18",
+      "tool": "ast",
+      "rule": "import cycles (SCC > 1 at file level, function-level imports included)"
+    },
+    {
+      "id": "S19",
+      "tool": "ruff",
+      "rule": "S110, BLE001"
+    },
+    {
+      "id": "S20",
+      "tool": "ruff",
+      "rule": "B006"
+    },
+    {
+      "id": "S21",
+      "tool": "ruff",
+      "rule": "RET"
+    },
+    {
+      "id": "S22",
+      "tool": "ast",
+      "rule": "import outside the library list of LIB-TECH-02"
+    },
+    {
+      "id": "S23",
+      "tool": "ruff",
+      "rule": "ANN401, PGH003, cast( calls"
+    }
+  ],
+  "unassigned_sloc_pct": 0.0,
+  "code_sha": "3280db718141e88672acfcb9ce9aaaaa9c8c8fb1",
+  "code_dirty": false,
+  "code_last_change_sha": "3280db718141e88672acfcb9ce9aaaaa9c8c8fb1",
+  "code_content_hash": "2ba5b37c357338d56747235479b2b7b893b82e5981dd6e2bc0b93c5508626996",
+  "analyzer_sha": "855e05eb85ba812dd339841f88202326eb6b19f1",
+  "analyzer_dirty": false,
+  "image_id": "sha256:11c96c1d6c9fda2ba3c585626911360f3babce08e39e50ea7a8810741b1f002d",
+  "tool_versions": {
+    "python": "3.14.10",
+    "radon": "6.0.1",
+    "complexipy": "8.3.0",
+    "ruff": "0.17.3",
+    "pylint": "4.1.3",
+    "vulture": "2.16",
+    "code-quality-analyzer": "0.2.3",
+    "jscpd": "jscpd 5.4.2"
+  },
+  "schema_version": "1.0",
+  "started_at": "2026-11-24T18:12:22+00:00",
+  "duration_s": 57.89,
+  "tool_seconds": {
+    "radon_raw": 1.32,
+    "radon_mi": 2.28,
+    "radon_cc": 1.33,
+    "ruff_stable": 0.04,
+    "ruff_preview": 0.02,
+    "ruff_f401_preview": 0.02,
+    "ruff_files": 0.01,
+    "pylint": 26.02,
+    "jscpd": 0.22,
+    "vulture": 1.41,
+    "pyexamine": 11.99
+  },
+  "failures": [],
+  "secondary_failures": [
+    {
+      "tool": "pyexamine",
+      "kind": "fileset",
+      "reason": "a detector crashed on 12 file(s) although the exit code was 0",
+      "files": [
+        "auth/schemas.py",
+        "catalog/schemas.py",
+        "digital/schemas.py",
+        "donations/schemas.py",
+        "events/schemas.py",
+        "ill/schemas.py",
+        "messaging/schemas.py",
+        "preservation/schemas.py",
+        "printing/schemas.py",
+        "programs/schemas.py",
+        "purchasing/schemas.py",
+        "suggestions/schemas.py"
+      ]
+    }
+  ]
+}
