@@ -1,0 +1,31 @@
+run_label,schema_version,module_no,module_name,level,status,valid,files,sloc,units,mean_cc,max_cc,share_cc_high,mean_cognitive,max_cognitive,share_cognitive_high,mi_weighted,mi_mean,smells,smells_per_ksloc,duplication_pct,duplicated_lines
+scale-i01-final-r2,1.0,1,Core,simple,generated,1,13,427,47,2.0213,5,0.0000,1.1556,5,0.0000,64.9078,67.3140,11,25.7611,0.0000,0
+scale-i01-final-r2,1.0,2,Identity and access,complex,generated,1,7,432,28,2.9643,22,0.0357,2.0000,23,0.0370,48.9005,61.2779,6,13.8889,0.0000,0
+scale-i01-final-r2,1.0,3,Members,complex,generated,1,5,509,22,3.7727,21,0.0455,2.9091,25,0.0455,40.4570,60.5906,6,11.7878,0.0000,0
+scale-i01-final-r2,1.0,4,Catalog,complex,generated,1,7,652,49,2.6327,16,0.0612,1.7755,18,0.0204,41.5138,68.5847,8,12.2699,2.7586,24
+scale-i01-final-r2,1.0,5,Loans and returns,complex,generated,1,4,397,12,5.5833,13,0.1667,4.5000,13,0.0000,36.6312,58.0139,5,12.5945,3.8217,18
+scale-i01-final-r2,1.0,6,Reservations,complex,generated,1,4,389,22,3.0909,11,0.0455,2.1364,12,0.0000,38.9984,59.8144,8,20.5656,0.0000,0
+scale-i01-final-r2,1.0,7,Fines and payments,complex,generated,1,4,357,15,2.2667,6,0.0000,1.2000,6,0.0000,43.0089,57.0034,4,11.2045,0.0000,0
+scale-i01-final-r2,1.0,8,Notifications,medium,generated,1,4,515,36,1.5556,7,0.0000,0.6667,8,0.0000,48.2313,63.1088,14,27.1845,0.0000,0
+scale-i01-final-r2,1.0,9,Search,simple,generated,1,3,135,7,4.7143,25,0.1429,4.2857,29,0.1429,51.6776,83.0117,2,14.8148,0.0000,0
+scale-i01-final-r2,1.0,10,Reports,medium,generated,1,3,245,14,2.6429,6,0.0000,2.0833,5,0.0000,43.9804,64.0664,2,8.1633,0.0000,0
+scale-i01-final-r2,1.0,11,Branches and transfers,medium,generated,1,5,363,13,4.0000,17,0.0769,3.0769,16,0.0769,52.1126,62.8902,4,11.0193,1.3514,6
+scale-i01-final-r2,1.0,12,Purchasing,medium,generated,1,4,503,31,3.1935,19,0.0645,2.5484,27,0.0323,37.7510,60.0178,4,7.9523,6.1033,39
+scale-i01-final-r2,1.0,13,"Audit log, import, export",complex,generated,1,8,737,38,4.2632,36,0.0789,4.4595,63,0.0811,39.1201,58.1406,10,13.5685,1.0905,10
+scale-i01-final-r2,1.0,14,API layer,medium,generated,1,35,5386,497,1.6298,12,0.0040,0.6222,13,0.0000,47.6614,57.4554,60,11.1400,4.3301,298
+scale-i01-final-r2,1.0,15,Study rooms,complex,generated,1,10,1464,85,3.8941,17,0.0941,3.3452,19,0.0119,30.9418,45.0545,25,17.0765,2.3836,43
+scale-i01-final-r2,1.0,16,Equipment loans,complex,generated,1,10,1663,81,3.4815,18,0.0741,2.6875,29,0.0250,33.2773,47.9432,24,14.4317,2.2233,45
+scale-i01-final-r2,1.0,17,Digital resources,complex,generated,1,12,1376,87,3.2529,23,0.0460,2.4302,24,0.0349,35.6362,48.8076,11,7.9942,2.5626,44
+scale-i01-final-r2,1.0,18,Interlibrary loans,complex,generated,1,9,1066,64,3.0781,17,0.0156,2.1613,20,0.0161,35.7448,54.7544,10,9.3809,2.2878,31
+scale-i01-final-r2,1.0,19,Staff and shifts,complex,generated,1,9,1502,82,3.3902,19,0.0732,2.3780,20,0.0122,30.7039,42.1857,23,15.3129,3.4965,65
+scale-i01-final-r2,1.0,20,Events,complex,generated,1,11,1381,70,3.6429,18,0.0857,2.7714,23,0.0429,39.4285,53.5246,15,10.8617,3.6353,63
+scale-i01-final-r2,1.0,21,Course reserves,complex,generated,1,12,1542,94,2.9255,15,0.0319,1.9574,14,0.0000,40.0739,50.9880,12,7.7821,3.4341,67
+scale-i01-final-r2,1.0,22,Donations,complex,generated,1,11,1355,60,4.6500,28,0.1167,3.8167,36,0.0500,34.6393,50.6109,8,5.9041,3.8368,63
+scale-i01-final-r2,1.0,23,Preservation,complex,generated,1,9,965,54,3.3519,17,0.0556,2.0741,11,0.0000,34.0460,52.1081,9,9.3264,3.2152,39
+scale-i01-final-r2,1.0,24,Inventory counts,complex,generated,1,9,749,35,3.7143,19,0.0571,2.9714,22,0.0571,43.8784,59.0618,7,9.3458,2.2175,21
+scale-i01-final-r2,1.0,25,Purchase suggestions,complex,generated,1,10,1134,54,3.4444,19,0.0370,2.5283,21,0.0189,38.7448,56.4687,16,14.1093,2.1475,30
+scale-i01-final-r2,1.0,26,Reading programs,complex,generated,1,10,1350,73,3.2877,19,0.0411,2.3472,23,0.0278,38.0838,53.7569,10,7.4074,1.2987,22
+scale-i01-final-r2,1.0,27,Announcements and messages,complex,generated,1,9,1064,62,3.5968,21,0.0645,2.6129,15,0.0000,35.0908,54.4847,8,7.5188,2.5204,34
+scale-i01-final-r2,1.0,28,Member cards and building access,complex,generated,1,11,1103,54,3.0185,11,0.0370,1.8868,9,0.0000,40.5496,52.8594,12,10.8794,0.0000,0
+scale-i01-final-r2,1.0,29,Printing and copying,complex,generated,1,10,927,45,3.3556,18,0.0444,2.3556,16,0.0222,40.9045,53.0868,11,11.8662,2.3236,27
+scale-i01-final-r2,1.0,unassigned,unassigned,,unassigned,1,0,0,0,,,,,,,,,0,,,0

@@ -1,0 +1,359 @@
+run_label,schema_version,s_id,tool,rule,path,unit,line,module_no,module_name,level,counted,route_handler
+scale-i01-rounds-r2,1.0,S01,ast,59 lines,access/bans.py,create_ban,25,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,57 lines,access/cards.py,issue_card,34,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,63 lines,access/gate.py,_enter_member,150,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,49 lines,access/gate.py,_enter_pass,216,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,50 lines,access/passes.py,sell_pass,25,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,50 lines,access/reports.py,visits_report,41,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,55 lines,api/app.py,create_app,61,14,API layer,medium,1,0
+scale-i01-rounds-r2,1.0,S01,ast,95 lines,audit/importer.py,_check_consistency,128,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,121 lines,audit/importer.py,_write,232,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,60 lines,auth/service.py,login,77,2,Identity and access,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,54 lines,auth/service.py,update_user,212,2,Identity and access,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,51 lines,branches/service.py,is_branch_in_use,72,11,Branches and transfers,medium,1,0
+scale-i01-rounds-r2,1.0,S01,ast,50 lines,catalog/service.py,create_book,156,4,Catalog,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,50 lines,catalog/service.py,add_copy,334,4,Catalog,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,79 lines,courses/loans.py,lend,96,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,56 lines,courses/process.py,process,21,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,48 lines,courses/usage.py,report_out,124,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,60 lines,digital/lending.py,borrow,29,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,75 lines,digital/process.py,process,24,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,53 lines,digital/sessions.py,open_session,25,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,48 lines,digital/usage.py,digital_usage,34,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,47 lines,donations/offers.py,offer,130,22,Donations,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,126 lines,donations/receiving.py,receive,36,22,Donations,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,94 lines,donations/review.py,review,59,22,Donations,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,47 lines,equipment/inventory.py,create_item,204,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,91 lines,equipment/lending.py,lend,140,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,62 lines,equipment/lending.py,return_loan,329,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,92 lines,equipment/reservations.py,create_reservation,94,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,68 lines,equipment/reservations.py,process,213,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,60 lines,equipment/usage.py,equipment_usage,44,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,73 lines,events/events.py,update_event,257,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,82 lines,events/process.py,process,19,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,63 lines,events/registrations.py,register,79,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,64 lines,fines/service.py,create_fee,79,7,Fines and payments,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,51 lines,fines/service.py,record_payment,146,7,Fines and payments,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,56 lines,ill/requests.py,create_request,93,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,47 lines,ill/usage.py,ill_activity,32,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,56 lines,inventory/closing.py,apply_count,81,24,Inventory counts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,46 lines,inventory/counts.py,start_count,175,24,Inventory counts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,67 lines,inventory/reports.py,inventory_report,20,24,Inventory counts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,79 lines,loans/service.py,lend,61,5,Loans and returns,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,70 lines,loans/service.py,return_loan,193,5,Loans and returns,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,79 lines,members/service.py,register_member,85,3,Members,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,57 lines,members/service.py,update_member,167,3,Members,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,47 lines,members/service.py,deactivate_member,254,3,Members,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,62 lines,messaging/threads.py,create_thread,97,27,Announcements and messages,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,59 lines,notifications/service.py,_create,31,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S01,ast,46 lines,notifications/service.py,run_reminders,343,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S01,ast,59 lines,preservation/jobs.py,create_job,146,23,Preservation,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,50 lines,preservation/shipments.py,create_shipment,41,23,Preservation,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,67 lines,printing/jobs.py,send_job,80,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,83 lines,printing/jobs.py,release_job,161,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,53 lines,printing/jobs.py,fail_job,279,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,57 lines,printing/reports.py,printing_report,19,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,48 lines,programs/entries.py,add_manual,289,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,79 lines,programs/participation.py,join,46,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,56 lines,programs/process.py,process,29,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,49 lines,programs/programs.py,update_program,123,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,86 lines,purchasing/service.py,receive_order,308,12,Purchasing,medium,1,0
+scale-i01-rounds-r2,1.0,S01,ast,70 lines,reports/service.py,monthly_summary,154,10,Reports,medium,1,0
+scale-i01-rounds-r2,1.0,S01,ast,92 lines,reservations/service.py,create_reservation,174,6,Reservations,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,47 lines,rooms/bans.py,create_ban,29,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,86 lines,rooms/bookings.py,create_booking,209,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,76 lines,rooms/bookings.py,process,425,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,59 lines,rooms/rooms.py,create_room,53,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,51 lines,rooms/usage.py,room_usage,43,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,88 lines,search/service.py,search_books,77,9,Search,simple,1,0
+scale-i01-rounds-r2,1.0,S01,ast,51 lines,staff/hours.py,set_hours,63,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,72 lines,staff/hours.py,add_closure,130,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,77 lines,staff/leave.py,request_leave,143,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,58 lines,staff/profiles.py,create_profile,75,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,50 lines,staff/reports.py,staff_hours,35,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,66 lines,staff/shifts.py,check_shift,79,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,74 lines,staff/shifts.py,copy_week,307,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,77 lines,suggestions/ordering.py,order,29,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,48 lines,suggestions/review.py,approve,33,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,48 lines,suggestions/review.py,reject,111,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,48 lines,suggestions/service.py,to_outs,94,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S01,ast,62 lines,suggestions/service.py,suggest,311,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,access/bans.py,create_ban,25,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,access/gate.py,_deny,29,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,access/gate.py,_scanned,77,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,access/gate.py,scan,112,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/access.py,list_visits,245,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/audit.py,list_audit_log,20,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/catalog.py,list_books,131,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/catalog.py,list_copies,204,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/courses.py,list_courses,90,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/courses.py,list_loans,293,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/courses.py,list_member_loans,309,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/digital.py,list_resources,84,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/digital.py,list_loans,227,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/digital.py,list_member_loans,250,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/digital.py,list_member_sessions,350,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/donations.py,list_donors,79,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/donations.py,list_donations,159,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/equipment.py,list_items,150,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/equipment.py,list_loans,231,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/equipment.py,list_member_loans,258,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/equipment.py,list_reservations,335,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/equipment.py,list_member_reservations,365,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/events.py,list_events,76,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/events.py,list_member_registrations,198,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/events.py,event_attendance_report,253,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/fines.py,list_member_fees,58,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/fines.py,list_fees,73,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/ill.py,list_requests,129,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/ill.py,list_member_requests,155,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/ill.py,list_outgoing,289,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/loans.py,list_loans,40,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/loans.py,list_member_loans,77,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/members.py,list_members,66,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/messaging.py,list_announcements,64,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/messaging.py,list_threads,186,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/notifications.py,list_member_notifications,38,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/preservation.py,set_budget,52,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/preservation.py,list_jobs,96,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/printing.py,list_printers,81,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/printing.py,list_jobs,138,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/printing.py,list_member_jobs,168,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/programs.py,list_programs,96,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/reports.py,most_borrowed,63,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/reports.py,room_usage_report,132,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/reservations.py,list_reservations,74,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/reservations.py,list_member_reservations,110,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/rooms.py,list_rooms,109,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/rooms.py,free_rooms,127,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/rooms.py,list_bookings,236,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/rooms.py,list_member_bookings,283,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/search.py,search_books,22,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/staff.py,list_shifts,258,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/staff.py,list_leave,342,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/staff.py,_decide,360,14,API layer,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/staff.py,staff_hours_report,409,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/staff.py,branch_coverage_report,433,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/suggestions.py,list_suggestions,91,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/transfers.py,list_transfers,39,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,api/users.py,list_users,33,14,API layer,medium,1,1
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,audit/importer.py,_check_unique,113,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,audit/service.py,record,15,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,audit/service.py,audit_list_stmt,43,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,auth/service.py,change_password,164,2,Identity and access,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,auth/service.py,create_user,180,2,Identity and access,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,branches/service.py,create_branch,38,11,Branches and transfers,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,branches/service.py,start_transfer,150,11,Branches and transfers,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,branches/transfers.py,relocate,28,11,Branches and transfers,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,catalog/service.py,create_book,156,4,Catalog,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,catalog/service.py,add_copy,334,4,Catalog,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,courses/courses.py,course_list_stmt,93,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,courses/courses.py,check_course,126,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,courses/loans.py,lend,96,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,courses/placement.py,place_copy,56,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,digital/holds.py,place_hold,24,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,digital/lending.py,borrow,29,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,digital/sessions.py,open_session,25,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,digital/state.py,audit,31,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,donations/donors.py,new_donor,70,22,Donations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,donations/donors.py,list_donors,238,22,Donations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,donations/offers.py,offer,130,22,Donations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,donations/offers.py,list_stmt,241,22,Donations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,donations/receiving.py,receive,36,22,Donations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/capacity.py,existing_intervals,50,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/inventory.py,create_type,73,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/inventory.py,cancel_reservation,164,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/inventory.py,create_item,204,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/inventory.py,record_training,363,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/lending.py,lend,140,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/lending.py,_create_fee,321,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/lending.py,return_loan,329,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/lending.py,loan_list_stmt,435,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/reservations.py,_next_free_at,71,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/reservations.py,create_reservation,94,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/reservations.py,availability,287,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,equipment/reservations.py,reservation_list_stmt,312,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/events.py,shape_problems,62,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/events.py,check_event,102,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/events.py,_new_event,178,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/events.py,update_event,257,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/events.py,create_series,373,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/events.py,list_events,455,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/lifecycle.py,waive_fee,61,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/lifecycle.py,mark_cancelled,74,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/lifecycle.py,release_member,167,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,events/registrations.py,register,79,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,fines/service.py,create_fee,79,7,Fines and payments,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,fines/service.py,record_payment,146,7,Fines and payments,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,ill/outgoing.py,returned,114,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,ill/partners.py,create_partner,42,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,ill/requests.py,create_request,93,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,ill/requests.py,receive,220,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,ill/requests.py,renewal_answer,313,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,inventory/counts.py,start_count,175,24,Inventory counts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,inventory/missing.py,restore_copy,52,24,Inventory counts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,inventory/missing.py,found_copy,69,24,Inventory counts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,loans/service.py,lend,61,5,Loans and returns,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,loans/service.py,return_loan,193,5,Loans and returns,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,loans/service.py,loan_list_stmt,304,5,Loans and returns,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,members/service.py,register_member,85,3,Members,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,messaging/threads.py,_add_message,56,27,Announcements and messages,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,messaging/threads.py,create_thread,97,27,Announcements and messages,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,messaging/threads.py,reply,183,27,Announcements and messages,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,messaging/threads.py,list_stmt,319,27,Announcements and messages,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,_create,31,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_room,182,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_equipment,208,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_digital,246,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_ill,273,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_event,284,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_course,311,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_donation,435,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_suggestion,446,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_program,457,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_access,490,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,notifications/service.py,notify_printing,501,8,Notifications,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,preservation/budgets.py,set_budget,36,23,Preservation,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,preservation/budgets.py,inspect_copy,79,23,Preservation,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,preservation/jobs.py,create_job,146,23,Preservation,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,preservation/jobs.py,return_job,298,23,Preservation,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,preservation/jobs.py,job_list_stmt,361,23,Preservation,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,printing/jobs.py,job_list_stmt,51,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,printing/jobs.py,send_job,80,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,printing/jobs.py,release_job,161,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,printing/jobs.py,release_by_card,247,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,printing/printers.py,create_printer,42,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,printing/quota.py,plan_payment,117,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,programs/entries.py,add_entry,176,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,programs/entries.py,on_event_attended,260,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,programs/entries.py,add_manual,289,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,programs/participation.py,join,46,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,purchasing/service.py,create_supplier,45,12,Purchasing,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,purchasing/service.py,create_order,173,12,Purchasing,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,purchasing/service.py,receive_order,308,12,Purchasing,medium,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,reservations/service.py,make_ready,113,6,Reservations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,reservations/service.py,release_copy,139,6,Reservations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,reservations/service.py,create_reservation,174,6,Reservations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,reservations/service.py,cancel_reservation,289,6,Reservations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,reservations/service.py,fulfil_for_loan,387,6,Reservations,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/bans.py,create_ban,29,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/bookings.py,_check_double_booking,138,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/bookings.py,_check_quotas,157,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/bookings.py,create_booking,209,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/bookings.py,booking_list_stmt,536,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/lifecycle.py,notify_persons,23,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/lifecycle.py,cancel_booking,30,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/lifecycle.py,release_member,88,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/queries.py,overlapping_active_of_members,60,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/rooms.py,create_room,53,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/rooms.py,availability,200,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/rooms.py,filter_rooms,231,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/rooms.py,free_rooms,256,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,rooms/usage.py,room_usage,43,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,search/service.py,search_books,77,9,Search,simple,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/hours.py,set_hours,63,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/hours.py,add_closure,130,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/leave.py,_annual_days,71,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/leave.py,_check_balance,103,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/leave.py,request_leave,143,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/leave.py,decide,223,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/profiles.py,create_profile,75,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/shifts.py,check_shift,79,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/shifts.py,create_shift,166,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/shifts.py,update_shift,206,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,staff/shifts.py,copy_week,307,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,suggestions/arrival.py,create_reservations,21,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,suggestions/arrival.py,make_available,50,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,suggestions/ordering.py,order,29,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,suggestions/review.py,approve,33,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,suggestions/review.py,reject,111,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,suggestions/service.py,list_stmt,148,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,suggestions/service.py,suggest,311,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S03,ruff,PLR0913,suggestions/service.py,support,436,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S07,ruff,F401,catalog/schemas.py,<module>,17,4,Catalog,complex,1,0
+scale-i01-rounds-r2,1.0,S07,ruff,F401,core/db.py,create_schema,107,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S07,ruff,F841,courses/loans.py,return_loan,241,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S07,ruff,F401,messaging/schemas.py,<module>,11,27,Announcements and messages,complex,1,0
+scale-i01-rounds-r2,1.0,S07,ruff,F841,reservations/service.py,create_reservation,188,6,Reservations,complex,1,0
+scale-i01-rounds-r2,1.0,S09,ruff,PLR0916,catalog/isbn.py,normalize_isbn,14,4,Catalog,complex,1,0
+scale-i01-rounds-r2,1.0,S09,ruff,SIM401,preservation/jobs.py,update_job,211,23,Preservation,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,api/errors.py,_handle_http_exception,77,14,API layer,medium,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,api/errors.py,_handle_http_exception,79,14,API layer,medium,0,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,api/staff.py,staff_hours_report,426,14,API layer,medium,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,api/staff.py,branch_coverage_report,456,14,API layer,medium,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,auth/deps.py,_bearer_token,37,2,Identity and access,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,auth/schemas.py,_check_email,32,2,Identity and access,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,catalog/isbn.py,normalize_isbn,14,4,Catalog,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,catalog/isbn.py,normalize_isbn,21,4,Catalog,complex,0,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,core/calendar.py,day_reason,15,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,core/settings.py,Settings.__post_init__,23,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,courses/schemas.py,CourseCreateIn._term,67,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,courses/schemas.py,CourseCreateIn._term,67,21,Course reserves,complex,0,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,digital/schemas.py,_check_loan_days,30,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,equipment/schemas.py,type_range_problems,78,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,ill/schemas.py,_email,38,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,ill/schemas.py,fee_range_problems,52,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,members/schemas.py,check_email,41,3,Members,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,members/schemas.py,check_phone,52,3,Members,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,members/schemas.py,check_phone,52,3,Members,complex,0,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,printing/schemas.py,PrinterCreateIn._code,33,29,Printing and copying,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,rooms/schemas.py,room_capacity_problems,87,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,rooms/schemas.py,room_capacity_problems,87,15,Study rooms,complex,0,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,rooms/schemas.py,room_capacity_problems,89,15,Study rooms,complex,0,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,rooms/schemas.py,_check_participants,191,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,rooms/schemas.py,RoomBookingCreateIn._interval,213,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,rooms/schemas.py,RoomBookingCreateIn._interval,213,15,Study rooms,complex,0,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,staff/hours.py,hours_problems,56,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,staff/hours.py,hours_problems,58,19,Staff and shifts,complex,0,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,staff/profiles.py,weekly_hours_problems,66,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,staff/shifts.py,time_problems,51,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S11,ruff,PLR2004,staff/shifts.py,time_problems,51,19,Staff and shifts,complex,0,0
+scale-i01-rounds-r2,1.0,S18,ast,cycle of 26 files,access/models.py,lms.access.models,1,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,access/gate.py,_check_capacity,144,28,Member cards and building access,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,api/dataexchange.py,import_dataset,28,14,API layer,medium,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,audit/importer.py,_parse,57,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,audit/importer.py,_raw_ids,102,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,audit/importer.py,_check_unique,114,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,audit/importer.py,_check_consistency,129,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,audit/importer.py,import_data,360,13,"Audit log, import, export",complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,catalog/service.py,add_copy,342,4,Catalog,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,core/errors.py,reference_not_found,59,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,core/money.py,_MoneyAnnotation.__get_pydantic_core_schema__,43,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,core/money.py,_MoneyAnnotation.__get_pydantic_core_schema__.<locals>.validate,44,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,core/money.py,MoneyType.process_bind_param,77,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,core/money.py,MoneyType.process_result_value,82,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,core/schemas.py,_parse_date_value,23,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,core/timeutil.py,TZDateTime.process_bind_param,44,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,core/timeutil.py,TZDateTime.process_result_value,51,1,Core,simple,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,courses/courses.py,_error,36,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,courses/loans.py,_error,40,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,courses/reading_list.py,_error,25,21,Course reserves,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,digital/state.py,error,23,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,digital/state.py,audit,32,17,Digital resources,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,equipment/inventory.py,create_type,82,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,equipment/inventory.py,create_item,213,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,equipment/lending.py,error,53,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,equipment/schemas.py,_parse_starts_at,50,16,Equipment loans,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,events/events.py,_error,42,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,events/registrations.py,_error,34,20,Events,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,ill/partners.py,create_partner,50,18,Interlibrary loans,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,ill/partners.py,create_partner,51,18,Interlibrary loans,complex,0,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,inventory/counts.py,_emit,149,24,Inventory counts,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,messaging/announcements.py,_iso,64,27,Announcements and messages,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,messaging/announcements.py,_iso,64,27,Announcements and messages,complex,0,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,messaging/schemas.py,_parse_dt,30,27,Announcements and messages,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,preservation/jobs.py,_emit,133,23,Preservation,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,programs/programs.py,_created,92,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,programs/programs.py,_jsonable.<locals>.convert,176,26,Reading programs,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,programs/programs.py,_jsonable.<locals>.convert,176,26,Reading programs,complex,0,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,reports/service.py,_csv_value,253,10,Reports,medium,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,reports/service.py,_csv_value,253,10,Reports,medium,0,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,reservations/service.py,_emit,47,6,Reservations,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,rooms/bookings.py,_error,66,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,rooms/rooms.py,free_rooms,263,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,rooms/schemas.py,parse_time,31,15,Study rooms,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,staff/leave.py,_error,26,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,staff/shifts.py,_error,29,19,Staff and shifts,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,suggestions/service.py,_weight_case,52,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,suggestions/service.py,score_expr,56,25,Purchase suggestions,complex,1,0
+scale-i01-rounds-r2,1.0,S23,ruff,ANN401,suggestions/service.py,supporter_out,207,25,Purchase suggestions,complex,1,0

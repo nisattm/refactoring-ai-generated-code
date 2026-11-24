@@ -1,0 +1,26 @@
+{
+  "label": "scale-i01-final-r1",
+  "code_sha": "0e3997997a66b14bafca28a5b7d289abbc8295ae",
+  "set": "both",
+  "steps": [
+    {
+      "name": "analyze",
+      "exit": 0,
+      "seconds": 42.5
+    },
+    {
+      "name": "tests",
+      "exit": 1,
+      "seconds": 2640.5
+    },
+    {
+      "name": "compare",
+      "exit": 0,
+      "seconds": 16.3
+    }
+  ],
+  "problems": [],
+  "status": "ok",
+  "new_failures": [],
+  "api_change_kind": null
+}

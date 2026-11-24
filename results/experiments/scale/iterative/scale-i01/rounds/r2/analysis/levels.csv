@@ -1,0 +1,11 @@
+run_label,schema_version,level,aggregation,modules,files,sloc,smells,mean_cc,mean_cognitive,mi_weighted,smells_per_ksloc,duplication_pct,note
+scale-i01-rounds-r2,1.0,simple,module mean,2,16,562,13,3.3678,2.7206,58.2927,20.2880,0.0000,descriptive only (2 modules)
+scale-i01-rounds-r2,1.0,simple,pooled units,2,16,562,13,2.3704,1.5769,61.7297,23.1317,0.0000,descriptive only (2 modules)
+scale-i01-rounds-r2,1.0,medium,module mean,5,51,7012,84,2.6043,1.7995,45.9473,13.0919,2.3570,
+scale-i01-rounds-r2,1.0,medium,pooled units,5,51,7012,84,1.7834,0.8109,47.0941,11.9795,3.8115,
+scale-i01-rounds-r2,1.0,complex,module mean,22,191,22114,248,3.4845,2.6048,38.1988,11.5944,2.0570,
+scale-i01-rounds-r2,1.0,complex,pooled units,22,191,22114,248,3.4401,2.5655,37.1172,11.2146,2.3380,
+scale-i01-rounds-r2,1.0,complex 2-7 and 13,module mean,7,39,3473,47,3.5105,2.7115,41.2328,13.6971,1.0958,sensitivity row
+scale-i01-rounds-r2,1.0,complex 2-7 and 13,pooled units,7,39,3473,47,3.3656,2.6576,41.0836,13.5330,1.1778,sensitivity row
+scale-i01-rounds-r2,1.0,complex 15-29,module mean,15,152,18641,201,3.4723,2.5549,36.7829,10.6132,2.5055,sensitivity row
+scale-i01-rounds-r2,1.0,complex 15-29,pooled units,15,152,18641,201,3.4540,2.5484,36.3782,10.7827,2.5586,sensitivity row
