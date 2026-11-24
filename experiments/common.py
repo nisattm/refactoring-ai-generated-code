@@ -786,20 +786,25 @@ class Run:
             raise EngineError(f"--baseline {self.baseline} lacks {', '.join(missing)} (compare.py reads them). The detail "
                               f"CSVs of results/baseline/trial/ are not committed: use the folder of the machine that "
                               f"measured it, or measure the start ref again")
-        if not a.local:
-            if not Path(a.env_file).is_file():
-                raise EngineError(f"--env-file {a.env_file} not found (it is passed to docker, never read)")
-            if shutil.which("docker") is None:
-                raise EngineError("docker not found (use --local only inside the image or in tests)")
-            try:
-                running = subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"], capture_output=True,
-                                         text=True, timeout=60, check=False).returncode == 0
-            except (OSError, subprocess.TimeoutExpired):
-                running = False
-            if not running:     # pilot-i01: Docker Desktop was closed; the first call failed after 0.2 s
-                raise EngineError("Docker is not running: start Docker Desktop and wait until the engine runs")
+        self.check_docker()
         if a.modules:
             baseline_steps.parse_modules(a.modules)
+
+    def check_docker(self) -> None:
+        a = self.args
+        if a.local:
+            return
+        if not Path(a.env_file).is_file():
+            raise EngineError(f"--env-file {a.env_file} not found (it is passed to docker, never read)")
+        if shutil.which("docker") is None:
+            raise EngineError("docker not found (use --local only inside the image or in tests)")
+        try:
+            running = subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"], capture_output=True,
+                                     text=True, timeout=60, check=False).returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            running = False
+        if not running:     # pilot-i01: Docker Desktop was closed; the first call failed after 0.2 s
+            raise EngineError("Docker is not running: start Docker Desktop and wait until the engine runs")
 
     def setup(self) -> None:
         a = self.args
