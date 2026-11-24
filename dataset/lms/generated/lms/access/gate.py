@@ -18,6 +18,7 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.clock import LOCAL_TZ
+from lms.core.db import get_or_404
 from lms.core.errors import Conflict, NotFound
 from lms.equipment.rules import desk_open
 from lms.members.models import Member
@@ -268,10 +269,7 @@ def _enter_pass(
 
 
 def get_visit_or_404(db: Session, visit_id: int) -> Visit:
-    visit = db.get(Visit, visit_id)
-    if visit is None:
-        raise NotFound(f"Visit {visit_id} does not exist", details={"resource": "visit", "id": visit_id})
-    return visit
+    return get_or_404(db, Visit, visit_id, "Visit", "visit")
 
 
 def close_by_hand(db: Session, now: datetime.datetime, actor: User, visit: Visit) -> Visit:

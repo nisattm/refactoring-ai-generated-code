@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.db import get_or_404, get_reference
+from lms.core.errors import Conflict
 from lms.core.money import ZERO, format_amount
 from lms.core.timeutil import format_datetime
 from lms.equipment import capacity
@@ -46,10 +47,7 @@ from lms.staff.schedule import load_schedule
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> EquipmentLoan:
-    loan = db.get(EquipmentLoan, loan_id)
-    if loan is None:
-        raise NotFound(f"Equipment loan {loan_id} does not exist", details={"resource": "equipment_loan", "id": loan_id})
-    return loan
+    return get_or_404(db, EquipmentLoan, loan_id, "Equipment loan", "equipment_loan")
 
 
 def error(code: str, message: str, **details: Any) -> Conflict:
@@ -150,21 +148,15 @@ def lend(
     reservation_id: int | None,
 ) -> EquipmentLoan:
     """LIB-EQ-12, LIB-EQ-13, LIB-EQ-18, LIB-EQ-29."""
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
-    item: EquipmentItem | None = None
+    member = get_reference(db, Member, "member_id", member_id)
+    item:EquipmentItem | None = None
     reservation: EquipmentReservation | None = None
     if item_id is not None:
-        item = db.get(EquipmentItem, item_id)
-        if item is None:
-            raise reference_not_found("item_id", item_id)
+        item = get_reference(db, EquipmentItem, "item_id", item_id)
         type_id, branch_id = item.type_id, item.branch_id
     else:
         assert reservation_id is not None
-        reservation = db.get(EquipmentReservation, reservation_id)
-        if reservation is None:
-            raise reference_not_found("reservation_id", reservation_id)
+        reservation = get_reference(db, EquipmentReservation, "reservation_id", reservation_id)
         type_id, branch_id = reservation.type_id, reservation.branch_id
     equipment_type = get_type_or_404(db, type_id)
 

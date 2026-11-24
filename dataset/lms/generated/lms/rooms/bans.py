@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from lms.audit.service import record
 from lms.auth.models import User
-from lms.core.errors import Conflict, NotFound
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict
 from lms.notifications.service import notify_room
 from lms.rooms.lifecycle import release_member
 from lms.rooms.models import RoomBan, RoomBooking
@@ -22,10 +23,7 @@ from lms.rooms.rules import (
 
 
 def get_ban_or_404(db: Session, ban_id: int) -> RoomBan:
-    ban = db.get(RoomBan, ban_id)
-    if ban is None:
-        raise NotFound(f"Room ban {ban_id} does not exist", details={"resource": "room_ban", "id": ban_id})
-    return ban
+    return get_or_404(db, RoomBan, ban_id, "Room ban", "room_ban")
 
 
 def create_ban(

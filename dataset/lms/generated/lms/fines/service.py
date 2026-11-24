@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.core.calendar import working_days_between
-from lms.core.errors import Conflict, NotFound
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict
 from lms.core.money import ZERO, format_amount, quantize
 from lms.courses.accrual import accrued_reserve_late_fees
 from lms.equipment.accrual import accrued_equipment_late_fees
@@ -26,10 +27,7 @@ LOST_PROCESSING_FEE = Decimal("25.00")
 
 
 def get_fee_or_404(db: Session, fee_id: int) -> Fee:
-    fee = db.get(Fee, fee_id)
-    if fee is None:
-        raise NotFound(f"Fee {fee_id} does not exist", details={"resource": "fee", "id": fee_id})
-    return fee
+    return get_or_404(db, Fee, fee_id, "Fee", "fee")
 
 
 # --- amounts --------------------------------------------------------------------

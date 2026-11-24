@@ -14,7 +14,8 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.calendar import add_working_days, is_working_day
 from lms.core.clock import LOCAL_TZ
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.db import get_or_404, get_reference
+from lms.core.errors import Conflict, ValidationFailed
 from lms.core.money import format_amount
 from lms.events.queries import room_event_conflict
 from lms.fines import service as fines
@@ -51,19 +52,11 @@ _HALF_HOUR = datetime.timedelta(minutes=30)
 
 
 def get_booking_or_404(db: Session, booking_id: int) -> RoomBooking:
-    booking = db.get(RoomBooking, booking_id)
-    if booking is None:
-        raise NotFound(
-            f"Room booking {booking_id} does not exist", details={"resource": "room_booking", "id": booking_id}
-        )
-    return booking
+    return get_or_404(db, RoomBooking, booking_id, "Room booking", "room_booking")
 
 
 def _member_or_404(db: Session, field: str, member_id: int) -> Member:
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found(field, member_id)
-    return member
+    return get_reference(db, Member, field, member_id)
 
 
 def _participants_or_404(db: Session, participant_ids: list[int]) -> list[Member]:
@@ -228,9 +221,7 @@ def create_booking(
     purpose: str,
 ) -> RoomBooking:
     """LIB-ROOM-10 to LIB-ROOM-17."""
-    room = db.get(Room, room_id)
-    if room is None:
-        raise reference_not_found("room_id", room_id)
+    room = get_reference(db, Room, "room_id", room_id)
     organizer = _member_or_404(db, "member_id", organizer_id)
     participants = _participants_or_404(db, participant_ids)
 

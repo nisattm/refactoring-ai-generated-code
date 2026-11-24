@@ -11,6 +11,7 @@ from fastapi import APIRouter, Path, Query, Request
 from lms.access import bans, cards, gate, occupancy, passes
 from lms.access import reports as access_reports
 from lms.access.models import AccessAlert, AccessBan, Card, Visit
+from lms.access.rules import MAX_REPORT_DAYS
 from lms.access.schemas import (
     AlertOut,
     BanIn,
@@ -36,14 +37,15 @@ from lms.access.schemas import (
     day_pass_out,
     visit_out,
 )
+from lms.api.common import ensure_own_or_staff, optional_date, patch_fields, report_range, request_now
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
 from lms.branches.models import Branch
 from lms.branches.service import get_branch_or_404
-from lms.core.clock import LOCAL_TZ, local_now
-from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
+from lms.core.clock import LOCAL_TZ
+from lms.core.db import SessionDep, get_reference
+from lms.core.errors import ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import format_datetime, parse_date
+from lms.core.timeutil import format_datetime
 from lms.members.models import Member
 from lms.members.service import get_member_or_404
 
@@ -57,31 +59,13 @@ BanId = Annotated[int, Path(ge=1)]
 CardNo = Annotated[str, Path(min_length=1)]
 
 
-def _now(request: Request) -> datetime.datetime:
-    return local_now(request.app.state.settings.clock)
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25: a member may only address their own cards, visits and bans."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own data can be accessed")
+    ensure_own_or_staff(principal, member_id, "data")
 
 
 def _branch_reference(db: SessionDep, branch_id: int) -> Branch:
     """A branch named in a request body: ``404 NOT_FOUND`` when missing (LIB-COM-29)."""
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found("branch_id", branch_id)
-    return branch
-
-
-def _opt_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
+    return get_reference(db, Branch, "branch_id", branch_id)
 
 
 # --- cards ------------------------------------------------------------------------------------------
@@ -90,7 +74,7 @@ def _opt_date(name: str, raw: str | None) -> datetime.date | None:
 @router.post("/members/{member_id}/cards", response_model=CardOut, status_code=201)
 def issue_card(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> CardOut:
     member = get_member_or_404(db, member_id)
-    return card_out(cards.issue_card(db, _now(request), staff.user, member))
+    return card_out(cards.issue_card(db, request_now(request), staff.user, member))
 
 
 @router.get("/members/{member_id}/cards", response_model=Page[CardOut])
@@ -124,7 +108,7 @@ def report_card(
 ) -> CardOut:
     card = cards.get_card_or_404(db, card_no)
     _own_or_staff(principal, card.member_id)
-    return card_out(cards.report_card(db, _now(request), principal.user, card, body.reason))
+    return card_out(cards.report_card(db, request_now(request), principal.user, card, body.reason))
 
 
 # --- settings and occupancy -----------------------------------------------------------------------------
@@ -135,8 +119,8 @@ def put_settings(
     branch_id: BranchId, body: SettingsIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> SettingsOut:
     branch = get_branch_or_404(db, branch_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    return occupancy.update_settings(db, _now(request), admin.user, branch.id, fields)
+    fields = patch_fields(body)
+    return occupancy.update_settings(db, request_now(request), admin.user, branch.id, fields)
 
 
 @router.get("/access-settings/{branch_id}", response_model=SettingsOut)
@@ -167,7 +151,7 @@ def scan(body: ScanIn, request: Request, db: SessionDep, staff: StaffOnly) -> Sc
     branch = _branch_reference(db, body.branch_id)
     settings = request.app.state.settings
     return gate.scan(
-        db, _now(request), staff.user, settings.holidays, branch, body.direction, body.card_no, body.pass_code
+        db, request_now(request), staff.user, settings.holidays, branch, body.direction, body.card_no, body.pass_code
     )
 
 
@@ -187,12 +171,12 @@ def list_alerts(db: SessionDep, _: StaffOnly, page: PageDep) -> Page[AlertOut]:
 @router.post("/visits/{visit_id}/close", response_model=VisitOut)
 def close_visit(visit_id: VisitId, request: Request, db: SessionDep, staff: StaffOnly) -> VisitOut:
     visit = gate.get_visit_or_404(db, visit_id)
-    return visit_out(gate.close_by_hand(db, _now(request), staff.user, visit))
+    return visit_out(gate.close_by_hand(db, request_now(request), staff.user, visit))
 
 
 @router.post("/access/process", response_model=ProcessOut)
 def process(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    return gate.process(db, _now(request), staff.user, request.app.state.settings.holidays)
+    return gate.process(db, request_now(request), staff.user, request.app.state.settings.holidays)
 
 
 # --- day passes -------------------------------------------------------------------------------------
@@ -201,7 +185,7 @@ def process(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
 @router.post("/day-passes", response_model=DayPassOut, status_code=201)
 def sell_pass(body: DayPassIn, request: Request, db: SessionDep, staff: StaffOnly) -> DayPassOut:
     branch = _branch_reference(db, body.branch_id)
-    return day_pass_out(passes.sell_pass(db, _now(request), staff.user, branch, body.visitor_name))
+    return day_pass_out(passes.sell_pass(db, request_now(request), staff.user, branch, body.visitor_name))
 
 
 @router.get("/day-passes", response_model=Page[DayPassOut])
@@ -213,14 +197,14 @@ def list_passes(
     valid_on: Annotated[str | None, Query()] = None,
     status: Annotated[PassStatus | None, Query()] = None,
 ) -> Page[DayPassOut]:
-    stmt = passes.list_stmt(branch_id=branch_id, valid_on=_opt_date("valid_on", valid_on), status=status)
+    stmt = passes.list_stmt(branch_id=branch_id, valid_on=optional_date("valid_on", valid_on), status=status)
     return paginate(db, stmt, page, day_pass_out)
 
 
 @router.post("/day-passes/{pass_id}/cancel", response_model=DayPassOut)
 def cancel_pass(pass_id: PassId, request: Request, db: SessionDep, staff: StaffOnly) -> DayPassOut:
     day_pass = passes.get_pass_or_404(db, pass_id)
-    return day_pass_out(passes.cancel_pass(db, _now(request), staff.user, day_pass))
+    return day_pass_out(passes.cancel_pass(db, request_now(request), staff.user, day_pass))
 
 
 # --- bans -------------------------------------------------------------------------------------------
@@ -228,7 +212,7 @@ def cancel_pass(pass_id: PassId, request: Request, db: SessionDep, staff: StaffO
 
 @router.post("/members/{member_id}/access-bans", response_model=BanOut, status_code=201)
 def create_ban(member_id: MemberId, body: BanIn, request: Request, db: SessionDep, staff: StaffOnly) -> BanOut:
-    now = _now(request)
+    now = request_now(request)
     member = get_member_or_404(db, member_id)
     ban = bans.create_ban(db, now, staff.user, member, body.reason, body.starts_on, body.ends_on)
     return ban_out(ban, now.date())
@@ -238,7 +222,7 @@ def create_ban(member_id: MemberId, body: BanIn, request: Request, db: SessionDe
 def list_bans(
     member_id: MemberId, request: Request, db: SessionDep, principal: CurrentPrincipal, page: PageDep
 ) -> Page[BanOut]:
-    day = _now(request).date()
+    day = request_now(request).date()
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = sa.select(AccessBan).where(AccessBan.member_id == member.id).order_by(
@@ -249,7 +233,7 @@ def list_bans(
 
 @router.post("/access-bans/{ban_id}/lift", response_model=BanOut)
 def lift_ban(ban_id: BanId, request: Request, db: SessionDep, staff: StaffOnly) -> BanOut:
-    now = _now(request)
+    now = request_now(request)
     ban = bans.get_ban_or_404(db, ban_id)
     return ban_out(bans.lift_ban(db, now, staff.user, ban), now.date())
 
@@ -267,8 +251,8 @@ def list_visits(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[VisitOut]:
-    start = _opt_date("from", first)
-    end = _opt_date("to", to)
+    start = optional_date("from", first)
+    end = optional_date("to", to)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = sa.select(Visit).where(Visit.member_id == member.id).order_by(Visit.entered_at.desc(), Visit.id.desc())
@@ -291,21 +275,5 @@ def visits_report(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[VisitsReportOut]:
-    problems: list[dict[str, str]] = []
-    dates: dict[str, datetime.date] = {}
-    for name, raw in (("from", first), ("to", to)):
-        if raw is None:
-            problems.append({"field": name, "problem": "field required"})
-            continue
-        try:
-            dates[name] = parse_date(raw.strip())
-        except ValueError:
-            problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-    if problems:
-        raise ValidationFailed(problems)
-    start, end = dates["from"], dates["to"]
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to, MAX_REPORT_DAYS)
     return paginate_sequence(access_reports.visits_report(db, start, end, branch_id), page)

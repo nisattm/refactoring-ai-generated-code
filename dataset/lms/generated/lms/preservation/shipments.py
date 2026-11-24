@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.db import get_or_404, get_reference
+from lms.core.errors import Conflict
 from lms.core.timeutil import format_datetime
 from lms.preservation import jobs
 from lms.preservation.models import RepairJob, Shipment
@@ -19,12 +20,7 @@ from lms.purchasing.models import Supplier
 
 
 def get_shipment_or_404(db: Session, shipment_id: int) -> Shipment:
-    shipment = db.get(Shipment, shipment_id)
-    if shipment is None:
-        raise NotFound(
-            f"Shipment {shipment_id} does not exist", details={"resource": "repair_shipment", "id": shipment_id}
-        )
-    return shipment
+    return get_or_404(db, Shipment, shipment_id, "Shipment", "repair_shipment")
 
 
 def shipment_out(db: Session, shipment: Shipment) -> ShipmentOut:
@@ -46,15 +42,8 @@ def create_shipment(
     db: Session, now: datetime.datetime, actor: User, *, supplier_id: int, job_ids: list[int]
 ) -> Shipment:
     """LIB-PRE-19: all jobs are sent or none."""
-    supplier = db.get(Supplier, supplier_id)
-    if supplier is None:
-        raise reference_not_found("supplier_id", supplier_id)
-    found: list[RepairJob] = []
-    for job_id in job_ids:
-        job = db.get(RepairJob, job_id)
-        if job is None:
-            raise reference_not_found("job_ids", job_id)
-        found.append(job)
+    supplier = get_reference(db, Supplier, "supplier_id", supplier_id)
+    found: list[RepairJob] = [get_reference(db, RepairJob, "job_ids", job_id) for job_id in job_ids]
     if not supplier.is_active:
         raise Conflict(
             f"Supplier {supplier.id} is inactive",

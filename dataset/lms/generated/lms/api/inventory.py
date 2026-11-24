@@ -8,10 +8,10 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request, Response
 from sqlalchemy.orm import Session
 
+from lms.api.common import request_now
 from lms.auth.deps import StaffOnly
 from lms.catalog.schemas import CopyOut, copy_out
 from lms.catalog.service import get_copy_or_404
-from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.pagination import Page, PageDep, PageParams, paginate
 from lms.inventory import closing, counts, missing
@@ -39,15 +39,11 @@ ScanId = Annotated[int, Path(ge=1)]
 CopyId = Annotated[int, Path(ge=1)]
 
 
-def _now(request: Request):  # noqa: ANN202
-    return local_now(request.app.state.settings.clock)
-
-
 @router.post("/inventory-counts", response_model=CountDetailOut, status_code=201)
 def start_count(body: CountIn, request: Request, db: SessionDep, staff: StaffOnly) -> CountDetailOut:
     count = counts.start_count(
         db,
-        _now(request),
+        request_now(request),
         staff.user,
         request.app.state.settings.holidays,
         branch_id=body.branch_id,
@@ -76,7 +72,7 @@ def get_count(count_id: CountId, db: SessionDep, _: StaffOnly) -> CountDetailOut
 @router.post("/inventory-counts/{count_id}/scans", response_model=ScansAddedOut, status_code=201)
 def add_scans(count_id: CountId, body: ScansIn, request: Request, db: SessionDep, staff: StaffOnly) -> ScansAddedOut:
     count = counts.get_count_or_404(db, count_id)
-    scans = counts.add_scans(db, _now(request), staff.user, count, body.barcodes)
+    scans = counts.add_scans(db, request_now(request), staff.user, count, body.barcodes)
     return ScansAddedOut(
         scans=[AddedScanOut(id=s.id, barcode=s.barcode, copy_id=s.copy_id, result=s.result) for s in scans]
     )
@@ -96,20 +92,20 @@ def list_scans(
 
 @router.delete("/inventory-scans/{scan_id}", status_code=204)
 def remove_scan(scan_id: ScanId, request: Request, db: SessionDep, staff: StaffOnly) -> Response:
-    counts.remove_scan(db, _now(request), staff.user, counts.get_scan_or_404(db, scan_id))
+    counts.remove_scan(db, request_now(request), staff.user, counts.get_scan_or_404(db, scan_id))
     return Response(status_code=204)
 
 
 @router.post("/inventory-counts/{count_id}/close", response_model=CountDetailOut)
 def close_count(count_id: CountId, request: Request, db: SessionDep, staff: StaffOnly) -> CountDetailOut:
     count = counts.get_count_or_404(db, count_id)
-    closing.close_count(db, _now(request), staff.user, count)
+    closing.close_count(db, request_now(request), staff.user, count)
     return counts.count_detail_out(db, count)
 
 
 @router.post("/inventory-counts/{count_id}/cancel", response_model=CountDetailOut)
 def cancel_count(count_id: CountId, request: Request, db: SessionDep, staff: StaffOnly) -> CountDetailOut:
-    count = counts.cancel_count(db, _now(request), staff.user, counts.get_count_or_404(db, count_id))
+    count = counts.cancel_count(db, request_now(request), staff.user, counts.get_count_or_404(db, count_id))
     return counts.count_detail_out(db, count)
 
 
@@ -117,7 +113,7 @@ def cancel_count(count_id: CountId, request: Request, db: SessionDep, staff: Sta
 def apply_count(count_id: CountId, request: Request, db: SessionDep, staff: StaffOnly) -> ApplyOut:
     count = counts.get_count_or_404(db, count_id)
     marked, found, relocated = closing.apply_count(
-        db, _now(request), staff.user, request.app.state.settings.holidays, count
+        db, request_now(request), staff.user, request.app.state.settings.holidays, count
     )
     return ApplyOut(missing_marked=marked, found=found, relocated=relocated)
 
@@ -149,12 +145,12 @@ def paginate_rows(db: Session, stmt: sa.Select[Any], page: PageParams) -> Page[L
 def copy_found(copy_id: CopyId, body: FoundIn, request: Request, db: SessionDep, staff: StaffOnly) -> CopyOut:
     copy = get_copy_or_404(db, copy_id)
     copy = missing.found_copy(
-        db, _now(request), staff.user, request.app.state.settings.holidays, copy, body.branch_id
+        db, request_now(request), staff.user, request.app.state.settings.holidays, copy, body.branch_id
     )
     return copy_out(copy)
 
 
 @router.post("/inventory/process", response_model=ProcessOut)
 def process(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    expired, lost = missing.process(db, _now(request), staff.user)
+    expired, lost = missing.process(db, request_now(request), staff.user)
     return ProcessOut(expired_counts=expired, marked_lost=lost)

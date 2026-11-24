@@ -6,11 +6,11 @@ import datetime
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, BeforeValidator, Field, StrictBool, StrictInt, field_validator
+from pydantic import BaseModel, Field, StrictBool, StrictInt, field_validator
 
 from lms.core.money import Money, format_amount
-from lms.core.schemas import RequestModel
-from lms.core.timeutil import format_datetime, parse_date
+from lms.core.schemas import DateValue, RequestModel
+from lms.core.timeutil import format_datetime
 from lms.digital.models import DigitalHold, DigitalLicense, DigitalLoan, DigitalResource, DigitalSession
 
 ResourceKind = Literal["ebook", "database"]
@@ -24,15 +24,6 @@ Title = Annotated[str, Field(min_length=1, max_length=200)]
 Provider = Annotated[str, Field(min_length=1, max_length=100)]
 
 MAX_COST = Decimal("1000000.00")
-
-
-def _parse_date_value(value: Any) -> datetime.date:
-    if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
-        return value
-    return parse_date(value)
-
-
-DateValue = Annotated[datetime.date, BeforeValidator(_parse_date_value)]
 
 
 def _check_loan_days(value: int | None) -> int | None:

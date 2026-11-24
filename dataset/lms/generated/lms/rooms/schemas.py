@@ -16,8 +16,8 @@ from pydantic import (
     field_validator,
 )
 
-from lms.core.schemas import RequestModel
-from lms.core.timeutil import format_datetime, parse_date
+from lms.core.schemas import DateValue, RequestModel
+from lms.core.timeutil import format_datetime
 from lms.rooms.models import Room, RoomBan, RoomBooking
 
 RoomKind = Literal["individual", "group"]
@@ -42,18 +42,11 @@ def parse_time(value: Any) -> datetime.time:
     return datetime.time(int(match.group(1)), int(match.group(2)))
 
 
-def parse_date_value(value: Any) -> datetime.date:
-    if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
-        return value
-    return parse_date(value)
-
-
 def format_time(value: datetime.time) -> str:
     return value.strftime("%H:%M")
 
 
 HHMM = Annotated[datetime.time, BeforeValidator(parse_time)]
-DateValue = Annotated[datetime.date, BeforeValidator(parse_date_value)]
 Id = StrictInt
 
 

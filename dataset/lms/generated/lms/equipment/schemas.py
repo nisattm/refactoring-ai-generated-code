@@ -18,8 +18,8 @@ from pydantic import (
 
 from lms.core.clock import LOCAL_TZ
 from lms.core.money import Money, format_amount
-from lms.core.schemas import RequestModel
-from lms.core.timeutil import format_datetime, parse_date, parse_datetime
+from lms.core.schemas import DateValue, RequestModel
+from lms.core.timeutil import format_datetime, parse_datetime
 from lms.equipment.models import (
     EquipmentItem,
     EquipmentLoan,
@@ -45,15 +45,6 @@ MIN_LATE_FEE = Decimal("0.50")
 MAX_LATE_FEE = Decimal("50.00")
 MIN_VALUE = Decimal("1.00")
 MAX_VALUE = Decimal("100000.00")
-
-
-def _parse_date_value(value: Any) -> datetime.date:
-    if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
-        return value
-    return parse_date(value)
-
-
-DateValue = Annotated[datetime.date, BeforeValidator(_parse_date_value)]
 
 
 def _parse_starts_at(value: Any) -> datetime.datetime:

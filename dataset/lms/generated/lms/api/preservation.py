@@ -6,12 +6,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import patch_fields, request_now
 from lms.auth.deps import AdminOnly, StaffOnly
 from lms.branches.models import Branch
 from lms.catalog.service import get_copy_or_404
-from lms.core.clock import local_now
-from lms.core.db import SessionDep
-from lms.core.errors import NotFound, reference_not_found
+from lms.core.db import SessionDep, get_reference
+from lms.core.errors import NotFound
 from lms.core.pagination import Page, PageDep, paginate
 from lms.preservation import budgets, jobs, shipments
 from lms.preservation import reports as preservation_reports
@@ -45,10 +45,6 @@ JobId = Annotated[int, Path(ge=1)]
 ShipmentId = Annotated[int, Path(ge=1)]
 
 
-def _now(request: Request):  # noqa: ANN202
-    return local_now(request.app.state.settings.clock)
-
-
 # --- budgets --------------------------------------------------------------------------------
 
 
@@ -56,7 +52,7 @@ def _now(request: Request):  # noqa: ANN202
 def set_budget(
     branch_id: BranchId, year: Year, body: BudgetIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> BudgetOut:
-    budget = budgets.set_budget(db, _now(request), admin.user, branch_id, year, body.amount)
+    budget = budgets.set_budget(db, request_now(request), admin.user, branch_id, year, body.amount)
     return budgets.budget_out(db, budget)
 
 
@@ -77,7 +73,7 @@ def get_budget(branch_id: BranchId, year: Year, db: SessionDep, _: StaffOnly) ->
 @router.post("/copies/{copy_id}/inspections", response_model=InspectionOut, status_code=201)
 def inspect_copy(copy_id: CopyId, body: InspectionIn, request: Request, db: SessionDep, staff: StaffOnly) -> InspectionOut:
     copy = get_copy_or_404(db, copy_id)
-    return budgets.inspection_out(budgets.inspect_copy(db, _now(request), staff.user, copy, body.condition, body.note))
+    return budgets.inspection_out(budgets.inspect_copy(db, request_now(request), staff.user, copy, body.condition, body.note))
 
 
 @router.get("/copies/{copy_id}/inspections", response_model=Page[InspectionOut])
@@ -91,7 +87,7 @@ def list_inspections(copy_id: CopyId, db: SessionDep, _: StaffOnly, page: PageDe
 
 @router.post("/repair-jobs", response_model=JobOut, status_code=201)
 def create_job(body: JobCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> JobOut:
-    now = _now(request)
+    now = request_now(request)
     job = jobs.create_job(db, now, staff.user, **body.model_dump())
     return jobs.job_out(db, job, now.date())
 
@@ -110,7 +106,7 @@ def list_jobs(
     overdue: Annotated[bool | None, Query()] = None,
     copy_id: Annotated[int | None, Query()] = None,
 ) -> Page[JobOut]:
-    today = _now(request).date()
+    today = request_now(request).date()
     stmt = jobs.job_list_stmt(
         today,
         status=status,
@@ -126,41 +122,41 @@ def list_jobs(
 
 @router.get("/repair-jobs/{job_id}", response_model=JobOut)
 def get_job(job_id: JobId, request: Request, db: SessionDep, _: StaffOnly) -> JobOut:
-    return jobs.job_out(db, jobs.get_job_or_404(db, job_id), _now(request).date())
+    return jobs.job_out(db, jobs.get_job_or_404(db, job_id), request_now(request).date())
 
 
 @router.patch("/repair-jobs/{job_id}", response_model=JobOut)
 def update_job(job_id: JobId, body: JobPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> JobOut:
-    now = _now(request)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    now = request_now(request)
+    fields = patch_fields(body)
     job = jobs.update_job(db, now, staff.user, jobs.get_job_or_404(db, job_id), fields)
     return jobs.job_out(db, job, now.date())
 
 
 @router.post("/repair-jobs/{job_id}/approve", response_model=JobOut)
 def approve_job(job_id: JobId, request: Request, db: SessionDep, staff: StaffOnly) -> JobOut:
-    now = _now(request)
+    now = request_now(request)
     job = jobs.approve_job(db, now, staff.user, jobs.get_job_or_404(db, job_id))
     return jobs.job_out(db, job, now.date())
 
 
 @router.post("/repair-jobs/{job_id}/cancel", response_model=JobOut)
 def cancel_job(job_id: JobId, request: Request, db: SessionDep, staff: StaffOnly) -> JobOut:
-    now = _now(request)
+    now = request_now(request)
     job = jobs.cancel_job(db, now, staff.user, jobs.get_job_or_404(db, job_id))
     return jobs.job_out(db, job, now.date())
 
 
 @router.post("/repair-jobs/{job_id}/send", response_model=JobOut)
 def send_job(job_id: JobId, request: Request, db: SessionDep, staff: StaffOnly) -> JobOut:
-    now = _now(request)
+    now = request_now(request)
     job = jobs.send_job(db, now, staff.user, jobs.get_job_or_404(db, job_id))
     return jobs.job_out(db, job, now.date())
 
 
 @router.post("/repair-jobs/{job_id}/return", response_model=JobOut)
 def return_job(job_id: JobId, body: ReturnIn, request: Request, db: SessionDep, staff: StaffOnly) -> JobOut:
-    now = _now(request)
+    now = request_now(request)
     job = jobs.return_job(
         db,
         now,
@@ -176,7 +172,7 @@ def return_job(job_id: JobId, body: ReturnIn, request: Request, db: SessionDep, 
 
 @router.post("/repair-jobs/{job_id}/lost", response_model=JobOut)
 def lose_job(job_id: JobId, request: Request, db: SessionDep, staff: StaffOnly) -> JobOut:
-    now = _now(request)
+    now = request_now(request)
     job = jobs.lose_job(db, now, staff.user, jobs.get_job_or_404(db, job_id))
     return jobs.job_out(db, job, now.date())
 
@@ -187,7 +183,7 @@ def lose_job(job_id: JobId, request: Request, db: SessionDep, staff: StaffOnly) 
 @router.post("/repair-shipments", response_model=ShipmentOut, status_code=201)
 def create_shipment(body: ShipmentIn, request: Request, db: SessionDep, staff: StaffOnly) -> ShipmentOut:
     shipment = shipments.create_shipment(
-        db, _now(request), staff.user, supplier_id=body.supplier_id, job_ids=body.job_ids
+        db, request_now(request), staff.user, supplier_id=body.supplier_id, job_ids=body.job_ids
     )
     return shipments.shipment_out(db, shipment)
 
@@ -214,12 +210,11 @@ def get_shipment(shipment_id: ShipmentId, db: SessionDep, _: StaffOnly) -> Shipm
 
 @router.get("/preservation/suggestions", response_model=SuggestionsOut)
 def suggestions(branch_id: Annotated[int, Query()], db: SessionDep, _: StaffOnly) -> SuggestionsOut:
-    if db.get(Branch, branch_id) is None:
-        raise reference_not_found("branch_id", branch_id)
+    get_reference(db, Branch, "branch_id", branch_id)
     return SuggestionsOut(items=preservation_reports.suggestions(db, branch_id))
 
 
 @router.post("/preservation/process", response_model=ProcessOut)
 def process(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    overdue, newly, expired = jobs.process(db, _now(request), staff.user)
+    overdue, newly, expired = jobs.process(db, request_now(request), staff.user)
     return ProcessOut(overdue=overdue, newly_overdue=newly, expired_requests=expired)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request, Response
 
+from lms.api.common import request_now
 from lms.auth import service
 from lms.auth.deps import CurrentPrincipal
 from lms.auth.schemas import ChangePasswordIn, LoginIn, LoginOut, UserOut, user_out
@@ -28,7 +29,7 @@ def login(body: LoginIn, request: Request, db: SessionDep) -> LoginOut:
 
 @router.post("/logout", status_code=204)
 def logout(request: Request, db: SessionDep, principal: CurrentPrincipal) -> Response:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     service.logout(db, now, principal.user, principal.session)
     return Response(status_code=204)
 
@@ -40,6 +41,6 @@ def me(principal: CurrentPrincipal) -> UserOut:
 
 @router.post("/change-password", status_code=204)
 def change_password(body: ChangePasswordIn, request: Request, db: SessionDep, principal: CurrentPrincipal) -> Response:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     service.change_password(db, now, principal.user, principal.session, body.current_password, body.new_password)
     return Response(status_code=204)

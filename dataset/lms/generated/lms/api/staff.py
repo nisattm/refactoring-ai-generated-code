@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request, Response
 
+from lms.api.common import collect_date, patch_fields, reject_nulls, request_now
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, StaffOnly
 from lms.branches.service import get_branch_or_404
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, NotFound, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.staff import hours as hours_service
 from lms.staff import leave as leave_service
 from lms.staff import profiles
@@ -60,18 +59,6 @@ ShiftId = Annotated[int, Path(ge=1)]
 LeaveId = Annotated[int, Path(ge=1)]
 
 
-def _date_param(name: str, raw: str | None, problems: list[dict[str, str]], *, required: bool = False) -> datetime.date | None:
-    if raw is None:
-        if required:
-            problems.append({"field": name, "problem": "field required"})
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-        return None
-
-
 def _shift_out(db: SessionDep, shift: Shift) -> ShiftOut:
     return shift_out(shift, shift_service.staff_name(db, shift.staff_id))
 
@@ -81,7 +68,7 @@ def _shift_out(db: SessionDep, shift: Shift) -> ShiftOut:
 
 @router.post("/staff", response_model=StaffOut, status_code=201)
 def create_staff(body: StaffCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> StaffOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     profile = profiles.create_profile(
         db,
         now,
@@ -116,7 +103,7 @@ def get_own_staff(db: SessionDep, staff: StaffOnly) -> StaffOut:
 
 @router.post("/staff/process", response_model=ProcessOut)
 def process_staff(request: Request, db: SessionDep, admin: AdminOnly) -> ProcessOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     missed, auto = shift_service.process(db, now, admin.user)
     return ProcessOut(missed=missed, auto_checked_out=auto)
 
@@ -130,13 +117,10 @@ def get_staff(staff_id: StaffId, db: SessionDep, staff: StaffOnly) -> StaffOut:
 
 @router.patch("/staff/{staff_id}", response_model=StaffOut)
 def update_staff(staff_id: StaffId, body: StaffPatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> StaffOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     profile = profiles.get_profile_or_404(db, staff_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    if any(value is None for value in fields.values()):
-        raise ValidationFailed(
-            [{"field": name, "problem": "value must not be null"} for name, value in fields.items() if value is None]
-        )
+    fields = patch_fields(body)
+    reject_nulls(fields)
     return profiles.to_out(db, profiles.update_profile(db, now, admin.user, profile, fields))
 
 
@@ -166,7 +150,7 @@ def get_hours(branch_id: BranchId, db: SessionDep, _: AnyUser) -> HoursOut:
 
 @router.put("/branches/{branch_id}/hours", response_model=HoursOut)
 def put_hours(branch_id: BranchId, body: HoursIn, request: Request, db: SessionDep, admin: AdminOnly) -> HoursOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     branch = get_branch_or_404(db, branch_id)
     return hours_service.set_hours(db, now, admin.user, branch, body.opens_at, body.closes_at, body.min_staff)
 
@@ -183,7 +167,7 @@ def add_closure(
 
 @router.delete("/closures/{closure_id}", status_code=204)
 def remove_closure(closure_id: ClosureId, request: Request, db: SessionDep, admin: AdminOnly) -> Response:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     closure = db.get(Closure, closure_id)
     if closure is None:
         raise NotFound(f"Closure {closure_id} does not exist", details={"resource": "closure", "id": closure_id})
@@ -201,8 +185,8 @@ def list_closures(
     to: Annotated[str | None, Query()] = None,
 ) -> Page[ClosureOut]:
     problems: list[dict[str, str]] = []
-    start = _date_param("from", first, problems)
-    end = _date_param("to", to, problems)
+    start = collect_date("from", first, problems, required=False)
+    end = collect_date("to", to, problems, required=False)
     if problems:
         raise ValidationFailed(problems)
     stmt = hours_service.closure_list_stmt(branch_id=branch_id, first=start, last=end)
@@ -219,8 +203,8 @@ def open_days(
     to: Annotated[str | None, Query()] = None,
 ) -> OpenDaysOut:
     problems: list[dict[str, str]] = []
-    start = _date_param("from", first, problems, required=True)
-    end = _date_param("to", to, problems, required=True)
+    start = collect_date("from", first, problems)
+    end = collect_date("to", to, problems)
     if problems:
         raise ValidationFailed(problems)
     assert start is not None and end is not None
@@ -282,8 +266,8 @@ def list_shifts(
     to: Annotated[str | None, Query()] = None,
 ) -> Page[ShiftOut]:
     problems: list[dict[str, str]] = []
-    start = _date_param("from", first, problems)
-    end = _date_param("to", to, problems)
+    start = collect_date("from", first, problems, required=False)
+    end = collect_date("to", to, problems, required=False)
     if problems:
         raise ValidationFailed(problems)
     if staff.user.role != "admin":
@@ -300,17 +284,14 @@ def update_shift(shift_id: ShiftId, body: ShiftPatchIn, request: Request, db: Se
     settings = request.app.state.settings
     now = local_now(settings.clock)
     shift = shift_service.get_shift_or_404(db, shift_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    if any(value is None for value in fields.values()):
-        raise ValidationFailed(
-            [{"field": name, "problem": "value must not be null"} for name, value in fields.items() if value is None]
-        )
+    fields = patch_fields(body)
+    reject_nulls(fields)
     return _shift_out(db, shift_service.update_shift(db, now, admin.user, settings.holidays, shift, fields))
 
 
 @router.post("/shifts/{shift_id}/cancel", response_model=ShiftOut)
 def cancel_shift(shift_id: ShiftId, request: Request, db: SessionDep, admin: AdminOnly) -> ShiftOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     shift = shift_service.get_shift_or_404(db, shift_id)
     return _shift_out(db, shift_service.cancel_by_request(db, now, admin.user, shift))
 
@@ -325,14 +306,14 @@ def _own_shift(db: SessionDep, shift_id: int, staff: StaffOnly) -> Shift:
 
 @router.post("/shifts/{shift_id}/check-in", response_model=ShiftOut)
 def check_in(shift_id: ShiftId, request: Request, db: SessionDep, staff: StaffOnly) -> ShiftOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     shift = _own_shift(db, shift_id, staff)
     return _shift_out(db, shift_service.check_in(db, now, staff.user, shift))
 
 
 @router.post("/shifts/{shift_id}/check-out", response_model=ShiftOut)
 def check_out(shift_id: ShiftId, request: Request, db: SessionDep, staff: StaffOnly) -> ShiftOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     shift = _own_shift(db, shift_id, staff)
     return _shift_out(db, shift_service.check_out(db, now, staff.user, shift))
 
@@ -412,7 +393,7 @@ def reject_leave(
 
 @router.post("/leave-requests/{leave_id}/cancel", response_model=LeaveOut)
 def cancel_leave(leave_id: LeaveId, request: Request, db: SessionDep, staff: StaffOnly) -> LeaveOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     leave = leave_service.get_leave_or_404(db, leave_id)
     own = profiles.profile_of_user(db, staff.user.id)
     is_owner = own is not None and own.id == leave.staff_id
@@ -435,8 +416,8 @@ def staff_hours_report(
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[StaffHoursOut]:
     problems: list[dict[str, str]] = []
-    start = _date_param("from", first, problems, required=True)
-    end = _date_param("to", to, problems, required=True)
+    start = collect_date("from", first, problems)
+    end = collect_date("to", to, problems)
     if problems:
         raise ValidationFailed(problems)
     assert start is not None and end is not None
@@ -460,9 +441,9 @@ def branch_coverage_report(
 ) -> CoverageOut | CoverageRangeOut:
     holidays = request.app.state.settings.holidays
     problems: list[dict[str, str]] = []
-    one_day = _date_param("date", day, problems)
-    start = _date_param("from", first, problems)
-    end = _date_param("to", to, problems)
+    one_day = collect_date("date", day, problems, required=False)
+    start = collect_date("from", first, problems, required=False)
+    end = collect_date("to", to, problems, required=False)
     if problems:
         raise ValidationFailed(problems)
     if one_day is not None:

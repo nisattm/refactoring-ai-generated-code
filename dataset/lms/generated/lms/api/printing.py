@@ -9,13 +9,19 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, Request
 from sqlalchemy.orm import Session
 
+from lms.api.common import (
+    acting_member_id,
+    ensure_own_or_staff,
+    optional_date,
+    patch_fields,
+    report_range,
+    request_now,
+)
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
-from lms.core.clock import local_now
-from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
+from lms.core.db import SessionDep, get_reference
+from lms.core.errors import ValidationFailed
 from lms.core.money import format_amount
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.members.models import Member
 from lms.members.service import get_member_or_404
 from lms.printing import jobs, packs, printers, quota
@@ -52,23 +58,8 @@ MemberId = Annotated[int, Path(ge=1)]
 _MONTH = re.compile(r"^(\d{4})-(0[1-9]|1[0-2])$")
 
 
-def _now(request: Request) -> datetime.datetime:
-    return local_now(request.app.state.settings.clock)
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25: a member may only address their own jobs, packs and quota."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own print jobs and packs can be accessed")
-
-
-def _opt_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
+    ensure_own_or_staff(principal, member_id, "print jobs and packs")
 
 
 def _job_out(db: Session, job: PrintJob) -> PrintJobOut:
@@ -82,7 +73,7 @@ def _job_out(db: Session, job: PrintJob) -> PrintJobOut:
 
 @router.post("/printers", response_model=PrinterOut, status_code=201)
 def create_printer(body: PrinterCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> PrinterOut:
-    printer = printers.create_printer(db, _now(request), admin.user, **body.model_dump())
+    printer = printers.create_printer(db, request_now(request), admin.user, **body.model_dump())
     return printer_out(printer)
 
 
@@ -110,14 +101,14 @@ def update_printer(
     printer_id: PrinterId, body: PrinterPatchIn, request: Request, db: SessionDep, admin: AdminOnly
 ) -> PrinterOut:
     printer = printers.get_printer_or_404(db, printer_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    return printer_out(printers.update_printer(db, _now(request), admin.user, printer, fields))
+    fields = patch_fields(body)
+    return printer_out(printers.update_printer(db, request_now(request), admin.user, printer, fields))
 
 
 @router.post("/printers/{printer_id}/refill", response_model=PrinterOut)
 def refill_printer(printer_id: PrinterId, body: RefillIn, request: Request, db: SessionDep, staff: StaffOnly) -> PrinterOut:
     printer = printers.get_printer_or_404(db, printer_id)
-    return printer_out(printers.refill(db, _now(request), staff.user, printer, body.sheets))
+    return printer_out(printers.refill(db, request_now(request), staff.user, printer, body.sheets))
 
 
 # --- print jobs ----------------------------------------------------------------------------
@@ -125,25 +116,12 @@ def refill_printer(printer_id: PrinterId, body: RefillIn, request: Request, db: 
 
 @router.post("/print-jobs", response_model=PrintJobOut, status_code=201)
 def send_job(body: PrintJobIn, request: Request, db: SessionDep, principal: CurrentPrincipal) -> PrintJobOut:
-    if principal.user.role == "member":
-        if body.member_id is not None:
-            raise ValidationFailed.single("member_id", "members print for themselves and must not send member_id")
-        member_id = principal.user.member_id
-        if member_id is None:
-            raise Forbidden("The authenticated user has no member record")
-    else:
-        if body.member_id is None:
-            raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
-        member_id = body.member_id
-    printer = db.get(Printer, body.printer_id)
-    if printer is None:
-        raise reference_not_found("printer_id", body.printer_id)
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    member_id = acting_member_id(principal, body.member_id, "print for themselves")
+    printer = get_reference(db, Printer, "printer_id", body.printer_id)
+    member = get_reference(db, Member, "member_id", member_id)
     job = jobs.send_job(
         db,
-        _now(request),
+        request_now(request),
         principal.user,
         member,
         printer,
@@ -173,8 +151,8 @@ def list_jobs(
         status=status,
         printer_id=printer_id,
         branch_id=branch_id,
-        first=_opt_date("from", first),
-        last=_opt_date("to", to),
+        first=optional_date("from", first),
+        last=optional_date("to", to),
     )
     return paginate(db, stmt, page, lambda j: _job_out(db, j))
 
@@ -197,8 +175,8 @@ def list_member_jobs(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> Page[PrintJobOut]:
-    start = _opt_date("from", first)
-    end = _opt_date("to", to)
+    start = optional_date("from", first)
+    end = optional_date("to", to)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = jobs.job_list_stmt(member_id=member.id, status=status, printer_id=printer_id, first=start, last=end)
@@ -207,11 +185,9 @@ def list_member_jobs(
 
 @router.post("/print-jobs/release-by-card", response_model=ReleaseByCardOut)
 def release_by_card(body: ReleaseByCardIn, request: Request, db: SessionDep, staff: StaffOnly) -> ReleaseByCardOut:
-    printer = db.get(Printer, body.printer_id)
-    if printer is None:
-        raise reference_not_found("printer_id", body.printer_id)
+    printer = get_reference(db, Printer, "printer_id", body.printer_id)
     return jobs.release_by_card(
-        db, _now(request), staff.user, request.app.state.settings.holidays, printer, body.card_no
+        db, request_now(request), staff.user, request.app.state.settings.holidays, printer, body.card_no
     )
 
 
@@ -221,7 +197,7 @@ def release_job(job_id: JobId, request: Request, db: SessionDep, principal: Curr
     _own_or_staff(principal, job.member_id)
     own = principal.user.role == "member"  # LIB-PRT-15: check (5) does not apply to staff
     released = jobs.release_job(
-        db, _now(request), principal.user, request.app.state.settings.holidays, job, check_inside=own
+        db, request_now(request), principal.user, request.app.state.settings.holidays, job, check_inside=own
     )
     return _job_out(db, released)
 
@@ -230,18 +206,18 @@ def release_job(job_id: JobId, request: Request, db: SessionDep, principal: Curr
 def cancel_job(job_id: JobId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> PrintJobOut:
     job = jobs.get_job_or_404(db, job_id)
     _own_or_staff(principal, job.member_id)
-    return _job_out(db, jobs.cancel(db, _now(request), principal.user, job))
+    return _job_out(db, jobs.cancel(db, request_now(request), principal.user, job))
 
 
 @router.post("/print-jobs/{job_id}/fail", response_model=PrintJobOut)
 def fail_job(job_id: JobId, body: FailIn, request: Request, db: SessionDep, staff: StaffOnly) -> PrintJobOut:
     job = jobs.get_job_or_404(db, job_id)
-    return _job_out(db, jobs.fail_job(db, _now(request), staff.user, job, body.reason))
+    return _job_out(db, jobs.fail_job(db, request_now(request), staff.user, job, body.reason))
 
 
 @router.post("/printing/process", response_model=ProcessOut)
 def process(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    return jobs.process(db, _now(request), staff.user)
+    return jobs.process(db, request_now(request), staff.user)
 
 
 # --- quota and packs -----------------------------------------------------------------------
@@ -255,7 +231,7 @@ def get_quota(
     principal: CurrentPrincipal,
     month: Annotated[str | None, Query()] = None,
 ) -> QuotaOut:
-    today = _now(request).date()
+    today = request_now(request).date()
     first = today.replace(day=1)
     if month is not None:
         match = _MONTH.match(month.strip())
@@ -284,7 +260,7 @@ def get_quota(
 @router.post("/members/{member_id}/print-packs", response_model=PackOut, status_code=201)
 def buy_pack(member_id: MemberId, request: Request, db: SessionDep, staff: StaffOnly) -> PackOut:
     member = get_member_or_404(db, member_id)
-    return pack_out(packs.buy_pack(db, _now(request), staff.user, member))
+    return pack_out(packs.buy_pack(db, request_now(request), staff.user, member))
 
 
 @router.get("/members/{member_id}/print-packs", response_model=Page[PackOut])
@@ -312,21 +288,5 @@ def printing_report(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[PrintingReportOut]:
-    problems: list[dict[str, str]] = []
-    dates: dict[str, datetime.date] = {}
-    for name, raw in (("from", first), ("to", to)):
-        if raw is None:
-            problems.append({"field": name, "problem": "field required"})
-            continue
-        try:
-            dates[name] = parse_date(raw.strip())
-        except ValueError:
-            problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-    if problems:
-        raise ValidationFailed(problems)
-    start, end = dates["from"], dates["to"]
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > MAX_REPORT_DAYS:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to, MAX_REPORT_DAYS)
     return paginate_sequence(printing_reports.printing_report(db, start, end, branch_id), page)

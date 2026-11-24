@@ -14,17 +14,15 @@ from lms.branches.models import Branch, Transfer
 from lms.branches.service import start_transfer
 from lms.catalog.models import Copy
 from lms.catalog.status import invalid_status
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.db import get_or_404, get_reference
+from lms.core.errors import Conflict
 from lms.inventory.usage import require_not_in_count
 from lms.reservations import service as reservations
 from lms.reservations.models import Reservation
 
 
 def get_transfer_or_404(db: Session, transfer_id: int) -> Transfer:
-    transfer = db.get(Transfer, transfer_id)
-    if transfer is None:
-        raise NotFound(f"Transfer {transfer_id} does not exist", details={"resource": "transfer", "id": transfer_id})
-    return transfer
+    return get_or_404(db, Transfer, transfer_id, "Transfer", "transfer")
 
 
 def relocate(
@@ -37,12 +35,8 @@ def relocate(
     to_branch_id: int,
 ) -> Transfer:
     """LIB-BR-06."""
-    copy = db.get(Copy, copy_id)
-    if copy is None:
-        raise reference_not_found("copy_id", copy_id)
-    branch = db.get(Branch, to_branch_id)
-    if branch is None:
-        raise reference_not_found("to_branch_id", to_branch_id)
+    copy = get_reference(db, Copy, "copy_id", copy_id)
+    branch = get_reference(db, Branch, "to_branch_id", to_branch_id)
     if not branch.is_active:
         raise Conflict(
             f"Branch {branch.code} is inactive",

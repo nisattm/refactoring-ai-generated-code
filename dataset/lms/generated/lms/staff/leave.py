@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.core.calendar import is_working_day
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict, ValidationFailed
 from lms.staff import shifts
 from lms.staff.models import LeaveRequest, Shift, StaffProfile
 
@@ -27,10 +28,7 @@ def _error(code: str, message: str, **details: Any) -> Conflict:
 
 
 def get_leave_or_404(db: Session, leave_id: int) -> LeaveRequest:
-    leave = db.get(LeaveRequest, leave_id)
-    if leave is None:
-        raise NotFound(f"Leave request {leave_id} does not exist", details={"resource": "leave_request", "id": leave_id})
-    return leave
+    return get_or_404(db, LeaveRequest, leave_id, "Leave request", "leave_request")
 
 
 def working_days(first: datetime.date, last: datetime.date, holidays: Container[datetime.date]) -> int:

@@ -7,11 +7,11 @@ from typing import Annotated
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request, Response
 
+from lms.api.common import patch_fields, request_now
 from lms.auth import service
 from lms.auth.deps import AdminOnly, CurrentPrincipal
 from lms.auth.models import User
 from lms.auth.schemas import ResetPasswordIn, Role, UserCreateIn, UserOut, UserPatchIn, user_out
-from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
@@ -24,7 +24,7 @@ UserId = Annotated[int, Path(ge=1)]
 
 @router.post("", response_model=UserOut, status_code=201)
 def create_user(body: UserCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> UserOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     user = service.create_user(db, now, admin.user, body.email, body.full_name, body.role, body.password)
     return user_out(user)
 
@@ -65,15 +65,15 @@ def get_user(user_id: UserId, db: SessionDep, principal: CurrentPrincipal) -> Us
 
 @router.patch("/{user_id}", response_model=UserOut)
 def update_user(user_id: UserId, body: UserPatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> UserOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     user = service.get_user_or_404(db, user_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     return user_out(service.update_user(db, now, admin.user, user, fields))
 
 
 @router.post("/{user_id}/reset-password", status_code=204)
 def reset_password(user_id: UserId, body: ResetPasswordIn, request: Request, db: SessionDep, admin: AdminOnly) -> Response:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     user = service.get_user_or_404(db, user_id)
     service.reset_password(db, now, admin.user, user, body.new_password)
     return Response(status_code=204)

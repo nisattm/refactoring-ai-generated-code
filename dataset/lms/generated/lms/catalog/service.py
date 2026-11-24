@@ -22,7 +22,8 @@ from lms.catalog.schemas import (
     PublisherOut,
 )
 from lms.catalog.status import GONE_STATUSES, invalid_status, set_status
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.db import get_reference
+from lms.core.errors import Conflict, NotFound, ValidationFailed
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
 from lms.courses.usage import book_has_items
@@ -131,13 +132,11 @@ def book_author_ids(db: Session, book_id: int) -> list[int]:
 
 def _require_authors(db: Session, author_ids: list[int]) -> None:
     for author_id in author_ids:
-        if db.get(Author, author_id) is None:
-            raise reference_not_found("author_ids", author_id)
+        get_reference(db, Author, "author_ids", author_id)
 
 
 def _require_publisher(db: Session, publisher_id: int) -> None:
-    if db.get(Publisher, publisher_id) is None:
-        raise reference_not_found("publisher_id", publisher_id)
+    get_reference(db, Publisher, "publisher_id", publisher_id)
 
 
 def _check_unique_isbn(db: Session, isbn: str, *, own_id: int | None = None) -> None:

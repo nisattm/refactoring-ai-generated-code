@@ -13,15 +13,13 @@ from lms.access.rules import DAY_PASS_LIMIT
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.errors import Conflict, NotFound
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict
 from lms.core.money import format_amount
 
 
 def get_pass_or_404(db: Session, pass_id: int) -> DayPass:
-    day_pass = db.get(DayPass, pass_id)
-    if day_pass is None:
-        raise NotFound(f"Day pass {pass_id} does not exist", details={"resource": "day_pass", "id": pass_id})
-    return day_pass
+    return get_or_404(db, DayPass, pass_id, "Day pass", "day_pass")
 
 
 def sell_pass(db: Session, now: datetime.datetime, actor: User, branch: Branch, visitor_name: str) -> DayPass:

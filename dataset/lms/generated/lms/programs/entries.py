@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.catalog.models import Book, Copy
-from lms.core.errors import Conflict, NotFound
+from lms.core.db import get_or_404
+from lms.core.errors import Conflict
 from lms.core.money import ZERO, format_amount
 from lms.fines import service as fines
 from lms.fines.models import Fee
@@ -40,20 +41,11 @@ from lms.programs.rules import (
 
 
 def get_participation_or_404(db: Session, participation_id: int) -> Participation:
-    participation = db.get(Participation, participation_id)
-    if participation is None:
-        raise NotFound(
-            f"Participation {participation_id} does not exist",
-            details={"resource": "participation", "id": participation_id},
-        )
-    return participation
+    return get_or_404(db, Participation, participation_id, "Participation", "participation")
 
 
 def get_entry_or_404(db: Session, entry_id: int) -> Entry:
-    entry = db.get(Entry, entry_id)
-    if entry is None:
-        raise NotFound(f"Entry {entry_id} does not exist", details={"resource": "program_entry", "id": entry_id})
-    return entry
+    return get_or_404(db, Entry, entry_id, "Entry", "program_entry")
 
 
 def _week_start(day: datetime.date) -> datetime.date:

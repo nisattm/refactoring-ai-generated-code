@@ -4,21 +4,40 @@ from __future__ import annotations
 
 import weakref
 from collections.abc import Iterator
+from typing import Annotated, TypeVar
 
 import sqlalchemy as sa
-from typing import Annotated
-
 from fastapi import Depends, Request
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from lms.core.errors import NotFound, reference_not_found
 from lms.core.text import normalize
 
 
 class Base(DeclarativeBase):
     """Base of all ORM models. Models set ``__table_args__ = {"sqlite_autoincrement": True}``
     so that ids are never reused (LIB-COM-14)."""
+
+
+ModelT = TypeVar("ModelT", bound=Base)
+
+
+def get_or_404(db: Session, model: type[ModelT], entity_id: int, label: str, resource: str) -> ModelT:
+    """The row ``entity_id`` of ``model``, or ``404 NOT_FOUND`` ("``label`` <id> does not exist")."""
+    entity = db.get(model, entity_id)
+    if entity is None:
+        raise NotFound(f"{label} {entity_id} does not exist", details={"resource": resource, "id": entity_id})
+    return entity
+
+
+def get_reference(db: Session, model: type[ModelT], field: str, entity_id: int) -> ModelT:
+    """The row ``entity_id`` of ``model`` named by ``field`` of a request, or ``404`` (LIB-COM-29)."""
+    entity = db.get(model, entity_id)
+    if entity is None:
+        raise reference_not_found(field, entity_id)
+    return entity
 
 
 def create_db_engine(database_url: str) -> sa.Engine:

@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.db import get_or_404, get_reference
+from lms.core.errors import Conflict, ValidationFailed
 from lms.core.timeutil import format_datetime
 from lms.rooms.schemas import format_time
 from lms.staff.models import COUNTING_STATUSES, LeaveRequest, Shift, StaffProfile
@@ -30,10 +31,7 @@ def _error(code: str, message: str, **details: Any) -> Conflict:
 
 
 def get_shift_or_404(db: Session, shift_id: int) -> Shift:
-    shift = db.get(Shift, shift_id)
-    if shift is None:
-        raise NotFound(f"Shift {shift_id} does not exist", details={"resource": "shift", "id": shift_id})
-    return shift
+    return get_or_404(db, Shift, shift_id, "Shift", "shift")
 
 
 def staff_name(db: Session, staff_id: int) -> str:
@@ -148,17 +146,11 @@ def check_shift(
 
 
 def _profile_or_404(db: Session, field: str, staff_id: int) -> StaffProfile:
-    profile = db.get(StaffProfile, staff_id)
-    if profile is None:
-        raise reference_not_found(field, staff_id)
-    return profile
+    return get_reference(db, StaffProfile, field, staff_id)
 
 
 def _branch_or_404(db: Session, field: str, branch_id: int) -> Branch:
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found(field, branch_id)
-    return branch
+    return get_reference(db, Branch, field, branch_id)
 
 
 def _snapshot(shift: Shift) -> dict[str, Any]:

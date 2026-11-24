@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.common import ensure_own_or_staff, is_staff, patch_fields, request_now
 from lms.auth.deps import AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.catalog.schemas import CopyOut, copy_out
 from lms.catalog.service import get_copy_or_404
@@ -54,10 +55,6 @@ LoanId = Annotated[int, Path(ge=1)]
 MemberId = Annotated[int, Path(ge=1)]
 
 
-def _is_staff(principal: Principal) -> bool:
-    return principal.user.role != "member"
-
-
 def _course_not_found(course_id: int) -> NotFound:
     return NotFound(f"Course {course_id} does not exist", details={"resource": "course", "id": course_id})
 
@@ -65,21 +62,19 @@ def _course_not_found(course_id: int) -> NotFound:
 def _readable_course(db, principal: Principal, course_id: int) -> Course:  # noqa: ANN001
     """LIB-CRS-05: a member sees only the courses in which they are enrolled or the instructor."""
     course = course_service.get_course_or_404(db, course_id)
-    if not _is_staff(principal) and course_service.member_role(db, course, principal.user.member_id) is None:
+    if not is_staff(principal) and course_service.member_role(db, course, principal.user.member_id) is None:
         raise _course_not_found(course_id)
     return course
 
 
 def _require_instructor_or_staff(principal: Principal, course: Course) -> None:
     """LIB-CRS-18: another member calling an instructor endpoint receives ``403 FORBIDDEN``."""
-    if not _is_staff(principal) and principal.user.member_id != course.instructor_id:
+    if not is_staff(principal) and principal.user.member_id != course.instructor_id:
         raise Forbidden("Only the instructor of the course can do this")
 
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own course data can be accessed")
+    ensure_own_or_staff(principal, member_id, "course data")
 
 
 # --- courses ---------------------------------------------------------------------------------
@@ -87,7 +82,7 @@ def _own_or_staff(principal: Principal, member_id: int) -> None:
 
 @router.post("/courses", response_model=CourseOut, status_code=201)
 def create_course(body: CourseCreateIn, request: Request, db: SessionDep, staff: StaffOnly) -> CourseOut:
-    course = course_service.create_course(db, local_now(request.app.state.settings.clock), staff.user, body.model_dump())
+    course = course_service.create_course(db, request_now(request), staff.user, body.model_dump())
     return course_service.to_out(db, course)
 
 
@@ -104,7 +99,7 @@ def list_courses(
 ) -> Page[CourseOut]:
     stmt = course_service.course_list_stmt(
         member_id=principal.user.member_id,
-        only_member=not _is_staff(principal),
+        only_member=not is_staff(principal),
         term=term,
         branch_id=branch_id,
         instructor_id=instructor_id,
@@ -131,16 +126,16 @@ def get_course(course_id: CourseId, db: SessionDep, principal: AnyUser) -> Cours
 def update_course(
     course_id: CourseId, body: CoursePatchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> CourseOut:
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     course = course_service.get_course_or_404(db, course_id)
-    course_service.update_course(db, local_now(request.app.state.settings.clock), staff.user, course, fields)
+    course_service.update_course(db, request_now(request), staff.user, course, fields)
     return course_service.to_out(db, course)
 
 
 @router.post("/courses/{course_id}/activate", response_model=CourseOut)
 def activate_course(course_id: CourseId, request: Request, db: SessionDep, staff: StaffOnly) -> CourseOut:
     course = course_service.get_course_or_404(db, course_id)
-    course_service.activate_course(db, local_now(request.app.state.settings.clock), staff.user, course)
+    course_service.activate_course(db, request_now(request), staff.user, course)
     return course_service.to_out(db, course)
 
 
@@ -158,7 +153,7 @@ def close_course(course_id: CourseId, request: Request, db: SessionDep, staff: S
 @router.post("/courses/{course_id}/enrollments", response_model=EnrollResultOut)
 def enroll(course_id: CourseId, body: EnrollIn, request: Request, db: SessionDep, staff: StaffOnly) -> EnrollResultOut:
     course = course_service.get_course_or_404(db, course_id)
-    return course_service.enroll(db, local_now(request.app.state.settings.clock), staff.user, course, body.member_ids)
+    return course_service.enroll(db, request_now(request), staff.user, course, body.member_ids)
 
 
 @router.get("/courses/{course_id}/enrollments", response_model=Page[EnrollmentOut])
@@ -178,7 +173,7 @@ def list_enrollments(
 @router.post("/enrollments/{enrollment_id}/drop", response_model=EnrollmentOut)
 def drop_enrollment(enrollment_id: EnrollmentId, request: Request, db: SessionDep, staff: StaffOnly) -> EnrollmentOut:
     enrollment = course_service.get_enrollment_or_404(db, enrollment_id)
-    course_service.drop(db, local_now(request.app.state.settings.clock), staff.user, enrollment)
+    course_service.drop(db, request_now(request), staff.user, enrollment)
     return course_service.to_enrollment_out(db, enrollment)
 
 
@@ -206,7 +201,7 @@ def add_item(course_id: CourseId, body: ItemCreateIn, request: Request, db: Sess
     course = course_service.get_course_or_404(db, course_id)
     _require_instructor_or_staff(principal, course)
     item = reading_list.add_item(
-        db, local_now(request.app.state.settings.clock), principal.user, course, body.model_dump()
+        db, request_now(request), principal.user, course, body.model_dump()
     )
     return reading_list.item_out(db, item)
 
@@ -220,7 +215,7 @@ def read_reading_list(
     include_removed: Annotated[bool, Query()] = False,
 ) -> Page[ItemOut]:
     course = _readable_course(db, principal, course_id)
-    items = reading_list.list_items(db, course.id, include_removed=include_removed and _is_staff(principal))
+    items = reading_list.list_items(db, course.id, include_removed=include_removed and is_staff(principal))
     chunk = paginate_sequence(items, page)
     return Page[ItemOut](
         items=[reading_list.item_out(db, i) for i in chunk.items],
@@ -251,8 +246,8 @@ def _item_for_instructor(db, principal: Principal, item_id: int):  # noqa: ANN00
 @router.patch("/reading-list-items/{item_id}", response_model=ItemOut)
 def update_item(item_id: ItemId, body: ItemPatchIn, request: Request, db: SessionDep, principal: AnyUser) -> ItemOut:
     item = _item_for_instructor(db, principal, item_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    reading_list.update_item(db, local_now(request.app.state.settings.clock), principal.user, item, fields)
+    fields = patch_fields(body)
+    reading_list.update_item(db, request_now(request), principal.user, item, fields)
     return reading_list.item_out(db, item)
 
 
@@ -270,7 +265,7 @@ def remove_item(item_id: ItemId, request: Request, db: SessionDep, principal: An
 @router.post("/reading-list-items/{item_id}/copies", response_model=PlacedCopyOut, status_code=201)
 def place_copy(item_id: ItemId, body: PlaceCopyIn, request: Request, db: SessionDep, staff: StaffOnly) -> PlacedCopyOut:
     item = reserve_service.get_item_or_404(db, item_id)
-    return reserve_service.place_by_hand(db, local_now(request.app.state.settings.clock), staff.user, item, body.copy_id)
+    return reserve_service.place_by_hand(db, request_now(request), staff.user, item, body.copy_id)
 
 
 @router.post("/copies/{copy_id}/unreserve", response_model=CopyOut)
@@ -305,7 +300,7 @@ def list_loans(
     status: Annotated[ReserveLoanStatus | None, Query()] = None,
     overdue: Annotated[bool | None, Query()] = None,
 ) -> Page[ReserveLoanOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     stmt = loan_service.loan_list_stmt(now, course_id=course_id, member_id=member_id, status=status, overdue=overdue)
     return paginate(db, stmt, page, lambda ln: loan_service.to_out(db, ln, now))
 
@@ -321,7 +316,7 @@ def list_member_loans(
     status: Annotated[ReserveLoanStatus | None, Query()] = None,
     overdue: Annotated[bool | None, Query()] = None,
 ) -> Page[ReserveLoanOut]:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = loan_service.loan_list_stmt(now, course_id=course_id, member_id=member.id, status=status, overdue=overdue)
@@ -342,7 +337,7 @@ def renew_loan(loan_id: LoanId, request: Request, db: SessionDep, principal: Cur
 def return_loan(
     loan_id: LoanId, body: ReserveReturnIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> ReserveLoanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     loan = loan_service.get_loan_or_404(db, loan_id)
     loan_service.return_loan(db, now, staff.user, loan, body.branch_id)
     return loan_service.to_out(db, loan, now)
@@ -350,7 +345,7 @@ def return_loan(
 
 @router.post("/reserve-loans/{loan_id}/report-lost", response_model=ReserveLoanOut)
 def report_lost(loan_id: LoanId, request: Request, db: SessionDep, staff: StaffOnly) -> ReserveLoanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     loan = loan_service.get_loan_or_404(db, loan_id)
     loan_service.report_lost(db, now, staff.user, loan)
     return loan_service.to_out(db, loan, now)

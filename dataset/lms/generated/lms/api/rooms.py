@@ -9,12 +9,20 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Depends, Path, Query, Request
 from sqlalchemy.orm import Session
 
+from lms.api.common import (
+    acting_member_id,
+    collect_date,
+    ensure_own_or_staff,
+    is_staff,
+    optional_date,
+    patch_fields,
+    request_now,
+)
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, Principal, StaffOnly, require_roles
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.members.models import Member
 from lms.members.service import get_member_or_404
 from lms.rooms import bans, bookings, rooms
@@ -50,27 +58,6 @@ MemberId = Annotated[int, Path(ge=1)]
 MemberOnly = Annotated[Principal, Depends(require_roles("member"))]
 
 
-def _query_date(name: str, raw: str | None, problems: list[dict[str, str]]) -> datetime.date | None:
-    if raw is None:
-        problems.append({"field": name, "problem": "field required"})
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-        return None
-
-
-def _optional_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    problems: list[dict[str, str]] = []
-    value = _query_date(name, raw, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    return value
-
-
 def _query_time(name: str, raw: str | None, problems: list[dict[str, str]]) -> datetime.time | None:
     if raw is None:
         problems.append({"field": name, "problem": "field required"})
@@ -91,21 +78,8 @@ def _features(values: list[str] | None) -> list[str] | None:
     return values
 
 
-def _is_staff(principal: Principal) -> bool:
-    return principal.user.role != "member"
-
-
-def _own_member_id(principal: Principal) -> int:
-    member_id = principal.user.member_id
-    if member_id is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member_id
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
-    """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own bookings and bans can be accessed")
+    ensure_own_or_staff(principal, member_id, "bookings and bans")
 
 
 def _require_organizer(principal: Principal, booking: RoomBooking) -> bool:
@@ -126,7 +100,7 @@ def _booking_out(db: Session, booking: RoomBooking) -> RoomBookingOut:
 
 @router.post("/rooms", response_model=RoomOut, status_code=201)
 def create_room(body: RoomCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> RoomOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     room = rooms.create_room(db, now, admin.user, **body.model_dump())
     return room_out(room)
 
@@ -165,7 +139,7 @@ def free_rooms(
 ) -> Page[RoomOut]:
     settings = request.app.state.settings
     problems: list[dict[str, str]] = []
-    day = _query_date("date", date, problems)
+    day = collect_date("date", date, problems)
     start = _query_time("start_time", start_time, problems)
     end = _query_time("end_time", end_time, problems)
     features = None
@@ -200,9 +174,9 @@ def get_room(room_id: RoomId, db: SessionDep, _: AnyUser) -> RoomOut:
 
 @router.patch("/rooms/{room_id}", response_model=RoomOut)
 def update_room(room_id: RoomId, body: RoomPatchIn, request: Request, db: SessionDep, admin: AdminOnly) -> RoomOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     room = rooms.get_room_or_404(db, room_id)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     return room_out(rooms.update_room(db, now, admin.user, room, fields))
 
 
@@ -216,7 +190,7 @@ def room_availability(
 ) -> AvailabilityOut:
     settings = request.app.state.settings
     problems: list[dict[str, str]] = []
-    day = _query_date("date", date, problems)
+    day = collect_date("date", date, problems)
     if problems:
         raise ValidationFailed(problems)
     assert day is not None
@@ -227,7 +201,7 @@ def room_availability(
         room,
         day,
         settings.holidays,
-        staff=_is_staff(principal),
+        staff=is_staff(principal),
         member_id=principal.user.member_id,
     )
 
@@ -239,14 +213,7 @@ def room_availability(
 def create_booking(body: RoomBookingCreateIn, request: Request, db: SessionDep, principal: CurrentPrincipal) -> RoomBookingOut:
     settings = request.app.state.settings
     now = local_now(settings.clock)
-    if principal.user.role == "member":
-        if body.member_id is not None:
-            raise ValidationFailed.single("member_id", "members book for themselves and must not send member_id")
-        organizer_id = _own_member_id(principal)
-    else:
-        if body.member_id is None:
-            raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
-        organizer_id = body.member_id
+    organizer_id = acting_member_id(principal, body.member_id, "book for themselves")
     if organizer_id in body.participant_ids:
         raise ValidationFailed.single("participant_ids", "the organizer cannot be a participant")
     booking = bookings.create_booking(
@@ -282,15 +249,15 @@ def list_bookings(
         status=status,
         room_id=room_id,
         branch_id=branch_id,
-        first=_optional_date("from", first),
-        last=_optional_date("to", to),
+        first=optional_date("from", first),
+        last=optional_date("to", to),
     )
     return paginate(db, stmt, page, lambda b: _booking_out(db, b))
 
 
 @router.post("/room-bookings/process", response_model=ProcessOut)
 def process_bookings(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     no_shows, completed, ban_count = bookings.process(db, now, staff.user)
     return ProcessOut(no_shows=no_shows, completed=completed, bans=ban_count)
 
@@ -324,8 +291,8 @@ def list_member_bookings(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> Page[RoomBookingOut]:
-    first_date = _optional_date("from", first)
-    last_date = _optional_date("to", to)
+    first_date = optional_date("from", first)
+    last_date = optional_date("to", to)
     member: Member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = bookings.booking_list_stmt(
@@ -338,16 +305,16 @@ def list_member_bookings(
 def update_booking(
     booking_id: BookingId, body: RoomBookingPatchIn, request: Request, db: SessionDep, principal: CurrentPrincipal
 ) -> RoomBookingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     booking = bookings.get_booking_or_404(db, booking_id)
     _require_organizer(principal, booking)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
+    fields = patch_fields(body)
     return _booking_out(db, bookings.update_booking(db, now, principal.user, booking, fields))
 
 
 @router.post("/room-bookings/{booking_id}/cancel", response_model=RoomBookingOut)
 def cancel_booking(booking_id: BookingId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> RoomBookingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     booking = bookings.get_booking_or_404(db, booking_id)
     by_organizer = _require_organizer(principal, booking)
     return _booking_out(db, bookings.cancel(db, now, principal.user, booking, by_organizer=by_organizer))
@@ -355,7 +322,7 @@ def cancel_booking(booking_id: BookingId, request: Request, db: SessionDep, prin
 
 @router.post("/room-bookings/{booking_id}/leave", response_model=RoomBookingOut)
 def leave_booking(booking_id: BookingId, request: Request, db: SessionDep, principal: MemberOnly) -> RoomBookingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     booking = bookings.get_booking_or_404(db, booking_id)
     member_id = principal.user.member_id
     if member_id is None or member_id not in booking.participant_ids:
@@ -365,7 +332,7 @@ def leave_booking(booking_id: BookingId, request: Request, db: SessionDep, princ
 
 @router.post("/room-bookings/{booking_id}/check-in", response_model=RoomBookingOut)
 def check_in(booking_id: BookingId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> RoomBookingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     booking = bookings.get_booking_or_404(db, booking_id)
     _require_organizer(principal, booking)
     return _booking_out(db, bookings.check_in(db, now, principal.user, booking))
@@ -373,7 +340,7 @@ def check_in(booking_id: BookingId, request: Request, db: SessionDep, principal:
 
 @router.post("/room-bookings/{booking_id}/check-out", response_model=RoomBookingOut)
 def check_out(booking_id: BookingId, request: Request, db: SessionDep, principal: CurrentPrincipal) -> RoomBookingOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     booking = bookings.get_booking_or_404(db, booking_id)
     _require_organizer(principal, booking)
     return _booking_out(db, bookings.check_out(db, now, principal.user, booking))
@@ -386,7 +353,7 @@ def check_out(booking_id: BookingId, request: Request, db: SessionDep, principal
 def list_member_bans(
     member_id: MemberId, request: Request, db: SessionDep, principal: CurrentPrincipal, page: PageDep
 ) -> Page[RoomBanOut]:
-    today = local_now(request.app.state.settings.clock).date()
+    today = request_now(request).date()
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
     stmt = (
@@ -397,7 +364,7 @@ def list_member_bans(
 
 @router.post("/members/{member_id}/room-bans", response_model=RoomBanOut, status_code=201)
 def create_ban(member_id: MemberId, body: RoomBanCreateIn, request: Request, db: SessionDep, admin: AdminOnly) -> RoomBanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     problems: list[dict[str, str]] = []
     if body.starts_on < now.date():
         problems.append({"field": "starts_on", "problem": "starts_on must not be before today"})
@@ -414,6 +381,6 @@ def create_ban(member_id: MemberId, body: RoomBanCreateIn, request: Request, db:
 
 @router.post("/room-bans/{ban_id}/lift", response_model=RoomBanOut)
 def lift_ban(ban_id: BanId, request: Request, db: SessionDep, admin: AdminOnly) -> RoomBanOut:
-    now = local_now(request.app.state.settings.clock)
+    now = request_now(request)
     ban = bans.get_ban_or_404(db, ban_id)
     return ban_out(bans.lift_ban(db, now, admin.user, ban), now.date())

@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, Response
 
+from lms.api.common import is_member, own_member, patch_fields, reject_nulls, request_now
 from lms.auth.deps import AnyUser, CurrentPrincipal, Principal, StaffOnly, require_roles
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, NotFound, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate
 from lms.catalog.models import Book
-from lms.members.models import Member
 from lms.members.service import get_member_or_404
 from lms.purchasing.schemas import OrderOut
 from lms.purchasing.service import order_response
@@ -43,31 +42,15 @@ MemberId = Annotated[int, Path(ge=1)]
 MemberOnly = Annotated[Principal, Depends(require_roles("member"))]
 
 
-def _now(request: Request) -> datetime.datetime:
-    return local_now(request.app.state.settings.clock)
-
-
-def _is_member(principal: Principal) -> bool:
-    return principal.user.role == "member"
-
-
-def _own_member(db: SessionDep, principal: Principal) -> Member:
-    """The member behind a ``member`` user."""
-    member = db.get(Member, principal.user.member_id) if principal.user.member_id is not None else None
-    if member is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member
-
-
 def _viewer(principal: Principal, *, hide_member_id: bool = False) -> service.Viewer:
-    if _is_member(principal):
+    if is_member(principal):
         return service.Viewer(member_id=principal.user.member_id, hide_member_id=hide_member_id)
     return service.STAFF
 
 
 def _require_own(principal: Principal, suggestion: Suggestion) -> None:
     """LIB-AUTH-25."""
-    if _is_member(principal) and suggestion.member_id != principal.user.member_id:
+    if is_member(principal) and suggestion.member_id != principal.user.member_id:
         raise Forbidden("Only your own suggestions can be changed")
 
 
@@ -80,15 +63,15 @@ def _not_found(suggestion_id: int) -> NotFound:
 
 @router.post("/suggestions", response_model=SuggestionOut, status_code=201, response_model_exclude_unset=True)
 def suggest(body: SuggestIn, request: Request, db: SessionDep, principal: CurrentPrincipal) -> SuggestionOut:
-    now = _now(request)
-    if _is_member(principal):
+    now = request_now(request)
+    if is_member(principal):
         if body.member_id is not None:
             raise ValidationFailed.single("member_id", "members suggest for themselves and must not send member_id")
     elif body.member_id is None:
         raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
     service.check_year(body.publication_year, now.date())
     branch = service.require_known_branch(db, body.branch_id)
-    member = _own_member(db, principal) if _is_member(principal) else service.get_member_or_reference_404(db, body.member_id)
+    member = own_member(db, principal) if is_member(principal) else service.get_member_or_reference_404(db, body.member_id)
     suggestion = service.suggest(
         db,
         now,
@@ -126,7 +109,7 @@ def list_suggestions(
 @router.get("/suggestions/{suggestion_id}", response_model=SuggestionOut, response_model_exclude_unset=True)
 def get_suggestion(suggestion_id: SuggestionId, db: SessionDep, principal: AnyUser) -> SuggestionOut:
     suggestion = service.get_suggestion_or_404(db, suggestion_id)
-    if _is_member(principal) and not suggestion.is_open and suggestion.member_id != principal.user.member_id:
+    if is_member(principal) and not suggestion.is_open and suggestion.member_id != principal.user.member_id:
         raise _not_found(suggestion_id)  # LIB-SUG-12
     return service.to_out(db, suggestion, _viewer(principal))
 
@@ -135,11 +118,9 @@ def get_suggestion(suggestion_id: SuggestionId, db: SessionDep, principal: AnyUs
 def update_suggestion(
     suggestion_id: SuggestionId, body: SuggestPatchIn, request: Request, db: SessionDep, principal: MemberOnly
 ) -> SuggestionOut:
-    now = _now(request)
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    nulls = [name for name in ("title", "author_text", "reason", "branch_id") if name in fields and fields[name] is None]
-    if nulls:
-        raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])
+    now = request_now(request)
+    fields = patch_fields(body)
+    reject_nulls(fields, ("title", "author_text", "reason", "branch_id"))
     service.check_year(fields.get("publication_year"), now.date())
     if "branch_id" in fields:
         service.require_known_branch(db, fields["branch_id"])
@@ -155,7 +136,7 @@ def withdraw_suggestion(
 ) -> SuggestionOut:
     suggestion = service.get_suggestion_or_404(db, suggestion_id)
     _require_own(principal, suggestion)
-    withdrawn = service.withdraw(db, _now(request), principal.user, suggestion, by_member=_is_member(principal))
+    withdrawn = service.withdraw(db, request_now(request), principal.user, suggestion, by_member=is_member(principal))
     return service.to_out(db, withdrawn, _viewer(principal))
 
 
@@ -173,16 +154,16 @@ def support_suggestion(
     body: SupportIn | None = None,
 ) -> SuggestionOut:
     suggestion = service.get_suggestion_or_404(db, suggestion_id)
-    member = _own_member(db, principal)
+    member = own_member(db, principal)
     reserve = body.reserve_on_arrival if body is not None else True
-    service.support(db, _now(request), principal.user, member, suggestion, reserve)
+    service.support(db, request_now(request), principal.user, member, suggestion, reserve)
     return service.to_out(db, suggestion, _viewer(principal))
 
 
 @router.delete("/suggestions/{suggestion_id}/support", status_code=204)
 def stop_supporting(suggestion_id: SuggestionId, request: Request, db: SessionDep, principal: MemberOnly) -> Response:
     suggestion = service.get_suggestion_or_404(db, suggestion_id)
-    service.remove_support(db, _now(request), principal.user, _own_member(db, principal), suggestion)
+    service.remove_support(db, request_now(request), principal.user, own_member(db, principal), suggestion)
     return Response(status_code=204)
 
 
@@ -202,7 +183,7 @@ def list_supporters(suggestion_id: SuggestionId, db: SessionDep, _: StaffOnly, p
 )
 def member_suggestions(member_id: MemberId, db: SessionDep, principal: CurrentPrincipal) -> MemberSuggestionsOut:
     member = get_member_or_404(db, member_id)
-    if _is_member(principal) and principal.user.member_id != member.id:
+    if is_member(principal) and principal.user.member_id != member.id:
         raise Forbidden("Only your own suggestions can be accessed")
     own, supported = service.member_suggestions(db, member.id, _viewer(principal))
     return MemberSuggestionsOut(own=own, supported=supported)
@@ -222,7 +203,7 @@ def approve_suggestion(
     suggestion = service.get_suggestion_or_404(db, suggestion_id)
     approved = review.approve(
         db,
-        _now(request),
+        request_now(request),
         staff.user,
         suggestion,
         book=book,
@@ -237,12 +218,10 @@ def approve_suggestion(
 def change_approval(
     suggestion_id: SuggestionId, body: ApprovalPatchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> SuggestionOut:
-    fields = {name: getattr(body, name) for name in body.model_fields_set}
-    nulls = [name for name, value in fields.items() if value is None]
-    if nulls:
-        raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])
+    fields = patch_fields(body)
+    reject_nulls(fields)
     suggestion = service.get_suggestion_or_404(db, suggestion_id)
-    changed = review.change_approval(db, _now(request), staff.user, suggestion, fields)
+    changed = review.change_approval(db, request_now(request), staff.user, suggestion, fields)
     return service.to_out(db, changed, service.STAFF)
 
 
@@ -272,7 +251,7 @@ def merge_suggestion(
     if body.into_suggestion_id == suggestion_id:
         raise ValidationFailed.single("into_suggestion_id", "a suggestion cannot be merged into itself")
     source = service.get_suggestion_or_404(db, suggestion_id)
-    target = review.merge(db, _now(request), staff.user, source, body.into_suggestion_id)
+    target = review.merge(db, request_now(request), staff.user, source, body.into_suggestion_id)
     return service.to_out(db, target, service.STAFF)
 
 
@@ -283,7 +262,7 @@ def merge_suggestion(
 def order_suggestions(body: OrderIn, request: Request, db: SessionDep, staff: StaffOnly) -> OrderOut:
     purchase_order = ordering.order(
         db,
-        _now(request),
+        request_now(request),
         staff.user,
         supplier_id=body.supplier_id,
         branch_id=body.branch_id,
@@ -294,4 +273,4 @@ def order_suggestions(body: OrderIn, request: Request, db: SessionDep, staff: St
 
 @router.post("/suggestions/process", response_model=ProcessOut)
 def process_suggestions(request: Request, db: SessionDep, staff: StaffOnly) -> ProcessOut:
-    return ordering.process(db, _now(request), staff.user)
+    return ordering.process(db, request_now(request), staff.user)

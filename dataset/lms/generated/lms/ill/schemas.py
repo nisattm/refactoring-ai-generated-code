@@ -5,15 +5,15 @@ from __future__ import annotations
 import datetime
 import re
 from decimal import Decimal
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, BeforeValidator, Field, StrictBool, StrictInt, field_validator, model_validator
+from pydantic import BaseModel, Field, StrictBool, StrictInt, field_validator, model_validator
 
 from lms.catalog.isbn import normalize_isbn
 from lms.core.money import Money, format_amount
-from lms.core.schemas import RequestModel
+from lms.core.schemas import DateValue, RequestModel
 from lms.core.text import is_valid_email
-from lms.core.timeutil import format_datetime, parse_date
+from lms.core.timeutil import format_datetime
 from lms.ill.accrual import is_overdue, late_fee_on
 from lms.ill.models import IllOutgoing, IllPartner, IllRequest
 
@@ -31,15 +31,6 @@ MAX_REQUEST_FEE = Decimal("50.00")
 MAX_DAILY_LATE_FEE = Decimal("10.00")
 MIN_REPLACEMENT_COST = Decimal("0.01")
 MAX_REPLACEMENT_COST = Decimal("100000.00")
-
-
-def _parse_date_value(value: Any) -> datetime.date:
-    if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
-        return value
-    return parse_date(value)
-
-
-DateValue = Annotated[datetime.date, BeforeValidator(_parse_date_value)]
 
 
 def _email(value: str) -> str:

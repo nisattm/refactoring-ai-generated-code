@@ -1,8 +1,13 @@
-"""Base class for request bodies (LIB-COM-15, LIB-COM-23)."""
+"""Base class for request bodies (LIB-COM-15, LIB-COM-23) and shared field types."""
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+import datetime
+from typing import Annotated, Any
+
+from pydantic import BaseModel, BeforeValidator, ConfigDict
+
+from lms.core.timeutil import parse_date
 
 
 class RequestModel(BaseModel):
@@ -13,3 +18,12 @@ class RequestModel(BaseModel):
 
 class ResponseModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+
+def _parse_date_value(value: Any) -> datetime.date:
+    if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
+        return value
+    return parse_date(value)
+
+
+DateValue = Annotated[datetime.date, BeforeValidator(_parse_date_value)]

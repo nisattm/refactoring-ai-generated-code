@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.catalog.models import Book
-from lms.core.errors import Conflict, Forbidden, NotFound, ValidationFailed, reference_not_found
+from lms.core.db import get_or_404, get_reference
+from lms.core.errors import Conflict, Forbidden, ValidationFailed
 from lms.core.money import format_amount
 from lms.notifications.service import notify_suggestion
 from lms.suggestions import arrival, rules
@@ -122,8 +123,7 @@ def reject(
     if reject_reason == "already_owned":
         if book_id is None:
             raise ValidationFailed.single("book_id", "book_id is required when the reason is already_owned")
-        if db.get(Book, book_id) is None:
-            raise reference_not_found("book_id", book_id)
+        get_reference(db, Book, "book_id", book_id)
     if suggestion.status not in ("submitted", "approved"):
         raise invalid_status(suggestion, "reject")
     old = suggestion.status
@@ -163,11 +163,7 @@ def merge(
     db: Session, now: datetime.datetime, actor: User, source: Suggestion, target_id: int
 ) -> Suggestion:
     """LIB-SUG-22."""
-    target = db.get(Suggestion, target_id)
-    if target is None:
-        raise NotFound(
-            f"Suggestion {target_id} does not exist", details={"resource": "suggestion", "id": target_id}
-        )
+    target = get_or_404(db, Suggestion, target_id, "Suggestion", "suggestion")
     if source.status != "submitted":
         raise invalid_status(source, "merge")
     if target.status not in ("submitted", "approved"):

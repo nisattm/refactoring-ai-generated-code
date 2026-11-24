@@ -17,7 +17,8 @@ from lms.catalog.models import Copy
 from lms.catalog.release import release_copy
 from lms.catalog.status import set_status
 from lms.core.calendar import next_working_day
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.db import get_or_404, get_reference
+from lms.core.errors import Conflict, NotFound
 from lms.core.money import format_amount
 from lms.fines.service import (
     LOST_PROCESSING_FEE,
@@ -36,10 +37,7 @@ from lms.staff.schedule import has_closure_on
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> Loan:
-    loan = db.get(Loan, loan_id)
-    if loan is None:
-        raise NotFound(f"Loan {loan_id} does not exist", details={"resource": "loan", "id": loan_id})
-    return loan
+    return get_or_404(db, Loan, loan_id, "Loan", "loan")
 
 
 def due_date_after(start: datetime.date, loan_period_days: int, holidays: Container[datetime.date]) -> datetime.date:
@@ -52,10 +50,7 @@ def due_date_after(start: datetime.date, loan_period_days: int, holidays: Contai
 
 def _find_copy(db: Session, copy_id: int | None, barcode: str | None) -> Copy:
     if copy_id is not None:
-        copy = db.get(Copy, copy_id)
-        if copy is None:
-            raise reference_not_found("copy_id", copy_id)
-        return copy
+        return get_reference(db, Copy, "copy_id", copy_id)
     assert barcode is not None
     copy = db.scalar(sa.select(Copy).where(Copy.barcode == barcode.upper()))
     if copy is None:
@@ -82,9 +77,7 @@ def lend(
             raise NotFound(f"No card has number {card_no}", details={"field": "card_no", "value": card_no})
         member_id = card.member_id
     assert member_id is not None
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    member = get_reference(db, Member, "member_id", member_id)
     copy = _find_copy(db, copy_id, barcode)
     if card is not None and card.status != "active":
         raise Conflict("The card is not active", code="CARD_NOT_ACTIVE", details={"status": card.status})
@@ -209,9 +202,7 @@ def return_loan(
     damage_fee: Decimal | None,
 ) -> Loan:
     """LIB-LOAN-09 to LIB-LOAN-12."""
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found("branch_id", branch_id)
+    branch = get_reference(db, Branch, "branch_id", branch_id)
     if loan.status != "open":
         raise Conflict("The loan is not open", code="LOAN_NOT_OPEN", details={"status": loan.status})
     if not branch.is_active:

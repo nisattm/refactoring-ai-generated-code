@@ -14,7 +14,8 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.branches.service import require_active_branch
 from lms.catalog.models import Book, Copy
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.db import get_or_404, get_reference
+from lms.core.errors import Conflict, ValidationFailed
 from lms.core.money import ZERO, format_amount
 from lms.fines import service as fines
 from lms.fines.schemas import BLOCKING_DEBT
@@ -28,12 +29,7 @@ from lms.notifications.service import notify_ill
 
 
 def get_request_or_404(db: Session, request_id: int) -> IllRequest:
-    request = db.get(IllRequest, request_id)
-    if request is None:
-        raise NotFound(
-            f"Interlibrary request {request_id} does not exist", details={"resource": "ill_request", "id": request_id}
-        )
-    return request
+    return get_or_404(db, IllRequest, request_id, "Interlibrary request", "ill_request")
 
 
 def _invalid_status(request: IllRequest) -> Conflict:
@@ -233,9 +229,7 @@ def receive(
     pickup_branch_id: int,
 ) -> IllRequest:
     """LIB-ILL-10, LIB-ILL-11."""
-    branch = db.get(Branch, pickup_branch_id)
-    if branch is None:
-        raise reference_not_found("pickup_branch_id", pickup_branch_id)
+    branch = get_reference(db, Branch, "pickup_branch_id", pickup_branch_id)
     if request.status != "sent":
         raise _invalid_status(request)
     require_active_branch(db, "pickup_branch_id", pickup_branch_id)
@@ -359,8 +353,7 @@ def return_request(
     db: Session, now: datetime.datetime, actor: User, request: IllRequest, branch_id: int
 ) -> IllRequest:
     """LIB-ILL-17, LIB-ILL-18."""
-    if db.get(Branch, branch_id) is None:
-        raise reference_not_found("branch_id", branch_id)
+    get_reference(db, Branch, "branch_id", branch_id)
     if request.status != "on_loan":
         raise _invalid_status(request)
     require_active_branch(db, "branch_id", branch_id)
