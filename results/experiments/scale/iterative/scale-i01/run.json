@@ -1,0 +1,868 @@
+{
+  "approach": "iterative",
+  "run_id": "scale-i01",
+  "repetition": "",
+  "start_ref": "v0-ai-baseline",
+  "start_sha": "3bd14129262d562e9f66eb899737119ce7d6c586",
+  "start_state_commit": "44f09f7500516c29fca5184568533d8d8787485a",
+  "baseline": "results/baseline/final/v0-ai-baseline-ct",
+  "baseline_primary": {
+    "mean_cc": 3.0129,
+    "mean_cognitive": 2.1321,
+    "mi_weighted": 38.2452,
+    "duplication_pct": 2.9526,
+    "smell_count": 360
+  },
+  "tests_modules": null,
+  "test_files": null,
+  "account": "exp-1",
+  "accounts_used": [
+    "exp-1"
+  ],
+  "window_pct_start": 9.0,
+  "work_root": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\exp-scale-i01-zcl9k3qv",
+  "image": "refactoring-env",
+  "image_id": "sha256:952feefa2878bab27b68d5531ad6bb1a4d4c594907951ebeacff8e397507541b",
+  "model": "claude-sonnet-5-5",
+  "effort": "high",
+  "flags": [
+    "--model",
+    "claude-sonnet-5-5",
+    "--effort",
+    "high",
+    "--tools",
+    "Read,Edit,Write,Glob,Grep",
+    "--allowedTools",
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "--disallowedTools",
+    "Task",
+    "Agent",
+    "--safe-mode",
+    "--permission-mode",
+    "dontAsk",
+    "--output-format",
+    "stream-json",
+    "--verbose"
+  ],
+  "env": {
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "200000"
+  },
+  "compact_window": 200000,
+  "expected_version": "2.1.308",
+  "host": {
+    "os": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.10"
+  },
+  "interface_sha256": "7439376ee370a92ebd5df3094b5f0da0d855dec6c5f058a06a7e7e84438a0250",
+  "test_hashes_sha256": "a9d87c6e81c2c2bd2c80bdb2bd96ac4d576f98dc4969b2f3643b6f79545b2ec2",
+  "started_at": "2026-11-24T22:36:42+03:00",
+  "finished_at": "2026-11-25T01:18:18+03:00",
+  "status": "finished",
+  "calls": [
+    {
+      "number": 1,
+      "kind": "round-1",
+      "account": "exp-1",
+      "started_at": "2026-11-24T22:44:06+03:00",
+      "wall_s": 440.6,
+      "lock_released": true,
+      "lock_wait_s": 0.0,
+      "exit_code": 0,
+      "status": "ok",
+      "invalid": [],
+      "session_in": null,
+      "session_id": "f805cfe6-c2c4-4b84-97f7-dc7da4cecb10",
+      "prompt_sha256": "1b7f15ace699d297b781832a1f053554b67876988490fcd51547bedfd9a5dae8",
+      "claude_code_version": "2.1.308",
+      "api_key_source": "none",
+      "tools": [
+        "Edit",
+        "Glob",
+        "Grep",
+        "Read",
+        "Write"
+      ],
+      "tool_counts": {
+        "Glob": 2,
+        "Read": 41,
+        "Grep": 71,
+        "Write": 1,
+        "Edit": 182
+      },
+      "files_read": [
+        "/work/INTERFACE.md",
+        "/work/lms/__init__.py",
+        "/work/lms/api/access.py",
+        "/work/lms/api/app.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/calendar.py",
+        "/work/lms/api/common.py",
+        "/work/lms/api/courses.py",
+        "/work/lms/api/dataexchange.py",
+        "/work/lms/api/digital.py",
+        "/work/lms/api/donations.py",
+        "/work/lms/api/equipment.py",
+        "/work/lms/api/events.py",
+        "/work/lms/api/ill.py",
+        "/work/lms/api/inventory.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/messaging.py",
+        "/work/lms/api/printing.py",
+        "/work/lms/api/programs.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/rooms.py",
+        "/work/lms/api/staff.py",
+        "/work/lms/api/suggestions.py",
+        "/work/lms/auth/deps.py",
+        "/work/lms/core/__init__.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/errors.py",
+        "/work/lms/core/pagination.py",
+        "/work/lms/core/text.py"
+      ],
+      "files_written": [
+        "/work/lms/api/access.py",
+        "/work/lms/api/audit.py",
+        "/work/lms/api/auth.py",
+        "/work/lms/api/branches.py",
+        "/work/lms/api/calendar.py",
+        "/work/lms/api/catalog.py",
+        "/work/lms/api/common.py",
+        "/work/lms/api/courses.py",
+        "/work/lms/api/dataexchange.py",
+        "/work/lms/api/digital.py",
+        "/work/lms/api/donations.py",
+        "/work/lms/api/equipment.py",
+        "/work/lms/api/events.py",
+        "/work/lms/api/fines.py",
+        "/work/lms/api/ill.py",
+        "/work/lms/api/inventory.py",
+        "/work/lms/api/loans.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/messaging.py",
+        "/work/lms/api/notifications.py",
+        "/work/lms/api/preservation.py",
+        "/work/lms/api/printing.py",
+        "/work/lms/api/programs.py",
+        "/work/lms/api/purchasing.py",
+        "/work/lms/api/reports.py",
+        "/work/lms/api/reservations.py",
+        "/work/lms/api/rooms.py",
+        "/work/lms/api/staff.py",
+        "/work/lms/api/suggestions.py",
+        "/work/lms/api/users.py"
+      ],
+      "subagent_attempts": 0,
+      "subagents_spawned": 0,
+      "permission_denials": [],
+      "terminal_reason": "completed",
+      "is_error": false,
+      "num_turns": 299,
+      "done_marker": true,
+      "outside_lms_changes": 0,
+      "hidden_files": [],
+      "read_only_shell": [],
+      "rate_limit": {
+        "rate_limit_info": {
+          "status": "allowed",
+          "resetsAt": 1795565400,
+          "rateLimitType": "five_hour",
+          "overageStatus": "rejected",
+          "overageDisabledReason": "org_level_disabled",
+          "isUsingOverage": false,
+          "unifiedWindows": {
+            "five_hour": {
+              "utilization": 0.25,
+              "resetsAt": 1795565400
+            },
+            "seven_day": {
+              "utilization": 0.03,
+              "resetsAt": 1796140800
+            }
+          }
+        },
+        "session_id": "f805cfe6-c2c4-4b84-97f7-dc7da4cecb10"
+      },
+      "usd_raw": 2.282245000000001,
+      "usd_diff": 2.282245000000001,
+      "summary_raw": {
+        "input_tokens": 2631,
+        "output_tokens": 68846,
+        "cache_write_tokens": 215468,
+        "cache_write_1h_tokens": "",
+        "cache_read_tokens": 7281765,
+        "thinking_tokens": 11742,
+        "total_input_tokens": 7499864,
+        "usd": 2.282245000000001,
+        "usd_recomputed": 2.2837705,
+        "duration_s": 436.9,
+        "api_duration_s": 430.014,
+        "num_turns": 299,
+        "subagents_spawned": 0,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "f805cfe6-c2c4-4b84-97f7-dc7da4cecb10",
+        "note": ""
+      },
+      "summary": {
+        "input_tokens": 2631,
+        "output_tokens": 68846,
+        "cache_write_tokens": 215468,
+        "cache_write_1h_tokens": "",
+        "cache_read_tokens": 7281765,
+        "thinking_tokens": 11742,
+        "total_input_tokens": 7499864,
+        "usd": 2.282245000000001,
+        "usd_recomputed": 2.2837705,
+        "duration_s": 436.9,
+        "api_duration_s": 430.014,
+        "num_turns": 299,
+        "subagents_spawned": 0,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "f805cfe6-c2c4-4b84-97f7-dc7da4cecb10",
+        "note": ""
+      },
+      "tokens_raw": {
+        "input_tokens": 2631,
+        "output_tokens": 68846,
+        "cache_write_tokens": 215468,
+        "cache_read_tokens": 7281765,
+        "thinking_tokens": 11742
+      },
+      "tokens": {
+        "input_tokens": 2631,
+        "output_tokens": 68846,
+        "cache_write_tokens": 215468,
+        "cache_read_tokens": 7281765,
+        "thinking_tokens": 11742
+      }
+    },
+    {
+      "number": 2,
+      "kind": "round-n",
+      "account": "exp-1",
+      "started_at": "2026-11-24T23:22:09+03:00",
+      "wall_s": 409.0,
+      "lock_released": true,
+      "lock_wait_s": 0.0,
+      "exit_code": 0,
+      "status": "ok",
+      "invalid": [],
+      "session_in": "f805cfe6-c2c4-4b84-97f7-dc7da4cecb10",
+      "session_id": "f805cfe6-c2c4-4b84-97f7-dc7da4cecb10",
+      "prompt_sha256": "bc0c39e7ca34cd478731eb3139bd48e4d9eae7f223fab37aba4d5badaf24ad24",
+      "claude_code_version": "2.1.308",
+      "api_key_source": "none",
+      "tools": [
+        "Edit",
+        "Glob",
+        "Grep",
+        "Read",
+        "Write"
+      ],
+      "tool_counts": {
+        "Grep": 50,
+        "Edit": 248,
+        "Glob": 1,
+        "Read": 14,
+        "Write": 1
+      },
+      "files_read": [
+        "/work/lms/catalog/service.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/errors.py",
+        "/work/lms/core/schemas.py",
+        "/work/lms/core/timeutil.py",
+        "/work/lms/digital/schemas.py",
+        "/work/lms/equipment/reservations.py",
+        "/work/lms/equipment/schemas.py",
+        "/work/lms/ill/outgoing.py",
+        "/work/lms/ill/requests.py",
+        "/work/lms/ill/schemas.py",
+        "/work/lms/rooms/schemas.py",
+        "/work/lms/staff/profiles.py"
+      ],
+      "files_written": [
+        "/work/lms/access/bans.py",
+        "/work/lms/access/gate.py",
+        "/work/lms/access/passes.py",
+        "/work/lms/api/access.py",
+        "/work/lms/api/branches.py",
+        "/work/lms/api/catalog.py",
+        "/work/lms/api/common.py",
+        "/work/lms/api/courses.py",
+        "/work/lms/api/digital.py",
+        "/work/lms/api/donations.py",
+        "/work/lms/api/equipment.py",
+        "/work/lms/api/events.py",
+        "/work/lms/api/ill.py",
+        "/work/lms/api/members.py",
+        "/work/lms/api/messaging.py",
+        "/work/lms/api/preservation.py",
+        "/work/lms/api/printing.py",
+        "/work/lms/api/programs.py",
+        "/work/lms/api/purchasing.py",
+        "/work/lms/api/rooms.py",
+        "/work/lms/api/staff.py",
+        "/work/lms/api/suggestions.py",
+        "/work/lms/api/users.py",
+        "/work/lms/auth/service.py",
+        "/work/lms/branches/service.py",
+        "/work/lms/branches/transfers.py",
+        "/work/lms/catalog/service.py",
+        "/work/lms/core/db.py",
+        "/work/lms/core/schemas.py",
+        "/work/lms/courses/courses.py",
+        "/work/lms/courses/loans.py",
+        "/work/lms/courses/reserve.py",
+        "/work/lms/digital/holds.py",
+        "/work/lms/digital/lending.py",
+        "/work/lms/digital/resources.py",
+        "/work/lms/digital/schemas.py",
+        "/work/lms/digital/sessions.py",
+        "/work/lms/digital/state.py",
+        "/work/lms/donations/donors.py",
+        "/work/lms/donations/offers.py",
+        "/work/lms/equipment/inventory.py",
+        "/work/lms/equipment/lending.py",
+        "/work/lms/equipment/reservations.py",
+        "/work/lms/equipment/schemas.py",
+        "/work/lms/events/events.py",
+        "/work/lms/events/registrations.py",
+        "/work/lms/fines/service.py",
+        "/work/lms/ill/outgoing.py",
+        "/work/lms/ill/partners.py",
+        "/work/lms/ill/requests.py",
+        "/work/lms/ill/schemas.py",
+        "/work/lms/inventory/counts.py",
+        "/work/lms/loans/service.py",
+        "/work/lms/members/service.py",
+        "/work/lms/messaging/announcements.py",
+        "/work/lms/messaging/threads.py",
+        "/work/lms/notifications/service.py",
+        "/work/lms/preservation/jobs.py",
+        "/work/lms/preservation/shipments.py",
+        "/work/lms/printing/jobs.py",
+        "/work/lms/printing/printers.py",
+        "/work/lms/programs/entries.py",
+        "/work/lms/programs/programs.py",
+        "/work/lms/purchasing/service.py",
+        "/work/lms/reservations/service.py",
+        "/work/lms/rooms/bans.py",
+        "/work/lms/rooms/bookings.py",
+        "/work/lms/rooms/rooms.py",
+        "/work/lms/rooms/schemas.py",
+        "/work/lms/staff/leave.py",
+        "/work/lms/staff/profiles.py",
+        "/work/lms/staff/shifts.py",
+        "/work/lms/suggestions/ordering.py",
+        "/work/lms/suggestions/review.py",
+        "/work/lms/suggestions/service.py"
+      ],
+      "subagent_attempts": 0,
+      "subagents_spawned": 0,
+      "permission_denials": [],
+      "terminal_reason": "completed",
+      "is_error": false,
+      "num_turns": 316,
+      "done_marker": true,
+      "outside_lms_changes": 0,
+      "hidden_files": [],
+      "read_only_shell": [],
+      "rate_limit": {
+        "rate_limit_info": {
+          "status": "allowed",
+          "resetsAt": 1795565400,
+          "rateLimitType": "five_hour",
+          "overageStatus": "rejected",
+          "overageDisabledReason": "org_level_disabled",
+          "isUsingOverage": false,
+          "unifiedWindows": {
+            "five_hour": {
+              "utilization": 0.39,
+              "resetsAt": 1795565400
+            },
+            "seven_day": {
+              "utilization": 0.04,
+              "resetsAt": 1796140800
+            }
+          }
+        },
+        "session_id": "f805cfe6-c2c4-4b84-97f7-dc7da4cecb10"
+      },
+      "usd_raw": 4.056483600000001,
+      "usd_diff": 1.774239,
+      "summary_raw": {
+        "input_tokens": 4882,
+        "output_tokens": 139449,
+        "cache_write_tokens": 378559,
+        "cache_write_1h_tokens": "",
+        "cache_read_tokens": 11411121,
+        "thinking_tokens": 18972,
+        "total_input_tokens": 11794562,
+        "usd": 4.056483600000001,
+        "usd_recomputed": 4.0596021,
+        "duration_s": 406.556,
+        "api_duration_s": 831.635,
+        "num_turns": 316,
+        "subagents_spawned": 0,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "f805cfe6-c2c4-4b84-97f7-dc7da4cecb10",
+        "note": ""
+      },
+      "summary": {
+        "input_tokens": 2251,
+        "output_tokens": 70603,
+        "cache_write_tokens": 163091,
+        "cache_write_1h_tokens": "",
+        "cache_read_tokens": 4129356,
+        "thinking_tokens": 7230,
+        "total_input_tokens": 4294698,
+        "usd": 1.774239,
+        "usd_recomputed": 1.775832,
+        "duration_s": 406.556,
+        "api_duration_s": 831.635,
+        "num_turns": 316,
+        "subagents_spawned": 0,
+        "models_used": "claude-sonnet-5-5",
+        "valid": "true",
+        "session_id": "f805cfe6-c2c4-4b84-97f7-dc7da4cecb10",
+        "note": ""
+      },
+      "tokens_raw": {
+        "input_tokens": 4882,
+        "output_tokens": 139449,
+        "cache_write_tokens": 378559,
+        "cache_read_tokens": 11411121,
+        "thinking_tokens": 18972
+      },
+      "tokens": {
+        "input_tokens": 2251,
+        "output_tokens": 70603,
+        "cache_write_tokens": 163091,
+        "cache_read_tokens": 4129356,
+        "thinking_tokens": 7230
+      }
+    }
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "call": 1,
+      "state_commit": "3ff99c83634b360117190bf6081d9d37d4d205ec",
+      "tag": "exp/iterative/scale-i01/r1",
+      "code_sha": "0e3997997a66b14bafca28a5b7d289abbc8295ae",
+      "accepted": true,
+      "facts": {
+        "status": "ok",
+        "problems": [],
+        "round_accepted": true,
+        "run_successful": null,
+        "reasons": [
+          "tests: set(s) not run after refactoring: heldout"
+        ],
+        "accept_reasons": [],
+        "regressions": 0,
+        "regressions_by_set": {
+          "feedback": 0,
+          "heldout": 0
+        },
+        "regression_cases": [],
+        "api_changed": false,
+        "api_loads": true,
+        "api_change_kind": null,
+        "invalid_metrics": [],
+        "primary": {
+          "duplication_pct": {
+            "before": 2.9526,
+            "after": 2.0805,
+            "delta": -0.8721,
+            "status": "improved"
+          },
+          "mean_cc": {
+            "before": 3.0129,
+            "after": 2.9689,
+            "delta": -0.044,
+            "status": "improved"
+          },
+          "mean_cognitive": {
+            "before": 2.1321,
+            "after": 2.0755,
+            "delta": -0.0566,
+            "status": "improved"
+          },
+          "mi_weighted": {
+            "before": 38.2452,
+            "after": 39.2902,
+            "delta": 1.045,
+            "status": "improved"
+          },
+          "smell_count": {
+            "before": 360,
+            "after": 347,
+            "delta": -13.0,
+            "status": "improved"
+          }
+        },
+        "wall_s": 1871.3,
+        "folder": "rounds\\r1"
+      },
+      "feedback_lines": 0
+    },
+    {
+      "round": 2,
+      "call": 2,
+      "state_commit": "72c2fe27f40733c37c49e794a2dc1fe27e04c3b5",
+      "tag": "exp/iterative/scale-i01/r2",
+      "code_sha": "f1436a7fbe7420bec164527ed4e3c02b64f5a60f",
+      "accepted": true,
+      "facts": {
+        "status": "ok",
+        "problems": [],
+        "round_accepted": true,
+        "run_successful": null,
+        "reasons": [
+          "tests: set(s) not run after refactoring: heldout"
+        ],
+        "accept_reasons": [],
+        "regressions": 0,
+        "regressions_by_set": {
+          "feedback": 0,
+          "heldout": 0
+        },
+        "regression_cases": [],
+        "api_changed": false,
+        "api_loads": true,
+        "api_change_kind": null,
+        "invalid_metrics": [],
+        "primary": {
+          "duplication_pct": {
+            "before": 2.9526,
+            "after": 1.9952,
+            "delta": -0.9574,
+            "status": "improved"
+          },
+          "mean_cc": {
+            "before": 3.0129,
+            "after": 2.8738,
+            "delta": -0.1391,
+            "status": "improved"
+          },
+          "mean_cognitive": {
+            "before": 2.1321,
+            "after": 1.9697,
+            "delta": -0.1624,
+            "status": "improved"
+          },
+          "mi_weighted": {
+            "before": 38.2452,
+            "after": 39.9396,
+            "delta": 1.6944,
+            "status": "improved"
+          },
+          "smell_count": {
+            "before": 360,
+            "after": 345,
+            "delta": -15.0,
+            "status": "improved"
+          }
+        },
+        "wall_s": 1511.7,
+        "folder": "rounds\\r2"
+      },
+      "feedback_lines": 0
+    }
+  ],
+  "final": {
+    "best": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 2.9526,
+          "after": 1.9952,
+          "delta": -0.9574,
+          "status": "improved"
+        },
+        "mean_cc": {
+          "before": 3.0129,
+          "after": 2.8738,
+          "delta": -0.1391,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 2.1321,
+          "after": 1.9697,
+          "delta": -0.1624,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 38.2452,
+          "after": 39.9396,
+          "delta": 1.6944,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 360,
+          "after": 345,
+          "delta": -15.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 2754.5,
+      "folder": "final\\r2",
+      "round": 2
+    },
+    "round1": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 2.9526,
+          "after": 2.0805,
+          "delta": -0.8721,
+          "status": "improved"
+        },
+        "mean_cc": {
+          "before": 3.0129,
+          "after": 2.9689,
+          "delta": -0.044,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 2.1321,
+          "after": 2.0755,
+          "delta": -0.0566,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 38.2452,
+          "after": 39.2902,
+          "delta": 1.045,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 360,
+          "after": 347,
+          "delta": -13.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 2700.4,
+      "folder": "final\\r1",
+      "round": 1
+    },
+    "last": {
+      "status": "ok",
+      "problems": [],
+      "round_accepted": true,
+      "run_successful": true,
+      "reasons": [],
+      "accept_reasons": [],
+      "regressions": 0,
+      "regressions_by_set": {
+        "feedback": 0,
+        "heldout": 0
+      },
+      "regression_cases": [],
+      "api_changed": false,
+      "api_loads": true,
+      "api_change_kind": null,
+      "invalid_metrics": [],
+      "primary": {
+        "duplication_pct": {
+          "before": 2.9526,
+          "after": 1.9952,
+          "delta": -0.9574,
+          "status": "improved"
+        },
+        "mean_cc": {
+          "before": 3.0129,
+          "after": 2.8738,
+          "delta": -0.1391,
+          "status": "improved"
+        },
+        "mean_cognitive": {
+          "before": 2.1321,
+          "after": 1.9697,
+          "delta": -0.1624,
+          "status": "improved"
+        },
+        "mi_weighted": {
+          "before": 38.2452,
+          "after": 39.9396,
+          "delta": 1.6944,
+          "status": "improved"
+        },
+        "smell_count": {
+          "before": 360,
+          "after": 345,
+          "delta": -15.0,
+          "status": "improved"
+        }
+      },
+      "wall_s": 2754.5,
+      "folder": "final\\r2",
+      "round": 2
+    }
+  },
+  "outside_lms_changes": [],
+  "events": [
+    {
+      "at": "2026-11-24T22:36:45+03:00",
+      "text": "call 1 (round-1) started; run lock released"
+    },
+    {
+      "at": "2026-11-24T22:44:06+03:00",
+      "text": "call 1 finished: ok, 440.6 s"
+    },
+    {
+      "at": "2026-11-24T22:44:07+03:00",
+      "text": "round 1: exp/iterative/scale-i01/r1 = 0e3997997a66"
+    },
+    {
+      "at": "2026-11-24T22:44:08+03:00",
+      "text": "measurement rounds/r1 (feedback) started"
+    },
+    {
+      "at": "2026-11-24T23:15:19+03:00",
+      "text": "measurement rounds/r1: status ok, accepted True, successful None, regressions 0"
+    },
+    {
+      "at": "2026-11-24T23:15:19+03:00",
+      "text": "call 2 (round-n) started; run lock released"
+    },
+    {
+      "at": "2026-11-24T23:22:09+03:00",
+      "text": "call 2 finished: ok, 409.0 s"
+    },
+    {
+      "at": "2026-11-24T23:22:10+03:00",
+      "text": "round 2: exp/iterative/scale-i01/r2 = f1436a7fbe74"
+    },
+    {
+      "at": "2026-11-24T23:22:11+03:00",
+      "text": "measurement rounds/r2 (feedback) started"
+    },
+    {
+      "at": "2026-11-24T23:47:23+03:00",
+      "text": "measurement rounds/r2: status ok, accepted True, successful None, regressions 0"
+    },
+    {
+      "at": "2026-11-24T23:47:23+03:00",
+      "text": "stop: REFACTORING_DONE and no regression"
+    },
+    {
+      "at": "2026-11-24T23:47:23+03:00",
+      "text": "measurement final/r2 (both) started"
+    },
+    {
+      "at": "2026-11-25T00:33:18+03:00",
+      "text": "measurement final/r2: status ok, accepted True, successful True, regressions 0"
+    },
+    {
+      "at": "2026-11-25T00:33:18+03:00",
+      "text": "measurement final/r1 (both) started"
+    },
+    {
+      "at": "2026-11-25T01:18:18+03:00",
+      "text": "measurement final/r1: status ok, accepted True, successful True, regressions 0"
+    }
+  ],
+  "stop_reason": "REFACTORING_DONE and no regression",
+  "best_round": 2,
+  "best_tag": "exp/iterative/scale-i01/r2",
+  "best_facts": {
+    "status": "ok",
+    "problems": [],
+    "round_accepted": true,
+    "run_successful": true,
+    "reasons": [],
+    "accept_reasons": [],
+    "regressions": 0,
+    "regressions_by_set": {
+      "feedback": 0,
+      "heldout": 0
+    },
+    "regression_cases": [],
+    "api_changed": false,
+    "api_loads": true,
+    "api_change_kind": null,
+    "invalid_metrics": [],
+    "primary": {
+      "duplication_pct": {
+        "before": 2.9526,
+        "after": 1.9952,
+        "delta": -0.9574,
+        "status": "improved"
+      },
+      "mean_cc": {
+        "before": 3.0129,
+        "after": 2.8738,
+        "delta": -0.1391,
+        "status": "improved"
+      },
+      "mean_cognitive": {
+        "before": 2.1321,
+        "after": 1.9697,
+        "delta": -0.1624,
+        "status": "improved"
+      },
+      "mi_weighted": {
+        "before": 38.2452,
+        "after": 39.9396,
+        "delta": 1.6944,
+        "status": "improved"
+      },
+      "smell_count": {
+        "before": 360,
+        "after": 345,
+        "delta": -15.0,
+        "status": "improved"
+      }
+    },
+    "wall_s": 2754.5,
+    "folder": "final\\r2",
+    "round": 2
+  },
+  "outcome": "success",
+  "valid": true,
+  "reasons": []
+}

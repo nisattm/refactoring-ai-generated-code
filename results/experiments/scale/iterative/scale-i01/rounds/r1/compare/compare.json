@@ -1,0 +1,290 @@
+{
+  "after": {
+    "analyzer_sha": "f8534a8560578ee74a7f1974d3f89a9132b451fe",
+    "code_content_hash": "0ef4335df1d0ceefabcfc5e85e772a4e7d985428d979666cbf720db6e5232e01",
+    "code_sha": "0e3997997a66b14bafca28a5b7d289abbc8295ae",
+    "image_id": "sha256:952feefa2878bab27b68d5531ad6bb1a4d4c594907951ebeacff8e397507541b",
+    "label": "scale-i01-rounds-r1",
+    "schema_version": "1.0",
+    "tool_versions": {
+      "code-quality-analyzer": "0.2.3",
+      "complexipy": "8.3.0",
+      "jscpd": "jscpd 5.4.2",
+      "pylint": "4.1.3",
+      "python": "3.14.10",
+      "radon": "6.0.1",
+      "ruff": "0.17.3",
+      "vulture": "2.16"
+    }
+  },
+  "before": {
+    "analyzer_sha": "c555155fb111ea564992ae70233230080cb8420e",
+    "code_content_hash": "ee5856a8c61fb2f6611f37fb0e24c997595c61df64000332fb752ff934e18f01",
+    "code_sha": "3bd14129262d562e9f66eb899737119ce7d6c586",
+    "image_id": "sha256:9d423f119a8cd6714eac526bbc1ba03c2f7cc67232e4b62abdfe5fdc77e8222e",
+    "label": "v0-ai-baseline-ct",
+    "schema_version": "1.0",
+    "tool_versions": {
+      "code-quality-analyzer": "0.2.3",
+      "complexipy": "8.3.0",
+      "jscpd": "jscpd 5.4.2",
+      "pylint": "4.1.3",
+      "python": "3.14.10",
+      "radon": "6.0.1",
+      "ruff": "0.17.3",
+      "vulture": "2.16"
+    }
+  },
+  "change_size": {
+    "files_added": 1,
+    "files_changed": 29,
+    "files_removed": 0,
+    "lines_added": 512,
+    "lines_removed": 863
+  },
+  "compare_version": "1.0",
+  "invalid": [],
+  "inventory": {
+    "added": [
+      "function acting_member_id",
+      "function collect_date",
+      "function ensure_own_or_staff",
+      "function fields_of",
+      "function is_member",
+      "function is_staff",
+      "function optional_date",
+      "function own_member",
+      "function own_member_id",
+      "function report_range",
+      "function request_now"
+    ],
+    "added_by_id": 11,
+    "added_by_name": 11,
+    "removed": [
+      "function _acting_member_id",
+      "function _date_param",
+      "function _due_before",
+      "function _fields_of",
+      "function _is_member",
+      "function _is_staff",
+      "function _now",
+      "function _opt_date",
+      "function _optional_date",
+      "function _own_member",
+      "function _own_member_id",
+      "function _query_date",
+      "function _required_date"
+    ],
+    "removed_by_id": 36,
+    "removed_by_name": 13,
+    "removed_share_pct": 0.6959,
+    "units_after": 1866,
+    "units_before": 1868
+  },
+  "openapi": {
+    "after_hash": "71e36007ea650447b99652992cb54a16ec5dbea99515b7510889372e379b94ef",
+    "before_hash": "71e36007ea650447b99652992cb54a16ec5dbea99515b7510889372e379b94ef",
+    "changed": false,
+    "checked": true,
+    "error": null
+  },
+  "previous_best": null,
+  "primary": {
+    "duplication_pct": {
+      "after": 2.0805,
+      "before": 2.9526,
+      "delta": -0.8721,
+      "direction": "lower",
+      "status": "improved",
+      "threshold": 0.05
+    },
+    "mean_cc": {
+      "after": 2.9689,
+      "before": 3.0129,
+      "delta": -0.044,
+      "direction": "lower",
+      "status": "improved",
+      "threshold": 0.01
+    },
+    "mean_cognitive": {
+      "after": 2.0755,
+      "before": 2.1321,
+      "delta": -0.0566,
+      "direction": "lower",
+      "status": "improved",
+      "threshold": 0.01
+    },
+    "mi_weighted": {
+      "after": 39.2902,
+      "before": 38.2452,
+      "delta": 1.045,
+      "direction": "higher",
+      "status": "improved",
+      "threshold": 0.1
+    },
+    "smell_count": {
+      "after": 347,
+      "before": 360,
+      "delta": -13.0,
+      "direction": "lower",
+      "status": "improved",
+      "threshold": 1.0
+    }
+  },
+  "primary_vs_previous_best": null,
+  "round_accepted": {
+    "criteria": [
+      {
+        "detail": "all primary metrics measured",
+        "name": "valid",
+        "ok": true
+      },
+      {
+        "detail": "no regression",
+        "name": "tests",
+        "ok": true
+      },
+      {
+        "detail": "none worse",
+        "name": "primary metrics not worse than the previous best",
+        "ok": true
+      },
+      {
+        "detail": "OpenAPI schema unchanged",
+        "name": "openapi",
+        "ok": true
+      }
+    ],
+    "reasons": [],
+    "value": true
+  },
+  "run_successful": {
+    "criteria": [
+      {
+        "detail": "all primary metrics measured",
+        "name": "valid",
+        "ok": true
+      },
+      {
+        "detail": "set(s) not run after refactoring: heldout",
+        "name": "tests",
+        "ok": null
+      },
+      {
+        "detail": "none worse",
+        "name": "no primary metric worse",
+        "ok": true
+      },
+      {
+        "detail": "improved: mean_cc, mean_cognitive, mi_weighted, duplication_pct, smell_count",
+        "name": "at least one primary metric improved",
+        "ok": true
+      },
+      {
+        "detail": "OpenAPI schema unchanged",
+        "name": "openapi",
+        "ok": true
+      }
+    ],
+    "reasons": [
+      "tests: set(s) not run after refactoring: heldout"
+    ],
+    "value": null
+  },
+  "sloc": {
+    "after": 29951,
+    "before": 30260,
+    "drop_pct": 1.0212,
+    "warning": false,
+    "warning_above_pct": 15.0
+  },
+  "smell_counts": {
+    "S01": {
+      "after": 80,
+      "before": 80
+    },
+    "S02": {
+      "after": 0,
+      "before": 0
+    },
+    "S03": {
+      "after": 192,
+      "before": 192
+    },
+    "S07": {
+      "after": 3,
+      "before": 4
+    },
+    "S09": {
+      "after": 2,
+      "before": 2
+    },
+    "S10": {
+      "after": 0,
+      "before": 0
+    },
+    "S11": {
+      "after": 22,
+      "before": 34
+    },
+    "S18": {
+      "after": 1,
+      "before": 1
+    },
+    "S19": {
+      "after": 0,
+      "before": 0
+    },
+    "S20": {
+      "after": 0,
+      "before": 0
+    },
+    "S21": {
+      "after": 0,
+      "before": 0
+    },
+    "S22": {
+      "after": 0,
+      "before": 0
+    },
+    "S23": {
+      "after": 47,
+      "before": 47
+    }
+  },
+  "status": "ok",
+  "tests": {
+    "excluded_flaky": [],
+    "lost_cases": [],
+    "new_passing": [],
+    "recovered_in_repeat": [],
+    "regression_count": 0,
+    "regressions": [],
+    "regressions_by_module": {},
+    "regressions_by_type": {},
+    "regressions_confirmed": 0,
+    "regressions_unconfirmed": 0,
+    "repetitions_given": 0,
+    "sets": {
+      "feedback": {
+        "after_passed": 905,
+        "baseline_failing": 0,
+        "baseline_failing_still": 0,
+        "before_passed": 905,
+        "lost": 0,
+        "new_cases": 0,
+        "new_passing": 0,
+        "regressions": 0
+      }
+    },
+    "sets_compared": [
+      "feedback"
+    ],
+    "sets_not_run": [
+      "heldout"
+    ]
+  },
+  "warnings": [
+    "Docker image IDs differ between before and after"
+  ]
+}
