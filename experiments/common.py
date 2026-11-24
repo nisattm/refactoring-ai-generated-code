@@ -8,7 +8,7 @@ the host (Windows Git Bash, macOS, Linux) and starts one container per step.
 Layout of one run (``<out-root>/<approach>/<run-id>/``, default ``results/experiments``)::
 
     run.json            steps, times, decisions, code hashes, image, version, account label (written after every step)
-    state.json          iterative only: what is needed to continue after a usage-limit cut (W6)
+    state.json          iterative and multi-agent: what is needed to continue after a usage-limit cut (W6)
     calls/call-N/       prompt.md, stream.jsonl, stderr.txt of every Claude Code call (raw/ is not committed)
     rounds/rK/          measurement of round K (analysis/, tests/, repeat1/, repeat2/, compare/, measure.json)
     final/rK/           full measurement (both test sets) of the reported rounds (iterative)
@@ -66,6 +66,11 @@ TOOLS = ("Read", "Edit", "Write", "Glob", "Grep")   # offered with --tools and p
 DISALLOWED_TOOLS = ("Task", "Agent")
 FIXED_FLAGS = ("--safe-mode", "--permission-mode", "dontAsk", "--output-format", "stream-json", "--verbose")
 CLAUDE_ENV = {"CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1"}
+# The context size at which Claude Code compacts its conversation; its value is a run option (--compact-window), so it
+# is added to CLAUDE_ENV by Run.claude_env(). The 1,000,000 token window of the model is never reached in scale-m01
+# (largest context 661,170 tokens): a smaller window makes the long Refactoring subagent compact earlier.
+COMPACT_ENV = "CLAUDE_CODE_AUTO_COMPACT_WINDOW"
+DEFAULT_COMPACT_WINDOW = 200000
 EXPECTED_CLAUDE_VERSION = "2.1.308"      # pinned in the image (generation log); --expected-version overrides
 DEFAULT_EFFORT = "high"                   # setting of the refactoring runs is chosen in the pilot (approaches.md)
 FORBIDDEN_NAMES = {"CLAUDE.md", "CLAUDE.local.md", "AGENTS.md"}
@@ -85,6 +90,14 @@ PLACEHOLDERS = ("{round}", "{max_rounds}", "{feedback}", "{reverted}")          
 MULTIAGENT_PLACEHOLDERS = ("{test_command}", "{max_refactoring_calls}", "{max_test_runs}")
 
 LIMIT_PATTERN = re.compile(r"usage limit|rate.?limit|limit reached|quota|too many requests|\b429\b", re.I)
+
+# Pause and continue after a usage-limit cut (Week 6): wait for the 5-hour window to reopen, then continue the same
+# session with a fixed, neutral sentence (no quality hint, no smell name, no metric).
+CONTINUE_PROMPT = "The session was interrupted by a usage limit. Continue the task from where you stopped."
+MAX_PAUSES = 3
+MAX_PAUSE_TOTAL_S = 24 * 3600
+RESET_MARGIN_S = 300
+SLEEP, CLOCK = time.sleep, time.time        # replaced by the tests
 
 # Exit codes of the runners
 EXIT_DONE, EXIT_INVALID, EXIT_USAGE, EXIT_LOCK, EXIT_LIMIT = 0, 1, 2, 3, 5
@@ -547,6 +560,64 @@ def denied_tools(denials: list) -> list[str]:
     return [str(d.get("tool_name") or d.get("name") or "?") if isinstance(d, dict) else str(d) for d in denials]
 
 
+# --- pause and continue after a usage-limit cut -------------------------------------------------------------------
+
+def limit_info(rate_limit: dict | None) -> dict:
+    """Which window ran out and when it opens again, from the last ``rate_limit_event`` of the cut call (the
+    ``rate_limit`` of its call record). ``kind`` is ``five_hour``, ``seven_day`` or None when the event does not say.
+    Checked only against scale-m01 (a five-hour cut: status ``rejected``, ``rateLimitType`` ``five_hour``, five_hour
+    utilization 1 and seven_day 0.49, ``resetsAt`` in epoch seconds); a weekly cut is not verified. The weekly window
+    wins when both are full, because waiting for the 5-hour window would not help."""
+    info = (rate_limit or {}).get("rate_limit_info") or {}
+    windows = info.get("unifiedWindows") or {}
+
+    def window(name: str) -> tuple:
+        w = windows.get(name) or {}
+        use, resets = w.get("utilization"), w.get("resetsAt")
+        return (use if isinstance(use, (int, float)) else None), (resets if isinstance(resets, (int, float)) else None)
+
+    five_use, five_resets = window("five_hour")
+    seven_use, seven_resets = window("seven_day")
+    rejected = info.get("status") == "rejected"
+    full = lambda use: use is not None and use >= 1  # noqa: E731
+    if full(seven_use) or (rejected and info.get("rateLimitType") == "seven_day"):
+        kind = "seven_day"
+    elif full(five_use) or (rejected and info.get("rateLimitType") == "five_hour"):
+        kind = "five_hour"
+    else:
+        kind = None
+    resets = {"five_hour": five_resets, "seven_day": seven_resets}.get(kind)
+    if resets is None and kind == "five_hour" and isinstance(info.get("resetsAt"), (int, float)):
+        resets = info["resetsAt"]
+    return {"kind": kind, "resets_at": resets, "five_hour_util": five_use, "seven_day_util": seven_use,
+            "five_hour_resets_at": five_resets, "seven_day_resets_at": seven_resets, "status": info.get("status")}
+
+
+def wait_until(timestamp: float, margin_s: int = RESET_MARGIN_S, on_tick=None, tick_s: int = 600,
+               step_s: int = 30) -> float:
+    """Sleep until ``timestamp`` (epoch seconds) + ``margin_s``. ``on_tick(seconds_left)`` is called every
+    ``tick_s`` seconds (the run records that it is waiting). Wall-clock based, so a sleeping computer does not make it
+    wait longer. Returns the seconds waited; Ctrl+C leaves everything as it is."""
+    target = timestamp + margin_s
+    started = last_tick = CLOCK()
+    while True:
+        left = target - CLOCK()
+        if left <= 0:
+            return round(CLOCK() - started, 1)
+        if on_tick and CLOCK() - last_tick >= tick_s:
+            on_tick(left)
+            last_tick = CLOCK()
+        SLEEP(min(step_s, left))
+
+
+def resume_args(args: list[str], prompt: str, session_id: str) -> list[str]:
+    """The arguments of a call again with the same flags (``--agents``, tools, permissions), but the prompt replaced
+    and ``--resume <session_id>`` added. ``claude_args`` puts ``-p <prompt>`` first."""
+    if len(args) < 2 or args[0] != "-p":
+        raise EngineError("the Claude Code arguments do not start with -p <prompt>: cannot build the resume call")
+    return [args[0], prompt, *args[2:], "--resume", session_id]
+
+
 # --- measurement --------------------------------------------------------------------------------------------------
 
 class Toolkit:
@@ -672,12 +743,23 @@ class Run:
         self.settings = {"image": args.image, "local": args.local, "effort": args.effort,
                          "call_timeout": args.call_timeout, "test_timeout": args.test_timeout,
                          "expected_version": args.expected_version or None,
+                         "compact_window": getattr(args, "compact_window", DEFAULT_COMPACT_WINDOW),
                          "claude_command": shlex.split(args.claude_command, posix=os.name != "nt") if args.claude_command
                          else ["claude"]}
         self.image_id = ""
         self.ws: Workspace
         self.record: dict = {}
         self.state: dict = {}
+
+    def claude_env(self) -> dict[str, str]:
+        """The environment of every Claude Code call: the fixed settings and the compaction window (recorded)."""
+        return {**CLAUDE_ENV, COMPACT_ENV: str(self.settings["compact_window"])}
+
+    def parsed_calls(self) -> list[dict]:
+        """Every call's stream read again from its folder (a call is parsed when it ends, but the checks over all
+        calls of a run, e.g. the roles of a resumed Multi-Agent run, need them all)."""
+        return [parse_stream((self.out / "calls" / f"call-{c['number']}" / "stream.jsonl")
+                             .read_text(encoding="utf-8", errors="replace")) for c in self.record["calls"]]
 
     # paths inside the measurement container
     def container_path(self, path: Path) -> str:
@@ -694,6 +776,8 @@ class Run:
         a = self.args
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", a.run_id):
             raise EngineError("--run-id: letters, digits, '.', '_' and '-' only")
+        if self.settings["compact_window"] < 1:
+            raise EngineError("--compact-window must be a positive number of tokens")
         if a.window_pct is None or a.window_pct > WINDOW_LIMIT_PCT:
             raise EngineError(f"W6: start only when the account's 5-hour window is at most {WINDOW_LIMIT_PCT:g} % "
                               f"(--window-pct, from /usage)")
@@ -747,7 +831,8 @@ class Run:
             "account": a.account, "accounts_used": [a.account], "window_pct_start": a.window_pct,
             "work_root": str(root), "image": a.image, "image_id": self.image_id, "model": MODEL,
             "effort": a.effort, "flags": claude_args("<prompt>", a.effort, None)[2:],
-            "env": CLAUDE_ENV, "expected_version": self.settings["expected_version"],
+            "env": self.claude_env(), "compact_window": self.settings["compact_window"],
+            "expected_version": self.settings["expected_version"],
             "host": {"os": platform.platform(), "python": platform.python_version()},
             "interface_sha256": sha256_file(self.ws.model / "INTERFACE.md"),
             "test_hashes_sha256": sha256_file(self.ws.hashes),
@@ -780,11 +865,11 @@ class Run:
         name = f"exp-{self.args.run_id}-c{number}-{os.getpid()}"
         if self.settings["local"]:
             cmd, env, cwd = [*self.settings["claude_command"], *args], {
-                **os.environ, **CLAUDE_ENV, **extra_env, "CLAUDE_CONFIG_DIR": str(self.ws.session)}, self.ws.model
+                **os.environ, **self.claude_env(), **extra_env, "CLAUDE_CONFIG_DIR": str(self.ws.session)}, self.ws.model
         else:
             cmd = ["docker", "run", "--rm", "--name", name, "--env-file", str(Path(self.args.env_file).resolve()),
                    "-e", "CLAUDE_CONFIG_DIR=/session",
-                   *[x for k, v in {**CLAUDE_ENV, **extra_env}.items() for x in ("-e", f"{k}={v}")],
+                   *[x for k, v in {**self.claude_env(), **extra_env}.items() for x in ("-e", f"{k}={v}")],
                    "-v", f"{self.ws.model}:/work", "-v", f"{self.ws.session}:/session", *volumes, "-w", "/work",
                    self.settings["image"], "claude", *args]
             env, cwd = None, None
@@ -996,6 +1081,9 @@ def add_arguments(parser) -> None:
     p("--image", default=DEFAULT_IMAGE)
     p("--effort", default=DEFAULT_EFFORT)
     p("--expected-version", default=EXPECTED_CLAUDE_VERSION, help="Claude Code version the image must report")
+    p("--compact-window", type=int, default=DEFAULT_COMPACT_WINDOW,
+      help=f"tokens of context at which Claude Code compacts ({COMPACT_ENV}); recorded in run.json "
+           f"(default %(default)s)")
     p("--tests", default=str(REPO / DEFAULT_TESTS))
     p("--interface", help="use this INTERFACE.md instead of running experiments/make_interface.py")
     p("--prompts", default=str(EXPERIMENTS / "prompts"))
@@ -1030,7 +1118,7 @@ def dry_run(run: Run, args: list[str] | None = None, env: dict | None = None, mo
     print(f"output:    {run.out}")
     print(f"lock:      {run.args.lock_file}")
     print("claude:    docker run --rm --env-file <env-file> -e CLAUDE_CONFIG_DIR=/session "
-          + " ".join(f"-e {k}={v}" for k, v in {**CLAUDE_ENV, **(env or {})}.items())
+          + " ".join(f"-e {k}={v}" for k, v in {**run.claude_env(), **(env or {})}.items())
           + " -v <work>/model:/work -v <work>/session:/session " + "".join(f"{m} " for m in mounts)
           + f"-w /work {run.settings['image']} claude "
           + " ".join(args if args is not None else claude_args("<prompt>", run.settings["effort"], None)))

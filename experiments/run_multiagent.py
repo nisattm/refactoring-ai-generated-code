@@ -9,16 +9,25 @@ Roles and tools (M2): the orchestrator reads and calls the subagents and the tes
 only read; only the Refactoring subagent edits. The test command is ``experiments/feedback_tests.py`` (M3); the tests,
 the starting project and the engine are mounted read-only and closed to Read / Glob / Grep (M4). After the call the
 stream is checked (M5): at most 3 Refactoring calls and 3 test runs, no other subagent type, no edit by the
-orchestrator or a read-only role, no other shell command. A usage-limit cut discards the run (one call, as Single).
+orchestrator or a read-only role, no other shell command.
+
+A usage-limit cut does not discard the run: the status becomes ``limit_cut`` and the work folder, ``session/`` and
+``state.json`` (with the session id) stay. With ``--auto-resume`` the engine waits for the end of the 5-hour window
+(``resetsAt`` of the last rate_limit_event + 5 min, the run lock released), then continues the same session
+(``--resume <session_id>``, the same ``--agents``, tools, permissions and environment) with a fixed sentence
+(``common.CONTINUE_PROMPT``). At most 3 pauses and 24 hours of waiting; the weekly limit never waits. The roles and the
+budget (M5) are checked over all calls; a subagent call that the limit cut in the middle is recorded separately.
 
 The settings marked K1–K7 are the ones the Week 6 setup check verifies; they are constants below.
 
-Exit code: 0 valid run · 1 invalid run, repeat it · 2 usage error · 3 run lock not free · 5 usage-limit cut.
+Exit code: 0 valid run · 1 invalid run, repeat it · 2 usage error · 3 run lock not free · 5 usage-limit cut
+(``limit_cut``, nothing deleted).
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import hashlib
 import json
 import posixpath
@@ -141,10 +150,24 @@ def blocked_or_broken(denials: list, test_command: str) -> tuple[list[str], list
     return blocked, broken
 
 
+INTERRUPTED = re.compile(r"terminated early due to an API error", re.I)
+
+
+def interrupted_by_limit(result: dict | None) -> bool:
+    """The result of an Agent call that the usage limit cut in the middle (scale-m01): the text starts with "Agent
+    terminated early due to an API error: You've hit your session limit ... HTTP 429 ... PARTIAL output"; the result
+    is not flagged ``is_error``."""
+    text = (result or {}).get("text", "")
+    return bool(INTERRUPTED.search(text) and common.LIMIT_PATTERN.search(text))
+
+
 def analyze_roles(uses: list[dict], test_command: str, denials: list | None = None,
                   tool_results: dict | None = None) -> dict:
     """Who did what (M2, M5): subagent calls per role, test runs, blocked attempts, and the reasons that make the run
-    invalid. Tool calls that were denied did not run and are judged by ``blocked_or_broken`` only."""
+    invalid. ``uses``, ``denials`` and ``tool_results`` are those of **all** calls of the run (a run continued after a
+    usage-limit cut has several), so the budget is checked over the sum. A subagent call that the limit cut in the
+    middle is not counted as a call of its role and not a broken setup: it is listed under ``interrupted_by_limit``.
+    Tool calls that were denied did not run and are judged by ``blocked_or_broken`` only."""
     denied_ids = {d.get("tool_use_id") for d in denials or [] if isinstance(d, dict)}
     blocked, broken = blocked_or_broken(denials or [], test_command)
     for u in uses:      # a subagent type denied by an Agent(<type>) rule: counted as blocked, not started (K6c)
@@ -152,19 +175,23 @@ def analyze_roles(uses: list[dict], test_command: str, denials: list | None = No
         if u["name"] in common.SUBAGENT_TOOLS and res.get("is_error") and "denied by permission rule" in res.get("text", ""):
             denied_ids.add(u.get("id"))
             blocked.append(f"Agent: {u['input'].get('subagent_type')}")
+    uses = [u for u in uses if u.get("id") not in denied_ids]
+    cut = {u.get("id") for u in uses if u["name"] in common.SUBAGENT_TOOLS and not u.get("parent")
+           and interrupted_by_limit((tool_results or {}).get(u.get("id")))}
     failed = []         # an Agent call that returned an error (K1: "Agent type 'analyzer' not found"): broken setup
     for u in uses:
         res = (tool_results or {}).get(u.get("id")) or {}
-        if (u["name"] in common.SUBAGENT_TOOLS and u.get("id") not in denied_ids and res.get("is_error")
+        if (u["name"] in common.SUBAGENT_TOOLS and u.get("id") not in cut and res.get("is_error")
                 and str(u["input"].get("subagent_type") or "") in ROLES):
             failed.append(f"{u['input'].get('subagent_type')}: {res.get('text', '')[:100]}")
-    uses = [u for u in uses if u.get("id") not in denied_ids]
     spawns = [u for u in uses if u["name"] in common.SUBAGENT_TOOLS and not u.get("parent")
               and not ((tool_results or {}).get(u.get("id")) or {}).get("is_error")]
-    role_of = {u.get("id"): str(u["input"].get("subagent_type") or "") for u in spawns}
+    role_of = {u.get("id"): str(u["input"].get("subagent_type") or "") for u in spawns}    # also the cut ones: their tool calls
     calls: dict[str, int] = {}
-    for role in role_of.values():
-        calls[role] = calls.get(role, 0) + 1
+    interrupted: dict[str, int] = {}
+    for call_id, role in role_of.items():
+        counts = interrupted if call_id in cut else calls
+        counts[role] = counts.get(role, 0) + 1
     invalid = [f"subagent of type '{r}' called {n} time(s): only {', '.join(ROLES)} are allowed"
                for r, n in sorted(calls.items()) if r not in ROLES]
     invalid += [f"a needed tool call was denied (broken setup): {b}" for b in broken]
@@ -197,8 +224,8 @@ def analyze_roles(uses: list[dict], test_command: str, denials: list | None = No
         invalid.append(f"Refactoring subagent called {calls['refactoring']} times (at most {MAX_REFACTORING_CALLS})")
     if tests > MAX_TEST_RUNS:
         invalid.append(f"test command run {tests} times (at most {MAX_TEST_RUNS})")
-    return {"subagent_calls": calls, "test_runs": tests, "blocked": blocked, "read_only_shell": read_only_shell,
-            "invalid": sorted(set(invalid), key=invalid.index)}
+    return {"subagent_calls": calls, "interrupted_by_limit": interrupted, "test_runs": tests, "blocked": blocked,
+            "read_only_shell": read_only_shell, "invalid": sorted(set(invalid), key=invalid.index)}
 
 
 def tree_hash(folder: Path) -> str:
@@ -301,27 +328,105 @@ def rounds_from(run: Run, state: Path) -> list[dict]:
     return sources
 
 
-def execute(run: Run, test_command: str | None) -> int:
+def utc(timestamp: float | None) -> str:
+    return dt.datetime.fromtimestamp(timestamp, dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC") if timestamp else "?"
+
+
+def stop_cut(run: Run, state: dict, why: str) -> int:
+    """The run stays as it is (work folder, session/, state.json, the calls): status ``limit_cut``, exit code 5."""
+    run.record.update({"status": "limit_cut", "stop_reason": why})
+    common.write_json(run.out / "state.json", state)
+    run.event(f"usage-limit cut, the run is stopped and nothing is deleted: {why}")
+    return common.EXIT_LIMIT
+
+
+def handle_limit(run: Run, call: dict, state: dict, auto_resume: bool) -> int | None:
+    """A call was cut by the usage limit. Returns an exit code when the run stops (``limit_cut``), or None after the
+    pause: the 5-hour window has reopened and the same session can be continued. The weekly limit never waits."""
+    info = common.limit_info(call.get("rate_limit"))
+    record = run.record
+    state.update({"session_id": call["session_id"] or state["session_id"], "limit_cut_at_call": call["number"],
+                  "pending": {"kind": "resume", "prompt": common.CONTINUE_PROMPT}})
+    record["limit_kinds"].append(info["kind"] or "unknown")
+    record["limit_cuts"].append({"call": call["number"], "kind": info["kind"], "resets_at": info["resets_at"],
+                                 "five_hour_util": info["five_hour_util"], "seven_day_util": info["seven_day_util"],
+                                 "waited_s": None})
+    record["status"] = "limit_cut"
+    state.update({k: record[k] for k in ("pauses", "wait_s", "limit_kinds")})
+    common.write_json(run.out / "state.json", state)
+    run.save()
+    if info["kind"] == "seven_day":
+        return stop_cut(run, state, f"the weekly limit is full (resets {utc(info['resets_at'])}): no waiting; continue "
+                                    f"the same session after that time")
+    if not auto_resume:
+        return stop_cut(run, state, "--auto-resume is not set")
+    if not state["session_id"]:
+        return stop_cut(run, state, "the cut call has no session id: it cannot be continued")
+    if info["kind"] != "five_hour" or info["resets_at"] is None:
+        return stop_cut(run, state, "the last rate_limit_event does not say which window is full or when it resets")
+    if record["pauses"] >= common.MAX_PAUSES:
+        return stop_cut(run, state, f"{record['pauses']} pauses already (at most {common.MAX_PAUSES})")
+    planned = max(0.0, info["resets_at"] + common.RESET_MARGIN_S - common.CLOCK())
+    if record["wait_s"] + planned > common.MAX_PAUSE_TOTAL_S:
+        return stop_cut(run, state, f"waiting {planned / 3600:.1f} h more would pass {common.MAX_PAUSE_TOTAL_S // 3600} "
+                                    f"h of waiting in total")
+    lock = run.lock
+    held = lock is not None and lock.held
+    if held:                # nothing runs while we wait: free the lock for other runs (W13); taken again below
+        lock.__exit__()
+    run.event(f"5-hour window full: waiting until {utc(info['resets_at'])} + {common.RESET_MARGIN_S // 60} min "
+              f"(pause {record['pauses'] + 1} of {common.MAX_PAUSES}); the lock is {'released' if held else 'not held'}")
+    waited = common.wait_until(info["resets_at"], common.RESET_MARGIN_S,
+                               on_tick=lambda left: run.event(f"still waiting: {int(left // 60)} min left"))
+    if held:
+        lock.acquire(None)
+    record["pauses"] += 1
+    record["wait_s"] = round(record["wait_s"] + waited, 1)
+    record["limit_cuts"][-1]["waited_s"] = waited
+    record["status"] = "running"
+    state.update({k: record[k] for k in ("pauses", "wait_s")})
+    common.write_json(run.out / "state.json", state)
+    run.event(f"waited {waited} s: continuing session {state['session_id']}")
+    return None
+
+
+def execute(run: Run, test_command: str | None, auto_resume: bool = False) -> int:
     run.setup()
     leftovers = [p for p in run.ws.listing() if p.split("/")[0].startswith(".") or p.split("/")[-1] in common.FORBIDDEN_NAMES]
     if leftovers:          # without --safe-mode nothing may be there for Claude Code to load
         raise EngineError(f"the model's folder has files Claude Code would load: {', '.join(leftovers[:5])}")
     prepared = prepare(run, test_command)
-    call = run.call(prepared["prompt"], "orchestrator", None, prepared["setup"])
-    if call["status"] == "limit":
-        return run.finish("discarded_limit", False, ["usage-limit cut: Multi-Agent is discarded and done again (W6)"])
-    denials = (run.last_parsed.get("result") or {}).get("permission_denials") or []
-    roles = analyze_roles(run.last_parsed["uses"], run.record["test_command"], denials,
-                          run.last_parsed.get("tool_results"))
+    setup = prepared["setup"]
+    run.record.update({"auto_resume": auto_resume, "pauses": 0, "wait_s": 0.0, "limit_kinds": [], "limit_cuts": []})
+    cut_state = {"session_id": None, "pending": {"kind": "orchestrator", "prompt": prepared["prompt"]},
+                 "limit_cut_at_call": None, "pauses": 0, "wait_s": 0.0, "limit_kinds": []}
+    common.write_json(run.out / "state.json", cut_state)
+    call = run.call(prepared["prompt"], "orchestrator", None, setup)
+    while call["status"] == "limit":      # pause, wait for the window, continue the same session with the same settings
+        stop = handle_limit(run, call, cut_state, auto_resume)
+        if stop is not None:
+            return stop
+        resumed = {**setup, "args": common.resume_args(setup["args"], common.CONTINUE_PROMPT, cut_state["session_id"])}
+        call = run.call(common.CONTINUE_PROMPT, "resume", cut_state["session_id"], resumed)
+    cut_state["pending"] = None
+    common.write_json(run.out / "state.json", cut_state)
+    # the budget and the roles are checked over the streams of all calls (M5)
+    parsed = run.parsed_calls()
+    denials = [d for p in parsed for d in (p.get("result") or {}).get("permission_denials") or []]
+    roles = analyze_roles([u for p in parsed for u in p["uses"]], run.record["test_command"], denials,
+                          {k: v for p in parsed for k, v in p["tool_results"].items()})
     run.record["roles"] = roles
+    # the totals of the whole run, on the last call (as before, when a run had a single call)
     call["subagent_calls"], call["test_runs"], call["blocked"] = roles["subagent_calls"], roles["test_runs"], roles["blocked"]
     run.save()
-    invalid = call["invalid"] + roles["invalid"]
+    carried = [reason for c in run.record["calls"] for reason in c["invalid"]]        # also those of the cut calls
+    invalid = list(dict.fromkeys(carried + roles["invalid"]))
     if invalid or call["status"] != "ok":
         return run.finish("invalid", False, invalid or [f"call status {call['status']}"])
 
     sources = rounds_from(run, prepared["state"])
-    run.state = {"best": 0, "best_commit": run.record["start_state_commit"]}
+    # run_iterative.final() saves run.state as state.json: keep the session and the pauses in it
+    run.state = {"best": 0, "best_commit": run.record["start_state_commit"], **cut_state}
     for k, src in enumerate(sources, start=1):
         lms = run.ws.model / "lms"
         shutil.rmtree(lms)
@@ -350,6 +455,9 @@ def execute(run: Run, test_command: str | None) -> int:
 def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     common.add_arguments(parser)
+    parser.add_argument("--auto-resume", action="store_true",
+                        help="after a usage-limit cut of the 5-hour window: wait for its reset and continue the same "
+                             "session (at most 3 pauses, 24 h of waiting)")
     parser.add_argument("--test-command", help=argparse.SUPPRESS)       # tests: a stand-in for feedback_tests.py
     args = parser.parse_args(argv)
     run = Run(APPROACH, args, toolkit)
@@ -358,7 +466,7 @@ def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -
             return dry_run(run)
         with common.RunLock(Path(args.lock_file), f"run_multiagent.py {args.run_id}", args.wait, args.poll) as lock:
             run.lock = lock
-            return execute(run, args.test_command)
+            return execute(run, args.test_command, args.auto_resume)
     except EngineError as exc:
         print(f"run_multiagent: {exc}", file=sys.stderr)
         if run.record and run.record.get("status") == "running":
@@ -366,7 +474,7 @@ def main(argv: list[str] | None = None, toolkit: common.Toolkit | None = None) -
             run.save()
         return exc.code
     except KeyboardInterrupt:
-        if run.record:
+        if run.record and run.record.get("status") != "limit_cut":      # Ctrl+C while waiting keeps limit_cut
             run.record.update({"status": "aborted"})
             run.save()
         raise

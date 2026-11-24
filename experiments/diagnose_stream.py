@@ -4,17 +4,25 @@ which files were read how often, and where was the call cut.
     python experiments/diagnose_stream.py <stream.jsonl | run folder> [...] [--top 5] [--json]
 
 A run folder (``results/experiments/<approach>/<run-id>``) is searched for ``calls/call-N/stream.jsonl``. Per call and
-per role the report shows the number of model calls (API messages), input / output / cache tokens, the tools used, the
-files read (total, distinct, read again), and where the call ended (role, step, last tool use, unfinished subagents,
-the ``result`` event, the last ``rate_limit_event``). It only reads; it never changes a file and never talks to Claude.
-Standard library only, so it runs on the host without Docker.
+per role the report shows the number of model calls (API messages), input and cache tokens, the largest context, the
+tools used, the files read (total, distinct, read again), and where the call ended (role, step, last tool use,
+unfinished or cut subagents, the ``result`` event, the last ``rate_limit_event``). It only reads; it never changes a
+file and never talks to Claude. Standard library only, so it runs on the host without Docker.
 
 Roles: ``orchestrator`` is every event without ``parent_tool_use_id``; a subagent's events carry the id of the
 orchestrator's Agent / Task call, and the role is that call's ``subagent_type``.
 
-Assumption, checked so far only with synthetic streams (the raw logs of pilot-m01b and scale-m01 are on Işıl's
-computer): one API message can appear in several ``assistant`` events with the same ``message.id`` and the same
-``usage``; the usage of a message is counted once (the largest value of every field).
+Checked against the stream of scale-m01 (258 messages in 802 ``assistant`` events): the events of one message share
+its ``message.id`` and the same ``usage``, so the usage of a message is counted once. The input and cache fields are
+right; **``output_tokens`` of a message is only its first value and is never updated** (sum 2,333 against 250,646 in
+``modelUsage``). The output of the call is therefore taken from ``modelUsage`` of the ``result`` event; it exists only
+for the whole call, not per role (the per-role value is kept as ``output_partial`` and is not shown).
+
+The context of a call is input + cache write + cache read tokens of that message. Compaction: events of type
+``system`` whose subtype contains "compact" are counted (the Agent SDK documents ``compact_boundary`` with
+``compact_metadata`` ``trigger`` and ``pre_tokens``). **Not verified**: scale-m01 has no compaction (largest context
+661,170 of 1,000,000), so no real compaction event has been seen; ``context_drops`` (a call whose context is less than
+half of the one before) is a second, indirect hint.
 """
 
 from __future__ import annotations
@@ -32,6 +40,8 @@ USAGE_KEYS = {"input": "input_tokens", "output": "output_tokens", "cache_write":
               "cache_read": "cache_read_input_tokens"}
 MODEL_USAGE_KEYS = {"input": "inputTokens", "output": "outputTokens", "cache_write": "cacheCreationInputTokens",
                     "cache_read": "cacheReadInputTokens"}
+# the result of an Agent call that the usage limit cut in the middle (scale-m01); it is not flagged is_error
+INTERRUPTED = re.compile(r"terminated early due to an API error", re.I)
 TARGET_KEYS = ("file_path", "path", "pattern", "command", "subagent_type")
 
 
@@ -88,7 +98,8 @@ def analyze(text: str) -> dict:
     invocations: dict[str, dict] = {}       # Agent call id -> one subagent run
     messages: dict[str, dict] = {}          # message id -> role, invocation, usage (counted once)
     uses: list[dict] = []
-    tool_results: dict[str, bool] = {}      # tool_use_id -> is_error
+    tool_results: dict[str, dict] = {}      # tool_use_id -> {"error": is_error, "text": the start of the result}
+    compactions: list[dict] = []
     rate_limits: list[dict] = []
     init = result = None
     for number, event in enumerate(events):
@@ -100,7 +111,16 @@ def analyze(text: str) -> dict:
         elif kind == "user":
             for block in (event.get("message") or {}).get("content") or []:
                 if isinstance(block, dict) and block.get("type") == "tool_result":
-                    tool_results[block.get("tool_use_id")] = bool(block.get("is_error"))
+                    content = block.get("content")
+                    text = content if isinstance(content, str) else " ".join(
+                        str(c.get("text") or "") for c in content or [] if isinstance(c, dict))
+                    tool_results[block.get("tool_use_id")] = {"error": bool(block.get("is_error")), "text": text[:300]}
+        elif kind == "system" and "compact" in str(event.get("subtype") or "").lower():
+            meta = event.get("compact_metadata") or {}
+            last = list(messages.values())[-1] if messages else None
+            compactions.append({"event": number, "subtype": event.get("subtype"), "trigger": meta.get("trigger"),
+                                "pre_tokens": meta.get("pre_tokens"), "after_call": len(messages),
+                                "role": last["role"] if last else None})
         elif kind == "rate_limit_event":
             info = event.get("rate_limit_info") or {}
             last = list(messages.values())[-1] if messages else None
@@ -132,7 +152,6 @@ def analyze(text: str) -> dict:
                                               "order": len(invocations) + 1}
     for info in rate_limits:    # what had been used by the time of the event (the window itself is the account's)
         sofar = [m for m in messages.values() if m["order"] <= info["messages_before"]]
-        info["output_tokens_so_far"] = sum(m["usage"]["output"] for m in sofar)
         info["cache_read_tokens_so_far"] = sum(m["usage"]["cache_read"] for m in sofar)
 
     roles = per_role(messages, uses, invocations)
@@ -146,7 +165,9 @@ def analyze(text: str) -> dict:
             "roles": roles, "invocations": invocation_rows(invocations, messages, uses, tool_results),
             "shared_files": sum(1 for names in shared.values() if len(names) > 1),
             "distinct_files_read": len(shared), "rate_limits": rate_limits,
-            "totals": {"stream": {n: sum(s[n] for s in roles.values()) for n in USAGE_KEYS},
+            "compactions": compactions,
+            # the output of a message is only its first value in the stream (never updated): not summed, see above
+            "totals": {"stream": {n: sum(s[n] for s in roles.values()) for n in USAGE_KEYS if n != "output"},
                        "result": result_totals(result)},
             "end": ending(events, result, messages, uses, invocations, tool_results, rate_limits)}
 
@@ -159,7 +180,8 @@ def per_role(messages: dict, uses: list, invocations: dict) -> dict[str, dict]:
         mine = [m for m in messages.values() if m["role"] == name]
         stats = {"calls": len(mine), "invocations": 1 if name == "orchestrator" else
                  sum(1 for i in invocations.values() if i["role"] == name),
-                 **{k: sum(m["usage"][k] for m in mine) for k in USAGE_KEYS}, "tools": {}, "files": {}}
+                 **{(k if k != "output" else "output_partial"): sum(m["usage"][k] for m in mine) for k in USAGE_KEYS},
+                 **context_stats(mine), "tools": {}, "files": {}}
         reads = [u for u in uses if u["role"] == name and u["name"] == "Read"]
         for use in (u for u in uses if u["role"] == name):
             stats["tools"][use["name"]] = stats["tools"].get(use["name"], 0) + 1
@@ -177,6 +199,26 @@ def per_role(messages: dict, uses: list, invocations: dict) -> dict[str, dict]:
     return roles
 
 
+def context_of(message: dict) -> int:
+    """Tokens the model was given in one call: new input plus what was read from and written to the cache. The input
+    fields are right in the first event of a message (only ``output_tokens`` is not)."""
+    usage = message["usage"]
+    return usage["input"] + usage["cache_write"] + usage["cache_read"]
+
+
+def context_stats(mine: list[dict]) -> dict:
+    """The largest context of a role, at which of its calls, the last one, and the calls whose context is less than
+    half of the one before in the same run of that role (a hint of compaction when no compaction event is in the
+    stream)."""
+    mine = [m for m in mine if context_of(m) > 0]      # the synthetic message that ends a cut call has no usage
+    sizes = [context_of(m) for m in mine]
+    drops = sum(1 for i in range(1, len(mine)) if mine[i]["invocation"] == mine[i - 1]["invocation"]
+                and sizes[i] < sizes[i - 1] / 2)
+    top = max(sizes, default=0)
+    return {"max_context": top, "max_context_call": sizes.index(top) + 1 if sizes else 0,
+            "last_context": sizes[-1] if sizes else 0, "context_drops": drops}
+
+
 def shared_files(roles: dict[str, dict]) -> dict[str, list[str]]:
     shared: dict[str, list[str]] = {}
     for name, stats in roles.items():
@@ -190,10 +232,12 @@ def invocation_rows(invocations: dict, messages: dict, uses: list, tool_results:
     for inv in invocations.values():
         mine = [m for m in messages.values() if m["invocation"] == inv["id"]]
         rows.append({"order": inv["order"], "role": inv["role"], "id": str(inv["id"])[-8:], "calls": len(mine),
-                     "output": sum(m["usage"]["output"] for m in mine),
+                     "max_context": max((context_of(m) for m in mine), default=0),
                      "cache_read": sum(m["usage"]["cache_read"] for m in mine),
                      "reads": sum(1 for u in uses if u["invocation"] == inv["id"] and u["name"] == "Read"),
-                     "finished": inv["id"] in tool_results, "error": bool(tool_results.get(inv["id"]))})
+                     "finished": inv["id"] in tool_results,
+                     "error": bool((tool_results.get(inv["id"]) or {}).get("error")),
+                     "cut_by_limit": bool(INTERRUPTED.search((tool_results.get(inv["id"]) or {}).get("text", "")))})
     return rows
 
 
@@ -258,15 +302,25 @@ def render(label: str, report: dict, top: int) -> str:
                + (f", {report['bad_lines']} unreadable line(s)" if report["bad_lines"] else ""))
     out += ["", "Per role", ""]
     roles = report["roles"]
-    out += table(["role", "runs", "calls", "input", "output", "cache write", "cache read", "reads", "distinct",
-                  "read again", "also read by another role"],
-                 [[n, s["invocations"], s["calls"], s["input"], s["output"], s["cache_write"], s["cache_read"],
-                   s["reads"], s["distinct_files"], s["repeated_reads"], s["also_read_by_other_roles"]]
-                  for n, s in roles.items()])
+    out += table(["role", "runs", "calls", "input", "cache write", "cache read", "largest context", "at call",
+                  "context drops", "reads", "distinct", "read again", "also read by another role"],
+                 [[n, s["invocations"], s["calls"], s["input"], s["cache_write"], s["cache_read"], s["max_context"],
+                   s["max_context_call"], s["context_drops"], s["reads"], s["distinct_files"], s["repeated_reads"],
+                   s["also_read_by_other_roles"]] for n, s in roles.items()])
     totals = report["totals"]
-    out += ["", f"Sum of the messages: {totals['stream']}"]
-    out.append(f"`result` event (modelUsage): {totals['result']}" if totals["result"]
-               else "`result` event: no modelUsage")
+    total_cache = totals["stream"]["cache_read"]
+    out += ["", "Share of the cache reads: " + ", ".join(
+        f"{n} {s['cache_read'] / total_cache * 100:.0f} %" for n, s in roles.items()) if total_cache else ""]
+    out += ["", f"Sum of the messages (input and cache): {totals['stream']}"]
+    out.append(f"`result` event (modelUsage), the whole call, with the real output tokens: {totals['result']}"
+               if totals["result"] else "`result` event: no modelUsage, so no output tokens (the stream only has the "
+               "first value of every message)")
+    out += ["", f"Compaction events: {len(report['compactions'])}"
+            + ("" if report["compactions"] else " (none in the stream; the subtype is not verified, see the top of "
+               "this file)")]
+    for c in report["compactions"]:
+        out.append(f"- event {c['event']} {c['subtype']}: trigger {c['trigger']}, pre_tokens {c['pre_tokens']}, "
+                   f"after call {c['after_call']} ({c['role']})")
     out += ["", f"Files read by more than one role: {report['shared_files']} of {report['distinct_files_read']}", ""]
     out += ["Tools per role", ""]
     for name, stats in roles.items():
@@ -278,14 +332,15 @@ def render(label: str, report: dict, top: int) -> str:
         out += table(["role", "file", "times"], again)
     if report["invocations"]:
         out += ["", "Subagent runs", ""]
-        out += table(["#", "role", "calls", "output", "cache read", "reads", "returned"],
-                     [[i["order"], i["role"], i["calls"], i["output"], i["cache_read"], i["reads"],
-                       "error" if i["error"] else "yes" if i["finished"] else "NO"] for i in report["invocations"]])
+        out += table(["#", "role", "calls", "largest context", "cache read", "reads", "returned"],
+                     [[i["order"], i["role"], i["calls"], i["max_context"], i["cache_read"], i["reads"],
+                       "CUT BY LIMIT" if i["cut_by_limit"] else "error" if i["error"] else "yes" if i["finished"]
+                       else "NO"] for i in report["invocations"]])
     if report["rate_limits"]:
         out += ["", "Rate-limit events (usage when the event came)", ""]
-        out += table(["event", "after call", "role", "status", "5 h", "7 d", "output so far", "cache read so far"],
+        out += table(["event", "after call", "role", "status", "5 h", "7 d", "cache read so far"],
                      [[r["event"], r["messages_before"], r["role"], r["status"], pct(r["five_hour"]),
-                       pct(r["seven_day"]), r["output_tokens_so_far"], r["cache_read_tokens_so_far"]]
+                       pct(r["seven_day"]), r["cache_read_tokens_so_far"]]
                       for r in report["rate_limits"]])
     out += ["", "End of the call", ""]
     end = report["end"]
