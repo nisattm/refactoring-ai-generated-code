@@ -12,7 +12,8 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.clock import LOCAL_TZ
-from lms.core.errors import NotFound, reference_not_found
+from lms.core.errors import conflict as error
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import format_amount
 from lms.core.timeutil import format_datetime
 from lms.equipment import capacity
@@ -21,7 +22,7 @@ from lms.equipment.inventory import (
     get_type_or_404,
     has_valid_training,
 )
-from lms.equipment.lending import error, total_debt
+from lms.equipment.lending import total_debt
 from lms.equipment.models import (
     EquipmentItem,
     EquipmentLoan,
@@ -47,13 +48,9 @@ from lms.staff.schedule import load_schedule
 
 
 def get_reservation_or_404(db: Session, reservation_id: int) -> EquipmentReservation:
-    reservation = db.get(EquipmentReservation, reservation_id)
-    if reservation is None:
-        raise NotFound(
-            f"Equipment reservation {reservation_id} does not exist",
-            details={"resource": "equipment_reservation", "id": reservation_id},
-        )
-    return reservation
+    return get_or_404(
+        db, EquipmentReservation, reservation_id, label="Equipment reservation", resource="equipment_reservation"
+    )
 
 
 def booked_count(db: Session, member_id: int) -> int:
@@ -109,15 +106,9 @@ def create_reservation(
     starts_at: datetime.datetime,
 ) -> EquipmentReservation:
     """LIB-EQ-26, LIB-EQ-28."""
-    equipment_type = db.get(EquipmentType, type_id)
-    if equipment_type is None:
-        raise reference_not_found("type_id", type_id)
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found("branch_id", branch_id)
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    equipment_type = get_reference_or_404(db, EquipmentType, "type_id", type_id)
+    branch = get_reference_or_404(db, Branch, "branch_id", branch_id)
+    member = get_reference_or_404(db, Member, "member_id", member_id)
 
     today = now.date()
     ends_at = due_at_from(starts_at, equipment_type.period_unit, equipment_type.period, holidays)

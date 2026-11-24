@@ -9,12 +9,13 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Depends, Path, Query, Request
 from sqlalchemy.orm import Session
 
+from lms.api.params import collect_date, own_member_id, require_own_or_staff
+from lms.api.params import optional_date as _optional_date
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, Principal, StaffOnly, require_roles
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.members.models import Member
 from lms.members.service import get_member_or_404
 from lms.rooms import bans, bookings, rooms
@@ -50,27 +51,6 @@ MemberId = Annotated[int, Path(ge=1)]
 MemberOnly = Annotated[Principal, Depends(require_roles("member"))]
 
 
-def _query_date(name: str, raw: str | None, problems: list[dict[str, str]]) -> datetime.date | None:
-    if raw is None:
-        problems.append({"field": name, "problem": "field required"})
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-        return None
-
-
-def _optional_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    problems: list[dict[str, str]] = []
-    value = _query_date(name, raw, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    return value
-
-
 def _query_time(name: str, raw: str | None, problems: list[dict[str, str]]) -> datetime.time | None:
     if raw is None:
         problems.append({"field": name, "problem": "field required"})
@@ -95,17 +75,9 @@ def _is_staff(principal: Principal) -> bool:
     return principal.user.role != "member"
 
 
-def _own_member_id(principal: Principal) -> int:
-    member_id = principal.user.member_id
-    if member_id is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member_id
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own bookings and bans can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own bookings and bans can be accessed")
 
 
 def _require_organizer(principal: Principal, booking: RoomBooking) -> bool:
@@ -165,7 +137,7 @@ def free_rooms(
 ) -> Page[RoomOut]:
     settings = request.app.state.settings
     problems: list[dict[str, str]] = []
-    day = _query_date("date", date, problems)
+    day = collect_date("date", date, problems)
     start = _query_time("start_time", start_time, problems)
     end = _query_time("end_time", end_time, problems)
     features = None
@@ -216,7 +188,7 @@ def room_availability(
 ) -> AvailabilityOut:
     settings = request.app.state.settings
     problems: list[dict[str, str]] = []
-    day = _query_date("date", date, problems)
+    day = collect_date("date", date, problems)
     if problems:
         raise ValidationFailed(problems)
     assert day is not None
@@ -242,7 +214,7 @@ def create_booking(body: RoomBookingCreateIn, request: Request, db: SessionDep, 
     if principal.user.role == "member":
         if body.member_id is not None:
             raise ValidationFailed.single("member_id", "members book for themselves and must not send member_id")
-        organizer_id = _own_member_id(principal)
+        organizer_id = own_member_id(principal)
     else:
         if body.member_id is None:
             raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")

@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.params import require_own_or_staff
 from lms.auth.deps import AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.catalog.schemas import CopyOut, copy_out
 from lms.catalog.service import get_copy_or_404
@@ -78,8 +79,7 @@ def _require_instructor_or_staff(principal: Principal, course: Course) -> None:
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own course data can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own course data can be accessed")
 
 
 # --- courses ---------------------------------------------------------------------------------

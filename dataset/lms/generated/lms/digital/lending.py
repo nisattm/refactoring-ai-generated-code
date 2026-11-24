@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from lms.auth.models import User
-from lms.core.errors import NotFound
+from lms.core.lookup import get_or_404
 from lms.core.timeutil import format_datetime
 from lms.digital import state
 from lms.digital.models import DigitalLoan, DigitalResource
@@ -19,10 +19,7 @@ from lms.members.models import Member
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> DigitalLoan:
-    loan = db.get(DigitalLoan, loan_id)
-    if loan is None:
-        raise NotFound(f"Digital loan {loan_id} does not exist", details={"resource": "digital_loan", "id": loan_id})
-    return loan
+    return get_or_404(db, DigitalLoan, loan_id, label="Digital loan", resource="digital_loan")
 
 
 def _loan_period(resource: DigitalResource) -> datetime.timedelta:

@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, StrictBool, StrictInt, field_validator
 from lms.access.models import AccessBan, Card, DayPass, Visit
 from lms.access.rules import MAX_CAPACITY, MAX_DAY_PASS_PRICE
 from lms.core.money import ZERO, Money, format_amount
-from lms.core.schemas import RequestModel
+from lms.core.schemas import RequestModel, reject_null
 from lms.core.timeutil import format_datetime
 from lms.rooms.schemas import DateValue
 
@@ -38,9 +38,7 @@ class SettingsIn(RequestModel):
     @field_validator("guest_entry", "day_passes", "day_pass_price", mode="before")
     @classmethod
     def _not_null(cls, value: object) -> object:
-        if value is None:
-            raise ValueError("this field cannot be null")
-        return value
+        return reject_null(value)
 
     @field_validator("day_pass_price")
     @classmethod

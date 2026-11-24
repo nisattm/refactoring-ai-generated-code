@@ -7,10 +7,11 @@ from typing import Annotated
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.params import require_own_or_staff
 from lms.auth.deps import CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now, today
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, NotFound
+from lms.core.errors import NotFound
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
 from lms.core.text import normalize
 from lms.fines.schemas import balance_out
@@ -51,8 +52,7 @@ def _today(request: Request):  # noqa: ANN202
 
 def _own_or_staff(principal: Principal, member: Member) -> None:
     """LIB-AUTH-25: a member may only address their own record."""
-    if principal.user.role == "member" and principal.user.member_id != member.id:
-        raise Forbidden("Only your own member record can be accessed")
+    require_own_or_staff(principal, member.id, "Only your own member record can be accessed")
 
 
 @router.post("", response_model=MemberOut, status_code=201)

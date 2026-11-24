@@ -8,10 +8,12 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 from pydantic import BaseModel
 
+from lms.api.params import require_own_or_staff
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
+from lms.core.errors import Forbidden, ValidationFailed
+from lms.core.lookup import get_reference_or_404
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
 from lms.core.text import normalize
 from lms.ill import outgoing as outgoing_service
@@ -55,8 +57,7 @@ def _fields_of(body: BaseModel) -> dict[str, Any]:
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own interlibrary requests can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own interlibrary requests can be accessed")
 
 
 def _out(request: IllRequest, now) -> RequestOut:  # noqa: ANN001
@@ -126,9 +127,7 @@ def create_request(body: RequestCreateIn, request: Request, db: SessionDep, prin
         if body.member_id is None:
             raise ValidationFailed.single("member_id", "member_id is required")
         member_id = body.member_id
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    member = get_reference_or_404(db, Member, "member_id", member_id)
     created = request_service.create_request(
         db, now, principal.user, settings.holidays, member, title=body.title, author=body.author, isbn=body.isbn
     )

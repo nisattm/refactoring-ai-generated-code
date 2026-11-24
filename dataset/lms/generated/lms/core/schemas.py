@@ -11,5 +11,8 @@ class RequestModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
-class ResponseModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+def reject_null(value: object) -> object:
+    """Body of the ``mode="before"`` validators of patch fields that may be left out but not be ``null``."""
+    if value is None:
+        raise ValueError("this field cannot be null")
+    return value

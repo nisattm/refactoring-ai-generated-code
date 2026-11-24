@@ -9,19 +9,21 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, Request
 from sqlalchemy.orm import Session
 
+from lms.api.params import optional_date as _opt_date
+from lms.api.params import report_range, require_own_or_staff
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
+from lms.core.errors import Forbidden, ValidationFailed
+from lms.core.lookup import get_reference_or_404
 from lms.core.money import format_amount
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.members.models import Member
 from lms.members.service import get_member_or_404
 from lms.printing import jobs, packs, printers, quota
 from lms.printing import reports as printing_reports
 from lms.printing.models import Printer, PrintJob
-from lms.printing.rules import FREE_PAGES, MAX_REPORT_DAYS
+from lms.printing.rules import FREE_PAGES
 from lms.printing.schemas import (
     FailIn,
     JobStatus,
@@ -58,17 +60,7 @@ def _now(request: Request) -> datetime.datetime:
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25: a member may only address their own jobs, packs and quota."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own print jobs and packs can be accessed")
-
-
-def _opt_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
+    require_own_or_staff(principal, member_id, "Only your own print jobs and packs can be accessed")
 
 
 def _job_out(db: Session, job: PrintJob) -> PrintJobOut:
@@ -135,12 +127,8 @@ def send_job(body: PrintJobIn, request: Request, db: SessionDep, principal: Curr
         if body.member_id is None:
             raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
         member_id = body.member_id
-    printer = db.get(Printer, body.printer_id)
-    if printer is None:
-        raise reference_not_found("printer_id", body.printer_id)
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    printer = get_reference_or_404(db, Printer, "printer_id", body.printer_id)
+    member = get_reference_or_404(db, Member, "member_id", member_id)
     job = jobs.send_job(
         db,
         _now(request),
@@ -207,9 +195,7 @@ def list_member_jobs(
 
 @router.post("/print-jobs/release-by-card", response_model=ReleaseByCardOut)
 def release_by_card(body: ReleaseByCardIn, request: Request, db: SessionDep, staff: StaffOnly) -> ReleaseByCardOut:
-    printer = db.get(Printer, body.printer_id)
-    if printer is None:
-        raise reference_not_found("printer_id", body.printer_id)
+    printer = get_reference_or_404(db, Printer, "printer_id", body.printer_id)
     return jobs.release_by_card(
         db, _now(request), staff.user, request.app.state.settings.holidays, printer, body.card_no
     )
@@ -312,21 +298,5 @@ def printing_report(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[PrintingReportOut]:
-    problems: list[dict[str, str]] = []
-    dates: dict[str, datetime.date] = {}
-    for name, raw in (("from", first), ("to", to)):
-        if raw is None:
-            problems.append({"field": name, "problem": "field required"})
-            continue
-        try:
-            dates[name] = parse_date(raw.strip())
-        except ValueError:
-            problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-    if problems:
-        raise ValidationFailed(problems)
-    start, end = dates["from"], dates["to"]
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > MAX_REPORT_DAYS:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     return paginate_sequence(printing_reports.printing_report(db, start, end, branch_id), page)

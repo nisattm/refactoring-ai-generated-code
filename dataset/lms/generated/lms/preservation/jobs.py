@@ -14,9 +14,10 @@ from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.catalog.models import Book, Copy
-from lms.catalog.release import release_copy
+from lms.reservations.service import release_copy
 from lms.catalog.status import invalid_status, set_status
-from lms.core.errors import Conflict, Forbidden, NotFound, ValidationFailed
+from lms.core.errors import Conflict, Forbidden, ValidationFailed
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.core.timeutil import format_datetime
 from lms.loans.models import Loan
@@ -29,10 +30,7 @@ SENDABLE_COPY_STATUSES = ("damaged", "available")
 
 
 def get_job_or_404(db: Session, job_id: int) -> RepairJob:
-    job = db.get(RepairJob, job_id)
-    if job is None:
-        raise NotFound(f"Repair job {job_id} does not exist", details={"resource": "repair_job", "id": job_id})
-    return job
+    return get_or_404(db, RepairJob, job_id, label="Repair job", resource="repair_job")
 
 
 def invalid_job_status(job: RepairJob, action: str) -> Conflict:

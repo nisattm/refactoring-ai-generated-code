@@ -13,7 +13,8 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.catalog.models import Copy
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.lookup import get_or_404
 from lms.core.timeutil import format_datetime
 from lms.inventory import rules
 from lms.inventory.models import ExpectedCopy, InventoryCount, InventoryLine, InventoryScan
@@ -29,17 +30,11 @@ from lms.staff.schedule import load_schedule
 
 
 def get_count_or_404(db: Session, count_id: int) -> InventoryCount:
-    count = db.get(InventoryCount, count_id)
-    if count is None:
-        raise NotFound(f"Inventory count {count_id} does not exist", details={"resource": "inventory_count", "id": count_id})
-    return count
+    return get_or_404(db, InventoryCount, count_id, label="Inventory count", resource="inventory_count")
 
 
 def get_scan_or_404(db: Session, scan_id: int) -> InventoryScan:
-    scan = db.get(InventoryScan, scan_id)
-    if scan is None:
-        raise NotFound(f"Inventory scan {scan_id} does not exist", details={"resource": "inventory_scan", "id": scan_id})
-    return scan
+    return get_or_404(db, InventoryScan, scan_id, label="Inventory scan", resource="inventory_scan")
 
 
 def invalid_count_status(count: InventoryCount, action: str) -> Conflict:

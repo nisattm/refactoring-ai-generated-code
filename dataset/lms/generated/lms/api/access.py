@@ -36,14 +36,17 @@ from lms.access.schemas import (
     day_pass_out,
     visit_out,
 )
+from lms.api.params import optional_date as _opt_date
+from lms.api.params import report_range, require_own_or_staff
 from lms.auth.deps import AdminOnly, CurrentPrincipal, Principal, StaffOnly
 from lms.branches.models import Branch
 from lms.branches.service import get_branch_or_404
 from lms.core.clock import LOCAL_TZ, local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
+from lms.core.errors import ValidationFailed
+from lms.core.lookup import get_reference_or_404
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import format_datetime, parse_date
+from lms.core.timeutil import format_datetime
 from lms.members.models import Member
 from lms.members.service import get_member_or_404
 
@@ -63,25 +66,12 @@ def _now(request: Request) -> datetime.datetime:
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25: a member may only address their own cards, visits and bans."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own data can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own data can be accessed")
 
 
 def _branch_reference(db: SessionDep, branch_id: int) -> Branch:
     """A branch named in a request body: ``404 NOT_FOUND`` when missing (LIB-COM-29)."""
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found("branch_id", branch_id)
-    return branch
-
-
-def _opt_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
+    return get_reference_or_404(db, Branch, "branch_id", branch_id)
 
 
 # --- cards ------------------------------------------------------------------------------------------
@@ -291,21 +281,5 @@ def visits_report(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[VisitsReportOut]:
-    problems: list[dict[str, str]] = []
-    dates: dict[str, datetime.date] = {}
-    for name, raw in (("from", first), ("to", to)):
-        if raw is None:
-            problems.append({"field": name, "problem": "field required"})
-            continue
-        try:
-            dates[name] = parse_date(raw.strip())
-        except ValueError:
-            problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-    if problems:
-        raise ValidationFailed(problems)
-    start, end = dates["from"], dates["to"]
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     return paginate_sequence(access_reports.visits_report(db, start, end, branch_id), page)

@@ -14,10 +14,9 @@ from lms.branches.models import Branch
 from lms.core.errors import (
     Conflict,
     Forbidden,
-    NotFound,
     ValidationFailed,
-    reference_not_found,
 )
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.events.queries import open_event_ids_of_staff
 from lms.staff import leave as leave_service
 from lms.staff import shifts
@@ -31,10 +30,7 @@ _FIELDS = ("home_branch_id", "employment", "weekly_hours", "annual_leave_days", 
 
 
 def get_profile_or_404(db: Session, staff_id: int) -> StaffProfile:
-    profile = db.get(StaffProfile, staff_id)
-    if profile is None:
-        raise NotFound(f"Staff profile {staff_id} does not exist", details={"resource": "staff", "id": staff_id})
-    return profile
+    return get_or_404(db, StaffProfile, staff_id, label="Staff profile", resource="staff")
 
 
 def profile_of_user(db: Session, user_id: int) -> StaffProfile | None:
@@ -104,12 +100,8 @@ def create_profile(
         raise ValidationFailed(problems)
     assert weekly_hours is not None
 
-    user = db.get(User, user_id)
-    if user is None:
-        raise reference_not_found("user_id", user_id)
-    branch = db.get(Branch, home_branch_id)
-    if branch is None:
-        raise reference_not_found("home_branch_id", home_branch_id)
+    user = get_reference_or_404(db, User, "user_id", user_id)
+    branch = get_reference_or_404(db, Branch, "home_branch_id", home_branch_id)
     if not user.is_active:
         raise Conflict("The user is inactive", code="USER_INACTIVE")
     if user.role == "member":
@@ -177,9 +169,7 @@ def update_profile(
     if problems:
         raise ValidationFailed(problems)
     if "home_branch_id" in fields and fields["home_branch_id"] != profile.home_branch_id:
-        branch = db.get(Branch, fields["home_branch_id"])
-        if branch is None:
-            raise reference_not_found("home_branch_id", fields["home_branch_id"])
+        branch = get_reference_or_404(db, Branch, "home_branch_id", fields["home_branch_id"])
         if not branch.is_active:
             raise Conflict(
                 f"Branch {branch.code} is inactive",

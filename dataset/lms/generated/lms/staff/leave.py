@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 from collections.abc import Container
-from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
@@ -12,7 +11,9 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.core.calendar import is_working_day
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.errors import conflict as _error
+from lms.core.lookup import get_or_404
 from lms.staff import shifts
 from lms.staff.models import LeaveRequest, Shift, StaffProfile
 
@@ -22,15 +23,8 @@ SICK_AUTO_APPROVE_DAYS = 2
 _DAY = datetime.timedelta(days=1)
 
 
-def _error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
-
-
 def get_leave_or_404(db: Session, leave_id: int) -> LeaveRequest:
-    leave = db.get(LeaveRequest, leave_id)
-    if leave is None:
-        raise NotFound(f"Leave request {leave_id} does not exist", details={"resource": "leave_request", "id": leave_id})
-    return leave
+    return get_or_404(db, LeaveRequest, leave_id, label="Leave request", resource="leave_request")
 
 
 def working_days(first: datetime.date, last: datetime.date, holidays: Container[datetime.date]) -> int:

@@ -16,7 +16,8 @@ from lms.branches.models import Branch
 from lms.catalog.isbn import normalize_isbn
 from lms.catalog.models import Book
 from lms.catalog.service import is_lendable
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import format_amount
 from lms.core.text import normalize
 from lms.core.timeutil import format_datetime
@@ -45,12 +46,7 @@ STAFF = Viewer()
 
 
 def get_suggestion_or_404(db: Session, suggestion_id: int) -> Suggestion:
-    suggestion = db.get(Suggestion, suggestion_id)
-    if suggestion is None:
-        raise NotFound(
-            f"Suggestion {suggestion_id} does not exist", details={"resource": "suggestion", "id": suggestion_id}
-        )
-    return suggestion
+    return get_or_404(db, Suggestion, suggestion_id, label="Suggestion", resource="suggestion")
 
 
 def _weight_case() -> Any:
@@ -506,7 +502,4 @@ def remove_support(db: Session, now: datetime.datetime, actor: User, member: Mem
 
 
 def get_member_or_reference_404(db: Session, member_id: int) -> Member:
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
-    return member
+    return get_reference_or_404(db, Member, "member_id", member_id)

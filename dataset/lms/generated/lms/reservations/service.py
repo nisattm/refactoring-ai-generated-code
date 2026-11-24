@@ -19,7 +19,8 @@ from lms.branches.service import start_transfer
 from lms.catalog.models import Book, Copy
 from lms.catalog.status import GONE_STATUSES, set_status
 from lms.core.calendar import add_working_days
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.errors import Conflict
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.courses.placement import place_on_release
 from lms.loans.models import Loan
 from lms.members.models import Member
@@ -31,13 +32,7 @@ HOLD_WORKING_DAYS = 3
 
 
 def get_reservation_or_404(db: Session, reservation_id: int) -> Reservation:
-    reservation = db.get(Reservation, reservation_id)
-    if reservation is None:
-        raise NotFound(
-            f"Reservation {reservation_id} does not exist",
-            details={"resource": "reservation", "id": reservation_id},
-        )
-    return reservation
+    return get_or_404(db, Reservation, reservation_id, label="Reservation", resource="reservation")
 
 
 _NOTIFIED_EVENTS = frozenset({"reservation_ready", "reservation_in_transit", "reservation_expired"})
@@ -189,15 +184,9 @@ def create_reservation(
 ) -> Reservation:
     """LIB-RES-01, LIB-RES-02, LIB-RES-05. ``ignore_copy_ids``: copies that are not yet released (LIB-SUG-33); they
     do not count for check 7 and are not assigned at once."""
-    branch = db.get(Branch, pickup_branch_id)
-    if branch is None:
-        raise reference_not_found("pickup_branch_id", pickup_branch_id)
-    book = db.get(Book, book_id)
-    if book is None:
-        raise reference_not_found("book_id", book_id)
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    branch = get_reference_or_404(db, Branch, "pickup_branch_id", pickup_branch_id)
+    book = get_reference_or_404(db, Book, "book_id", book_id)
+    member = get_reference_or_404(db, Member, "member_id", member_id)
 
     if not branch.is_active:  # LIB-BR-04: before all other 409 checks
         raise Conflict(

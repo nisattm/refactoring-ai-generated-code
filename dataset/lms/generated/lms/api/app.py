@@ -7,7 +7,6 @@ from pathlib import Path
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from sqlalchemy.orm import sessionmaker
 
 from lms.api import (
     access,
@@ -45,12 +44,47 @@ from lms.api import (
 from lms.api.errors import register_error_handlers
 from lms.auth.bootstrap import ensure_bootstrap_admin
 from lms.core.clock import today
-from lms.core.db import create_schema, get_engine
+from lms.core.db import open_database
 from lms.core.settings import Settings
 
 API_PREFIX = "/api/v1"
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
 UI_PREFIX = "/ui"
+
+# The order decides which route wins where paths overlap (e.g. fixed segments before ``{id}``): keep it.
+ROUTER_MODULES = (
+    calendar,
+    auth,
+    users,
+    branches,
+    members,
+    catalog,
+    loans,
+    reservations,
+    fines,
+    transfers,
+    notifications,
+    search,
+    reports,
+    purchasing,
+    audit,
+    dataexchange,
+    rooms,
+    equipment,
+    digital,
+    ill,
+    staff,
+    events,
+    courses,
+    donations,
+    preservation,
+    inventory,
+    suggestions,
+    programs,
+    messaging,
+    access,
+    printing,
+)
 
 
 class HealthOut(BaseModel):
@@ -61,9 +95,7 @@ class HealthOut(BaseModel):
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings if settings is not None else Settings()
 
-    engine = get_engine(settings)
-    create_schema(engine)
-    session_factory = sessionmaker(engine, expire_on_commit=False)
+    engine, session_factory = open_database(settings)
     with session_factory.begin() as session:
         ensure_bootstrap_admin(session, settings)
 
@@ -78,37 +110,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return HealthOut(status="ok", today=today(request.app.state.settings.clock).isoformat())
 
     api = APIRouter(prefix=API_PREFIX)
-    api.include_router(calendar.router)
-    api.include_router(auth.router)
-    api.include_router(users.router)
-    api.include_router(branches.router)
-    api.include_router(members.router)
-    api.include_router(catalog.router)
-    api.include_router(loans.router)
-    api.include_router(reservations.router)
-    api.include_router(fines.router)
-    api.include_router(transfers.router)
-    api.include_router(notifications.router)
-    api.include_router(search.router)
-    api.include_router(reports.router)
-    api.include_router(purchasing.router)
-    api.include_router(audit.router)
-    api.include_router(dataexchange.router)
-    api.include_router(rooms.router)
-    api.include_router(equipment.router)
-    api.include_router(digital.router)
-    api.include_router(ill.router)
-    api.include_router(staff.router)
-    api.include_router(events.router)
-    api.include_router(courses.router)
-    api.include_router(donations.router)
-    api.include_router(preservation.router)
-    api.include_router(inventory.router)
-    api.include_router(suggestions.router)
-    api.include_router(programs.router)
-    api.include_router(messaging.router)
-    api.include_router(access.router)
-    api.include_router(printing.router)
+    for module in ROUTER_MODULES:
+        api.include_router(module.router)
     app.include_router(api)
     if WEB_DIR.is_dir():  # LIB-UI-GEN-02: the web interface is optional
         app.mount(UI_PREFIX, StaticFiles(directory=WEB_DIR, html=True), name="ui")

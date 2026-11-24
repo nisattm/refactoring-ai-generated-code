@@ -20,6 +20,7 @@ from lms.core.calendar import working_days_between
 from lms.core.clock import LOCAL_TZ
 from lms.core.money import ZERO, format_amount
 from lms.core.pagination import PageParams
+from lms.core.pagination import count_rows as _count
 from lms.fines.models import Fee, Payment, PaymentAllocation
 from lms.fines.service import late_fee_amount
 from lms.loans.models import Loan
@@ -141,10 +142,6 @@ def overdue_items(
 
 def month_range(year: int, month: int) -> tuple[datetime.date, datetime.date]:
     return datetime.date(year, month, 1), datetime.date(year, month, calendar.monthrange(year, month)[1])
-
-
-def _count(db: Session, stmt: sa.Select[Any]) -> int:
-    return db.scalar(sa.select(sa.func.count()).select_from(stmt.order_by(None).subquery())) or 0
 
 
 def _sum(values: Iterable[Decimal]) -> Decimal:

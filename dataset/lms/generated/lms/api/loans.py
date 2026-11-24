@@ -5,15 +5,16 @@ from __future__ import annotations
 import datetime
 from typing import Annotated
 
+import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.params import optional_date, require_own_or_staff
 from lms.auth.deps import CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now, today
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate
-from lms.core.timeutil import parse_date
 from lms.loans import service
+from lms.loans.models import Loan
 from lms.loans.schemas import LoanCreateIn, LoanOut, LoanStatus, ReturnIn, loan_out
 from lms.members.service import get_member_or_404
 
@@ -25,17 +26,31 @@ MemberId = Annotated[int, Path(ge=1)]
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25: a member may only address their own loans."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own loans can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own loans can be accessed")
 
 
-def _due_before(raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single("due_before", "expected a valid date in the form YYYY-MM-DD") from None
+def _loan_stmt(
+    day: datetime.date,
+    due_before: str | None,
+    *,
+    member_id: int | None,
+    copy_id: int | None,
+    book_id: int | None,
+    branch_id: int | None,
+    status: LoanStatus | None,
+    overdue: bool | None,
+) -> sa.Select[tuple[Loan]]:
+    """The filtered loan list shared by ``GET /loans`` and ``GET /members/{id}/loans`` (LIB-LOAN-14)."""
+    return service.loan_list_stmt(
+        day,
+        member_id=member_id,
+        copy_id=copy_id,
+        book_id=book_id,
+        branch_id=branch_id,
+        status=status,
+        overdue=overdue,
+        due_before=optional_date("due_before", due_before),
+    )
 
 
 @router.post("/loans", response_model=LoanOut, status_code=201)
@@ -65,15 +80,15 @@ def list_loans(
 ) -> Page[LoanOut]:
     settings = request.app.state.settings
     day = today(settings.clock)
-    stmt = service.loan_list_stmt(
+    stmt = _loan_stmt(
         day,
+        due_before,
         member_id=member_id,
         copy_id=copy_id,
         book_id=book_id,
         branch_id=branch_id,
         status=status,
         overdue=overdue,
-        due_before=_due_before(due_before),
     )
     return paginate(db, stmt, page, lambda loan: loan_out(loan, day, settings.holidays))
 
@@ -104,15 +119,15 @@ def list_member_loans(
     day = today(settings.clock)
     member = get_member_or_404(db, member_id)
     _own_or_staff(principal, member.id)
-    stmt = service.loan_list_stmt(
+    stmt = _loan_stmt(
         day,
+        due_before,
         member_id=member.id,
         copy_id=copy_id,
         book_id=book_id,
         branch_id=branch_id,
         status=status,
         overdue=overdue,
-        due_before=_due_before(due_before),
     )
     return paginate(db, stmt, page, lambda loan: loan_out(loan, day, settings.holidays))
 

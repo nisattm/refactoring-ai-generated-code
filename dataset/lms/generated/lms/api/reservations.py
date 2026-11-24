@@ -8,11 +8,13 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 from sqlalchemy.orm import Session
 
+from lms.api.params import require_own_or_staff
 from lms.auth.deps import CurrentPrincipal, Principal, StaffOnly
 from lms.catalog.models import Book
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, NotFound, ValidationFailed
+from lms.core.errors import Forbidden, ValidationFailed
+from lms.core.lookup import get_or_404
 from lms.core.pagination import Page, PageDep, paginate
 from lms.members.service import get_member_or_404
 from lms.reservations import service
@@ -34,8 +36,7 @@ BookId = Annotated[int, Path(ge=1)]
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25: a member may only address their own reservations."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own reservations can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own reservations can be accessed")
 
 
 def _page_out(db: Session, stmt: sa.Select[tuple[Reservation]], page) -> Page[ReservationOut]:  # noqa: ANN001
@@ -132,8 +133,7 @@ def list_member_reservations(
 
 @router.get("/books/{book_id}/reservations", response_model=Page[ReservationOut])
 def list_book_reservations(book_id: BookId, db: SessionDep, _: StaffOnly, page: PageDep) -> Page[ReservationOut]:
-    if db.get(Book, book_id) is None:
-        raise NotFound(f"Book {book_id} does not exist", details={"resource": "book", "id": book_id})
+    get_or_404(db, Book, book_id, label="Book", resource="book")
     stmt = (
         sa.select(Reservation)
         .where(Reservation.book_id == book_id, Reservation.status.in_(ACTIVE_STATUSES))

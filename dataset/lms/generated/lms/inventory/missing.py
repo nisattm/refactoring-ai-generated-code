@@ -12,7 +12,7 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.service import require_active_branch
 from lms.catalog.models import Copy
-from lms.catalog.release import release_copy
+from lms.reservations.service import release_copy
 from lms.catalog.status import invalid_status, set_status
 from lms.courses.models import ReadingListItem
 from lms.courses.reserve import refresh_item_status

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 from collections.abc import Container
-from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
@@ -14,7 +13,9 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.catalog.models import Book, Copy
 from lms.catalog.status import set_status
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.errors import NotFound
+from lms.core.errors import conflict as _error
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import format_amount
 from lms.core.timeutil import format_datetime
 from lms.courses import accrual
@@ -36,15 +37,8 @@ from lms.members.models import Member
 from lms.staff.schedule import load_schedule
 
 
-def _error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
-
-
 def get_loan_or_404(db: Session, loan_id: int) -> ReserveLoan:
-    loan = db.get(ReserveLoan, loan_id)
-    if loan is None:
-        raise NotFound(f"Reserve loan {loan_id} does not exist", details={"resource": "reserve_loan", "id": loan_id})
-    return loan
+    return get_or_404(db, ReserveLoan, loan_id, label="Reserve loan", resource="reserve_loan")
 
 
 def to_out(db: Session, loan: ReserveLoan, now: datetime.datetime) -> ReserveLoanOut:
@@ -82,10 +76,7 @@ def to_out(db: Session, loan: ReserveLoan, now: datetime.datetime) -> ReserveLoa
 
 def _find_copy(db: Session, copy_id: int | None, barcode: str | None) -> Copy:
     if copy_id is not None:
-        copy = db.get(Copy, copy_id)
-        if copy is None:
-            raise reference_not_found("copy_id", copy_id)
-        return copy
+        return get_reference_or_404(db, Copy, "copy_id", copy_id)
     assert barcode is not None
     copy = db.scalar(sa.select(Copy).where(Copy.barcode == barcode.upper()))
     if copy is None:
@@ -108,9 +99,7 @@ def lend(
     copy_id: int | None,
     barcode: str | None,
 ) -> ReserveLoan:
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    member = get_reference_or_404(db, Member, "member_id", member_id)
     copy = _find_copy(db, copy_id, barcode)
 
     if copy.status != "on_reserve":
@@ -245,9 +234,7 @@ def _late_fee(db: Session, now: datetime.datetime, actor: User, loan: ReserveLoa
 def return_loan(
     db: Session, now: datetime.datetime, actor: User, loan: ReserveLoan, branch_id: int
 ) -> ReserveLoan:
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found("branch_id", branch_id)
+    branch = get_reference_or_404(db, Branch, "branch_id", branch_id)
     if loan.status != "open":
         raise _error("RESERVE_LOAN_NOT_OPEN", "The reserve loan is not open", status=loan.status)
     course = db.get(Course, loan.course_id)

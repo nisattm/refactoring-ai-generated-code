@@ -12,7 +12,9 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.errors import conflict as _error
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.timeutil import format_datetime
 from lms.rooms.schemas import format_time
 from lms.staff.models import COUNTING_STATUSES, LeaveRequest, Shift, StaffProfile
@@ -25,15 +27,8 @@ AUTO_CHECK_OUT = datetime.timedelta(minutes=60)
 _DAY = datetime.timedelta(days=1)
 
 
-def _error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
-
-
 def get_shift_or_404(db: Session, shift_id: int) -> Shift:
-    shift = db.get(Shift, shift_id)
-    if shift is None:
-        raise NotFound(f"Shift {shift_id} does not exist", details={"resource": "shift", "id": shift_id})
-    return shift
+    return get_or_404(db, Shift, shift_id, label="Shift", resource="shift")
 
 
 def staff_name(db: Session, staff_id: int) -> str:
@@ -147,20 +142,6 @@ def check_shift(
         )
 
 
-def _profile_or_404(db: Session, field: str, staff_id: int) -> StaffProfile:
-    profile = db.get(StaffProfile, staff_id)
-    if profile is None:
-        raise reference_not_found(field, staff_id)
-    return profile
-
-
-def _branch_or_404(db: Session, field: str, branch_id: int) -> Branch:
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found(field, branch_id)
-    return branch
-
-
 def _snapshot(shift: Shift) -> dict[str, Any]:
     return {
         "staff_id": shift.staff_id,
@@ -187,8 +168,8 @@ def create_shift(
     problems = time_problems(start, end)
     if problems:
         raise ValidationFailed(problems)
-    profile = _profile_or_404(db, "staff_id", staff_id)
-    branch = _branch_or_404(db, "branch_id", branch_id)
+    profile = get_reference_or_404(db, StaffProfile, "staff_id", staff_id)
+    branch = get_reference_or_404(db, Branch, "branch_id", branch_id)
     check_shift(db, now, holidays, profile, branch, day, start, end)
     shift = Shift(
         staff_id=profile.id, branch_id=branch.id, date=day, start_time=start, end_time=end, status="planned"
@@ -230,8 +211,8 @@ def update_shift(
     problems = time_problems(new["start_time"], new["end_time"])
     if problems:
         raise ValidationFailed(problems)
-    profile = _profile_or_404(db, "staff_id", new["staff_id"])
-    branch = _branch_or_404(db, "branch_id", new["branch_id"])
+    profile = get_reference_or_404(db, StaffProfile, "staff_id", new["staff_id"])
+    branch = get_reference_or_404(db, Branch, "branch_id", new["branch_id"])
     if shift.status != "planned" or has_started(shift, now) or shift.checked_in_at is not None:
         raise _error("SHIFT_NOT_CHANGEABLE", "The shift cannot be changed", status=shift.status)
     check_shift(
@@ -334,7 +315,7 @@ def copy_week(
         problems.append({"field": "to_week", "problem": "to_week must be after from_week"})
     if problems:
         raise ValidationFailed(problems)
-    branch = _branch_or_404(db, "branch_id", branch_id)
+    branch = get_reference_or_404(db, Branch, "branch_id", branch_id)
 
     offset = to_week - from_week
     sources = list(

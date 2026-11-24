@@ -9,7 +9,7 @@ from pydantic import BaseModel, BeforeValidator, Field, StrictBool, StrictInt, f
 
 from lms.core.clock import LOCAL_TZ
 from lms.core.money import format_amount
-from lms.core.schemas import RequestModel
+from lms.core.schemas import RequestModel, reject_null
 from lms.core.timeutil import format_datetime, parse_datetime
 from lms.messaging.models import MEMBERSHIP_TYPES, Announcement, Message, Thread
 
@@ -93,9 +93,7 @@ class AnnouncementPatchIn(RequestModel):
     @field_validator("title", "body", "audience", "priority", "pinned", "publish_at", mode="before")
     @classmethod
     def _not_null(cls, value: object) -> object:
-        if value is None:
-            raise ValueError("this field cannot be null")
-        return value
+        return reject_null(value)
 
 
 class ThreadCreateIn(RequestModel):

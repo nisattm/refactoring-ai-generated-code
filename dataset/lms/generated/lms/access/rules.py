@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from lms.core.limits import MAX_REPORT_DAYS  # noqa: F401  (re-exported)
+
 CARD_FEES = {"lost": Decimal("25.00"), "damaged": Decimal("10.00")}
 REPEAT_FEE = Decimal("50.00")
 REPEAT_REPLACEMENTS = 3
@@ -12,4 +14,3 @@ DAY_PASS_LIMIT = 50
 MAX_BAN_DAYS = 365
 MAX_CAPACITY = 5000
 MAX_DAY_PASS_PRICE = Decimal("100.00")
-MAX_REPORT_DAYS = 365

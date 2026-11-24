@@ -7,11 +7,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, Response
 
+from lms.api.params import own_member as _own_member
 from lms.auth.deps import AnyUser, Principal, StaffOnly, require_roles
 from lms.catalog.models import Book
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Forbidden, NotFound, ValidationFailed
+from lms.core.lookup import get_reference_or_404
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
 from lms.members.models import Member
 from lms.members.service import get_member_or_404
@@ -70,13 +72,6 @@ def _visible_program(db: SessionDep, program_id: int, principal: Principal) -> P
     if _is_member(principal) and program.status not in ("published", "closed"):
         raise _program_not_found(program_id)
     return program
-
-
-def _own_member(db: SessionDep, principal: Principal) -> Member:
-    member = db.get(Member, principal.user.member_id) if principal.user.member_id is not None else None
-    if member is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member
 
 
 def _require_own(principal: Principal, member_id: int) -> None:
@@ -201,10 +196,7 @@ def _target_member(db: SessionDep, principal: Principal, member_id: int | None) 
         return _own_member(db, principal)
     if member_id is None:
         raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
-    return member
+    return get_reference_or_404(db, Member, "member_id", member_id)
 
 
 @router.post("/programs/{program_id}/join", response_model=ParticipationOut, status_code=201)

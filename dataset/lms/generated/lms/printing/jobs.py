@@ -14,7 +14,8 @@ from lms.access.gate import branch_open_now
 from lms.access.usage import open_visit_of_member
 from lms.audit.service import record
 from lms.auth.models import User
-from lms.core.errors import Conflict, NotFound
+from lms.core.errors import Conflict
+from lms.core.lookup import get_or_404
 from lms.core.money import ZERO, format_amount
 from lms.fines.models import Fee
 from lms.fines.service import accrued_late_fees, create_fee, outstanding_fees
@@ -36,10 +37,7 @@ from lms.printing.usage import cancel_job
 
 
 def get_job_or_404(db: Session, job_id: int) -> PrintJob:
-    job = db.get(PrintJob, job_id)
-    if job is None:
-        raise NotFound(f"Print job {job_id} does not exist", details={"resource": "print_job", "id": job_id})
-    return job
+    return get_or_404(db, PrintJob, job_id, label="Print job", resource="print_job")
 
 
 def job_amount(db: Session, job: PrintJob) -> Decimal:

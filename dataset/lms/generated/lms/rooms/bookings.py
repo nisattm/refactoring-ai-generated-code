@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 from collections.abc import Container
+from decimal import Decimal
 from typing import Any
 
 import sqlalchemy as sa
@@ -14,7 +15,9 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.calendar import add_working_days, is_working_day
 from lms.core.clock import LOCAL_TZ
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import ValidationFailed
+from lms.core.errors import conflict as _error
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import format_amount
 from lms.events.queries import room_event_conflict
 from lms.fines import service as fines
@@ -51,33 +54,17 @@ _HALF_HOUR = datetime.timedelta(minutes=30)
 
 
 def get_booking_or_404(db: Session, booking_id: int) -> RoomBooking:
-    booking = db.get(RoomBooking, booking_id)
-    if booking is None:
-        raise NotFound(
-            f"Room booking {booking_id} does not exist", details={"resource": "room_booking", "id": booking_id}
-        )
-    return booking
-
-
-def _member_or_404(db: Session, field: str, member_id: int) -> Member:
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found(field, member_id)
-    return member
+    return get_or_404(db, RoomBooking, booking_id, label="Room booking", resource="room_booking")
 
 
 def _participants_or_404(db: Session, participant_ids: list[int]) -> list[Member]:
-    return [_member_or_404(db, "participant_ids", pid) for pid in participant_ids]
-
-
-def _error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
+    return [get_reference_or_404(db, Member, "participant_ids", pid) for pid in participant_ids]
 
 
 # --- checks of LIB-ROOM-12 ---------------------------------------------------------------
 
 
-def _total_debt(db: Session, member_id: int, now: datetime.datetime, holidays: Container[datetime.date]):  # noqa: ANN202
+def _total_debt(db: Session, member_id: int, now: datetime.datetime, holidays: Container[datetime.date]) -> Decimal:
     return fines.outstanding_fees(db, member_id) + fines.accrued_late_fees(db, member_id, now, holidays)
 
 
@@ -228,13 +215,31 @@ def create_booking(
     purpose: str,
 ) -> RoomBooking:
     """LIB-ROOM-10 to LIB-ROOM-17."""
-    room = db.get(Room, room_id)
-    if room is None:
-        raise reference_not_found("room_id", room_id)
-    organizer = _member_or_404(db, "member_id", organizer_id)
+    room = get_reference_or_404(db, Room, "room_id", room_id)
+    organizer = get_reference_or_404(db, Member, "member_id", organizer_id)
     participants = _participants_or_404(db, participant_ids)
 
-    today = now.date()
+    _check_slot(db, now, holidays, room, organizer, day, start, end)
+    _check_participants(db, room, organizer.id, participants, day)
+    persons = [organizer, *participants]
+    _check_conflicts(db, now, room, persons, day, start, end)
+    _check_quotas(db, now, persons, organizer.id, day, minutes_between(start, end))
+    return _persist_booking(
+        db, now, actor, room, organizer, participants, day=day, start=start, end=end, purpose=purpose
+    )
+
+
+def _check_slot(
+    db: Session,
+    now: datetime.datetime,
+    holidays: Container[datetime.date],
+    room: Room,
+    organizer: Member,
+    day: datetime.date,
+    start: datetime.time,
+    end: datetime.time,
+) -> None:
+    """LIB-ROOM-12: branch, room, organizer, opening days and hours, past and too-far-ahead dates."""
     branch = db.get(Branch, room.branch_id)
     assert branch is not None
     if not branch.is_active:
@@ -255,20 +260,43 @@ def create_booking(
         raise _error("BOOKING_IN_PAST", "The booking starts in the past")
     ahead = ROOM_RULES[organizer.membership_type].ahead_days
     assert ahead is not None
-    latest = today + datetime.timedelta(days=ahead)
+    latest = now.date() + datetime.timedelta(days=ahead)
     if day > latest:
         raise _error("BOOKING_TOO_FAR_AHEAD", "The date is too far ahead", latest_date=latest.isoformat())
-    _check_participants(db, room, organizer.id, participants, day)
+
+
+def _check_conflicts(
+    db: Session,
+    now: datetime.datetime,
+    room: Room,
+    persons: list[Member],
+    day: datetime.date,
+    start: datetime.time,
+    end: datetime.time,
+) -> None:
+    """LIB-ROOM-14, LIB-ROOM-16, LIB-EVT-11: the room and every person must be free in the interval."""
     for other in active_bookings_of_room(db, room.id, day, now):
         if other.start_time < end and start < other.end_time:
             raise _error("ROOM_ALREADY_BOOKED", "The room is already booked", booking_id=other.id)
     event = room_event_conflict(db, room.id, day, start, end)  # LIB-EVT-11
     if event is not None:
         raise _error("ROOM_ALREADY_BOOKED", "The room is used by an event", event_id=event.id)
-    persons = [organizer, *participants]
     _check_double_booking(db, now, [m.id for m in persons], day, start, end)
-    _check_quotas(db, now, persons, organizer.id, day, minutes_between(start, end))
 
+
+def _persist_booking(
+    db: Session,
+    now: datetime.datetime,
+    actor: User,
+    room: Room,
+    organizer: Member,
+    participants: list[Member],
+    *,
+    day: datetime.date,
+    start: datetime.time,
+    end: datetime.time,
+    purpose: str,
+) -> RoomBooking:
     booking = RoomBooking(
         room_id=room.id,
         member_id=organizer.id,

@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime
 from collections.abc import Container
 from decimal import Decimal
-from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
@@ -13,7 +12,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.core.errors import conflict as error
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import ZERO, format_amount
 from lms.core.timeutil import format_datetime
 from lms.equipment import capacity
@@ -46,14 +46,7 @@ from lms.staff.schedule import load_schedule
 
 
 def get_loan_or_404(db: Session, loan_id: int) -> EquipmentLoan:
-    loan = db.get(EquipmentLoan, loan_id)
-    if loan is None:
-        raise NotFound(f"Equipment loan {loan_id} does not exist", details={"resource": "equipment_loan", "id": loan_id})
-    return loan
-
-
-def error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
+    return get_or_404(db, EquipmentLoan, loan_id, label="Equipment loan", resource="equipment_loan")
 
 
 def loan_with_labels(db: Session, loan: EquipmentLoan) -> tuple[str, str]:
@@ -150,21 +143,15 @@ def lend(
     reservation_id: int | None,
 ) -> EquipmentLoan:
     """LIB-EQ-12, LIB-EQ-13, LIB-EQ-18, LIB-EQ-29."""
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    member = get_reference_or_404(db, Member, "member_id", member_id)
     item: EquipmentItem | None = None
     reservation: EquipmentReservation | None = None
     if item_id is not None:
-        item = db.get(EquipmentItem, item_id)
-        if item is None:
-            raise reference_not_found("item_id", item_id)
+        item = get_reference_or_404(db, EquipmentItem, "item_id", item_id)
         type_id, branch_id = item.type_id, item.branch_id
     else:
         assert reservation_id is not None
-        reservation = db.get(EquipmentReservation, reservation_id)
-        if reservation is None:
-            raise reference_not_found("reservation_id", reservation_id)
+        reservation = get_reference_or_404(db, EquipmentReservation, "reservation_id", reservation_id)
         type_id, branch_id = reservation.type_id, reservation.branch_id
     equipment_type = get_type_or_404(db, type_id)
 

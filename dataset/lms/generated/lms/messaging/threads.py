@@ -14,7 +14,8 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.calendar import add_working_days
 from lms.core.clock import LOCAL_TZ
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, ValidationFailed, reference_not_found
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import format_amount
 from lms.fines.models import Fee
 from lms.loans.models import Loan
@@ -39,10 +40,7 @@ from lms.notifications.service import notify_message_reply
 
 
 def get_thread_or_404(db: Session, thread_id: int) -> Thread:
-    thread = db.get(Thread, thread_id)
-    if thread is None:
-        raise NotFound(f"Thread {thread_id} does not exist", details={"resource": "thread", "id": thread_id})
-    return thread
+    return get_or_404(db, Thread, thread_id, label="Thread", resource="thread")
 
 
 def _closed_error(thread: Thread) -> Conflict:
@@ -109,9 +107,7 @@ def create_thread(
         raise ValidationFailed.single("loan_id", "loan_id needs the category loan")
     if data["fee_id"] is not None and data["category"] != "fee":
         raise ValidationFailed.single("fee_id", "fee_id needs the category fee")
-    branch = db.get(Branch, data["branch_id"])
-    if branch is None:
-        raise reference_not_found("branch_id", data["branch_id"])
+    branch = get_reference_or_404(db, Branch, "branch_id", data["branch_id"])
     loan = db.get(Loan, data["loan_id"]) if data["loan_id"] is not None else None
     if data["loan_id"] is not None and loan is None:
         raise reference_not_found("loan_id", data["loan_id"])

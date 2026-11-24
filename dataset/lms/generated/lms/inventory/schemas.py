@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StrictInt
 
+from lms.core.limits import MAX_REPORT_YEAR, MIN_REPORT_YEAR
 from lms.core.schemas import RequestModel
 
 CountStatus = Literal["open", "closed", "applied", "cancelled"]
@@ -14,8 +15,8 @@ ScanResult = Literal[
 ]
 Outcome = Literal["found", "missing", "moved"]
 
-MIN_YEAR = 2000
-MAX_YEAR = 2100
+MIN_YEAR = MIN_REPORT_YEAR
+MAX_YEAR = MAX_REPORT_YEAR
 
 
 class CountIn(RequestModel):

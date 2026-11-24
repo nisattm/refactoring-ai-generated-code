@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from lms.catalog.models import Author, Book, BookAuthor, Copy, Publisher
 from lms.catalog.service import book_out
-from lms.core.pagination import Page, PageParams
+from lms.core.pagination import Page, PageParams, count_rows
 from lms.core.text import normalize
 from lms.loans.models import Loan
 from lms.search.schemas import SearchItemOut
@@ -141,7 +141,7 @@ def search_books(
     else:
         order = [sa.literal_column("score").desc(), Book.title_key, Book.id]
 
-    total = db.scalar(sa.select(sa.func.count()).select_from(base.order_by(None).subquery())) or 0
+    total = count_rows(db, base)
     rows = db.execute(base.order_by(*order).limit(page.page_size).offset(page.offset)).all()
 
     book_ids = [r.id for r in rows]

@@ -13,6 +13,7 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.errors import BusinessRuleViolation, Conflict, reference_not_found
+from lms.core.lookup import get_reference_or_404
 from lms.notifications.service import notify_suggestion
 from lms.purchasing import service as purchasing
 from lms.purchasing.models import PurchaseOrder, Supplier
@@ -35,12 +36,8 @@ def order(
     suggestion_ids: list[int],
 ) -> PurchaseOrder:
     """LIB-SUG-26, LIB-SUG-27: all or nothing."""
-    supplier = db.get(Supplier, supplier_id)
-    if supplier is None:
-        raise reference_not_found("supplier_id", supplier_id)
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found("branch_id", branch_id)
+    supplier = get_reference_or_404(db, Supplier, "supplier_id", supplier_id)
+    branch = get_reference_or_404(db, Branch, "branch_id", branch_id)
     found = {s.id: s for s in db.scalars(sa.select(Suggestion).where(Suggestion.id.in_(suggestion_ids)))}
     for suggestion_id in suggestion_ids:
         if suggestion_id not in found:

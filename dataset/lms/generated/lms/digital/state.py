@@ -11,25 +11,18 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from lms.audit.service import record
-from lms.core.errors import Conflict, NotFound
+from lms.core.errors import conflict as error
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
+from lms.core.pagination import count_rows as _count
 from lms.digital.models import DigitalHold, DigitalLicense, DigitalLoan, DigitalResource, DigitalSession
 from lms.digital.rules import DEBT_BLOCK
 from lms.fines import service as fines
 from lms.members.models import Member
 
 
-def error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
-
-
 def get_resource_or_404(db: Session, resource_id: int) -> DigitalResource:
-    resource = db.get(DigitalResource, resource_id)
-    if resource is None:
-        raise NotFound(
-            f"Digital resource {resource_id} does not exist", details={"resource": "digital_resource", "id": resource_id}
-        )
-    return resource
+    return get_or_404(db, DigitalResource, resource_id, label="Digital resource", resource="digital_resource")
 
 
 def audit(
@@ -54,10 +47,6 @@ def capacity_on(db: Session, resource_id: int, day: datetime.date) -> int:
 
 def capacity_at(db: Session, resource_id: int, now: datetime.datetime) -> int:
     return capacity_on(db, resource_id, now.date())
-
-
-def _count(db: Session, stmt: sa.Select[Any]) -> int:
-    return db.scalar(sa.select(sa.func.count()).select_from(stmt.subquery())) or 0
 
 
 def active_loan_count(db: Session, resource_id: int, now: datetime.datetime) -> int:

@@ -39,6 +39,11 @@ class Page(BaseModel, Generic[T]):
     total: int
 
 
+def count_rows(session: Session, stmt: sa.Select[Any]) -> int:
+    """The number of rows ``stmt`` selects (ordering is irrelevant for the count)."""
+    return session.scalar(sa.select(sa.func.count()).select_from(stmt.order_by(None).subquery())) or 0
+
+
 def paginate(
     session: Session,
     stmt: sa.Select[Any],
@@ -46,7 +51,7 @@ def paginate(
     convert: Callable[[Any], T] = lambda row: row,
 ) -> Page[T]:
     """Run ``stmt`` (already ordered; default order is ``id`` ascending, LIB-COM-20) for one page."""
-    total = session.scalar(sa.select(sa.func.count()).select_from(stmt.order_by(None).subquery())) or 0
+    total = count_rows(session, stmt)
     rows = session.scalars(stmt.limit(params.page_size).offset(params.offset)).all()
     return Page[T](items=[convert(r) for r in rows], page=params.page, page_size=params.page_size, total=total)
 

@@ -7,13 +7,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, Response
 
+from lms.api.params import own_member as _own_member
+from lms.api.params import reject_nulls
 from lms.auth.deps import AnyUser, CurrentPrincipal, Principal, StaffOnly, require_roles
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, NotFound, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate
 from lms.catalog.models import Book
-from lms.members.models import Member
 from lms.members.service import get_member_or_404
 from lms.purchasing.schemas import OrderOut
 from lms.purchasing.service import order_response
@@ -49,14 +50,6 @@ def _now(request: Request) -> datetime.datetime:
 
 def _is_member(principal: Principal) -> bool:
     return principal.user.role == "member"
-
-
-def _own_member(db: SessionDep, principal: Principal) -> Member:
-    """The member behind a ``member`` user."""
-    member = db.get(Member, principal.user.member_id) if principal.user.member_id is not None else None
-    if member is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member
 
 
 def _viewer(principal: Principal, *, hide_member_id: bool = False) -> service.Viewer:
@@ -137,9 +130,7 @@ def update_suggestion(
 ) -> SuggestionOut:
     now = _now(request)
     fields = {name: getattr(body, name) for name in body.model_fields_set}
-    nulls = [name for name in ("title", "author_text", "reason", "branch_id") if name in fields and fields[name] is None]
-    if nulls:
-        raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])
+    reject_nulls(fields, ("title", "author_text", "reason", "branch_id"))
     service.check_year(fields.get("publication_year"), now.date())
     if "branch_id" in fields:
         service.require_known_branch(db, fields["branch_id"])
@@ -238,9 +229,7 @@ def change_approval(
     suggestion_id: SuggestionId, body: ApprovalPatchIn, request: Request, db: SessionDep, staff: StaffOnly
 ) -> SuggestionOut:
     fields = {name: getattr(body, name) for name in body.model_fields_set}
-    nulls = [name for name, value in fields.items() if value is None]
-    if nulls:
-        raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])
+    reject_nulls(fields)
     suggestion = service.get_suggestion_or_404(db, suggestion_id)
     changed = review.change_approval(db, _now(request), staff.user, suggestion, fields)
     return service.to_out(db, changed, service.STAFF)

@@ -11,7 +11,8 @@ from lms.branches.models import Branch
 from lms.catalog.service import get_copy_or_404
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import NotFound, reference_not_found
+from lms.core.errors import NotFound
+from lms.core.lookup import get_reference_or_404
 from lms.core.pagination import Page, PageDep, paginate
 from lms.preservation import budgets, jobs, shipments
 from lms.preservation import reports as preservation_reports
@@ -214,8 +215,7 @@ def get_shipment(shipment_id: ShipmentId, db: SessionDep, _: StaffOnly) -> Shipm
 
 @router.get("/preservation/suggestions", response_model=SuggestionsOut)
 def suggestions(branch_id: Annotated[int, Query()], db: SessionDep, _: StaffOnly) -> SuggestionsOut:
-    if db.get(Branch, branch_id) is None:
-        raise reference_not_found("branch_id", branch_id)
+    get_reference_or_404(db, Branch, "branch_id", branch_id)
     return SuggestionsOut(items=preservation_reports.suggestions(db, branch_id))
 
 

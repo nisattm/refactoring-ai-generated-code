@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.lookup import get_or_404
 from lms.members.models import Member
 from lms.messaging import usage
 from lms.messaging.models import Announcement, ReadMark
@@ -23,13 +24,7 @@ from lms.core.timeutil import format_datetime
 
 
 def get_announcement_or_404(db: Session, announcement_id: int) -> Announcement:
-    announcement = db.get(Announcement, announcement_id)
-    if announcement is None:
-        raise NotFound(
-            f"Announcement {announcement_id} does not exist",
-            details={"resource": "announcement", "id": announcement_id},
-        )
-    return announcement
+    return get_or_404(db, Announcement, announcement_id, label="Announcement", resource="announcement")
 
 
 def _status_error(announcement: Announcement) -> Conflict:

@@ -13,7 +13,9 @@ from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.catalog.models import Copy
-from lms.core.errors import Conflict, NotFound, ValidationFailed
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.errors import conflict as _error
+from lms.core.lookup import get_or_404
 from lms.core.text import normalize
 from lms.courses import placement
 from lms.courses.models import Course, Enrollment, ReadingListItem, ReserveLoan
@@ -32,15 +34,8 @@ from lms.members.models import Member
 from lms.notifications.service import notify_course
 
 
-def _error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
-
-
 def get_course_or_404(db: Session, course_id: int) -> Course:
-    course = db.get(Course, course_id)
-    if course is None:
-        raise NotFound(f"Course {course_id} does not exist", details={"resource": "course", "id": course_id})
-    return course
+    return get_or_404(db, Course, course_id, label="Course", resource="course")
 
 
 # --- representation and visibility ------------------------------------------------------------
@@ -356,10 +351,7 @@ def enroll(
 
 
 def get_enrollment_or_404(db: Session, enrollment_id: int) -> Enrollment:
-    enrollment = db.get(Enrollment, enrollment_id)
-    if enrollment is None:
-        raise NotFound(f"Enrollment {enrollment_id} does not exist", details={"resource": "enrollment", "id": enrollment_id})
-    return enrollment
+    return get_or_404(db, Enrollment, enrollment_id, label="Enrollment", resource="enrollment")
 
 
 def drop(db: Session, now: datetime.datetime, actor: User, enrollment: Enrollment) -> Enrollment:

@@ -12,6 +12,7 @@ from sqlalchemy.orm import object_session
 
 from lms.catalog.isbn import normalize_isbn
 from lms.catalog.models import Copy
+from lms.core.limits import MIN_PUBLICATION_YEAR
 from lms.core.money import Money, format_amount
 from lms.core.schemas import RequestModel
 from lms.core.timeutil import format_datetime, parse_date
@@ -21,7 +22,6 @@ _LANGUAGE_RE = re.compile(r"^[a-z]{2}$")
 _CLASSIFICATION_RE = re.compile(r"^[0-9]{3}(\.[0-9]{1,6})?$")
 _BARCODE_RE = re.compile(r"^[A-Z0-9-]{6,20}$")
 
-MIN_PUBLICATION_YEAR = 1450
 MIN_PRICE = Decimal("0.01")
 MAX_PRICE = Decimal("100000.00")
 

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, StrictInt, field_validator, model_validat
 
 from lms.catalog.isbn import normalize_isbn
 from lms.catalog.schemas import check_barcode
+from lms.core.limits import MIN_PUBLICATION_YEAR
 from lms.core.money import Money
 from lms.core.schemas import RequestModel
 from lms.donations.rules import MAX_ITEMS, MAX_TOTAL_QUANTITY
@@ -114,7 +115,7 @@ class ItemIn(RequestModel):
     title: Annotated[str, Field(min_length=1, max_length=300)]
     author_text: Annotated[str, Field(max_length=200)] = ""
     isbn: str | None = None
-    publication_year: Annotated[StrictInt, Field(ge=1450)]
+    publication_year: Annotated[StrictInt, Field(ge=MIN_PUBLICATION_YEAR)]
     condition: Condition
     quantity: Annotated[StrictInt, Field(ge=1, le=20)]
 

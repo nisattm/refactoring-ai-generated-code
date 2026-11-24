@@ -13,7 +13,7 @@ from lms.catalog.schemas import CopyOut, copy_out
 from lms.catalog.service import get_copy_or_404
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.pagination import Page, PageDep, PageParams, paginate
+from lms.core.pagination import Page, PageDep, PageParams, count_rows, paginate
 from lms.inventory import closing, counts, missing
 from lms.inventory.schemas import (
     AddedScanOut,
@@ -138,7 +138,7 @@ def list_lines(
 
 def paginate_rows(db: Session, stmt: sa.Select[Any], page: PageParams) -> Page[LineOut]:
     """The line statement selects several columns, so it is paginated by row."""
-    total = db.scalar(sa.select(sa.func.count()).select_from(stmt.order_by(None).subquery())) or 0
+    total = count_rows(db, stmt)
     rows = db.execute(stmt.limit(page.page_size).offset(page.offset)).all()
     return Page[LineOut](
         items=[closing.line_out(row) for row in rows], page=page.page, page_size=page.page_size, total=total

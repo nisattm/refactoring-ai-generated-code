@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import datetime
 from collections.abc import Container
-from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from lms.audit.service import record
 from lms.auth.models import User
-from lms.core.errors import Conflict, NotFound
+from lms.core.errors import conflict as _error
+from lms.core.lookup import get_or_404
 from lms.core.money import format_amount
 from lms.events import queries
 from lms.events.lifecycle import issue_fee, mark_cancelled, promote_waiting, waive_fee
@@ -25,23 +25,15 @@ from lms.events.rules import (
     WAIVE_TIMELY,
 )
 from lms.events.schemas import RegistrationOut, registration_out
-from lms.programs import entries as program_entries
 from lms.fines import service as fines
 from lms.members.models import Member
-
-
-def _error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
+from lms.programs import entries as program_entries
 
 
 def get_registration_or_404(db: Session, registration_id: int) -> EventRegistration:
-    reg = db.get(EventRegistration, registration_id)
-    if reg is None:
-        raise NotFound(
-            f"Event registration {registration_id} does not exist",
-            details={"resource": "event_registration", "id": registration_id},
-        )
-    return reg
+    return get_or_404(
+        db, EventRegistration, registration_id, label="Event registration", resource="event_registration"
+    )
 
 
 def to_out(db: Session, reg: EventRegistration, event: Event | None = None) -> RegistrationOut:

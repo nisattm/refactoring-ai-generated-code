@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.params import collect_date, own_member_id, require_own_or_staff
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.catalog.service import get_book_or_404
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, ValidationFailed, reference_not_found
+from lms.core.errors import ValidationFailed
+from lms.core.lookup import get_reference_or_404
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.digital import holds as hold_service
 from lms.digital import lending, process as process_service, resources, sessions as session_service, state
 from lms.digital.models import DigitalResource
@@ -60,21 +60,9 @@ BookId = Annotated[int, Path(ge=1)]
 MAX_CALENDAR_DAYS = 92
 
 
-def _required_date(name: str, raw: str | None, problems: list[dict[str, str]]) -> datetime.date | None:
-    if raw is None:
-        problems.append({"field": name, "problem": "field required"})
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-        return None
-
-
 def _own_or_staff(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own digital data can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own digital data can be accessed")
 
 
 def _acting_member_id(principal: Principal, body: ActionCreateIn) -> int:
@@ -82,9 +70,7 @@ def _acting_member_id(principal: Principal, body: ActionCreateIn) -> int:
     if principal.user.role == "member":
         if body.member_id is not None:
             raise ValidationFailed.single("member_id", "members act for themselves and must not send member_id")
-        if principal.user.member_id is None:
-            raise Forbidden("The authenticated user has no member record")
-        member_id = principal.user.member_id
+        member_id = own_member_id(principal)
     else:
         if body.member_id is None:
             raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
@@ -94,12 +80,8 @@ def _acting_member_id(principal: Principal, body: ActionCreateIn) -> int:
 
 def _resolve(db: SessionDep, principal: Principal, body: ActionCreateIn) -> tuple[DigitalResource, Member]:
     member_id = _acting_member_id(principal, body)
-    resource = db.get(DigitalResource, body.resource_id)
-    if resource is None:
-        raise reference_not_found("resource_id", body.resource_id)
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    resource = get_reference_or_404(db, DigitalResource, "resource_id", body.resource_id)
+    member = get_reference_or_404(db, Member, "member_id", member_id)
     return resource, member
 
 
@@ -165,8 +147,8 @@ def resource_calendar(
     to: Annotated[str | None, Query()] = None,
 ) -> CalendarOut:
     problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
+    start = collect_date("from", first, problems)
+    end = collect_date("to", to, problems)
     if problems:
         raise ValidationFailed(problems)
     assert start is not None and end is not None

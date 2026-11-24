@@ -13,7 +13,9 @@ from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.clock import LOCAL_TZ
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.errors import conflict as _error
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import format_amount
 from lms.core.text import normalize
 from lms.events import queries
@@ -38,15 +40,8 @@ from lms.staff.models import StaffProfile
 from lms.staff.schedule import load_schedule
 
 
-def _error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
-
-
 def get_event_or_404(db: Session, event_id: int) -> Event:
-    event = db.get(Event, event_id)
-    if event is None:
-        raise NotFound(f"Event {event_id} does not exist", details={"resource": "event", "id": event_id})
-    return event
+    return get_or_404(db, Event, event_id, label="Event", resource="event")
 
 
 def to_out(db: Session, event: Event) -> EventOut:
@@ -174,10 +169,7 @@ def _snapshot(event: Event) -> dict[str, Any]:
 
 
 def _branch_or_404(db: Session, branch_id: int) -> Branch:
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found("branch_id", branch_id)
-    return branch
+    return get_reference_or_404(db, Branch, "branch_id", branch_id)
 
 
 def _new_event(
@@ -420,9 +412,7 @@ def create_series(
 
 def cancel_series(db: Session, now: datetime.datetime, actor: User, series_id: int) -> list[int]:
     """LIB-EVT-17."""
-    series = db.get(EventSeries, series_id)
-    if series is None:
-        raise NotFound(f"Event series {series_id} does not exist", details={"resource": "event_series", "id": series_id})
+    series = get_or_404(db, EventSeries, series_id, label="Event series", resource="event_series")
     cancelled: list[int] = []
     for event in queries.upcoming_or_draft(db, Event.series_id == series_id, now=now):
         if event.start_at <= now:  # events that already started are not changed

@@ -13,7 +13,7 @@ from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.service import require_active_branch
 from lms.catalog.models import Author, Book, BookAuthor, Copy, Publisher
-from lms.catalog.release import release_copy
+from lms.reservations.service import release_copy
 from lms.catalog.schemas import (
     MIN_PUBLICATION_YEAR,
     AuthorOut,

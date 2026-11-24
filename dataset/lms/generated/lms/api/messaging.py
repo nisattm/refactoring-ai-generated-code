@@ -7,12 +7,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 
+from lms.api.params import own_member as _own_member
 from lms.auth.deps import AnyUser, Principal, StaffOnly, require_roles
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
 from lms.core.errors import Forbidden, NotFound, ValidationFailed
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.members.models import Member
 from lms.messaging import announcements, process, threads, usage
 from lms.messaging.models import Thread
 from lms.messaging.schemas import (
@@ -49,13 +49,6 @@ def _now(request: Request) -> datetime.datetime:
 
 def _is_member(principal: Principal) -> bool:
     return principal.user.role == "member"
-
-
-def _own_member(db: SessionDep, principal: Principal) -> Member:
-    member = db.get(Member, principal.user.member_id) if principal.user.member_id is not None else None
-    if member is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member
 
 
 def _announcement_not_found(announcement_id: int) -> NotFound:

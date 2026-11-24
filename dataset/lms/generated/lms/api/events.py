@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.params import optional_date as _optional_date
+from lms.api.params import reject_nulls, report_range, require_own_or_staff
 from lms.auth.deps import AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Forbidden, NotFound, ValidationFailed
+from lms.core.lookup import get_reference_or_404
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.events import events as event_service
 from lms.events import process as process_service
 from lms.events import registrations as registration_service
@@ -48,23 +49,13 @@ RegistrationId = Annotated[int, Path(ge=1)]
 MemberId = Annotated[int, Path(ge=1)]
 
 
-def _optional_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
-
-
 def _is_staff(principal: Principal) -> bool:
     return principal.user.role != "member"
 
 
 def _own_or_staff(principal: Principal, member_id: int) -> None:
     """LIB-AUTH-25."""
-    if principal.user.role == "member" and principal.user.member_id != member_id:
-        raise Forbidden("Only your own event data can be accessed")
+    require_own_or_staff(principal, member_id, "Only your own event data can be accessed")
 
 
 # --- events ------------------------------------------------------------------------------------
@@ -132,9 +123,7 @@ def get_event(event_id: EventId, db: SessionDep, principal: AnyUser) -> EventOut
 def update_event(event_id: EventId, body: EventPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> EventOut:
     settings = request.app.state.settings
     fields = {name: getattr(body, name) for name in body.model_fields_set}
-    nulls = [name for name, value in fields.items() if value is None and name != "room_id"]
-    if nulls:
-        raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])
+    reject_nulls(fields, allow=("room_id",))
     event = event_service.get_event_or_404(db, event_id)
     updated = event_service.update_event(db, local_now(settings.clock), settings.holidays, staff.user, event, fields)
     return event_service.to_out(db, updated)
@@ -194,9 +183,7 @@ def register(
             raise ValidationFailed.single("member_id", "member_id is required for librarians and admins")
         member_id = body.member_id
     event = event_service.get_event_or_404(db, event_id)
-    member = db.get(Member, member_id)
-    if member is None:
-        raise reference_not_found("member_id", member_id)
+    member = get_reference_or_404(db, Member, "member_id", member_id)
     reg = registration_service.register(db, local_now(settings.clock), settings.holidays, principal.user, event, member)
     return registration_service.to_out(db, reg, event)
 
@@ -279,22 +266,6 @@ def event_attendance_report(
     branch_id: Annotated[int | None, Query()] = None,
     kind: Annotated[EventKind | None, Query()] = None,
 ) -> Page[AttendanceOut]:
-    problems: list[dict[str, str]] = []
-    dates: dict[str, datetime.date] = {}
-    for name, raw in (("from", first), ("to", to)):
-        if raw is None:
-            problems.append({"field": name, "problem": "field required"})
-            continue
-        try:
-            dates[name] = parse_date(raw.strip())
-        except ValueError:
-            problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-    if problems:
-        raise ValidationFailed(problems)
-    start, end = dates["from"], dates["to"]
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     stmt = usage.attendance(db, start, end, branch_id=branch_id, kind=kind)
     return paginate(db, stmt, page, lambda e: usage.attendance_out(db, e))

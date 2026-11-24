@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
+from lms.api.params import own_member, reject_nulls
+from lms.api.params import optional_date as _optional_date
 from lms.auth.deps import AdminOnly, AnyUser, CurrentPrincipal, Principal, StaffOnly
 from lms.core.clock import local_now
 from lms.core.db import SessionDep
-from lms.core.errors import Forbidden, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Forbidden, NotFound, ValidationFailed
+from lms.core.lookup import get_reference_or_404
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.donations import donors as donor_service
 from lms.donations import offers, receiving, review
 from lms.donations.models import Donation, Donor
@@ -45,25 +46,8 @@ DonationId = Annotated[int, Path(ge=1)]
 MemberId = Annotated[int, Path(ge=1)]
 
 
-def _optional_date(name: str, raw: str | None) -> datetime.date | None:
-    if raw is None:
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        raise ValidationFailed.single(name, "expected a valid date in the form YYYY-MM-DD") from None
-
-
 def _is_member(principal: Principal) -> bool:
     return principal.user.role == "member"
-
-
-def _own_member(db: SessionDep, principal: Principal) -> Member:
-    """The member behind a ``member`` user."""
-    member = db.get(Member, principal.user.member_id) if principal.user.member_id is not None else None
-    if member is None:
-        raise Forbidden("The authenticated user has no member record")
-    return member
 
 
 def _require_own(db: SessionDep, principal: Principal, donation: Donation, *, hide: bool) -> None:
@@ -115,9 +99,7 @@ def get_donor(donor_id: DonorId, request: Request, db: SessionDep, _: StaffOnly)
 def update_donor(donor_id: DonorId, body: DonorPatchIn, request: Request, db: SessionDep, staff: StaffOnly) -> DonorOut:
     now = local_now(request.app.state.settings.clock)
     fields = {name: getattr(body, name) for name in body.model_fields_set}
-    nulls = [name for name in ("name", "anonymous", "is_active") if name in fields and fields[name] is None]
-    if nulls:
-        raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])
+    reject_nulls(fields, ("name", "anonymous", "is_active"))
     donor = donor_service.get_donor_or_404(db, donor_id)
     return donor_service.to_out(db, now, donor_service.update_donor(db, now, staff.user, donor, fields))
 
@@ -128,9 +110,7 @@ def merge_donor(donor_id: DonorId, body: MergeIn, request: Request, db: SessionD
     if body.into_donor_id == donor_id:
         raise ValidationFailed.single("into_donor_id", "a donor cannot be merged into itself")
     donor = donor_service.get_donor_or_404(db, donor_id)
-    target = db.get(Donor, body.into_donor_id)
-    if target is None:
-        raise reference_not_found("into_donor_id", body.into_donor_id)
+    target = get_reference_or_404(db, Donor, "into_donor_id", body.into_donor_id)
     return donor_service.to_out(db, now, donor_service.merge(db, now, admin.user, donor, target))
 
 
@@ -158,7 +138,7 @@ def offer_donation(body: DonationCreateIn, request: Request, db: SessionDep, pri
     if _is_member(principal):
         if body.donor_id is not None:
             raise ValidationFailed.single("donor_id", "members offer for themselves and must not send donor_id")
-        member = _own_member(db, principal)
+        member = own_member(db, principal)
     elif body.donor_id is None:
         raise ValidationFailed.single("donor_id", "donor_id is required for librarians and admins")
     donation = offers.offer(
@@ -224,9 +204,7 @@ def update_donation(
 ) -> DonationOut:
     now = local_now(request.app.state.settings.clock)
     fields = {name: getattr(body, name) for name in body.model_fields_set}
-    nulls = [name for name, value in fields.items() if value is None]
-    if nulls:
-        raise ValidationFailed([{"field": name, "problem": "value must not be null"} for name in nulls])
+    reject_nulls(fields)
     donation = offers.get_donation_or_404(db, donation_id)
     _require_own(db, principal, donation, hide=False)
     return offers.to_out(db, offers.update_offer(db, now, principal.user, donation, fields))

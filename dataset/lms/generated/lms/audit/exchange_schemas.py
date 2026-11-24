@@ -7,6 +7,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator
 
+from lms.branches.schemas import _CODE_RE
 from lms.catalog.schemas import (
     MAX_PRICE,
     MIN_PRICE,
@@ -17,6 +18,7 @@ from lms.catalog.schemas import (
     _BookChecks,
     check_barcode,
 )
+from lms.core.limits import MIN_PUBLICATION_YEAR
 from lms.core.money import Money
 from lms.members.schemas import MembershipTypeName, _MemberFieldChecks
 
@@ -43,8 +45,6 @@ class BranchRecord(_Record):
     @field_validator("code")
     @classmethod
     def _code(cls, value: str) -> str:
-        from lms.branches.schemas import _CODE_RE
-
         value = value.upper()
         if not _CODE_RE.match(value):
             raise ValueError("code must be 2-10 characters from A-Z and 0-9")
@@ -68,7 +68,7 @@ class BookRecord(_BookChecks, _Record):
     subtitle: Subtitle | None = None
     author_ids: AuthorIds
     publisher_id: Id
-    publication_year: Annotated[StrictInt, Field(ge=1450)]
+    publication_year: Annotated[StrictInt, Field(ge=MIN_PUBLICATION_YEAR)]
     language: str
     classification: str
 

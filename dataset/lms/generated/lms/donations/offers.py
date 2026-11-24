@@ -12,7 +12,9 @@ from lms.audit.service import record
 from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.core.clock import LOCAL_TZ
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.limits import MIN_PUBLICATION_YEAR as MIN_YEAR
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import format_amount
 from lms.core.timeutil import format_datetime
 from lms.donations import donors, usage
@@ -21,14 +23,9 @@ from lms.donations.rules import OFFER_LIMIT
 from lms.donations.schemas import DonationOut, ItemIn, ItemOut
 from lms.members.models import Member
 
-MIN_YEAR = 1450
-
 
 def get_donation_or_404(db: Session, donation_id: int) -> Donation:
-    donation = db.get(Donation, donation_id)
-    if donation is None:
-        raise NotFound(f"Donation {donation_id} does not exist", details={"resource": "donation", "id": donation_id})
-    return donation
+    return get_or_404(db, Donation, donation_id, label="Donation", resource="donation")
 
 
 def items_of(db: Session, donation_id: int) -> list[DonationItem]:
@@ -142,14 +139,10 @@ def offer(
 ) -> Donation:
     """LIB-DON-08 to LIB-DON-10. ``member`` is the offering member (LIB-DON-09), ``None`` for staff."""
     _check_years(items, now.year)
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found("branch_id", branch_id)
+    branch = get_reference_or_404(db, Branch, "branch_id", branch_id)
     if member is None:
         assert donor_id is not None
-        donor = db.get(Donor, donor_id)
-        if donor is None:
-            raise reference_not_found("donor_id", donor_id)
+        donor = get_reference_or_404(db, Donor, "donor_id", donor_id)
     else:
         donor = donors.member_donor(db, now, actor, member)
     if not branch.is_active:
@@ -190,9 +183,7 @@ def update_offer(
     if "items" in fields:
         _check_years(fields["items"], now.year)
     if "branch_id" in fields:
-        branch = db.get(Branch, fields["branch_id"])
-        if branch is None:
-            raise reference_not_found("branch_id", fields["branch_id"])
+        branch = get_reference_or_404(db, Branch, "branch_id", fields["branch_id"])
         if not branch.is_active:
             raise _inactive_branch(branch, "branch_id")
     if donation.status != "offered":

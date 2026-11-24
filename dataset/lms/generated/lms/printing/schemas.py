@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field, StrictBool, StrictInt, field_validator
 
 from lms.core.money import ZERO, format_amount
-from lms.core.schemas import RequestModel
+from lms.core.schemas import RequestModel, reject_null
 from lms.core.timeutil import format_datetime
 from lms.printing.models import Printer, PrintJob, PrintPack
 from lms.printing.rules import MAX_PAPER
@@ -46,9 +46,7 @@ class PrinterPatchIn(RequestModel):
     @field_validator("name", "color", "duplex", "status", mode="before")
     @classmethod
     def _not_null(cls, value: object) -> object:
-        if value is None:
-            raise ValueError("this field cannot be null")
-        return value
+        return reject_null(value)
 
 
 class RefillIn(RequestModel):

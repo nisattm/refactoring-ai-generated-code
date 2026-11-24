@@ -7,6 +7,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StrictInt, field_validator, model_validator
 
+from lms.core.limits import MAX_REPORT_YEAR, MIN_REPORT_YEAR
 from lms.core.money import Money
 from lms.core.schemas import RequestModel
 
@@ -17,8 +18,8 @@ Priority = Literal["normal", "urgent"]
 JobStatus = Literal["requested", "approved", "sent", "returned", "cancelled", "lost"]
 Outcome = Literal["repaired", "unrepairable"]
 
-MIN_YEAR = 2000
-MAX_YEAR = 2100
+MIN_YEAR = MIN_REPORT_YEAR
+MAX_YEAR = MAX_REPORT_YEAR
 MAX_BUDGET = Decimal("1000000.00")
 MAX_COST = Decimal("100000.00")
 ZERO = Decimal("0.00")

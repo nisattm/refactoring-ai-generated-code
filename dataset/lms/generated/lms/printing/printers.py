@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.branches.service import require_active_branch
-from lms.core.errors import Conflict, NotFound
+from lms.core.errors import Conflict
+from lms.core.lookup import get_or_404
 from lms.notifications.service import notify_printing
 from lms.printing.models import Printer, PrintJob
 from lms.printing.rules import LOW_PAPER, MAX_PAPER
@@ -19,10 +20,7 @@ from lms.printing.usage import cancel_job
 
 
 def get_printer_or_404(db: Session, printer_id: int) -> Printer:
-    printer = db.get(Printer, printer_id)
-    if printer is None:
-        raise NotFound(f"Printer {printer_id} does not exist", details={"resource": "printer", "id": printer_id})
-    return printer
+    return get_or_404(db, Printer, printer_id, label="Printer", resource="printer")
 
 
 def printer_list_stmt(

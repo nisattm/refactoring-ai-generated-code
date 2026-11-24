@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from lms.auth.models import User
 from lms.catalog.models import Book, Copy
-from lms.catalog.release import release_copy
+from lms.reservations.service import release_copy
 from lms.core.errors import Forbidden
 from lms.inventory import rules
 from lms.inventory.counts import _emit, expected_ids, invalid_count_status, summary_of

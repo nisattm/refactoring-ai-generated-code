@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import weakref
 from collections.abc import Iterator
 
@@ -59,35 +60,50 @@ def get_engine(settings) -> sa.Engine:  # noqa: ANN001
     return create_db_engine(settings.database_url)
 
 
+MODEL_MODULES = tuple(
+    f"lms.{package}.models"
+    for package in (
+        "access",
+        "audit",
+        "auth",
+        "branches",
+        "catalog",
+        "courses",
+        "digital",
+        "donations",
+        "equipment",
+        "events",
+        "fines",
+        "ill",
+        "inventory",
+        "loans",
+        "members",
+        "messaging",
+        "notifications",
+        "preservation",
+        "printing",
+        "programs",
+        "purchasing",
+        "reservations",
+        "rooms",
+        "staff",
+        "suggestions",
+    )
+)
+
+
 def create_schema(engine: sa.Engine) -> None:
     """LIB-TECH-07: create missing tables."""
-    import lms.access.models  # noqa: F401  (register models)
-    import lms.audit.models  # noqa: F401
-    import lms.auth.models  # noqa: F401
-    import lms.branches.models  # noqa: F401
-    import lms.catalog.models  # noqa: F401
-    import lms.courses.models  # noqa: F401
-    import lms.digital.models  # noqa: F401
-    import lms.donations.models  # noqa: F401
-    import lms.equipment.models  # noqa: F401
-    import lms.events.models  # noqa: F401
-    import lms.fines.models  # noqa: F401
-    import lms.ill.models  # noqa: F401
-    import lms.inventory.models  # noqa: F401
-    import lms.loans.models  # noqa: F401
-    import lms.members.models  # noqa: F401
-    import lms.messaging.models  # noqa: F401
-    import lms.notifications.models  # noqa: F401
-    import lms.preservation.models  # noqa: F401
-    import lms.printing.models  # noqa: F401
-    import lms.programs.models  # noqa: F401
-    import lms.purchasing.models  # noqa: F401
-    import lms.reservations.models  # noqa: F401
-    import lms.rooms.models  # noqa: F401
-    import lms.staff.models  # noqa: F401
-    import lms.suggestions.models  # noqa: F401
-
+    for module in MODEL_MODULES:
+        importlib.import_module(module)  # registers the tables on ``Base.metadata``
     Base.metadata.create_all(engine)
+
+
+def open_database(settings) -> tuple[sa.Engine, sessionmaker[Session]]:  # noqa: ANN001
+    """The engine of ``settings`` with its schema created, and a session factory bound to it."""
+    engine = get_engine(settings)
+    create_schema(engine)
+    return engine, sessionmaker(engine, expire_on_commit=False)
 
 
 def get_session(request: Request) -> Iterator[Session]:

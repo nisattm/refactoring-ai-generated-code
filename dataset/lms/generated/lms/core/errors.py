@@ -56,6 +56,11 @@ class ValidationFailed(ApiError):
         return cls([{"field": field, "problem": problem}])
 
 
+def conflict(code: str, message: str, **details: Any) -> Conflict:
+    """A ``409`` error with a module-specific ``code`` and ``details`` given as keyword arguments."""
+    return Conflict(message, code=code, details=details)
+
+
 def reference_not_found(field: str, value: Any) -> NotFound:
     """LIB-COM-29: a referenced entity does not exist."""
     return NotFound(f"{field} {value} does not exist", details={"field": field, "id": value})

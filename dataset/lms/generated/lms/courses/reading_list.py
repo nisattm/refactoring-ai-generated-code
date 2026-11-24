@@ -13,17 +13,14 @@ from lms.audit.service import changes, record
 from lms.auth.models import User
 from lms.catalog.models import Book, Copy
 from lms.catalog.service import is_lendable
-from lms.core.errors import Conflict, ValidationFailed
+from lms.core.errors import ValidationFailed
+from lms.core.errors import conflict as _error
 from lms.courses import placement
 from lms.courses.courses import count_items
 from lms.courses.models import Course, ReadingListItem, ReserveLoan
 from lms.courses.reserve import take_all_off_reserve
 from lms.courses.rules import MAX_ITEMS
 from lms.courses.schemas import ItemOut, item_fields
-
-
-def _error(code: str, message: str, **details: Any) -> Conflict:
-    return Conflict(message, code=code, details=details)
 
 
 # --- representation ---------------------------------------------------------------------------

@@ -10,15 +10,13 @@ from lms.audit import exporter
 from lms.audit.importer import import_data
 from lms.auth.bootstrap import ensure_bootstrap_admin
 from lms.core.clock import local_now
-from lms.core.db import create_schema, get_engine
+from lms.core.db import open_database
 from lms.core.errors import Conflict, ValidationFailed
 from lms.core.settings import Settings
 
 
 def _session_factory(settings: Settings) -> sessionmaker:
-    engine = get_engine(settings)
-    create_schema(engine)
-    return sessionmaker(engine, expire_on_commit=False)
+    return open_database(settings)[1]
 
 
 def import_dataset(settings: Settings, data: dict) -> dict[str, int]:

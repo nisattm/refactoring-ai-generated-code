@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, Request, Response
 
+from lms.api.params import report_range
 from lms.auth.deps import StaffOnly
 from lms.core.clock import local_now
 from lms.core.clock import today as clock_today
 from lms.core.db import SessionDep
 from lms.core.errors import ValidationFailed
+from lms.core.limits import MAX_REPORT_YEAR, MIN_REPORT_YEAR
 from lms.core.money import format_amount
 from lms.core.pagination import Page, PageDep, paginate, paginate_sequence
-from lms.core.timeutil import parse_date
 from lms.reports import service
 from lms.courses import usage as course_usage
 from lms.courses.schemas import CourseReportOut
@@ -49,7 +49,6 @@ from lms.reports.schemas import (
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
-MAX_SPAN_DAYS = 365
 CSV_TYPE = "text/csv; charset=utf-8"
 MOST_BORROWED_COLUMNS = ("rank", "book_id", "title", "isbn", "loan_count")
 OVERDUE_COLUMNS = tuple(OverdueItemOut.model_fields)
@@ -62,17 +61,6 @@ def _csv_response(columns: tuple[str, ...], items: list) -> Response:
     return Response(content=text.encode("utf-8"), media_type=CSV_TYPE)
 
 
-def _required_date(name: str, raw: str | None, problems: list[dict[str, str]]) -> datetime.date | None:
-    if raw is None:
-        problems.append({"field": name, "problem": "field required"})
-        return None
-    try:
-        return parse_date(raw.strip())
-    except ValueError:
-        problems.append({"field": name, "problem": "expected a valid date in the form YYYY-MM-DD"})
-        return None
-
-
 @router.get("/most-borrowed", response_model=MostBorrowedOut, response_model_by_alias=True)
 def most_borrowed(
     db: SessionDep,
@@ -83,16 +71,7 @@ def most_borrowed(
     limit: Annotated[int, Query(ge=1, le=100)] = 10,
     format: Annotated[Format, Query()] = "json",
 ):
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > MAX_SPAN_DAYS:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     items = service.most_borrowed(db, start, end, branch_id, limit)
     if format == "csv":
         return _csv_response(MOST_BORROWED_COLUMNS, items)
@@ -162,16 +141,7 @@ def room_usage_report(
     branch_id: Annotated[int | None, Query()] = None,
     kind: Annotated[RoomKind | None, Query()] = None,
 ) -> Page[RoomUsageOut]:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     items = room_usage.room_usage(db, start, end, request.app.state.settings.holidays, branch_id=branch_id, kind=kind)
     return paginate_sequence(items, page)
 
@@ -185,16 +155,7 @@ def equipment_usage_report(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[EquipmentUsageOut]:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     return paginate_sequence(equipment_usage.equipment_usage(db, start, end, branch_id=branch_id), page)
 
 
@@ -207,16 +168,7 @@ def digital_usage_report(
     to: Annotated[str | None, Query()] = None,
     kind: Annotated[ResourceKind | None, Query()] = None,
 ) -> Page[DigitalUsageOut]:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     return paginate_sequence(digital_usage.digital_usage(db, start, end, kind=kind), page)
 
 
@@ -228,16 +180,7 @@ def ill_activity_report(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> Page[IllActivityOut]:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     return paginate_sequence(ill_usage.ill_activity(db, start, end), page)
 
 
@@ -250,16 +193,7 @@ def course_reserves_report(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> Page[CourseReportOut]:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     stmt = course_usage.report_courses(start, end, branch_id=branch_id)
     return paginate(db, stmt, page, lambda course: course_usage.report_out(db, course, start, end))
 
@@ -272,16 +206,7 @@ def donations_report(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> Page[DonationReportOut]:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     return paginate_sequence(donation_reports.donation_report(db, start, end), page)
 
 
@@ -291,7 +216,7 @@ def donors_report(
     db: SessionDep,
     _: StaffOnly,
     page: PageDep,
-    year: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    year: Annotated[int | None, Query(ge=MIN_REPORT_YEAR, le=MAX_REPORT_YEAR)] = None,
 ) -> Page[DonorReportOut]:
     if year is None:
         year = clock_today(request.app.state.settings.clock).year
@@ -319,16 +244,7 @@ def damage_recovery_report(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> RecoveryPage:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     items, totals = preservation_reports.damage_recovery(db, start, end)
     chunk = paginate_sequence(items, page)
     return RecoveryPage(items=chunk.items, page=chunk.page, page_size=chunk.page_size, total=chunk.total, totals=totals)
@@ -342,16 +258,7 @@ def suggestions_report(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> SuggestionReportOut:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     return suggestion_reports.suggestion_report(db, start, end, branch_id)
 
 
@@ -363,16 +270,7 @@ def programs_report(
     first: Annotated[str | None, Query(alias="from")] = None,
     to: Annotated[str | None, Query()] = None,
 ) -> Page[ProgramReportOut]:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     return paginate(db, program_usage.report_stmt(start, end), page, lambda program: program_usage.report_out(db, program))
 
 
@@ -385,15 +283,6 @@ def messaging_report(
     to: Annotated[str | None, Query()] = None,
     branch_id: Annotated[int | None, Query()] = None,
 ) -> MessagingReportOut:
-    problems: list[dict[str, str]] = []
-    start = _required_date("from", first, problems)
-    end = _required_date("to", to, problems)
-    if problems:
-        raise ValidationFailed(problems)
-    assert start is not None and end is not None
-    if start > end:
-        raise ValidationFailed.single("from", "from must not be after to")
-    if (end - start).days > 365:
-        raise ValidationFailed.single("to", "the range must not be longer than 366 days including both ends")
+    start, end = report_range(first, to)
     now = local_now(request.app.state.settings.clock)
     return messaging_reports.messaging_report(db, now, start, end, branch_id)

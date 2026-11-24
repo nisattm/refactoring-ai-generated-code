@@ -14,7 +14,9 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.catalog.models import Book
 from lms.catalog.service import add_copy
-from lms.core.errors import Conflict, NotFound, reference_not_found
+from lms.reservations.service import release_copy
+from lms.core.errors import Conflict, NotFound
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import format_amount
 from lms.core.text import normalize
 from lms.digital.models import DigitalLicense
@@ -24,16 +26,12 @@ from lms.purchasing.models import PurchaseOrder, PurchaseOrderLine, Supplier
 from lms.purchasing.schemas import LineIn, OrderOut, ReceiveLineIn, order_out
 from lms.suggestions import arrival as suggestion_arrival
 from lms.suggestions import usage as suggestion_usage
-from lms.catalog.release import release_copy
 
 # --- suppliers ------------------------------------------------------------------
 
 
 def get_supplier_or_404(db: Session, supplier_id: int) -> Supplier:
-    supplier = db.get(Supplier, supplier_id)
-    if supplier is None:
-        raise NotFound(f"Supplier {supplier_id} does not exist", details={"resource": "supplier", "id": supplier_id})
-    return supplier
+    return get_or_404(db, Supplier, supplier_id, label="Supplier", resource="supplier")
 
 
 def _check_unique_name(db: Session, name: str, *, own_id: int | None = None) -> None:
@@ -108,12 +106,7 @@ def supplier_list_stmt(q: str | None, is_active: bool | None) -> sa.Select[tuple
 
 
 def get_order_or_404(db: Session, order_id: int) -> PurchaseOrder:
-    order = db.get(PurchaseOrder, order_id)
-    if order is None:
-        raise NotFound(
-            f"Purchase order {order_id} does not exist", details={"resource": "purchase_order", "id": order_id}
-        )
-    return order
+    return get_or_404(db, PurchaseOrder, order_id, label="Purchase order", resource="purchase_order")
 
 
 def order_lines(db: Session, order_id: int) -> list[PurchaseOrderLine]:
@@ -187,12 +180,8 @@ def create_order(
     lines: list[LineIn],
 ) -> PurchaseOrder:
     """LIB-PUR-02."""
-    supplier = db.get(Supplier, supplier_id)
-    if supplier is None:
-        raise reference_not_found("supplier_id", supplier_id)
-    branch = db.get(Branch, branch_id)
-    if branch is None:
-        raise reference_not_found("branch_id", branch_id)
+    supplier = get_reference_or_404(db, Supplier, "supplier_id", supplier_id)
+    branch = get_reference_or_404(db, Branch, "branch_id", branch_id)
     _require_books(db, lines)
     _check_branch_active(branch, "branch_id")  # LIB-BR-04: before all other 409 checks
     _check_supplier_active(supplier)
@@ -221,13 +210,9 @@ def update_order(
     """LIB-PUR-03. ``fields`` holds only the fields present in the request."""
     supplier = branch = None
     if "supplier_id" in fields:
-        supplier = db.get(Supplier, fields["supplier_id"])
-        if supplier is None:
-            raise reference_not_found("supplier_id", fields["supplier_id"])
+        supplier = get_reference_or_404(db, Supplier, "supplier_id", fields["supplier_id"])
     if "branch_id" in fields:
-        branch = db.get(Branch, fields["branch_id"])
-        if branch is None:
-            raise reference_not_found("branch_id", fields["branch_id"])
+        branch = get_reference_or_404(db, Branch, "branch_id", fields["branch_id"])
     if "lines" in fields:
         _require_books(db, fields["lines"])
     if branch is not None:

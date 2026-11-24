@@ -5,6 +5,8 @@ from __future__ import annotations
 import datetime
 from decimal import Decimal
 
+from lms.core.limits import MAX_REPORT_DAYS  # noqa: F401  (re-exported)
+
 FREE_PAGES = {"student": 100, "academic": 300, "staff": 300, "guest": 0}
 PRICE_BW = Decimal("0.50")
 PRICE_COLOR = Decimal("2.00")
@@ -18,7 +20,6 @@ LOW_PAPER = 100
 FAIL_WINDOW = datetime.timedelta(hours=24)
 QUEUE_EXPIRY = datetime.timedelta(hours=24)
 DEBT_BLOCK = Decimal("50.00")
-MAX_REPORT_DAYS = 365
 FAILED_WAIVE_REASON = "Failed print"
 
 

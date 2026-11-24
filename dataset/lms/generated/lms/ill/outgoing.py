@@ -13,9 +13,10 @@ from lms.auth.models import User
 from lms.branches.models import Branch
 from lms.branches.service import require_active_branch
 from lms.catalog.models import Book, Copy
-from lms.catalog.release import release_copy
+from lms.reservations.service import release_copy
 from lms.catalog.status import invalid_status, set_status
-from lms.core.errors import Conflict, NotFound, ValidationFailed, reference_not_found
+from lms.core.errors import Conflict, ValidationFailed
+from lms.core.lookup import get_or_404, get_reference_or_404
 from lms.core.money import format_amount
 from lms.ill import partners
 from lms.ill.models import IllOutgoing
@@ -24,12 +25,7 @@ from lms.ill.schemas import OutgoingOut, outgoing_out
 
 
 def get_outgoing_or_404(db: Session, outgoing_id: int) -> IllOutgoing:
-    outgoing = db.get(IllOutgoing, outgoing_id)
-    if outgoing is None:
-        raise NotFound(
-            f"Outgoing request {outgoing_id} does not exist", details={"resource": "ill_outgoing", "id": outgoing_id}
-        )
-    return outgoing
+    return get_or_404(db, IllOutgoing, outgoing_id, label="Outgoing request", resource="ill_outgoing")
 
 
 def _invalid_status(outgoing: IllOutgoing) -> Conflict:
@@ -53,8 +49,7 @@ def _event(db: Session, now: datetime.datetime, actor: User, event: str, outgoin
 def create_outgoing(db: Session, now: datetime.datetime, actor: User, *, partner_id: int, book_id: int) -> IllOutgoing:
     """LIB-ILL-24, LIB-ILL-27."""
     partner = partners.require_partner(db, partner_id)
-    if db.get(Book, book_id) is None:
-        raise reference_not_found("book_id", book_id)
+    get_reference_or_404(db, Book, "book_id", book_id)
     partners.require_active(partner)
     open_count = db.scalar(
         sa.select(sa.func.count()).select_from(IllOutgoing).where(
@@ -76,9 +71,7 @@ def create_outgoing(db: Session, now: datetime.datetime, actor: User, *, partner
 
 def ship(db: Session, now: datetime.datetime, actor: User, outgoing: IllOutgoing, copy_id: int) -> IllOutgoing:
     """LIB-ILL-25."""
-    copy = db.get(Copy, copy_id)
-    if copy is None:
-        raise reference_not_found("copy_id", copy_id)
+    copy = get_reference_or_404(db, Copy, "copy_id", copy_id)
     if outgoing.status != "requested":
         raise _invalid_status(outgoing)
     partner = partners.get_partner_or_404(db, outgoing.partner_id)
@@ -127,8 +120,7 @@ def returned(
     branch_id: int,
 ) -> IllOutgoing:
     """LIB-ILL-28."""
-    if db.get(Branch, branch_id) is None:
-        raise reference_not_found("branch_id", branch_id)
+    get_reference_or_404(db, Branch, "branch_id", branch_id)
     if outgoing.status != "shipped":
         raise _invalid_status(outgoing)
     require_active_branch(db, "branch_id", branch_id)
