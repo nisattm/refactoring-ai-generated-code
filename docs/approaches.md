@@ -46,7 +46,7 @@ The instructor's Week 6 plan gives test feedback to Multi-Agent. If Iterative di
 
 Decided on 29 October 2026: the instructor's notes name "subagent", so Multi-Agent uses Claude Code's subagent feature rather than three separate `claude -p` sessions.
 
-- **Definitions:** the three roles are custom subagents defined in the clean project copy, each with its own prompt, allowed tools and the model set explicitly to Claude Sonnet 5.5 (field names verified in the pilot).
+- **Definitions:** the three roles are custom subagents given on the command line with `--agents`, each with its own prompt, allowed tools and the model set explicitly to Claude Sonnet 5.5; no agent file is placed in the project copy ([`decisions/005`](decisions/005-week6-multiagent.md), M1, K1, K5).
 - **Roles and tools:** Analyzer reads only (no edit, no shell); Refactoring reads and edits; Reviewer reads only and returns approve/reject with reasons. Only the orchestrator may run the feedback test command.
 - **Known trade-off:** each subagent has its own context window, but only its final message returns to the orchestrator. We accept this; it matches how the roles hand over work (issue list → changed code → verdict).
 - **Round budget:** the orchestrator prompt states the limit (1 refactoring + at most 2 Reviewer returns). The stream log (`--output-format stream-json`, `parent_tool_use_id`) is checked afterwards; a run that called the Refactoring subagent more than 3 times is invalid.
@@ -87,7 +87,7 @@ Pro has a 5-hour usage window and a weekly limit; exact values are not published
 | --- | --- |
 | How are token counts collected per run? | `claude -p --output-format json`: it contains `total_cost_usd`, a per-model breakdown, usage and `session_id`; cost figures are client-side estimates (Claude Code documentation). OpenTelemetry as an alternative. |
 | Does the Pro login work in a fresh container without other state? | Test in the pilot |
-| Subagent definition fields (model, tools) | Verify against the Claude Code subagent documentation in the pilot |
+| Subagent definition fields (model, tools) | **Decided (22 November 2026):** `--agents` with description, prompt, tools and `"model": "claude-sonnet-5-5"`, verified in the setup check (K5); see [`decisions/005`](decisions/005-week6-multiagent.md) |
 | Is static analysis output given to the LLM? | **Decided (16 November 2026): no**, in none of the three approaches. Between rounds the model gets only the test feedback, never metrics, so the three approaches stay equal and the study measures what the model finds itself. The feedback was first limited to the IDs of the failing feedback tests; **changed on 17 November 2026 (W2):** test ID and a short error message, within the W2 limits ([`decisions/004`](decisions/004-week5-single-iterative.md)) |
 | Does the Reviewer see the original code? | To decide in the pilot |
 
